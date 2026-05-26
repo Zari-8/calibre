@@ -1,0 +1,1849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Calibre — System Fit Engine</title>
+
+  <style>
+    :root {
+      --bg: #030604;
+      --bg-soft: #07110b;
+      --panel: rgba(255,255,255,0.055);
+      --panel-strong: rgba(255,255,255,0.085);
+      --line: rgba(57,255,136,0.18);
+      --line-soft: rgba(255,255,255,0.09);
+      --green: #39ff88;
+      --green-soft: rgba(57,255,136,0.16);
+      --green-mid: rgba(57,255,136,0.42);
+      --text: #f1fff6;
+      --muted: rgba(241,255,246,0.62);
+      --muted-2: rgba(241,255,246,0.42);
+      --danger: #ff5f6d;
+      --gold: #ffd166;
+      --radius-lg: 30px;
+      --radius-md: 22px;
+      --radius-sm: 16px;
+      --shadow: 0 28px 80px rgba(0,0,0,0.45);
+      --font: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 4%, rgba(57,255,136,0.16), transparent 28%),
+        radial-gradient(circle at 88% 16%, rgba(57,255,136,0.08), transparent 24%),
+        linear-gradient(180deg, #020403 0%, #040805 42%, #020403 100%);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, rgba(0,0,0,0.7), transparent 86%);
+      z-index: 0;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.72) 100%);
+      z-index: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input,
+    select {
+      font-family: inherit;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      width: min(1220px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 22px 0 48px;
+    }
+
+    /* NAV */
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 14px 16px;
+      border: 1px solid rgba(57,255,136,0.16);
+      border-radius: 28px;
+      background: rgba(3,8,5,0.76);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 18px 48px rgba(0,0,0,0.35);
+      position: sticky;
+      top: 14px;
+      z-index: 20;
+    }
+
+    .calibre-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .logo-mark {
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 45% 35%, rgba(57,255,136,0.9), rgba(57,255,136,0.22) 38%, transparent 62%),
+        linear-gradient(135deg, rgba(57,255,136,0.18), rgba(255,255,255,0.02));
+      border: 1px solid rgba(57,255,136,0.32);
+      box-shadow:
+        0 0 28px rgba(57,255,136,0.22),
+        inset 0 0 22px rgba(57,255,136,0.16);
+      overflow: hidden;
+    }
+
+    .logo-mark::before {
+      content: "";
+      width: 19px;
+      height: 19px;
+      border: 2px solid #061008;
+      border-top-color: transparent;
+      border-left-color: transparent;
+      transform: rotate(-45deg);
+      border-radius: 6px;
+      filter: drop-shadow(0 0 8px rgba(255,255,255,0.35));
+    }
+
+    .logo-mark::after {
+      content: "";
+      position: absolute;
+      inset: 11px;
+      border: 1px solid rgba(3,6,4,0.62);
+      border-radius: 11px;
+    }
+
+    .logo-word {
+      display: flex;
+      flex-direction: column;
+      line-height: 1;
+    }
+
+    .logo-word strong {
+      font-size: 1.18rem;
+      letter-spacing: 0.16em;
+      font-weight: 950;
+    }
+
+    .logo-word span {
+      margin-top: 5px;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--green);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .nav-links a {
+      padding: 10px 12px;
+      border-radius: 999px;
+    }
+
+    .nav-links a:hover {
+      background: rgba(57,255,136,0.08);
+      color: var(--text);
+    }
+
+    .nav-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(57,255,136,0.22);
+      color: var(--green);
+      background: rgba(57,255,136,0.08);
+      font-size: 0.76rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 14px rgba(57,255,136,0.9);
+      animation: dotPulse 1.7s ease-in-out infinite;
+    }
+
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(0.85); opacity: 0.65; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+
+    /* HERO */
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 24px;
+      align-items: stretch;
+      padding: 44px 0 26px;
+    }
+
+    .hero-copy {
+      padding: 36px;
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(57,255,136,0.15);
+      background:
+        radial-gradient(circle at 18% 0%, rgba(57,255,136,0.14), transparent 34%),
+        linear-gradient(180deg, rgba(255,255,255,0.065), rgba(255,255,255,0.026));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero-copy::after {
+      content: "";
+      position: absolute;
+      width: 220px;
+      height: 220px;
+      right: -90px;
+      top: -90px;
+      border-radius: 50%;
+      border: 1px solid rgba(57,255,136,0.24);
+      box-shadow: 0 0 90px rgba(57,255,136,0.12);
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin-bottom: 20px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(57,255,136,0.18);
+      color: var(--green);
+      background: rgba(57,255,136,0.06);
+      font-size: 0.72rem;
+      font-weight: 850;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2.35rem, 5vw, 5.25rem);
+      line-height: 0.9;
+      letter-spacing: -0.075em;
+      max-width: 760px;
+    }
+
+    .hero h1 span {
+      color: var(--green);
+      text-shadow: 0 0 22px rgba(57,255,136,0.42);
+    }
+
+    .hero p {
+      margin: 22px 0 0;
+      max-width: 650px;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.65;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .mini-stat {
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.075);
+    }
+
+    .mini-stat strong {
+      display: block;
+      color: var(--green);
+      font-size: 1.25rem;
+      margin-bottom: 3px;
+    }
+
+    .mini-stat span {
+      color: var(--muted-2);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .hero-terminal {
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(57,255,136,0.17);
+      background:
+        radial-gradient(circle at 50% 12%, rgba(57,255,136,0.16), transparent 42%),
+        linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.025));
+      box-shadow: var(--shadow);
+      padding: 22px;
+      display: grid;
+      align-content: space-between;
+      min-height: 420px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .terminal-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--muted);
+      font-size: 0.74rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .scanner {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 0.64;
+      margin: 28px 0;
+      border-radius: 26px;
+      border: 1px solid rgba(57,255,136,0.15);
+      background:
+        linear-gradient(rgba(57,255,136,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(57,255,136,0.04) 1px, transparent 1px),
+        radial-gradient(circle at center, rgba(57,255,136,0.12), rgba(0,0,0,0.08) 54%, rgba(0,0,0,0.45));
+      background-size: 18px 18px, 18px 18px, auto;
+      overflow: hidden;
+    }
+
+    .scanner::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent, rgba(57,255,136,0.23), transparent);
+      height: 34%;
+      animation: scanMove 3.8s ease-in-out infinite;
+    }
+
+    .scanner-core {
+      position: absolute;
+      inset: 22%;
+      border-radius: 50%;
+      border: 1px solid rgba(57,255,136,0.28);
+      box-shadow:
+        0 0 38px rgba(57,255,136,0.2),
+        inset 0 0 38px rgba(57,255,136,0.08);
+      display: grid;
+      place-items: center;
+    }
+
+    .scanner-core span {
+      font-size: clamp(2.6rem, 6vw, 4.5rem);
+      font-weight: 950;
+      letter-spacing: -0.08em;
+      color: var(--green);
+      text-shadow: 0 0 25px rgba(57,255,136,0.58);
+    }
+
+    @keyframes scanMove {
+      0%, 100% { transform: translateY(-30%); opacity: 0.25; }
+      50% { transform: translateY(230%); opacity: 0.9; }
+    }
+
+    .terminal-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 12px 0;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    .terminal-row strong {
+      color: var(--text);
+    }
+
+    /* PANELS */
+
+    .section {
+      margin-top: 22px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 18px;
+      margin-bottom: 14px;
+    }
+
+    .section-title h2 {
+      margin: 0;
+      font-size: clamp(1.5rem, 2.6vw, 2.2rem);
+      letter-spacing: -0.045em;
+    }
+
+    .section-title p {
+      margin: 0;
+      max-width: 560px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 0.94rem;
+    }
+
+    .engine-shell {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      border-radius: var(--radius-lg);
+      border: 1px solid rgba(57,255,136,0.15);
+      background:
+        radial-gradient(circle at top left, rgba(57,255,136,0.08), transparent 34%),
+        linear-gradient(180deg, rgba(255,255,255,0.058), rgba(255,255,255,0.025));
+      box-shadow: 0 20px 60px rgba(0,0,0,0.32);
+      overflow: hidden;
+    }
+
+    .panel-pad {
+      padding: 22px;
+    }
+
+    .control-stack {
+      display: grid;
+      gap: 16px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 850;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    input,
+    select {
+      width: 100%;
+      border: 1px solid rgba(57,255,136,0.16);
+      background: rgba(0,0,0,0.24);
+      color: var(--text);
+      border-radius: 16px;
+      padding: 14px 14px;
+      outline: none;
+      font-size: 0.94rem;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: rgba(57,255,136,0.48);
+      box-shadow: 0 0 0 4px rgba(57,255,136,0.08);
+      background: rgba(0,0,0,0.36);
+    }
+
+    option {
+      background: #061008;
+      color: var(--text);
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 18px;
+      padding: 15px 18px;
+      color: #021007;
+      font-weight: 950;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      background:
+        linear-gradient(90deg, #39ff88, #d7ffe4);
+      box-shadow:
+        0 12px 30px rgba(57,255,136,0.22),
+        inset 0 -2px 0 rgba(0,0,0,0.18);
+      cursor: pointer;
+      transition: transform 0.16s ease, box-shadow 0.16s ease, filter 0.16s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      filter: brightness(1.05);
+      box-shadow: 0 18px 36px rgba(57,255,136,0.28);
+    }
+
+    .btn.secondary {
+      color: var(--text);
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+      box-shadow: none;
+    }
+
+    .hint {
+      color: var(--muted-2);
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+
+    .pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .chip {
+      padding: 8px 10px;
+      border-radius: 999px;
+      background: rgba(57,255,136,0.07);
+      border: 1px solid rgba(57,255,136,0.13);
+      color: rgba(241,255,246,0.76);
+      font-size: 0.72rem;
+      cursor: pointer;
+      transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+      background: rgba(57,255,136,0.14);
+      color: var(--text);
+    }
+
+    .results {
+      min-height: 520px;
+    }
+
+    .empty-state {
+      padding: 42px;
+      min-height: 520px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--text);
+      font-size: 1.3rem;
+    }
+
+    .comparison-header {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px;
+      align-items: center;
+      padding: 22px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .entity-card {
+      min-width: 0;
+      padding: 18px;
+      border-radius: 22px;
+      background: rgba(0,0,0,0.24);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .entity-kicker {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      color: var(--muted-2);
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 850;
+    }
+
+    .entity-card h3 {
+      margin: 0;
+      font-size: 1.35rem;
+      letter-spacing: -0.04em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .entity-card p {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .versus {
+      display: grid;
+      place-items: center;
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: rgba(57,255,136,0.1);
+      border: 1px solid rgba(57,255,136,0.22);
+      color: var(--green);
+      font-weight: 950;
+      box-shadow: 0 0 28px rgba(57,255,136,0.14);
+    }
+
+    .main-score-grid {
+      display: grid;
+      grid-template-columns: 250px minmax(0,1fr);
+      gap: 20px;
+      padding: 22px;
+    }
+
+    .score-orb-card {
+      border-radius: 26px;
+      padding: 22px;
+      border: 1px solid rgba(57,255,136,0.14);
+      background:
+        radial-gradient(circle at center, rgba(57,255,136,0.14), transparent 60%),
+        rgba(0,0,0,0.21);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      min-height: 265px;
+    }
+
+    .score-orb {
+      width: 156px;
+      height: 156px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      position: relative;
+      background:
+        conic-gradient(var(--green) calc(var(--fit-score) * 1%), rgba(255,255,255,0.08) 0);
+      box-shadow:
+        0 0 44px rgba(57,255,136,0.2),
+        inset 0 0 36px rgba(0,0,0,0.55);
+    }
+
+    .score-orb::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      background: #061008;
+      border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .score-orb strong {
+      position: relative;
+      color: var(--green);
+      font-size: 3rem;
+      letter-spacing: -0.08em;
+      text-shadow: 0 0 20px rgba(57,255,136,0.45);
+    }
+
+    .score-label {
+      margin-top: 16px;
+    }
+
+    .score-label strong {
+      display: block;
+      font-size: 0.98rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .score-label span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
+    .verdict-card {
+      border-radius: 26px;
+      padding: 22px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.22);
+    }
+
+    .verdict-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      color: var(--green);
+      background: rgba(57,255,136,0.08);
+      border: 1px solid rgba(57,255,136,0.15);
+      font-size: 0.7rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .verdict-card h3 {
+      margin: 16px 0 8px;
+      font-size: clamp(1.55rem, 3vw, 2.4rem);
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .verdict-card p {
+      color: var(--muted);
+      line-height: 1.62;
+      margin: 0;
+    }
+
+    .trait-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      padding: 0 22px 22px;
+    }
+
+    .trait-card {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid rgba(255,255,255,0.075);
+    }
+
+    .trait-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .trait-top strong {
+      font-size: 0.9rem;
+    }
+
+    .trait-top span {
+      color: var(--muted-2);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* ACTIVE PULSE METERS */
+
+    .pulse-meter {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .pulse-track {
+      height: 12px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(57,255,136,0.16);
+      overflow: hidden;
+      box-shadow: inset 0 0 18px rgba(0,0,0,0.65);
+    }
+
+    .pulse-fill {
+      width: var(--score);
+      height: 100%;
+      border-radius: 999px;
+      position: relative;
+      background: linear-gradient(
+        90deg,
+        rgba(57,255,136,0.18),
+        rgba(57,255,136,0.88),
+        rgba(210,255,226,1)
+      );
+      box-shadow:
+        0 0 14px rgba(57,255,136,0.6),
+        0 0 30px rgba(57,255,136,0.28);
+      animation: pulseBreath 1.9s ease-in-out infinite;
+      min-width: 8px;
+    }
+
+    .pulse-fill span {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255,255,255,0.58),
+        transparent
+      );
+      transform: translateX(-100%);
+      animation: pulseSweep 2.4s ease-in-out infinite;
+    }
+
+    .pulse-value {
+      font-size: 0.78rem;
+      min-width: 38px;
+      text-align: right;
+      font-weight: 900;
+      color: var(--green);
+      text-shadow: 0 0 12px rgba(57,255,136,0.55);
+    }
+
+    @keyframes pulseBreath {
+      0%, 100% {
+        filter: brightness(0.9);
+        box-shadow:
+          0 0 10px rgba(57,255,136,0.42),
+          0 0 24px rgba(57,255,136,0.2);
+      }
+      50% {
+        filter: brightness(1.25);
+        box-shadow:
+          0 0 18px rgba(57,255,136,0.82),
+          0 0 42px rgba(57,255,136,0.36);
+      }
+    }
+
+    @keyframes pulseSweep {
+      0% { transform: translateX(-100%); }
+      55% { transform: translateX(100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    /* FIT RADAR */
+
+    .fit-radar-card {
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(57,255,136,0.14), transparent 48%),
+        linear-gradient(180deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+      border: 1px solid rgba(57,255,136,0.18);
+      box-shadow:
+        inset 0 0 24px rgba(57,255,136,0.035),
+        0 18px 48px rgba(0,0,0,0.32);
+    }
+
+    .radar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 0.7rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.52);
+    }
+
+    .radar-header strong {
+      color: var(--green);
+      font-size: 0.66rem;
+      text-shadow: 0 0 12px rgba(57,255,136,0.55);
+    }
+
+    .fit-radar {
+      max-width: 218px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    .fit-radar svg {
+      width: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .fit-radar line,
+    .radar-grid {
+      fill: none;
+      stroke: rgba(255,255,255,0.12);
+      stroke-width: 1;
+    }
+
+    .radar-grid.small {
+      stroke: rgba(57,255,136,0.18);
+    }
+
+    .radar-shape {
+      fill: rgba(57,255,136,0.22);
+      stroke: var(--green);
+      stroke-width: 2.5;
+      filter: drop-shadow(0 0 14px rgba(57,255,136,0.65));
+      animation: radarMorph 4s ease-in-out infinite;
+      transform-origin: center;
+    }
+
+    .radar-pulse {
+      fill: none;
+      stroke: rgba(57,255,136,0.45);
+      stroke-width: 2;
+      animation: radarPulse 2.2s ease-out infinite;
+      transform-origin: center;
+    }
+
+    .radar-dot {
+      fill: var(--green);
+      filter: drop-shadow(0 0 10px rgba(57,255,136,0.85));
+    }
+
+    .radar-labels {
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      text-align: center;
+      font-size: 0.63rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: rgba(255,255,255,0.55);
+    }
+
+    @keyframes radarPulse {
+      0% { r: 24; opacity: 0.8; }
+      100% { r: 91; opacity: 0; }
+    }
+
+    @keyframes radarMorph {
+      0%, 100% { transform: scale(0.985); opacity: 0.9; }
+      50% { transform: scale(1.028); opacity: 1; }
+    }
+
+    .insight-strip {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 0 22px 22px;
+    }
+
+    .insight {
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(57,255,136,0.055);
+      border: 1px solid rgba(57,255,136,0.12);
+    }
+
+    .insight span {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--green);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      font-weight: 900;
+    }
+
+    .insight p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+
+    .flag-england {
+      width: 19px;
+      height: 13px;
+      display: inline-block;
+      border-radius: 2px;
+      background:
+        linear-gradient(to right, transparent 0 42%, #c8102e 42% 58%, transparent 58%),
+        linear-gradient(to bottom, transparent 0 36%, #c8102e 36% 64%, transparent 64%),
+        #fff;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.2);
+      flex: 0 0 auto;
+    }
+
+    .footer {
+      margin-top: 30px;
+      padding: 22px;
+      border-radius: 28px;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--muted-2);
+      background: rgba(255,255,255,0.035);
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      font-size: 0.78rem;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .engine-shell,
+      .main-score-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-terminal {
+        min-height: auto;
+      }
+
+      .comparison-header {
+        grid-template-columns: 1fr;
+      }
+
+      .versus {
+        margin: 0 auto;
+      }
+
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        width: min(100% - 22px, 1220px);
+        padding-top: 12px;
+      }
+
+      .nav {
+        border-radius: 22px;
+      }
+
+      .hero {
+        padding-top: 26px;
+      }
+
+      .hero-copy,
+      .panel-pad,
+      .empty-state {
+        padding: 22px;
+      }
+
+      .hero-stats,
+      .trait-grid,
+      .insight-strip {
+        grid-template-columns: 1fr;
+      }
+
+      .section-title {
+        align-items: start;
+        flex-direction: column;
+      }
+
+      .logo-word strong {
+        font-size: 0.98rem;
+      }
+
+      .nav-pill {
+        padding: 9px 10px;
+        font-size: 0.66rem;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="page">
+    <nav class="nav">
+      <a class="calibre-logo" href="#">
+        <div class="logo-mark" aria-hidden="true"></div>
+        <div class="logo-word">
+          <strong>CALIBRE</strong>
+          <span>System Fit Engine</span>
+        </div>
+      </a>
+
+      <div class="nav-links">
+        <a href="#engine">Engine</a>
+        <a href="#method">Method</a>
+        <a href="#database">Database</a>
+      </div>
+
+      <div class="nav-pill">
+        <span class="nav-dot"></span>
+        Live Fit Scan
+      </div>
+    </nav>
+
+    <header class="hero">
+      <section class="hero-copy">
+        <div class="eyebrow">
+          <span class="nav-dot"></span>
+          Player x Team Compatibility
+        </div>
+
+        <h1>Find the player’s <span>true system fit.</span></h1>
+
+        <p>
+          Calibre compares player profiles against tactical team identities:
+          pressing, tempo, chance creation, carrying, defensive intensity and role suitability.
+          The output is a clean fit score, animated pulse profile and compact radar signature.
+        </p>
+
+        <div class="hero-stats">
+          <div class="mini-stat">
+            <strong id="playerCount">0</strong>
+            <span>Players</span>
+          </div>
+          <div class="mini-stat">
+            <strong id="teamCount">0</strong>
+            <span>Teams</span>
+          </div>
+          <div class="mini-stat">
+            <strong>6D</strong>
+            <span>Fit Model</span>
+          </div>
+        </div>
+      </section>
+
+      <aside class="hero-terminal">
+        <div class="terminal-top">
+          <span>Calibre Engine</span>
+          <strong>ACTIVE</strong>
+        </div>
+
+        <div class="scanner">
+          <div class="scanner-core">
+            <span id="scannerScore">--</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="terminal-row">
+            <span>Current Player</span>
+            <strong id="terminalPlayer">Awaiting scan</strong>
+          </div>
+          <div class="terminal-row">
+            <span>Current Team</span>
+            <strong id="terminalTeam">Awaiting scan</strong>
+          </div>
+          <div class="terminal-row">
+            <span>Verdict</span>
+            <strong id="terminalVerdict">Pending</strong>
+          </div>
+        </div>
+      </aside>
+    </header>
+
+    <main id="engine" class="section">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Build the matchup</div>
+          <h2>System Fit Engine</h2>
+        </div>
+        <p>
+          Choose a player and a team. The engine will calculate the fit score, pulse meters,
+          radar shape and tactical verdict without needing player photos.
+        </p>
+      </div>
+
+      <div class="engine-shell">
+        <aside class="panel">
+          <div class="panel-pad">
+            <div class="control-stack">
+              <div class="field">
+                <label for="playerSearch">Search player</label>
+                <input id="playerSearch" type="search" placeholder="Type Pedri, Jude, Saka..." autocomplete="off" />
+              </div>
+
+              <div class="field">
+                <label for="playerSelect">Player</label>
+                <select id="playerSelect"></select>
+              </div>
+
+              <div class="field">
+                <label for="teamSearch">Search team</label>
+                <input id="teamSearch" type="search" placeholder="Type Arsenal, Barcelona..." autocomplete="off" />
+              </div>
+
+              <div class="field">
+                <label for="teamSelect">Team</label>
+                <select id="teamSelect"></select>
+              </div>
+
+              <button class="btn" id="compareBtn">Run Fit Scan</button>
+              <button class="btn secondary" id="resetBtn">Reset</button>
+
+              <div class="hint">
+                Tip: these chips quickly load high-interest matchups. You can replace or expand the database in the JavaScript section at the bottom.
+              </div>
+
+              <div class="pill-list">
+                <button class="chip" data-player="Pedri" data-team="Manchester City">Pedri x City</button>
+                <button class="chip" data-player="Jude Bellingham" data-team="Real Madrid">Jude x Madrid</button>
+                <button class="chip" data-player="Bukayo Saka" data-team="Arsenal">Saka x Arsenal</button>
+                <button class="chip" data-player="Florian Wirtz" data-team="Bayer Leverkusen">Wirtz x Leverkusen</button>
+                <button class="chip" data-player="Victor Osimhen" data-team="Chelsea">Osimhen x Chelsea</button>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <section class="panel results" id="resultsPanel">
+          <div class="empty-state">
+            <div>
+              <strong>No scan loaded yet.</strong>
+              Select a player and a team, then run the fit scan.
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <section id="method" class="section">
+      <div class="section-title">
+        <div>
+          <div class="eyebrow">Method</div>
+          <h2>How Calibre reads fit</h2>
+        </div>
+        <p>
+          The model compares player traits with team demands. Perfect alignment scores high.
+          A mismatch does not mean the player is bad; it means the tactical environment may not unlock him.
+        </p>
+      </div>
+
+      <div class="insight-strip">
+        <div class="insight">
+          <span>1. Traits</span>
+          <p>Each player carries six simple tactical traits: press, tempo, chance, carry, defend and role.</p>
+        </div>
+        <div class="insight">
+          <span>2. Demands</span>
+          <p>Each team has six system demands based on how that team wants to play.</p>
+        </div>
+        <div class="insight">
+          <span>3. Verdict</span>
+          <p>The fit score translates into a football-language verdict that is easier to use than raw numbers.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="database" class="footer">
+      <span>Calibre System Fit Engine — GitHub-ready standalone HTML.</span>
+      <span>Replace the sample database with your full database when ready.</span>
+    </section>
+  </div>
+
+  <script>
+    /*
+      CALIBRE DATABASE
+      ----------------
+      You can safely expand these arrays.
+
+      Each player/team uses the same six dimensions:
+      press, tempo, chance, carry, defend, role
+
+      Scores are out of 100.
+    */
+
+    const players = [
+      {
+        name: "Pedri",
+        club: "Barcelona",
+        nation: "Spain",
+        archetype: "Puppeteer / Advanced Playmaker",
+        traits: { press: 74, tempo: 96, chance: 88, carry: 83, defend: 68, role: 94 }
+      },
+      {
+        name: "Jude Bellingham",
+        club: "Real Madrid",
+        nation: "England",
+        archetype: "Box Crasher / Transition Monster",
+        traits: { press: 84, tempo: 82, chance: 86, carry: 91, defend: 78, role: 92 }
+      },
+      {
+        name: "Bukayo Saka",
+        club: "Arsenal",
+        nation: "England",
+        archetype: "Inside Forward / Wide Creator",
+        traits: { press: 82, tempo: 84, chance: 89, carry: 88, defend: 72, role: 91 }
+      },
+      {
+        name: "Florian Wirtz",
+        club: "Bayer Leverkusen",
+        nation: "Germany",
+        archetype: "Advanced Playmaker / Half-space Creator",
+        traits: { press: 78, tempo: 90, chance: 93, carry: 86, defend: 63, role: 92 }
+      },
+      {
+        name: "Victor Osimhen",
+        club: "Galatasaray",
+        nation: "Nigeria",
+        archetype: "Pressing Striker / Box Threat",
+        traits: { press: 86, tempo: 72, chance: 78, carry: 76, defend: 62, role: 88 }
+      },
+      {
+        name: "Lamine Yamal",
+        club: "Barcelona",
+        nation: "Spain",
+        archetype: "Wide Creator / Inside Forward",
+        traits: { press: 68, tempo: 86, chance: 91, carry: 93, defend: 52, role: 87 }
+      },
+      {
+        name: "Declan Rice",
+        club: "Arsenal",
+        nation: "England",
+        archetype: "Controller / Ball-Winning Midfielder",
+        traits: { press: 86, tempo: 84, chance: 72, carry: 78, defend: 94, role: 91 }
+      },
+      {
+        name: "Erling Haaland",
+        club: "Manchester City",
+        nation: "Norway",
+        archetype: "Poacher / Target Man",
+        traits: { press: 70, tempo: 64, chance: 76, carry: 66, defend: 44, role: 92 }
+      },
+      {
+        name: "Rodri",
+        club: "Manchester City",
+        nation: "Spain",
+        archetype: "Controller / Metronome",
+        traits: { press: 82, tempo: 95, chance: 78, carry: 76, defend: 93, role: 97 }
+      },
+      {
+        name: "Vinicius Junior",
+        club: "Real Madrid",
+        nation: "Brazil",
+        archetype: "Transition Monster / Inside Forward",
+        traits: { press: 74, tempo: 82, chance: 87, carry: 97, defend: 50, role: 90 }
+      },
+      {
+        name: "Martin Odegaard",
+        club: "Arsenal",
+        nation: "Norway",
+        archetype: "Advanced Playmaker / Pressing Creator",
+        traits: { press: 86, tempo: 91, chance: 91, carry: 82, defend: 70, role: 93 }
+      },
+      {
+        name: "Jamal Musiala",
+        club: "Bayern Munich",
+        nation: "Germany",
+        archetype: "Dribbler / Advanced Playmaker",
+        traits: { press: 72, tempo: 86, chance: 88, carry: 96, defend: 54, role: 88 }
+      }
+    ];
+
+    const teams = [
+      {
+        name: "Manchester City",
+        league: "Premier League",
+        country: "England",
+        system: "Positional control, high technical security, territory lock",
+        demands: { press: 78, tempo: 96, chance: 88, carry: 76, defend: 82, role: 95 }
+      },
+      {
+        name: "Arsenal",
+        league: "Premier League",
+        country: "England",
+        system: "High press, controlled aggression, wide isolation and box pressure",
+        demands: { press: 88, tempo: 86, chance: 84, carry: 80, defend: 86, role: 91 }
+      },
+      {
+        name: "Real Madrid",
+        league: "La Liga",
+        country: "Spain",
+        system: "Elite transition power, individual superiority, flexible possession",
+        demands: { press: 76, tempo: 84, chance: 86, carry: 90, defend: 76, role: 90 }
+      },
+      {
+        name: "Barcelona",
+        league: "La Liga",
+        country: "Spain",
+        system: "Positional play, central combinations, technical rhythm",
+        demands: { press: 82, tempo: 94, chance: 88, carry: 82, defend: 76, role: 94 }
+      },
+      {
+        name: "Bayer Leverkusen",
+        league: "Bundesliga",
+        country: "Germany",
+        system: "Rotational possession, half-space overloads, aggressive rest defence",
+        demands: { press: 82, tempo: 89, chance: 90, carry: 84, defend: 78, role: 92 }
+      },
+      {
+        name: "Liverpool",
+        league: "Premier League",
+        country: "England",
+        system: "Vertical pressure, fast territory gain, high emotional tempo",
+        demands: { press: 92, tempo: 82, chance: 84, carry: 82, defend: 84, role: 86 }
+      },
+      {
+        name: "Bayern Munich",
+        league: "Bundesliga",
+        country: "Germany",
+        system: "Dominant territory, direct speed, high technical forwards",
+        demands: { press: 84, tempo: 86, chance: 86, carry: 86, defend: 78, role: 88 }
+      },
+      {
+        name: "Chelsea",
+        league: "Premier League",
+        country: "England",
+        system: "Fast rebuild, athletic profiles, direct chance generation",
+        demands: { press: 82, tempo: 78, chance: 80, carry: 84, defend: 72, role: 80 }
+      },
+      {
+        name: "Inter Milan",
+        league: "Serie A",
+        country: "Italy",
+        system: "Back-three structure, wing-back progression, compact elite spacing",
+        demands: { press: 76, tempo: 82, chance: 82, carry: 78, defend: 88, role: 90 }
+      },
+      {
+        name: "PSG",
+        league: "Ligue 1",
+        country: "France",
+        system: "Explosive attacking talent, high carrying threat, flexible front line",
+        demands: { press: 80, tempo: 84, chance: 88, carry: 90, defend: 74, role: 84 }
+      }
+    ];
+
+    const dimensions = [
+      { key: "press", label: "Press" },
+      { key: "tempo", label: "Tempo" },
+      { key: "chance", label: "Chance" },
+      { key: "carry", label: "Carry" },
+      { key: "defend", label: "Defend" },
+      { key: "role", label: "Role" }
+    ];
+
+    const playerSelect = document.getElementById("playerSelect");
+    const teamSelect = document.getElementById("teamSelect");
+    const playerSearch = document.getElementById("playerSearch");
+    const teamSearch = document.getElementById("teamSearch");
+    const compareBtn = document.getElementById("compareBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const resultsPanel = document.getElementById("resultsPanel");
+
+    const playerCount = document.getElementById("playerCount");
+    const teamCount = document.getElementById("teamCount");
+    const scannerScore = document.getElementById("scannerScore");
+    const terminalPlayer = document.getElementById("terminalPlayer");
+    const terminalTeam = document.getElementById("terminalTeam");
+    const terminalVerdict = document.getElementById("terminalVerdict");
+
+    playerCount.textContent = players.length;
+    teamCount.textContent = teams.length;
+
+    function escapeHTML(value) {
+      return String(value).replace(/[&<>"']/g, function(char) {
+        return ({
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        })[char];
+      });
+    }
+
+    function flagForCountry(country) {
+      if (country === "England") return '<span class="flag-england" title="England"></span>';
+      const map = {
+        Spain: "🇪🇸",
+        Germany: "🇩🇪",
+        Nigeria: "🇳🇬",
+        Norway: "🇳🇴",
+        Brazil: "🇧🇷",
+        Italy: "🇮🇹",
+        France: "🇫🇷"
+      };
+      return map[country] || "🌍";
+    }
+
+    function populateSelect(select, items, searchTerm, type) {
+      const filtered = items.filter(item => {
+        const haystack = [
+          item.name,
+          item.club,
+          item.nation,
+          item.country,
+          item.league,
+          item.archetype,
+          item.system
+        ].filter(Boolean).join(" ").toLowerCase();
+
+        return haystack.includes(searchTerm.toLowerCase().trim());
+      });
+
+      select.innerHTML = filtered.map(item => {
+        const sub = type === "player"
+          ? `${item.club} — ${item.archetype}`
+          : `${item.league} — ${item.system}`;
+
+        return `<option value="${escapeHTML(item.name)}">${escapeHTML(item.name)} · ${escapeHTML(sub)}</option>`;
+      }).join("");
+
+      if (!filtered.length) {
+        select.innerHTML = `<option value="">No matches found</option>`;
+      }
+    }
+
+    function findPlayer(name) {
+      return players.find(player => player.name === name) || players[0];
+    }
+
+    function findTeam(name) {
+      return teams.find(team => team.name === name) || teams[0];
+    }
+
+    function dimensionFit(playerValue, teamValue) {
+      const gap = Math.abs(playerValue - teamValue);
+      return Math.max(0, Math.round(100 - gap));
+    }
+
+    function calculateFit(player, team) {
+      const byDimension = {};
+      let total = 0;
+
+      dimensions.forEach(dim => {
+        const score = dimensionFit(player.traits[dim.key], team.demands[dim.key]);
+        byDimension[dim.key] = score;
+        total += score;
+      });
+
+      const overall = Math.round(total / dimensions.length);
+
+      return {
+        overall,
+        byDimension
+      };
+    }
+
+    function getVerdict(score) {
+      if (score >= 92) {
+        return {
+          tag: "Elite Fit",
+          title: "This is a broadcast-table argument.",
+          text: "The player’s strongest traits match the team’s tactical demands almost perfectly. This is the kind of fit that feels obvious on screen and dangerous on the pitch."
+        };
+      }
+
+      if (score >= 84) {
+        return {
+          tag: "Strong Fit",
+          title: "High upside with natural tactical alignment.",
+          text: "The player fits the system well. There may be one or two adaptation points, but the overall profile should translate quickly into the team’s football."
+        };
+      }
+
+      if (score >= 74) {
+        return {
+          tag: "Workable Fit",
+          title: "Good player, but the system needs careful handling.",
+          text: "There is enough compatibility to make it work, but the team would need to protect the player’s weaker zones or adjust the role to unlock the best version."
+        };
+      }
+
+      if (score >= 64) {
+        return {
+          tag: "Risky Fit",
+          title: "The player may need a different environment.",
+          text: "The profile has quality, but the demands do not naturally align. This could become a transfer that looks better on paper than in the actual system."
+        };
+      }
+
+      return {
+        tag: "Poor Fit",
+        title: "Talent mismatch warning.",
+        text: "This system does not appear to suit the player’s current tactical strengths. A move like this would need a very specific coaching plan."
+      };
+    }
+
+    function radarPoint(value, index, center = 110, maxRadius = 84) {
+      const angle = (-90 + index * 60) * Math.PI / 180;
+      const radius = (value / 100) * maxRadius;
+      const x = center + radius * Math.cos(angle);
+      const y = center + radius * Math.sin(angle);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    }
+
+    function buildRadarPoints(player, team) {
+      return dimensions.map((dim, index) => {
+        const playerValue = player.traits[dim.key];
+        const teamValue = team.demands[dim.key];
+        const blended = Math.round((playerValue * 0.58) + (teamValue * 0.42));
+        return radarPoint(blended, index);
+      }).join(" ");
+    }
+
+    function buildRadarDots(player, team) {
+      return dimensions.map((dim, index) => {
+        const playerValue = player.traits[dim.key];
+        const teamValue = team.demands[dim.key];
+        const blended = Math.round((playerValue * 0.58) + (teamValue * 0.42));
+        const [x, y] = radarPoint(blended, index).split(",");
+        return `<circle class="radar-dot" cx="${x}" cy="${y}" r="3.4"></circle>`;
+      }).join("");
+    }
+
+    function traitCard(dim, player, team, fitScore) {
+      const playerValue = player.traits[dim.key];
+      const teamValue = team.demands[dim.key];
+
+      return `
+        <article class="trait-card">
+          <div class="trait-top">
+            <strong>${escapeHTML(dim.label)}</strong>
+            <span>P${playerValue} / T${teamValue}</span>
+          </div>
+
+          <div class="pulse-meter">
+            <div class="pulse-track">
+              <div class="pulse-fill" style="--score: ${fitScore}%;">
+                <span></span>
+              </div>
+            </div>
+            <div class="pulse-value">${fitScore}%</div>
+          </div>
+        </article>
+      `;
+    }
+
+    function renderResults(player, team) {
+      const fit = calculateFit(player, team);
+      const verdict = getVerdict(fit.overall);
+      const radarPoints = buildRadarPoints(player, team);
+      const radarDots = buildRadarDots(player, team);
+
+      scannerScore.textContent = fit.overall;
+      terminalPlayer.textContent = player.name;
+      terminalTeam.textContent = team.name;
+      terminalVerdict.textContent = verdict.tag;
+
+      resultsPanel.innerHTML = `
+        <div class="comparison-header">
+          <article class="entity-card">
+            <div class="entity-kicker">
+              ${flagForCountry(player.nation)}
+              <span>Player Profile</span>
+            </div>
+            <h3>${escapeHTML(player.name)}</h3>
+            <p>${escapeHTML(player.club)} · ${escapeHTML(player.archetype)}</p>
+          </article>
+
+          <div class="versus">VS</div>
+
+          <article class="entity-card">
+            <div class="entity-kicker">
+              ${flagForCountry(team.country)}
+              <span>Team System</span>
+            </div>
+            <h3>${escapeHTML(team.name)}</h3>
+            <p>${escapeHTML(team.league)} · ${escapeHTML(team.system)}</p>
+          </article>
+        </div>
+
+        <div class="main-score-grid">
+          <aside class="score-orb-card">
+            <div class="score-orb" style="--fit-score: ${fit.overall};">
+              <strong>${fit.overall}</strong>
+            </div>
+
+            <div class="score-label">
+              <strong>Fit Score</strong>
+              <span>${escapeHTML(verdict.tag)} for ${escapeHTML(player.name)} inside ${escapeHTML(team.name)}.</span>
+            </div>
+          </aside>
+
+          <section class="verdict-card">
+            <div class="verdict-tag">
+              <span class="nav-dot"></span>
+              ${escapeHTML(verdict.tag)}
+            </div>
+
+            <h3>${escapeHTML(verdict.title)}</h3>
+            <p>${escapeHTML(verdict.text)}</p>
+
+            <div class="fit-radar-card">
+              <div class="radar-header">
+                <span>Fit Radar</span>
+                <strong>Live Profile</strong>
+              </div>
+
+              <div class="fit-radar">
+                <svg viewBox="0 0 220 220" role="img" aria-label="Animated tactical fit radar">
+                  <polygon class="radar-grid" points="110,22 186.2,66 186.2,154 110,198 33.8,154 33.8,66" />
+                  <polygon class="radar-grid small" points="110,51 161.1,80.5 161.1,139.5 110,169 58.9,139.5 58.9,80.5" />
+
+                  <line x1="110" y1="110" x2="110" y2="22" />
+                  <line x1="110" y1="110" x2="186.2" y2="66" />
+                  <line x1="110" y1="110" x2="186.2" y2="154" />
+                  <line x1="110" y1="110" x2="110" y2="198" />
+                  <line x1="110" y1="110" x2="33.8" y2="154" />
+                  <line x1="110" y1="110" x2="33.8" y2="66" />
+
+                  <polygon class="radar-shape" points="${radarPoints}" />
+                  ${radarDots}
+                  <circle class="radar-pulse" cx="110" cy="110" r="34" />
+                </svg>
+              </div>
+
+              <div class="radar-labels">
+                <span>Press</span>
+                <span>Tempo</span>
+                <span>Chance</span>
+                <span>Carry</span>
+                <span>Defend</span>
+                <span>Role</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="trait-grid">
+          ${dimensions.map(dim => traitCard(dim, player, team, fit.byDimension[dim.key])).join("")}
+        </div>
+
+        <div class="insight-strip">
+          <div class="insight">
+            <span>Best Alignment</span>
+            <p>${escapeHTML(bestDimensionLabel(fit.byDimension))} is the cleanest fit point in this matchup.</p>
+          </div>
+          <div class="insight">
+            <span>Biggest Question</span>
+            <p>${escapeHTML(worstDimensionLabel(fit.byDimension))} is the area the coach would need to manage.</p>
+          </div>
+          <div class="insight">
+            <span>Calibre Read</span>
+            <p>${escapeHTML(shortRead(fit.overall, player.name, team.name))}</p>
+          </div>
+        </div>
+      `;
+    }
+
+    function bestDimensionLabel(scores) {
+      const best = dimensions
+        .map(dim => ({ label: dim.label, score: scores[dim.key] }))
+        .sort((a, b) => b.score - a.score)[0];
+
+      return `${best.label} (${best.score}%)`;
+    }
+
+    function worstDimensionLabel(scores) {
+      const worst = dimensions
+        .map(dim => ({ label: dim.label, score: scores[dim.key] }))
+        .sort((a, b) => a.score - b.score)[0];
+
+      return `${worst.label} (${worst.score}%)`;
+    }
+
+    function shortRead(score, playerName, teamName) {
+      if (score >= 90) return `${playerName} looks made for the ${teamName} environment.`;
+      if (score >= 82) return `${playerName} should translate well with only minor role tuning.`;
+      if (score >= 74) return `${playerName} can work, but the details matter.`;
+      if (score >= 64) return `${teamName} would need a careful usage plan.`;
+      return `This looks like a poor tactical landing spot for ${playerName}.`;
+    }
+
+    function runScan() {
+      const player = findPlayer(playerSelect.value);
+      const team = findTeam(teamSelect.value);
+      renderResults(player, team);
+    }
+
+    function setMatchup(playerName, teamName) {
+      playerSearch.value = "";
+      teamSearch.value = "";
+      populateSelect(playerSelect, players, "", "player");
+      populateSelect(teamSelect, teams, "", "team");
+
+      playerSelect.value = playerName;
+      teamSelect.value = teamName;
+
+      runScan();
+      document.getElementById("engine").scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function resetEngine() {
+      playerSearch.value = "";
+      teamSearch.value = "";
+      populateSelect(playerSelect, players, "", "player");
+      populateSelect(teamSelect, teams, "", "team");
+
+      scannerScore.textContent = "--";
+      terminalPlayer.textContent = "Awaiting scan";
+      terminalTeam.textContent = "Awaiting scan";
+      terminalVerdict.textContent = "Pending";
+
+      resultsPanel.innerHTML = `
+        <div class="empty-state">
+          <div>
+            <strong>No scan loaded yet.</strong>
+            Select a player and a team, then run the fit scan.
+          </div>
+        </div>
+      `;
+    }
+
+    playerSearch.addEventListener("input", function() {
+      populateSelect(playerSelect, players, playerSearch.value, "player");
+    });
+
+    teamSearch.addEventListener("input", function() {
+      populateSelect(teamSelect, teams, teamSearch.value, "team");
+    });
+
+    compareBtn.addEventListener("click", runScan);
+    resetBtn.addEventListener("click", resetEngine);
+
+    document.querySelectorAll(".chip").forEach(chip => {
+      chip.addEventListener("click", function() {
+        setMatchup(chip.dataset.player, chip.dataset.team);
+      });
+    });
+
+    populateSelect(playerSelect, players, "", "player");
+    populateSelect(teamSelect, teams, "", "team");
+
+    /* Auto-load a strong default matchup for first impression. */
+    setMatchup("Pedri", "Manchester City");
+  </script>
+</body>
+</html>

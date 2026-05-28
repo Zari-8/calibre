@@ -15,8 +15,8 @@ const demoScores: ScoreItem[] = [
 ];
 
 export async function GET() {
-  const apiKey = process.env.FOOTBALL_API_KEY;
-  const apiHost = process.env.FOOTBALL_API_HOST || 'v3.football.api-sports.io';
+  const apiKey = process.env.API_FOOTBALL_KEY || process.env.FOOTBALL_API_KEY;
+  const apiHost = process.env.API_FOOTBALL_HOST || process.env.FOOTBALL_API_HOST || 'v3.football.api-sports.io';
 
   if (!apiKey) {
     return NextResponse.json({
@@ -55,7 +55,7 @@ export async function GET() {
     });
 
     return NextResponse.json({
-      mode: 'live',
+      mode: scores.length ? 'live' : 'no-live-fixtures',
       updatedAt: new Date().toISOString(),
       scores: scores.length ? scores : demoScores
     });

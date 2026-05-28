@@ -110,3 +110,10 @@ Recommended priority:
 ## Important
 
 The app contains starter datasets so the product feels alive immediately. Replace or extend the data layer with your chosen football API when ready.
+
+
+## Logo and live score patch
+
+This patch uses the uploaded Calibre logo image at `/public/brand/calibre-logo.png` instead of recreating the logo in CSS.
+
+Live scores remain in demo/no-live mode until `API_FOOTBALL_KEY` is added in Vercel Project Settings → Environment Variables and the app is redeployed. The ticker route is `/api/live-scores` and caches live fixture results for 60 seconds.

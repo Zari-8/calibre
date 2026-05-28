@@ -56,9 +56,12 @@ export default function Nav() {
   return (
     <header className="site-header">
       <div className="topbar container-wide">
-        <Link href="/" className="brand" aria-label="Calibre home">
-          <span className="brand-icon"><span /></span>
-          <span className="brand-word">CALIBR<span>E</span></span>
+        <Link href="/" className="brand brand-image-link" aria-label="Calibre home">
+          <img
+            src="/brand/calibre-logo.png"
+            alt="Calibre"
+            className="brand-logo-img"
+          />
         </Link>
 
         <nav className="main-tabs" aria-label="Main navigation">

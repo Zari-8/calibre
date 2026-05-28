@@ -1,53 +1,56 @@
 import Link from 'next/link';
-import { debates, players, competitions } from '@/lib/data';
-import { PlayerCard } from '@/components/PlayerCard';
-import { Flame, Globe2, Trophy } from 'lucide-react';
+
+const stats = [
+  ['△','186,000','Players Tracked','Across 63 leagues'],
+  ['◎','63','Leagues Live','Full coverage'],
+  ['▱','20','Archetypes','From poacher to controller'],
+  ['◈','9.7M','Fan Votes','Debate data layer']
+];
 
 export default function Home() {
   return (
     <main>
-      <section className="hero container">
-        <div className="eyebrow">Football intelligence for the arguments fans actually fight over</div>
-        <h1>Football arguments are about to get harder to win.</h1>
-        <p className="lead">Calibre is a live football intelligence platform for player comparisons, system fit, GOAT debates, World Cup narratives and the uncomfortable question: who are we wrong about?</p>
-        <div className="row" style={{marginTop:24}}>
-          <Link className="cta" href="/players">Start Comparing</Link>
-          <Link className="cta dark" href="/pricing">Get World Cup Founder Pass</Link>
-        </div>
-      </section>
-
-      <section className="section container grid grid-3">
-        <div className="card glow">
-          <span className="kicker"><Flame size={14}/> Debate Pulse</span>
-          <h2>{debates[0].question}</h2>
-          <p className="muted">{debates[0].verdict}</p>
-          <span className="pill">Heat {debates[0].heat}%</span>
-        </div>
-        <div className="card">
-          <span className="kicker"><Trophy size={14}/> World Cup Board</span>
-          <h2>{competitions[0].signal}</h2>
-          <p className="muted">{competitions[0].verdict}</p>
-          <Link href="/competitions" className="pill">Open board</Link>
-        </div>
-        <div className="card">
-          <span className="kicker"><Globe2 size={14}/> Global Lens</span>
-          <h2>Men, women, Europe, Africa, South America.</h2>
-          <p className="muted">Calibre is built to spot arguments before they become mainstream.</p>
-          <Link href="/talents" className="pill">View talents</Link>
-        </div>
-      </section>
-
-      <section className="section container">
-        <div className="row" style={{justifyContent:'space-between'}}>
-          <div>
-            <span className="kicker">Identity Debate</span>
-            <h2>Pedri vs Jude is not a talent debate. It is a system debate.</h2>
+      <section className="hero-grid">
+        <div className="container-wide hero-inner">
+          <div className="hero-copy">
+            <h1>Rate every footballer on earth<span className="accent">.</span></h1>
+            <p>20 archetypes. 63 leagues. 186,000 players. One universal rating. <span className="accent">Endless debate.</span></p>
+            <div className="stats-row">
+              {stats.map(([icon,num,label,sub]) => (
+                <div className="stat-card" key={label}>
+                  <div className="stat-icon">{icon}</div>
+                  <div><div className="stat-num">{num}</div><div className="stat-label">{label}</div><div className="stat-sub">{sub}</div></div>
+                </div>
+              ))}
+            </div>
           </div>
-          <Link href="/players" className="pill">Open comparison engine</Link>
+          <div className="radar-wrap" aria-label="Calibre radar visual">
+            <div className="radar" />
+            <div className="radar-player rp1">VJ</div>
+            <div className="radar-player rp2">KM</div>
+            <div className="radar-player rp3">JB</div>
+            <div className="radar-player rp4">FW</div>
+          </div>
         </div>
-        <div className="grid grid-2">
-          <PlayerCard player={players[0]} />
-          <PlayerCard player={players[1]} />
+
+        <div className="container-wide panel-grid">
+          <div className="panel">
+            <div className="panel-head">◎ Debate of the Day <Link href="/debates"><span>Open debate</span></Link></div>
+            <div className="debate-card">
+              <div className="debate-side"><div className="avatar">P<small>FC</small></div><div><h3>Pedri</h3><p className="muted">Controller · Barcelona</p><div className="score">93.2</div><small>Calibre rating</small></div></div>
+              <div className="vs">VS</div>
+              <div className="debate-side"><div><h3>Jude Bellingham</h3><p className="muted">Box Crasher · Real Madrid</p><div className="score">94.0</div><small>Calibre rating</small></div><div className="avatar">JB<small>RM</small></div></div>
+            </div>
+            <div className="vote-bar"><span /></div>
+          </div>
+
+          <div className="panel">
+            <div className="panel-head">◎ Leagues <Link href="/competitions"><span>View all</span></Link></div>
+            <div className="league-grid">
+              {['PL','LL','BL','SA','L1'].map((l,i)=><div className="league-card" key={l}><div className="league-icon">{l}</div><strong>{['Premier League','LaLiga','Bundesliga','Serie A','Ligue 1'][i]}</strong><span>{['ENG','ESP','GER','ITA','FRA'][i]}</span></div>)}
+            </div>
+            <p className="muted" style={{padding:'0 28px 24px',fontSize:12}}>Drop real league SVGs into images/leagues/. The page already has premium fallback marks, so GitHub will not break if an asset is missing.</p>
+          </div>
         </div>
       </section>
     </main>

@@ -88,6 +88,25 @@ Create:
 - Webhook URL: `https://calibrefootball.com/api/webhooks/lemonsqueezy`
 - Event: `order_created`
 
+## API-first image system
+
+This patch makes API images the first choice. Player cards read `photoUrl` and `teamLogoUrl` from the data layer. These can come from API-Football/Sportmonks and later be cached in Supabase. Local images are no longer the first choice; they are only emergency fallbacks.
+
+Optional endpoint included:
+
+```bash
+/api/player-image?id=pedri
+```
+
+If `API_FOOTBALL_KEY` is present in Vercel, the route can query API-Football and cache the result for 7 days. If no key is present, it returns the stored API media URL from `lib/data.ts`.
+
+Recommended priority:
+
+1. API image URL from football data provider
+2. Cached/stored API image URL in Supabase
+3. Neutral Calibre fallback avatar
+4. Never use ugly/outdated local images as first choice
+
 ## Important
 
 The app contains starter datasets so the product feels alive immediately. Replace or extend the data layer with your chosen football API when ready.

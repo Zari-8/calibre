@@ -14,18 +14,32 @@ export type Player = {
   box: number;
   transition: number;
   verdict: string;
+  apiProvider?: 'api-football' | 'sportmonks' | 'manual';
+  apiPlayerId?: number;
+  apiTeamId?: number;
+  photoUrl?: string;
+  teamLogoUrl?: string;
+  imageStatus?: 'api' | 'cached-api' | 'fallback';
 };
 
+// Image policy for Calibre V7:
+// 1. API image URLs first — fresh player photos and team logos from the data provider.
+// 2. Cached/stored API URLs second — later Supabase should hold these to reduce API calls.
+// 3. Local/static fallback only if API data is missing.
+// 4. Initials/archetype icon if no image is available.
+//
+// The URLs below are API-provider media URLs, not old local images. They are safe to replace
+// from Supabase once API-Football/Sportmonks syncing is connected.
 export const players: Player[] = [
-  { id:'pedri', name:'Pedri', club:'Barcelona', nation:'Spain', age:23, role:'Interior / Controller', archetype:'Puppeteer', icon:'🧵', control:96, impact:78, creation:91, pressing:73, box:58, transition:76, verdict:'Pedri does his damage before the highlight. He protects the system, cleans the rhythm, and makes chaos look unnecessary.' },
-  { id:'bellingham', name:'Jude Bellingham', club:'Real Madrid', nation:'England', age:22, role:'Box-crashing 8/10', archetype:'Meteor', icon:'☄️', control:80, impact:95, creation:83, pressing:86, box:94, transition:90, verdict:'Jude attacks the game. He turns pressure into arrivals, and arrivals into scorelines.' },
-  { id:'vini', name:'Vinícius Jr', club:'Real Madrid', nation:'Brazil', age:25, role:'Left-sided chaos winger', archetype:'Dagger', icon:'🗡️', control:66, impact:94, creation:87, pressing:72, box:84, transition:96, verdict:'Vini breaks structure. He does not just beat his man; he makes the whole defensive plan start lying.' },
-  { id:'mbappe', name:'Kylian Mbappé', club:'Real Madrid', nation:'France', age:27, role:'Elite space punisher', archetype:'Fox', icon:'🦊', control:63, impact:97, creation:79, pressing:61, box:95, transition:98, verdict:'Mbappé punishes space. The danger is not always in the dribble. Sometimes it is in the second you lose body position.' },
-  { id:'yamal', name:'Lamine Yamal', club:'Barcelona', nation:'Spain', age:18, role:'Wide creator', archetype:'Paintbrush', icon:'🎨', control:84, impact:89, creation:95, pressing:70, box:76, transition:88, verdict:'Yamal is already bending defensive choices. The pass, the pause, the shot threat — defenders are guessing before he moves.' },
-  { id:'wirtz', name:'Florian Wirtz', club:'Bayer Leverkusen', nation:'Germany', age:23, role:'Advanced playmaker', archetype:'Magic Wand', icon:'🪄', control:88, impact:88, creation:93, pressing:78, box:79, transition:86, verdict:'Wirtz connects imagination to execution. He is not just creative; he makes the final third feel pre-solved.' },
-  { id:'bonmati', name:'Aitana Bonmatí', club:'Barcelona Femeni', nation:'Spain', age:28, role:'Controller / creator', archetype:'Puppeteer', icon:'🧵', control:97, impact:86, creation:95, pressing:82, box:72, transition:80, verdict:'Aitana is control with incision. She does not dominate by volume alone; she changes the angle of the game.' },
-  { id:'caicedo', name:'Linda Caicedo', club:'Real Madrid Femenino', nation:'Colombia', age:21, role:'Inside forward', archetype:'Dagger', icon:'🗡️', control:74, impact:90, creation:85, pressing:76, box:84, transition:92, verdict:'Linda carries threat like a live wire. Give her a broken defensive shape and she turns it into panic.' },
-  { id:'osimhen', name:'Victor Osimhen', club:'Galatasaray', nation:'Nigeria', age:27, role:'Vertical striker', archetype:'Lighthouse', icon:'🔦', control:55, impact:91, creation:62, pressing:82, box:96, transition:88, verdict:'Osimhen changes how a back line breathes. Even when he is not scoring, defenders are managing fear.' }
+  { id:'pedri', name:'Pedri', club:'Barcelona', nation:'Spain', age:23, role:'Interior / Controller', archetype:'Puppeteer', icon:'🧵', control:96, impact:78, creation:91, pressing:73, box:58, transition:76, apiProvider:'api-football', apiPlayerId:129718, apiTeamId:529, photoUrl:'https://media.api-sports.io/football/players/129718.png', teamLogoUrl:'https://media.api-sports.io/football/teams/529.png', imageStatus:'api', verdict:'Pedri does his damage before the highlight. He protects the system, cleans the rhythm, and makes chaos look unnecessary.' },
+  { id:'bellingham', name:'Jude Bellingham', club:'Real Madrid', nation:'England', age:22, role:'Box-crashing 8/10', archetype:'Meteor', icon:'☄️', control:80, impact:95, creation:83, pressing:86, box:94, transition:90, apiProvider:'api-football', apiPlayerId:762, apiTeamId:541, photoUrl:'https://media.api-sports.io/football/players/762.png', teamLogoUrl:'https://media.api-sports.io/football/teams/541.png', imageStatus:'api', verdict:'Jude attacks the game. He turns pressure into arrivals, and arrivals into scorelines.' },
+  { id:'vini', name:'Vinícius Jr', club:'Real Madrid', nation:'Brazil', age:25, role:'Left-sided chaos winger', archetype:'Dagger', icon:'🗡️', control:66, impact:94, creation:87, pressing:72, box:84, transition:96, apiProvider:'api-football', apiPlayerId:762, apiTeamId:541, photoUrl:'https://media.api-sports.io/football/players/762.png', teamLogoUrl:'https://media.api-sports.io/football/teams/541.png', imageStatus:'api', verdict:'Vini breaks structure. He does not just beat his man; he makes the whole defensive plan start lying.' },
+  { id:'mbappe', name:'Kylian Mbappé', club:'Real Madrid', nation:'France', age:27, role:'Elite space punisher', archetype:'Fox', icon:'🦊', control:63, impact:97, creation:79, pressing:61, box:95, transition:98, apiProvider:'api-football', apiTeamId:541, photoUrl:'https://media.api-sports.io/football/players/278.png', teamLogoUrl:'https://media.api-sports.io/football/teams/541.png', imageStatus:'api', verdict:'Mbappé punishes space. The danger is not always in the dribble. Sometimes it is in the second you lose body position.' },
+  { id:'yamal', name:'Lamine Yamal', club:'Barcelona', nation:'Spain', age:18, role:'Wide creator', archetype:'Paintbrush', icon:'🎨', control:84, impact:89, creation:95, pressing:70, box:76, transition:88, apiProvider:'api-football', apiTeamId:529, photoUrl:'https://media.api-sports.io/football/players/328094.png', teamLogoUrl:'https://media.api-sports.io/football/teams/529.png', imageStatus:'api', verdict:'Yamal is already bending defensive choices. The pass, the pause, the shot threat — defenders are guessing before he moves.' },
+  { id:'wirtz', name:'Florian Wirtz', club:'Bayer Leverkusen', nation:'Germany', age:23, role:'Advanced playmaker', archetype:'Magic Wand', icon:'🪄', control:88, impact:88, creation:93, pressing:78, box:79, transition:86, apiProvider:'api-football', apiTeamId:168, photoUrl:'https://media.api-sports.io/football/players/41635.png', teamLogoUrl:'https://media.api-sports.io/football/teams/168.png', imageStatus:'api', verdict:'Wirtz connects imagination to execution. He is not just creative; he makes the final third feel pre-solved.' },
+  { id:'bonmati', name:'Aitana Bonmatí', club:'Barcelona Femeni', nation:'Spain', age:28, role:'Controller / creator', archetype:'Puppeteer', icon:'🧵', control:97, impact:86, creation:95, pressing:82, box:72, transition:80, apiProvider:'manual', imageStatus:'fallback', verdict:'Aitana is control with incision. She does not dominate by volume alone; she changes the angle of the game.' },
+  { id:'caicedo', name:'Linda Caicedo', club:'Real Madrid Femenino', nation:'Colombia', age:21, role:'Inside forward', archetype:'Dagger', icon:'🗡️', control:74, impact:90, creation:85, pressing:76, box:84, transition:92, apiProvider:'manual', imageStatus:'fallback', verdict:'Linda carries threat like a live wire. Give her a broken defensive shape and she turns it into panic.' },
+  { id:'osimhen', name:'Victor Osimhen', club:'Galatasaray', nation:'Nigeria', age:27, role:'Vertical striker', archetype:'Lighthouse', icon:'🔦', control:55, impact:91, creation:62, pressing:82, box:96, transition:88, apiProvider:'api-football', photoUrl:'https://media.api-sports.io/football/players/1100.png', imageStatus:'api', verdict:'Osimhen changes how a back line breathes. Even when he is not scoring, defenders are managing fear.' }
 ];
 
 export const debates = [

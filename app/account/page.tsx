@@ -1,4 +1,4 @@
-import Link from 'next/link';
+ßimport Link from 'next/link';
 
 type AccountPageProps = {
   searchParams?: Promise<{ upgraded?: string }>;

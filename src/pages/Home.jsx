@@ -12,7 +12,23 @@ function TrendLine() {
 }
 
 function HexRadar() {
-  return <div className="hex-radar"><i /><i /><i /><b /></div>;
+  const axes = [
+    [60, 8], [105, 34], [105, 86], [60, 112], [15, 86], [15, 34],
+  ];
+  const inner = [[60, 28], [88, 44], [88, 76], [60, 92], [32, 76], [32, 44]];
+  const score = [[60, 22], [92, 48], [84, 79], [60, 88], [28, 78], [35, 42]];
+  const pts = (arr) => arr.map(([x, y]) => `${x},${y}`).join(' ');
+
+  return (
+    <svg className="hex-radar" viewBox="0 0 120 120" role="img" aria-label="System fit radar">
+      <polygon className="radar-grid outer" points={pts(axes)} />
+      <polygon className="radar-grid inner" points={pts(inner)} />
+      {axes.map(([x, y], index) => <line key={index} className="radar-axis" x1="60" y1="60" x2={x} y2={y} />)}
+      <polygon className="radar-fill" points={pts(score)} />
+      <polygon className="radar-stroke" points={pts(score)} />
+      <circle className="radar-core" cx="60" cy="60" r="3" />
+    </svg>
+  );
 }
 
 export default function Home() {

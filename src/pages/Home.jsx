@@ -1,31 +1,29 @@
 import { useState } from 'react';
-import { ArrowRight, Flame, Star, Crown, Users } from 'lucide-react';
+import { ArrowRight, Zap, Crown, Users, Target, Star, MessageSquare, GaugeCircle, TrendingUp, BarChart2 } from 'lucide-react';
 import BattleHero from '../components/BattleHero.jsx';
-import Panel from '../components/Panel.jsx';
-import Meter from '../components/Meter.jsx';
-import { players, rateBattles } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
-import { useCompetitions } from '../hooks/useCompetitions.js';
+import { players } from '../data/calibreData.js';
 
 /* ── Sparkline ── */
-function TrendLine() {
+function Spark() {
+  const pts = ['0,28','18,24','32,16','48,18','62,10','80,8','100,3'];
   return (
     <svg className="spark" viewBox="0 0 100 32" aria-hidden="true">
-      <polyline points="0,28 18,24 32,16 48,18 62,10 80,8 100,3" />
+      <polyline points={pts.join(' ')} />
     </svg>
   );
 }
 
-/* ── Hex radar (System Fit) ── */
-function HexRadar() {
+/* ── Hex radar ── */
+function HexRadar({ small }) {
   const axes  = [[60,8],[105,34],[105,86],[60,112],[15,86],[15,34]];
-  const inner = [[60,28],[88,44],[88,76],[60,92],[32,76],[32,44]];
   const score = [[60,22],[92,48],[84,79],[60,88],[28,78],[35,42]];
   const pts   = arr => arr.map(([x,y]) => `${x},${y}`).join(' ');
+  const cls   = small ? 'hex-radar' : 'archetype-radar';
   return (
-    <svg className="hex-radar" viewBox="0 0 120 120" role="img" aria-label="System fit radar">
+    <svg className={cls} viewBox="0 0 120 120">
       <polygon className="radar-grid outer" points={pts(axes)} />
-      <polygon className="radar-grid inner" points={pts(inner)} />
+      <polygon className="radar-grid inner" points={pts([[60,28],[88,44],[88,76],[60,92],[32,76],[32,44]])} />
       {axes.map(([x,y],i) => <line key={i} className="radar-axis" x1="60" y1="60" x2={x} y2={y} />)}
       <polygon className="radar-fill"   points={pts(score)} />
       <polygon className="radar-stroke" points={pts(score)} />
@@ -34,298 +32,274 @@ function HexRadar() {
   );
 }
 
-/* ── Archetype radar ── */
-function ArchetypeRadar() {
-  const axes  = [[60,8],[105,34],[105,86],[60,112],[15,86],[15,34]];
-  const score = [[60,18],[96,42],[90,82],[60,96],[24,80],[30,38]];
-  const pts   = arr => arr.map(([x,y]) => `${x},${y}`).join(' ');
-  return (
-    <svg className="archetype-radar" viewBox="0 0 120 120" role="img" aria-label="Archetype radar">
-      <polygon className="radar-grid outer" points={pts(axes)} />
-      {axes.map(([x,y],i) => <line key={i} className="radar-axis" x1="60" y1="60" x2={x} y2={y} />)}
-      <polygon className="radar-fill"   points={pts(score)} />
-      <polygon className="radar-stroke" points={pts(score)} />
-    </svg>
-  );
-}
-
 /* ── Trending data ── */
 const TRENDING = [
-  { label:'Mbappé vs Haaland', votes:'24.7K', left:'/assets/players/kylian-mbappe.jpg',  right:'/assets/players/jude-bellingham.jpg' },
-  { label:'Messi vs Ronaldo',  votes:'18.3K', left:'/assets/players/pedri.jpg',           right:'/assets/players/vinicius-junior.jpg' },
-  { label:'Haaland vs Kane',   votes:'15.1K', left:'/assets/players/florian-wirtz.jpg',   right:'/assets/players/lamine-yamal.jpg' },
+  { rank:1, label:"Mbappé vs Haaland", votes:"24.7K", l:'/assets/players/kylian-mbappe.jpg',  r:'/assets/players/jude-bellingham.jpg' },
+  { rank:2, label:"Messi vs Ronaldo",  votes:"18.3K", l:'/assets/players/pedri.jpg',           r:'/assets/players/vinicius-junior.jpg' },
+  { rank:3, label:"Bellingham vs Pedri",votes:"15.1K",l:'/assets/players/jude-bellingham.jpg', r:'/assets/players/pedri.jpg' },
+  { rank:4, label:"Vinícius Jr. vs Saka",votes:"12.6K",l:'/assets/players/vinicius-junior.jpg',r:'/assets/players/lamine-yamal.jpg' },
+  { rank:5, label:"Rodri vs Rice",     votes:"10.8K", l:'/assets/players/vitinha.jpg',          r:'/assets/players/florian-wirtz.jpg' },
 ];
 
-/* ── Form badge ── */
-function FormBadge({ r }) {
-  const bg = r === 'W' ? '#15c45a' : r === 'D' ? '#c9b800' : '#e03c3c';
-  return (
-    <span style={{
-      display:'inline-flex', alignItems:'center', justifyContent:'center',
-      width:18, height:18, borderRadius:3, background:bg,
-      color:'#000', fontSize:9, fontWeight:900, marginRight:2,
-    }}>{r}</span>
-  );
-}
-
-/* ── Rising talents ── */
-const RISING = [
-  { name:'Lamine Yamal',  role:'RW', team:'Barcelona',  score:87, delta:'+4' },
-  { name:'Rico Lewis',    role:'DM', team:'Man City',   score:84, delta:'+6' },
-  { name:'João Neves',    role:'CM', team:'Benfica',    score:84, delta:'+6' },
-  { name:'Arda Güler',    role:'AM', team:'Real Madrid',score:82, delta:'+3' },
-  { name:'Kobbie Mainoo', role:'CM', team:'Man Utd',    score:81, delta:'+2' },
+/* ── Category breakdown ── */
+const CAT_BREAKDOWN = [
+  { label:'Control', pct:'28%', side:'left' },
+  { label:'Impact',  pct:'26%', side:'right' },
+  { label:'Creativity', pct:'24%', side:'left' },
+  { label:'Debate', pct:'22%', side:'right' },
 ];
 
-/* ── Live debates ── */
-const LIVE_DEBATES = [
-  { question:'Is Florian Wirtz worth €120M+?',       votes:'7.3k votes', badge:'HOT',  cls:'badge-hot',  img:'/assets/players/florian-wirtz.jpg' },
-  { question:"Who's the best DM in the world?",      votes:'5.1k votes', badge:'LIVE', cls:'badge-live', img:'/assets/players/pedri.jpg' },
-  { question:'Which team has the best youth system?', votes:'3.8k votes', badge:'NEW',  cls:'badge-new',  img:'/assets/players/lamine-yamal.jpg' },
+/* ── Live debate feed ── */
+const FEED = [
+  { user:'@TacticalMind', action:'rated', battle:'Pedri vs Bellingham', score:7, ago:'Just now', img:'/assets/players/pedri.jpg' },
+  { user:'@FootyGuru',    action:'joined', battle:'Haaland vs Mbappé',  score:null, ago:'1m ago',  img:'/assets/players/kylian-mbappe.jpg' },
+  { user:'@MidfieldMaestro', action:'nominated', battle:'Musiala vs Wirtz', score:null, ago:'3m ago', img:'/assets/players/florian-wirtz.jpg' },
+  { user:'@TheStatKing', action:'commented on', battle:'Rice vs Rodri', quote:"Rodri's positional control is unmatched.", score:null, ago:'5m ago', img:'/assets/players/vitinha.jpg' },
+  { user:'@BarcaTalks', action:'rated', battle:'Bellingham vs Pedri', score:8, ago:'7m ago', img:'/assets/players/jude-bellingham.jpg' },
 ];
 
-/* ══════════════════════════════════════════════════════════════ */
 export default function Home() {
-  const [compTab, setCompTab] = useState('Leagues');
-  const { rows: compRows, loading: compLoading, isLive } = useCompetitions();
-
   return (
-    <div className="page home-page">
+    <div className="page" style={{ padding: '0 0 64px' }}>
 
-      {/* ── HERO + RAIL ── */}
-      <section className="hero-grid">
-        <BattleHero />
+      {/* ── RATE BATTLE HERO ── */}
+      <BattleHero />
 
-        <aside className="right-rail">
+      {/* ── PAGE BODY: Filter bar + 2-col layout ── */}
+      <div style={{ maxWidth: 1300, margin: '0 auto', padding: '0 20px' }}>
 
-          {/* Trending Battles */}
-          <Panel
-            title="Trending Battles"
-            eyebrow={<><Flame size={13} style={{color:'#ff6b35',marginRight:5,verticalAlign:'middle'}}/>Debate Index</>}
-            action={<span style={{cursor:'pointer'}} onClick={() => navigateTo('/debates')}>View all</span>}
-          >
-            <div className="stack-list">
-              {TRENDING.map(b => (
-                <div className="trend-row" key={b.label} style={{cursor:'pointer'}} onClick={() => navigateTo('/debates')}>
-                  <div className="avatar-pair">
-                    <img src={b.left}  alt="" />
-                    <img src={b.right} alt="" />
+        {/* ── FILTER BAR ── */}
+        <div className="dbp-filters" style={{ marginTop: 12 }}>
+          {['All Categories','Control','Impact','Creativity','Debate'].map(f => (
+            <button key={f} type="button" className={`dbp-filter-btn${f === 'All Categories' ? ' active' : ''}`}>
+              {f === 'Control'    && <Target size={12} />}
+              {f === 'Impact'     && <Zap size={12} />}
+              {f === 'Creativity' && <Star size={12} />}
+              {f === 'Debate'     && <MessageSquare size={12} />}
+              {f}
+            </button>
+          ))}
+          <select className="dbp-sort-select">
+            <option>Sort by: Trending</option>
+            <option>Most Votes</option>
+            <option>Newest</option>
+          </select>
+        </div>
+
+        {/* ── 2-COL: MAIN LEFT + RIGHT SIDEBAR ── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 12, marginTop: 12 }}>
+
+          {/* ═══ LEFT COLUMN ═══ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+            {/* Active Rate Battles */}
+            <div>
+              <div className="section-heading">
+                <Zap size={14} className="section-heading-icon" style={{ color: 'var(--lime)' }} />
+                <h3>Active Rate Battles</h3>
+                <a href="/debates" className="section-heading-link" onClick={e => { e.preventDefault(); navigateTo('/debates'); }}>
+                  View all →
+                </a>
+              </div>
+              <div className="active-battles">
+                {[
+                  { l:{n:'Haaland',c:'Man City',img:'/assets/players/kylian-mbappe.jpg'}, r:{n:'Mbappé',c:'PSG',img:'/assets/players/jude-bellingham.jpg'}, cat:'Impact', vl:'28.7K', vr:'24.1K', pct:54 },
+                  { l:{n:'Rice',c:'Arsenal',img:'/assets/players/pedri.jpg'}, r:{n:'Rodri',c:'Man City',img:'/assets/players/vitinha.jpg'}, cat:'Control', vl:'19.3K', vr:'17.2K', pct:53 },
+                  { l:{n:'Vinicius Jr.',c:'Real Madrid',img:'/assets/players/vinicius-junior.jpg'}, r:{n:'Saka',c:'Arsenal',img:'/assets/players/lamine-yamal.jpg'}, cat:'Creativity', vl:'15.6K', vr:'14.8K', pct:51 },
+                ].map((b,i) => (
+                  <div key={i} className="battle-card" onClick={() => navigateTo('/debates')}>
+                    <div className="battle-card-live">LIVE</div>
+                    <div className="battle-card-cat">
+                      {b.cat === 'Impact' && <Zap size={9} />}
+                      {b.cat === 'Control' && <Target size={9} />}
+                      {b.cat === 'Creativity' && <Star size={9} />}
+                      {b.cat}
+                    </div>
+                    <div className="battle-card-imgs">
+                      <img src={b.l.img} alt={b.l.n} />
+                      <img src={b.r.img} alt={b.r.n} />
+                      <div className="battle-vs-badge">VS</div>
+                    </div>
+                    <div className="battle-card-names">
+                      <div><span>{b.l.n}</span><span className="card-club">{b.l.c}</span></div>
+                      <div style={{ textAlign:'right' }}><span>{b.r.n}</span><span className="card-club">{b.r.c}</span></div>
+                    </div>
+                    <div className="battle-card-bar">
+                      <div className="battle-card-bar-fill" style={{ width: b.pct + '%' }} />
+                    </div>
+                    <div className="battle-card-votes">
+                      <span>{b.vl}</span><span>{b.vr}</span>
+                    </div>
                   </div>
-                  <div className="trend-info">
-                    <strong>{b.label}</strong>
-                    <span>{b.votes} votes</span>
+                ))}
+              </div>
+            </div>
+
+            {/* Two-col: Upcoming + Nominations */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+
+              {/* Upcoming Battles */}
+              <div className="upcoming-battles">
+                <div className="upcoming-battles-head">
+                  <div className="section-heading" style={{ marginBottom: 0 }}>
+                    <GaugeCircle size={13} style={{ color: 'var(--lime)' }} />
+                    <h3 style={{ fontSize: 12 }}>Upcoming Battles</h3>
+                    <a href="/debates" onClick={e => { e.preventDefault(); navigateTo('/debates'); }} className="section-heading-link">View all</a>
                   </div>
-                  <TrendLine />
+                </div>
+                {[
+                  { l:{n:'Mo Salah',c:'Liverpool',img:'/assets/players/kylian-mbappe.jpg'}, r:{n:'Son Heung-min',c:'Spurs',img:'/assets/players/lamine-yamal.jpg'}, cd:'01 : 45 : 32' },
+                  { l:{n:'B. Fernández',c:'Man Utd',img:'/assets/players/pedri.jpg'}, r:{n:'Ødegaard',c:'Arsenal',img:'/assets/players/vitinha.jpg'}, cd:'03 : 22 : 10' },
+                  { l:{n:'R. Lewandowski',c:'Barcelona',img:'/assets/players/vinicius-junior.jpg'}, r:{n:'V. Osimhen',c:'Napoli',img:'/assets/players/florian-wirtz.jpg'}, cd:'06 : 11 : 28' },
+                ].map((u,i) => (
+                  <div key={i} className="upcoming-row">
+                    <div className="upcoming-fighter">
+                      <img src={u.l.img} alt={u.l.n} />
+                      <div><div className="upcoming-fighter-name">{u.l.n}</div><div className="upcoming-fighter-club">{u.l.c}</div></div>
+                    </div>
+                    <div className="upcoming-vs">VS</div>
+                    <div className="upcoming-fighter" style={{ justifyContent:'flex-end' }}>
+                      <div style={{ textAlign:'right' }}><div className="upcoming-fighter-name">{u.r.n}</div><div className="upcoming-fighter-club">{u.r.c}</div></div>
+                      <img src={u.r.img} alt={u.r.n} />
+                    </div>
+                    <div style={{ textAlign:'right', flexShrink:0 }}>
+                      <div className="upcoming-cd">{u.cd}</div>
+                      <div className="upcoming-cd-label">Starts in</div>
+                    </div>
+                  </div>
+                ))}
+                <button type="button" className="view-schedule-btn" onClick={() => navigateTo('/debates')}>
+                  VIEW FULL SCHEDULE <ArrowRight size={13} />
+                </button>
+              </div>
+
+              {/* Fan Nominations */}
+              <div className="nominations">
+                <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--thin)' }}>
+                  <div className="section-heading" style={{ marginBottom: 0 }}>
+                    <Users size={13} style={{ color: 'var(--lime)' }} />
+                    <h3 style={{ fontSize: 12 }}>Fan Nominations</h3>
+                    <a href="/debates" onClick={e => { e.preventDefault(); navigateTo('/debates'); }} className="section-heading-link">View all</a>
+                  </div>
+                </div>
+                {[
+                  { title:'Jamal Musiala vs Florian Wirtz', by:'@MidfieldMaestro', votes:2341 },
+                  { title:'Gavi vs Camavinga',              by:'@BarcaTalks',      votes:1876 },
+                  { title:'Lautaro Martínez vs D. Nuñez',   by:'@InterZone',       votes:1542 },
+                ].map((n,i) => (
+                  <div key={i} className="nomination-row">
+                    <div className="nomination-rank">{i+1}</div>
+                    <div style={{ flex:1 }}>
+                      <div className="nomination-title">{n.title}</div>
+                      <div className="nomination-by">{n.by}</div>
+                    </div>
+                    <div>
+                      <div className="nomination-votes">{n.votes.toLocaleString()} 👍</div>
+                    </div>
+                  </div>
+                ))}
+                <button type="button" className="nominate-btn" onClick={() => navigateTo('/debates')}>
+                  NOMINATE A DEBATE +
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* ═══ RIGHT SIDEBAR ═══ */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+            {/* Trending This Week */}
+            <div className="card">
+              <div className="card-head">
+                <span className="card-title"><TrendingUp size={13} className="card-title-icon" /> TRENDING THIS WEEK</span>
+                <a href="/debates" onClick={e => { e.preventDefault(); navigateTo('/debates'); }} className="card-link">View all</a>
+              </div>
+              {TRENDING.map(t => (
+                <div key={t.rank} className="trending-row">
+                  <span className="trending-rank">{t.rank}</span>
+                  <div className="trending-avatars">
+                    <img src={t.l} alt="" />
+                    <img src={t.r} alt="" />
+                  </div>
+                  <span className="trending-label">{t.label}</span>
+                  <span className="trending-votes">{t.votes}</span>
+                  <Spark />
                 </div>
               ))}
             </div>
-          </Panel>
 
-          {/* System Fit — clickable → /system-fit */}
-          <Panel
-            title="System Fit"
-            eyebrow="◎ Gordon in FC Barcelona"
-            className="system-card-home"
-          >
-            <div
-              className="system-grid"
-              style={{cursor:'pointer'}}
-              onClick={() => navigateTo('/system-fit')}
-              title="View full System Fit analysis"
-            >
-              <img className="gordon-img" src="/assets/players/gordon.jpg" alt="Gordon" />
-              <HexRadar />
-              <div className="fit-score">
-                <strong>86<span className="fit-pct">%</span></strong>
-                <span>Fit score</span>
+            {/* Category Breakdown */}
+            <div className="card">
+              <div className="card-head">
+                <span className="card-title"><BarChart2 size={13} className="card-title-icon" /> CATEGORY BREAKDOWN</span>
               </div>
-            </div>
-            <div className="dot-metrics">
-              <div className="dot-row"><span>Width</span><span className="dot-dots">●●●●●●●●○○</span><b>87</b></div>
-              <div className="dot-row"><span>Pressing</span><span className="dot-dots">●●●●●●●●○○</span><b>83</b></div>
-              <div className="dot-row"><span>Transition</span><span className="dot-dots">●●●●●●●●○○</span><b>83</b></div>
-            </div>
-            <p style={{cursor:'pointer'}} onClick={() => navigateTo('/system-fit')}>
-              Good fit for Barça's wide rotations and high-tempo transitions. →
-            </p>
-          </Panel>
-
-          {/* World Cup Breakout Star */}
-          <Panel
-            title="World Cup Breakout Star"
-            eyebrow={<><Star size={12} style={{color:'#f5c518',marginRight:5,verticalAlign:'middle'}}/>Scout Pulse</>}
-            className="breakout-card"
-          >
-            <div className="breakout-inner">
-              <img src="/assets/players/ibrahim-musa.jpg" alt="Ibrahim Musa" />
-              <div className="breakout-copy">
-                <strong>The next<br />tournament hero?</strong>
-                <span>Scouted. Analysed.<br />Ready to explode.</span>
-              </div>
-              <svg className="wc-trophy-svg" viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">
-                <ellipse cx="30" cy="74" rx="18" ry="4" fill="#c9a84c" opacity=".7"/>
-                <rect x="24" y="58" width="12" height="16" rx="2" fill="#c9a84c"/>
-                <rect x="18" y="56" width="24" height="4" rx="2" fill="#b8973b"/>
-                <path d="M12 8h36l-6 28c-2 8-8 14-12 16-4-2-10-8-12-16L12 8z" fill="#d4a843"/>
-                <path d="M12 8C4 8 2 18 2 24c0 10 6 18 16 20l2-8-10-4 6-24z" fill="#c9a03a" opacity=".8"/>
-                <path d="M48 8C56 8 58 18 58 24c0 10-6 18-16 20l-2-8 10-4-6-24z" fill="#c9a03a" opacity=".8"/>
-              </svg>
-            </div>
-            <button type="button" className="breakout-btn" onClick={() => navigateTo('/talents')}>
-              See shortlist <ArrowRight size={13}/>
-            </button>
-          </Panel>
-
-        </aside>
-      </section>
-
-      {/* ── DATA STRIP ── */}
-      <section className="data-row segmented">
-        {[
-          ['📊','Data-Driven','Player Insights'],
-          ['👥','1.2M+','Data Points Daily'],
-          ['🤖','AI Models','Proprietary & Trained'],
-          ['🏟️','Trusted By','Clubs & Scouts'],
-          ['🌍','Global Coverage','200+ Countries'],
-        ].map(([icon, val, label]) => (
-          <div className="stat-card" key={label}>
-            <span className="stat-icon">{icon}</span>
-            <strong>{val}</strong>
-            <span>{label}</span>
-          </div>
-        ))}
-      </section>
-
-      {/* ── LOWER DASHBOARD ── */}
-      <section className="lower-dashboard">
-
-        {/* Featured Archetype */}
-        <Panel title="Featured Archetype" eyebrow={<span style={{color:'var(--lime)'}}>Press-Resistant Midfielder</span>} className="archetype-panel">
-          <div className="archetype-body">
-            <div className="archetype-left">
-              <img src="/assets/players/vitinha.jpg" alt="Vitinha" />
-              <div className="score-orb">
-                <span className="orb-num">89</span>
-                <span className="orb-label">Archetype score</span>
-              </div>
-            </div>
-            <div className="archetype-radar-block">
-              <div className="radar-label-grid">
-                <span className="rl top">Press Resistance <b>92</b></span>
-                <span className="rl right">Progression <b>85</b></span>
-                <span className="rl bottom-right">Vision <b>84</b></span>
-                <span className="rl bottom">Work Rate <b>76</b></span>
-                <span className="rl left">Duels <b>88</b></span>
-                <span className="rl top-left">Composure <b>90</b></span>
-              </div>
-              <ArchetypeRadar />
-            </div>
-          </div>
-          <div className="archetype-footer">
-            <div>
-              <strong>Vitinha</strong>
-              <span>Paris Saint-Germain</span>
-            </div>
-            <button type="button" className="view-archetype-btn" onClick={() => navigateTo('/players')}>
-              View archetype <ArrowRight size={13}/>
-            </button>
-          </div>
-          <div className="carousel-dots">
-            {[0,1,2,3,4].map(i => <span key={i} className={i===0?'dot active':'dot'}/>)}
-          </div>
-        </Panel>
-
-        {/* Competitions Snapshot */}
-        <Panel title="Competitions Snapshot" className="table-panel">
-          <div className="comp-tabs">
-            {['Leagues','Clubs','Nations'].map(t => (
-              <button key={t} type="button"
-                className={compTab===t ? 'comp-tab active' : 'comp-tab'}
-                onClick={() => setCompTab(t)}
-              >{t}</button>
-            ))}
-            {isLive && <span className="live-dot-label">● LIVE</span>}
-          </div>
-          {compLoading ? (
-            <div className="comp-loading">Loading league data…</div>
-          ) : (
-            <table className="comp-table">
-              <thead>
-                <tr>
-                  <th>League</th>
-                  <th>Form (Last 5)</th>
-                  <th>Trend</th>
-                  <th>Top Player</th>
-                </tr>
-              </thead>
-              <tbody>
-                {compRows.map(row => (
-                  <tr key={row.name}>
-                    <td><span className="league-flag">{row.flag}</span>{row.name}</td>
-                    <td>{row.form.map((r,i) => <FormBadge key={i} r={r}/>)}</td>
-                    <td>
-                      <svg style={{width:44,height:14}} viewBox="0 0 100 32">
-                        <polyline points="0,28 30,20 60,12 100,4" fill="none" stroke="var(--lime)" strokeWidth="3"/>
-                      </svg>
-                    </td>
-                    <td>{row.top}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </Panel>
-
-        {/* Rising Talents */}
-        <Panel
-          title="Rising Talents"
-          eyebrow={<span style={{color:'var(--lime)',cursor:'pointer'}} onClick={() => navigateTo('/talents')}>View all</span>}
-          className="talents-panel"
-        >
-          {RISING.map(p => (
-            <div className="talent-row" key={p.name}>
-              <div className="talent-info">
-                <strong>{p.name}</strong>
-                <span>{p.role} · {p.team}</span>
-              </div>
-              <div className="talent-score">
-                <b>{p.score}</b>
-                <span className="delta">{p.delta}</span>
-              </div>
-            </div>
-          ))}
-        </Panel>
-
-        {/* Live Debates */}
-        <Panel title="Live Debates" eyebrow="Join the conversation" className="debates-panel">
-          {LIVE_DEBATES.map(d => (
-            <button key={d.question} className="debate-chip" type="button" onClick={() => navigateTo('/debates')}>
-              <div className="debate-chip-left">
-                <img src={d.img} alt="" />
+              <div className="cat-breakdown">
                 <div>
-                  <span className="debate-q">{d.question}</span>
-                  <span className="debate-votes">{d.votes}</span>
+                  {CAT_BREAKDOWN.filter(c => c.side === 'left').map(c => (
+                    <div key={c.label} className="cat-metric" style={{ marginBottom: 12 }}>
+                      <div className="cat-metric-label">{c.label}</div>
+                      <div className="cat-metric-pct">{c.pct}</div>
+                    </div>
+                  ))}
+                </div>
+                <HexRadar small />
+                <div>
+                  {CAT_BREAKDOWN.filter(c => c.side === 'right').map(c => (
+                    <div key={c.label} className="cat-metric cat-metric--right" style={{ marginBottom: 12 }}>
+                      <div className="cat-metric-label">{c.label}</div>
+                      <div className="cat-metric-pct">{c.pct}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
-              <span className={`debate-badge ${d.cls}`}>{d.badge}</span>
-            </button>
-          ))}
-          <button className="join-debate-btn" type="button" onClick={() => navigateTo('/debates')}>
-            Join a debate <ArrowRight size={13}/>
-          </button>
-        </Panel>
+            </div>
 
-      </section>
+            {/* Live Debate Feed */}
+            <div className="card">
+              <div className="card-head">
+                <span className="card-title"><Zap size={13} className="card-title-icon" /> LIVE DEBATE FEED</span>
+                <select style={{ background:'none', color:'var(--text2)', fontSize:10, fontFamily:'Rajdhani', fontWeight:700, letterSpacing:'.1em' }}>
+                  <option>All Activity</option>
+                </select>
+              </div>
+              {FEED.map((f,i) => (
+                <div key={i} className="feed-item">
+                  <img className="feed-avatar" src={f.img} alt={f.user}
+                    onError={e => { e.target.style.display='none'; }} />
+                  <div className="feed-body">
+                    <div>
+                      <span className="feed-user">{f.user}</span>{' '}
+                      <span className="feed-action">{f.action}</span>
+                    </div>
+                    <div className="feed-battle">
+                      {f.battle}
+                      {f.score && <span className="feed-score">{f.score}</span>}
+                    </div>
+                    {f.quote && <div className="feed-quote">"{f.quote}"</div>}
+                  </div>
+                  <span className="feed-ago">{f.ago}</span>
+                </div>
+              ))}
+              <button type="button" className="join-conv-btn" style={{ borderRadius: 0, border: 'none', borderTop: '1px solid var(--thin)' }}
+                onClick={() => navigateTo('/debates')}>
+                JOIN THE CONVERSATION →
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {/* ── FOUNDER STRIP ── */}
-      <section className="founder-strip">
-        <Crown size={26} style={{color:'var(--lime)',fill:'var(--lime)',flexShrink:0}}/>
-        <strong>Get World Cup Founder Pass</strong>
-        <span>Unlock premium insights, advanced filters &amp; exclusive World Cup content.</span>
-        <button type="button" onClick={() => navigateTo('/pricing')}>
-          Explore plans <ArrowRight size={15}/>
+      {/* ── PROMO STRIP ── */}
+      <div className="promo-strip" style={{ maxWidth: '100%' }}>
+        <Crown size={24} className="promo-strip-icon" />
+        <div className="promo-strip-text">
+          <strong>GET WORLD CUP FOUNDER PASS</strong>
+          <span>Unlock premium debates, advanced filters & exclusive World Cup content.</span>
+        </div>
+        <button type="button" className="promo-cta" onClick={() => navigateTo('/pricing')}>
+          EXPLORE PLANS <ArrowRight size={14} />
         </button>
-      </section>
+      </div>
 
     </div>
   );

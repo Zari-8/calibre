@@ -1,13 +1,13 @@
-import { Search, Crown } from 'lucide-react';
+import { Search, Crown, Globe } from 'lucide-react';
 import { navItems } from '../data/calibreData.js';
 import { WC_CONFIG } from '../data/worldCupData.js';
 import NavLink, { navigateTo } from './NavLink.jsx';
 import LanguageSelector from './LanguageSelector.jsx';
 
 function useShowWorldCup() {
-  const kick      = new Date(WC_CONFIG.kickoff);
-  const now       = new Date();
-  const daysToWC  = (kick - now) / 86400000;
+  const kick     = new Date(WC_CONFIG.kickoff);
+  const now      = new Date();
+  const daysToWC = (kick - now) / 86400000;
   return daysToWC <= WC_CONFIG.navThreshold;
 }
 
@@ -17,34 +17,46 @@ export default function Shell({ children, currentPath }) {
   return (
     <div className="app-shell">
       <header className="top-nav">
-        <NavLink href="/" className="brand-lockup" active={currentPath === '/'}>
+
+        {/* Brand */}
+        <NavLink href="/" className="brand-lockup">
           <span className="brand-mark">C</span>
-          <span className="brand-text"><b>CALIBRE</b><em>Football Intelligence</em></span>
+          <span className="brand-text">
+            <b>CALIBRE</b>
+            <em>Football Intelligence</em>
+          </span>
         </NavLink>
 
-        <nav className="nav-center" aria-label="Primary navigation">
+        {/* Nav links */}
+        <nav className="nav-center">
           {navItems.map(item => (
-            <NavLink key={item.href} href={item.href} className="nav-item" active={currentPath === item.href}>
+            <NavLink key={item.href} href={item.href}
+              className={`nav-item${currentPath === item.href ? ' active' : ''}`}>
               {item.label}
             </NavLink>
           ))}
           {showWC && (
-            <NavLink href="/world-cup" className="nav-item nav-item--wc" active={currentPath === '/world-cup'}>
+            <NavLink href="/world-cup"
+              className={`nav-item nav-item--wc${currentPath === '/world-cup' ? ' active' : ''}`}>
               🏆 World Cup
             </NavLink>
           )}
         </nav>
 
+        {/* Actions */}
         <div className="nav-actions">
-          <button className="icon-btn" type="button" aria-label="Search"><Search size={20} /></button>
+          <button className="icon-btn" type="button" aria-label="Search">
+            <Search size={18} />
+          </button>
           <LanguageSelector />
-          <button className="login-btn" type="button">Log in</button>
+          <button className="login-btn" type="button">LOG IN</button>
           <button className="founder-btn" type="button" onClick={() => navigateTo('/pricing')}>
-            <Crown size={14} /> Get World Cup Founder Pass
+            <Crown size={13} />
+            GET WORLD CUP FOUNDER PASS
           </button>
         </div>
-      </header>
 
+      </header>
       <main>{children}</main>
     </div>
   );

@@ -1,48 +1,56 @@
-import { Zap } from 'lucide-react';
+import { Zap, Target, Star, MessageSquare, GaugeCircle } from 'lucide-react';
 import { players } from '../data/calibreData.js';
 import PlayerImage from './PlayerImage.jsx';
 
 export default function BattleHero() {
   const pedri = players[0];
   const jude = players[1];
+  const categories = [
+    ['Control', Target],
+    ['Impact', Zap],
+    ['Creativity', Star],
+    ['Debate', MessageSquare],
+  ];
+
   return (
-    <section className="battle-hero panel neon-hero">
-      <div className="battle-meta top-left"><Zap size={17} /> 14D : 08H : 22M</div>
-      <div className="battle-meta top-right">428,912 votes</div>
-      <div className="battle-title">
-        <p className="eyebrow">Live Rate Battle</p>
-        <h1>RATE BATTLE</h1>
+    <section className="battle-hero">
+      <div className="battle-topline">
+        <div className="countdown"><Zap size={21} /><span>02 : 18 : 47</span><small>HRS&nbsp;&nbsp; MINS&nbsp;&nbsp; SECS</small></div>
+        <div className="vote-box"><strong>12,458</strong><span>Votes</span></div>
       </div>
-      <div className="versus-stage">
-        <div className="fighter left-fighter">
-          <PlayerImage player={pedri} />
-          <div className="fighter-copy">
-            <strong>Pedri</strong>
-            <span>Controller · Puppeteer</span>
-          </div>
-        </div>
-        <div className="versus-core">
-          <span className="bolt">⚡</span>
-          <small>who gives more:</small>
-          <div className="category-pills">
-            {['Control', 'Impact', 'Creativity', 'Debate'].map((pill) => <span key={pill}>{pill}</span>)}
-          </div>
-          <h2>Who owns the midfield?</h2>
+
+      <div className="battle-title-lockup">
+        <h1><span>RATE</span><span>BATTLE</span></h1>
+      </div>
+
+      <div className="fighter fighter-left">
+        <div className="club-ghost barca">FCB</div>
+        <PlayerImage player={pedri} />
+        <div className="fighter-name"><strong>Pedri</strong><span>Barcelona</span></div>
+      </div>
+
+      <div className="fighter fighter-right">
+        <div className="club-ghost madrid">RM</div>
+        <PlayerImage player={jude} />
+        <div className="fighter-name"><strong>Jude<br />Bellingham</strong><span>Real Madrid</span></div>
+      </div>
+
+      <div className="rate-control">
+        <div className="category-line"><span>who gives more:</span>{categories.map(([label, Icon]) => <button key={label} type="button"><Icon size={13} /> {label}</button>)}</div>
+        <div className="vs-mark">VS</div>
+        <div className="question-box">
+          <h2>Who owns the <mark>midfield?</mark></h2>
+          <small>31,248 votes</small>
+          <b>Tap to rate</b>
           <div className="tap-scale" aria-label="1 to 10 tap to rate scale">
-            {Array.from({ length: 10 }, (_, i) => <button key={i + 1} type="button">{i + 1}</button>)}
+            {Array.from({ length: 10 }, (_, i) => <button className={i === 4 ? 'selected' : ''} key={i + 1} type="button">{i + 1}</button>)}
           </div>
-          <div className="battle-separator" />
-        </div>
-        <div className="fighter right-fighter">
-          <PlayerImage player={jude} />
-          <div className="fighter-copy">
-            <strong>Jude Bellingham</strong>
-            <span>Impact 8 · Box Crasher</span>
-          </div>
+          <div className="scale-labels"><span>Pedri</span><span>Equal</span><span>Bellingham</span></div>
         </div>
       </div>
+
       <div className="proof-strip">
-        {['Archetypes', '63 Leagues', '186,000 Players Tracked', 'System Fit', 'Talent Discovery'].map((proof) => <span key={proof}>{proof}</span>)}
+        {[['Archetypes', GaugeCircle], ['63 Leagues', Target], ['186,000 Players Tracked', Star], ['System Fit', Target], ['Talent Discovery', GaugeCircle]].map(([proof, Icon]) => <span key={proof}><Icon size={22} />{proof}</span>)}
       </div>
     </section>
   );

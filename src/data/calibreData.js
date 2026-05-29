@@ -31,7 +31,7 @@ export const players = [
   },
   {
     name: 'Jude Bellingham', team: 'Real Madrid', role: 'Impact 8', archetype: 'Box Crasher', rating: 92,
-    localImage: '/assets/players/jude-bellingham.svg', apiImage: '', region: 'England', league: 'La Liga', trajectory: '+3.6', debateIndex: 96,
+    localImage: '/assets/players/jude-bellingham.jpg', apiImage: '', region: 'England', league: 'La Liga', trajectory: '+3.6', debateIndex: 96,
     breakdown: { Performance: 91, Consistency: 88, Form: 90, Impact: 96, Trajectory: 89 },
   },
   {
@@ -51,7 +51,7 @@ export const players = [
   },
   {
     name: 'Vinícius Júnior', team: 'Brazil', role: 'Inside Forward', archetype: 'Dagger', rating: 93,
-    localImage: '/assets/players/vinicius-junior.svg', apiImage: '', region: 'Brazil', league: 'La Liga', trajectory: '+2.9', debateIndex: 97,
+    localImage: '/assets/players/vinicius-junior.jpg', apiImage: '', region: 'Brazil', league: 'La Liga', trajectory: '+2.9', debateIndex: 97,
     breakdown: { Performance: 92, Consistency: 87, Form: 90, Impact: 97, Trajectory: 88 },
   },
 ];

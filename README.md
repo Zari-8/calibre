@@ -1,46 +1,6 @@
-# Calibre React Composite
+# Calibre Football Intelligence
 
-This is the live-web-app version of Calibre, not a dead HTML site.
-
-## What is included
-
-- Vite + React app
-- Real routes:
-  - `/`
-  - `/debates`
-  - `/players`
-  - `/competitions`
-  - `/talents`
-  - `/system-fit`
-- Shared visual system based on the approved mockups
-- Reusable components
-- Local mock data that can be replaced with API calls later
-- Calibre rating engine:
-  - Performance 35%
-  - Consistency 20%
-  - Form 20%
-  - Impact 15%
-  - Trajectory 10%
-- League difficulty multiplier
-- Debate Index
-- Flexible Next Step Projection, not hardcoded Championship minutes
-
-## Upload structure
-
-Upload the contents of this folder to GitHub:
-
-```txt
-calibre/
-  package.json
-  index.html
-  src/
-    main.jsx
-    App.jsx
-    components/
-    pages/
-    data/
-    styles/
-```
+Live Vite + React app for Calibre. This is not a static HTML bundle.
 
 ## Run locally
 
@@ -49,28 +9,33 @@ npm install
 npm run dev
 ```
 
-## Deploy on Vercel
+## Vercel settings
 
-Framework preset: `Vite`
+- Framework Preset: Vite
+- Build Command: `npm run build`
+- Output Directory: `dist`
+- Install Command: `npm install`
 
-Build command:
+`vercel.json` is included so direct route refreshes work for:
 
-```bash
-npm run build
-```
+- `/`
+- `/debates`
+- `/players`
+- `/competitions`
+- `/talents`
+- `/system-fit`
 
-Output directory:
+## Assets
 
-```bash
-dist
-```
+Put real player images in `public/assets/players/` using these names where available:
 
-## Data/API note
+- `pedri.jpg`
+- `jude-bellingham.svg`
+- `lamine-yamal.jpg`
+- `florian-wirtz.jpg`
+- `kylian-mbappe.jpg`
+- `vinicius-junior.svg`
 
-For now, the site uses:
+The app uses the hybrid image order: API image first, local asset fallback second, neutral fallback last.
 
-```txt
-src/data/mockData.js
-```
-
-Later we replace that file with real API calls while keeping the UI and pages intact.
+Use the latest uploaded screenshots/mockups as the visual source of truth. Do not drift from them.

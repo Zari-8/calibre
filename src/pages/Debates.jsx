@@ -1,47 +1,36 @@
-import React from "react";
-import PageHeader from "../components/PageHeader.jsx";
-import RatingScale from "../components/RatingScale.jsx";
-import { battles } from "../data/mockData.js";
-import { calculateDebateIndex, getDebateLabel } from "../data/calibreEngine.js";
+import PageHero from '../components/PageHero.jsx';
+import Panel from '../components/Panel.jsx';
+import Meter from '../components/Meter.jsx';
+import { rateBattles } from '../data/calibreData.js';
 
 export default function Debates() {
   return (
-    <main className="page">
-      <PageHeader
-        eyebrow="Rate Battles"
-        title="Football arguments with a scoreboard."
-        copy="Active battles, fan nominations, category filters and Debate Index heat. This page keeps the rate-card visual language from the homepage but expands it into a live debate room."
-      />
-
-      <section className="debatesLayout">
-        <article className="module battleRoom">
-          <h2>Active Rate Battle</h2>
-          <div className="battleArena">
-            <div className="battlePlayer left"><div className="avatarMega" /><strong>{battles[0].a.name}</strong><span>{battles[0].a.archetype}</span></div>
-            <div className="battleCore">
-              <div className="vs">VS</div>
-              <h3>{battles[0].question}</h3>
-              <div className="debateIndex">
-                Debate Index <b>{calculateDebateIndex(battles[0].a, battles[0].b)}</b> · {getDebateLabel(calculateDebateIndex(battles[0].a, battles[0].b))}
-              </div>
-              <RatingScale left={battles[0].a.name} right={battles[0].b.name} />
-            </div>
-            <div className="battlePlayer right"><div className="avatarMega" /><strong>{battles[0].b.name}</strong><span>{battles[0].b.archetype}</span></div>
-          </div>
-        </article>
-
-        <aside className="sideColumn">
-          <article className="panel">
-            <div className="panelTitle">Fan Nominations</div>
-            {["Rice vs Vitinha", "Yamal vs Saka", "Kane vs Haaland"].map(x => <div className="nomination" key={x}>{x}<button>Vote</button></div>)}
-          </article>
-          <article className="panel">
-            <div className="panelTitle">Upcoming Battle</div>
-            <div className="countdownLarge">⚡ 02:18:47</div>
-            <p>Next matchup unlocks when the countdown hits zero.</p>
-          </article>
-        </aside>
+    <div className="page inner-page">
+      <PageHero eyebrow="Rate Battle visual language" title="Debates">
+        Debate Index powers the arguments: overrated profiles, underrated production, and instant comparisons within two points.
+      </PageHero>
+      <section className="dashboard-grid three">
+        <Panel title="Active Battles" eyebrow="Live now">
+          {rateBattles.map((battle) => <div className="battle-card" key={battle.title}><strong>{battle.title}</strong><p>{battle.question}</p><Meter label={battle.category} value={battle.heat} /></div>)}
+        </Panel>
+        <Panel title="Upcoming Battles" eyebrow="Scheduled heat">
+          {['Best U21 creator worldwide?', 'Is Ter Stegen truly finished?', 'Should women players get equal pay?', 'Pure striker or false nine?'].map((item, index) => <div className="mini-row" key={item}><strong>{item}</strong><b>{index + 1}</b></div>)}
+        </Panel>
+        <Panel title="Fan Nominations" eyebrow="Community queue">
+          {['Rice vs Vitinha', 'Yamal vs Saka', 'Osimhen vs Gyökeres', 'Pedri vs Wirtz'].map((item) => <button className="battle-chip" key={item}>{item}<span>Nominate</span></button>)}
+        </Panel>
+        <Panel title="Live Debate Feed" eyebrow="Broadcast pulse">
+          {['Pedri gives control. Jude gives impact.', 'Vini breaks structure. Mbappé punishes space.', 'Talent rating means nothing without league difficulty.'].map((line) => <p className="feed-line" key={line}>“{line}”</p>)}
+        </Panel>
+        <Panel title="Debate Index" eyebrow="Virality engine">
+          <Meter label="Overrated relative to stats" value={82} />
+          <Meter label="Underrated output vs bigger names" value={91} />
+          <Meter label="Within 2-point comparison heat" value={96} />
+        </Panel>
+        <Panel title="Category Breakdown" eyebrow="Why fans argue">
+          <div className="category-cloud"><span>Control</span><span>Impact</span><span>Creativity</span><span>Clutch</span><span>System Fit</span><span>Trajectory</span></div>
+        </Panel>
       </section>
-    </main>
+    </div>
   );
 }

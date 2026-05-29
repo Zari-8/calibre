@@ -1,6 +1,7 @@
-import { Search, Globe2, Crown } from 'lucide-react';
+import { Search, Crown } from 'lucide-react';
 import { navItems } from '../data/calibreData.js';
-import NavLink from './NavLink.jsx';
+import NavLink, { navigateTo } from './NavLink.jsx';
+import LanguageSelector from './LanguageSelector.jsx';
 
 export default function Shell({ children, currentPath }) {
   return (
@@ -11,7 +12,7 @@ export default function Shell({ children, currentPath }) {
           <span className="brand-text"><b>CALIBRE</b><em>Football Intelligence</em></span>
         </NavLink>
         <nav className="nav-center" aria-label="Primary navigation">
-          {navItems.map((item) => (
+          {navItems.map(item => (
             <NavLink key={item.href} href={item.href} className="nav-item" active={currentPath === item.href}>
               {item.label}
             </NavLink>
@@ -19,9 +20,11 @@ export default function Shell({ children, currentPath }) {
         </nav>
         <div className="nav-actions">
           <button className="icon-btn" type="button" aria-label="Search"><Search size={20} /></button>
-          <button className="language-pill" type="button"><Globe2 size={16} /> English</button>
+          <LanguageSelector />
           <button className="login-btn" type="button">Log in</button>
-          <button className="founder-btn" type="button"><Crown size={14} />Get World Cup Founder Pass</button>
+          <button className="founder-btn" type="button" onClick={() => navigateTo('/pricing')}>
+            <Crown size={14} /> Get World Cup Founder Pass
+          </button>
         </div>
       </header>
       <main>{children}</main>

@@ -6,36 +6,35 @@ import Players from './pages/Players.jsx';
 import Competitions from './pages/Competitions.jsx';
 import Talents from './pages/Talents.jsx';
 import SystemFit from './pages/SystemFit.jsx';
+import Pricing from './pages/Pricing.jsx';
 
 const routes = {
-  '/': Home,
-  '/debates': Debates,
-  '/players': Players,
-  '/competitions': Competitions,
-  '/talents': Talents,
-  '/system-fit': SystemFit,
+  '/':            Home,
+  '/debates':     Debates,
+  '/players':     Players,
+  '/competitions':Competitions,
+  '/talents':     Talents,
+  '/system-fit':  SystemFit,
+  '/pricing':     Pricing,
 };
 
 function usePathname() {
   const [path, setPath] = React.useState(window.location.pathname);
-
   React.useEffect(() => {
-    const onPop = () => setPath(window.location.pathname);
-    window.addEventListener('popstate', onPop);
-    window.addEventListener('calibre:navigate', onPop);
+    const handler = () => setPath(window.location.pathname);
+    window.addEventListener('popstate', handler);
+    window.addEventListener('calibre:navigate', handler);
     return () => {
-      window.removeEventListener('popstate', onPop);
-      window.removeEventListener('calibre:navigate', onPop);
+      window.removeEventListener('popstate', handler);
+      window.removeEventListener('calibre:navigate', handler);
     };
   }, []);
-
   return path;
 }
 
 export default function App() {
   const pathname = usePathname();
   const Page = routes[pathname] || Home;
-
   return (
     <Shell currentPath={pathname}>
       <Page />

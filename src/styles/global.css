@@ -560,3 +560,266 @@ body::after {
 /* ── RESPONSIVE: PRICING ── */
 @media (max-width:1100px) { .pricing-grid { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:640px)  { .pricing-grid { grid-template-columns:1fr; } .founder-pass-inner { flex-direction:column; } }
+
+/* ── WORLD CUP NAV ITEM ── */
+.nav-item--wc { color: var(--lime) !important; animation: wc-pulse 2.5s ease-in-out infinite; }
+@keyframes wc-pulse { 0%,100%{opacity:1} 50%{opacity:.65} }
+
+/* ── WORLD CUP PAGE ── */
+.wc-page { padding-bottom: 60px; }
+
+.wc-hero {
+  text-align: center; padding: 48px 20px 36px;
+  border: 1px solid var(--line); border-radius: 14px;
+  background: radial-gradient(circle at 50% 0%, rgba(215,249,0,.08), transparent 55%);
+  margin-bottom: 32px;
+}
+.wc-hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  color: var(--lime); font: 900 12px/1 "Rajdhani"; letter-spacing: .18em;
+  text-transform: uppercase; margin-bottom: 16px;
+}
+.wc-hero-title {
+  font: 900 72px/1 "Barlow Condensed"; color: #fff;
+  text-transform: uppercase; letter-spacing: .03em; margin: 0 0 12px;
+}
+.wc-hero-sub { color: #b0b2a8; font-size: 15px; margin: 0 0 10px; }
+.wc-host-flags { color: var(--lime); font: 700 14px/1 "Rajdhani"; letter-spacing: .1em; margin-bottom: 24px; }
+.wc-countdown-strip {
+  display: inline-grid; grid-template-columns: repeat(4,1fr); gap: 1px;
+  border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: var(--line);
+}
+.wc-cd-cell {
+  background: rgba(0,0,0,.8); padding: 16px 28px; text-align: center;
+}
+.wc-cd-cell strong { display: block; font: 900 36px/1 "Barlow Condensed"; color: var(--lime); }
+.wc-cd-cell span   { display: block; font: 700 10px/1 "Rajdhani"; color: #80827a; text-transform: uppercase; letter-spacing: .12em; margin-top: 4px; }
+
+.wc-section { margin-bottom: 40px; }
+.wc-section-head { margin-bottom: 16px; border-bottom: 1px solid var(--thin); padding-bottom: 10px; }
+.wc-eyebrow { display: block; color: var(--lime); font: 900 11px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 5px; }
+.wc-section-head h2 { margin: 0; font: 600 32px/1 "Barlow Condensed"; color: #f3f4e8; }
+
+/* moments */
+.wc-moment-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.wc-mf-btn {
+  border: 1px solid var(--thin); border-radius: 999px; padding: 7px 14px;
+  color: #90928a; font: 700 12px/1 "Rajdhani"; text-transform: capitalize;
+  transition: all .12s;
+}
+.wc-mf-btn.active, .wc-mf-btn:hover { border-color: var(--lime); color: var(--lime); }
+
+.wc-moments-empty {
+  border: 1px dashed var(--thin); border-radius: 10px; padding: 36px;
+  text-align: center; color: #60625a; font-size: 14px; line-height: 1.6;
+}
+.wc-moments-feed { display: grid; gap: 10px; }
+.wc-moment {
+  display: grid; grid-template-columns: 260px 1fr; gap: 16px; align-items: start;
+  border: 1px solid var(--thin); border-radius: 10px; padding: 14px 18px;
+  background: rgba(6,7,6,.8);
+}
+.wc-moment--featured { border-color: var(--lime); background: rgba(215,249,0,.04); }
+.wc-moment-left { display: flex; flex-direction: column; gap: 5px; }
+.wc-moment-match { font: 700 13px/1 "Barlow Condensed"; color: #d8d9d1; letter-spacing: .04em; }
+.wc-moment-time  { font-size: 11px; color: #60625a; }
+.wc-moment-text  { color: #d0d2ca; font-size: 14px; line-height: 1.6; margin: 0; }
+.moment-badge {
+  display: inline-flex; align-items: center; border-radius: 4px;
+  padding: 3px 8px; font: 900 10px/1 "Rajdhani"; letter-spacing: .08em; width: fit-content;
+}
+.mb-goal  { background: rgba(215,249,0,.15); color: var(--lime); border: 1px solid var(--line); }
+.mb-red   { background: rgba(220,50,30,.18); color: #e85c45; border: 1px solid rgba(220,50,30,.35); }
+.mb-var   { background: rgba(80,120,255,.15); color: #7f9fff; border: 1px solid rgba(80,120,255,.3); }
+.mb-mile  { background: rgba(245,197,24,.15); color: #f5c518; border: 1px solid rgba(245,197,24,.3); }
+.mb-upset { background: rgba(255,100,50,.15); color: #ff7a40; border: 1px solid rgba(255,100,50,.3); }
+.mb-stat  { background: rgba(150,150,150,.12); color: #a0a29a; border: 1px solid var(--thin); }
+
+/* breakout stars */
+.wc-breakout-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.wc-breakout-card {
+  border: 1px solid var(--thin); border-radius: 12px;
+  background: rgba(6,7,6,.9); padding: 18px; position: relative;
+}
+.wc-breakout-card--featured { border-color: var(--lime); background: rgba(215,249,0,.04); }
+.wc-featured-tag {
+  position: absolute; top: -11px; left: 16px;
+  background: var(--lime); color: #070800; border-radius: 999px;
+  font: 900 10px/1 "Rajdhani"; padding: 4px 10px; letter-spacing: .08em;
+}
+.wc-bc-top { display: grid; grid-template-columns: 72px 1fr; gap: 12px; margin-bottom: 14px; }
+.wc-bc-img { width: 72px; height: 86px; object-fit: cover; object-position: top; border-radius: 6px; }
+.wc-bc-flag { color: #90928a; font-size: 12px; margin-bottom: 4px; }
+.wc-bc-name { display: block; font: 700 20px/1 "Barlow Condensed"; color: #f0f1e8; }
+.wc-bc-role { display: block; color: #80827a; font-size: 12px; margin: 3px 0 8px; }
+.wc-bc-rating { display: flex; align-items: baseline; gap: 8px; }
+.wc-bc-score { font: 900 28px/1 "Barlow Condensed"; color: var(--lime); }
+.wc-bc-trend { font: 700 14px/1 "Rajdhani"; }
+.wc-bc-stats {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 1px;
+  border: 1px solid var(--thin); border-radius: 8px; overflow: hidden;
+  background: var(--thin); margin-bottom: 12px;
+}
+.wc-bc-stat { background: rgba(0,0,0,.7); padding: 10px; text-align: center; }
+.wc-bc-stat b    { display: block; font: 700 20px/1 "Barlow Condensed"; color: #fff; }
+.wc-bc-stat span { display: block; font-size: 10px; color: #70726a; text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+.wc-bc-note { color: #90928a; font-size: 12px; font-style: italic; margin: 0; line-height: 1.5; }
+
+/* iconic editions */
+.wc-editions-layout { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+.wc-edition-selector { display: flex; flex-direction: column; gap: 6px; }
+.wc-edition-btn {
+  display: grid; grid-template-columns: 28px 44px 1fr; align-items: center; gap: 8px;
+  border: 1px solid var(--thin); border-radius: 8px; padding: 10px 12px;
+  background: rgba(6,7,6,.8); text-align: left; transition: all .12s;
+}
+.wc-edition-btn:hover, .wc-edition-btn.active { border-color: var(--lime); background: rgba(215,249,0,.05); }
+.wc-ed-flag { font-size: 18px; }
+.wc-ed-year { font: 700 16px/1 "Barlow Condensed"; color: var(--lime); }
+.wc-ed-host { font-size: 12px; color: #80827a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.wc-edition-detail {
+  border: 1px solid var(--line); border-radius: 12px; padding: 24px;
+  background: rgba(6,7,6,.9);
+}
+.wc-ed-detail-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.wc-ed-detail-flag { font-size: 36px; line-height: 1; margin-bottom: 6px; }
+.wc-ed-detail-top h3 { margin: 0 0 4px; font: 700 28px/1 "Barlow Condensed"; color: #f0f1e8; }
+.wc-ed-winner { color: #90928a; font-size: 13px; }
+.wc-ed-winner strong { color: var(--lime); }
+.wc-calibre-score { text-align: right; }
+.wc-calibre-score strong { display: block; font: 900 48px/1 "Barlow Condensed"; color: var(--lime); }
+.wc-calibre-score span   { display: block; font-size: 10px; color: #70726a; text-transform: uppercase; letter-spacing: .1em; }
+.wc-ed-theme   { color: var(--lime); font: 700 16px/1.4 "Rajdhani"; margin: 0 0 12px; }
+.wc-ed-summary { color: #c8cac0; font-size: 14px; line-height: 1.7; margin: 0 0 16px; }
+.wc-ed-moment  {
+  display: flex; align-items: flex-start; gap: 8px;
+  border-left: 2px solid var(--lime); padding-left: 12px;
+  color: #d0d2ca; font-size: 13px; line-height: 1.6; margin-bottom: 16px;
+}
+.wc-ed-players { display: flex; flex-wrap: wrap; gap: 8px; }
+.wc-player-chip {
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
+  color: #d0d2ca; font: 700 12px/1 "Rajdhani"; background: rgba(215,249,0,.05);
+}
+
+/* iconic goals */
+.wc-goals-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.wc-goal-card { border: 1px solid var(--thin); border-radius: 10px; padding: 16px; background: rgba(6,7,6,.85); }
+.wc-goal-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.wc-goal-flag { font-size: 22px; flex-shrink: 0; }
+.wc-goal-top strong { display: block; font: 700 15px/1 "Barlow Condensed"; }
+.wc-goal-top span   { display: block; color: #80827a; font-size: 11px; margin-top: 2px; }
+.wc-goal-year-badge {
+  margin-left: auto; flex-shrink: 0; border: 1px solid var(--line); border-radius: 6px;
+  padding: 3px 8px; color: var(--lime); font: 700 12px/1 "Barlow Condensed";
+}
+.wc-goal-label { color: var(--lime); font: 900 13px/1 "Rajdhani"; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+.wc-goal-card p { color: #b0b2a8; font-size: 13px; line-height: 1.6; margin: 0; }
+
+/* golden ball */
+.wc-award-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; }
+.wc-award-row {
+  display: grid; grid-template-columns: 52px 28px 1fr auto; align-items: center; gap: 10px;
+  border: 1px solid var(--thin); border-radius: 8px; padding: 10px 14px;
+  background: rgba(6,7,6,.8);
+}
+.wc-award-year   { font: 700 18px/1 "Barlow Condensed"; color: var(--lime); }
+.wc-award-flag   { font-size: 18px; }
+.wc-award-player { font: 600 15px/1 "Barlow Condensed"; }
+.wc-award-label  { color: #70726a; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+
+/* wc cta */
+.wc-cta-strip {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center;
+  gap: 18px; border: 1px solid var(--lime); border-radius: 10px;
+  background: rgba(215,249,0,.04); padding: 20px 28px; margin-top: 32px;
+}
+.wc-cta-strip strong { display: block; color: var(--lime); font: 700 20px/1 "Barlow Condensed"; text-transform: uppercase; }
+.wc-cta-strip span   { display: block; color: #90928a; font-size: 13px; margin-top: 3px; }
+.wc-cta-strip button {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--lime); color: #070800; border-radius: 6px;
+  font: 900 13px/1 "Rajdhani"; text-transform: uppercase; padding: 13px 20px;
+}
+
+/* ── TALENTS PAGE ── */
+.talent-filter-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 12px; margin-bottom: 14px;
+}
+.region-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.region-tab {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--thin); border-radius: 999px;
+  padding: 8px 14px; color: #90928a;
+  font: 700 12px/1 "Rajdhani"; text-transform: uppercase; letter-spacing: .06em;
+  transition: all .12s;
+}
+.region-tab:hover, .region-tab.active { border-color: var(--lime); color: var(--lime); }
+.region-count {
+  background: rgba(215,249,0,.15); color: var(--lime); border-radius: 999px;
+  padding: 1px 6px; font-size: 10px;
+}
+.sort-bar { display: flex; align-items: center; gap: 6px; }
+.sort-bar > span { color: #70726a; font-size: 12px; }
+.sort-btn {
+  border: 1px solid var(--thin); border-radius: 6px; padding: 6px 10px;
+  color: #90928a; font: 700 11px/1 "Rajdhani"; text-transform: uppercase;
+}
+.sort-btn.active { border-color: var(--lime); color: var(--lime); }
+
+.talent-summary-strip {
+  display: grid; grid-template-columns: repeat(4,1fr); border: 1px solid var(--thin);
+  border-radius: 8px; overflow: hidden; background: rgba(0,0,0,.6); margin-bottom: 14px;
+}
+.ts-cell { padding: 14px 18px; border-right: 1px solid var(--thin); text-align: center; }
+.ts-cell:last-child { border-right: 0; }
+.ts-cell strong { display: block; font: 900 28px/1 "Barlow Condensed"; color: var(--lime); }
+.ts-cell span   { display: block; color: #80827a; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; margin-top: 3px; }
+
+.talent-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 14px; }
+.talent-card-full {
+  border: 1px solid var(--thin); border-radius: 10px; padding: 16px;
+  background: rgba(6,7,6,.88); display: flex; flex-direction: column; gap: 12px;
+}
+.tcf-header { display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: start; }
+.tcf-flag   { font-size: 20px; margin-top: 2px; }
+.tcf-meta strong { display: block; font: 700 16px/1 "Barlow Condensed"; }
+.tcf-meta span   { display: block; color: #80827a; font-size: 11px; margin-top: 2px; }
+.tcf-club        { color: #60625a !important; }
+.tcf-rating { font: 900 28px/1 "Barlow Condensed"; }
+
+.tcf-bars { display: flex; flex-direction: column; gap: 6px; }
+.tcf-bar-row { display: grid; grid-template-columns: 64px 1fr 28px; align-items: center; gap: 8px; font-size: 11px; color: #80827a; }
+.tcf-track { height: 5px; background: rgba(255,255,255,.06); border-radius: 999px; overflow: hidden; }
+.tcf-fill  { height: 100%; border-radius: 999px; transition: width .4s ease; }
+.tcf-bar-row b { color: #fff; font-size: 12px; text-align: right; }
+
+.tcf-footer { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--thin); padding-top: 10px; }
+.tcf-trajectory { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.tcf-next { display: flex; align-items: flex-start; gap: 0; color: #80827a; font-size: 11px; line-height: 1.5; }
+
+.talent-empty { grid-column: 1/-1; text-align: center; padding: 40px; color: #60625a; border: 1px dashed var(--thin); border-radius: 10px; }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  .wc-breakout-grid { grid-template-columns: repeat(2,1fr); }
+  .wc-goals-grid    { grid-template-columns: repeat(2,1fr); }
+  .wc-award-grid    { grid-template-columns: 1fr; }
+  .wc-editions-layout { grid-template-columns: 1fr; }
+  .wc-edition-selector { flex-direction: row; flex-wrap: wrap; }
+  .talent-grid      { grid-template-columns: repeat(2,1fr); }
+}
+@media (max-width: 720px) {
+  .wc-hero-title    { font-size: 52px; }
+  .wc-breakout-grid { grid-template-columns: 1fr; }
+  .wc-goals-grid    { grid-template-columns: 1fr; }
+  .wc-moment        { grid-template-columns: 1fr; }
+  .wc-countdown-strip { grid-template-columns: repeat(2,1fr); }
+  .wc-cta-strip     { grid-template-columns: 1fr; }
+  .talent-grid      { grid-template-columns: 1fr; }
+  .talent-summary-strip { grid-template-columns: repeat(2,1fr); }
+  .region-tabs      { gap: 4px; }
+}

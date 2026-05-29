@@ -83,3 +83,35 @@ export const fitRadar = [
   { label: 'Final-third entry', value: 79 },
   { label: 'Defensive load', value: 72 },
 ];
+
+// ── ASIAN + SAUDI TALENT POOL ─────────────────────────────────────
+export const asianTalents = [
+  // East Asia
+  { name:'Takefusa Kubo',      age:23, nation:'Japan',       flag:'🇯🇵', league:'La Liga',          club:'Real Sociedad',   role:'Wide Creator',       rating:84, readiness:87, trend:'+6%',  region:'east',   nextStep:'Top-6 La Liga or Premier League move', trajectory:'rising' },
+  { name:'Kaoru Mitoma',       age:27, nation:'Japan',       flag:'🇯🇵', league:'Premier League',   club:'Brighton',        role:'Inside Forward',     rating:83, readiness:86, trend:'+4%',  region:'east',   nextStep:'Established PL starter',               trajectory:'peak'   },
+  { name:'Ao Tanaka',          age:26, nation:'Japan',       flag:'🇯🇵', league:'Bundesliga',       club:'Dortmund',        role:'Controller',         rating:80, readiness:82, trend:'+5%',  region:'east',   nextStep:'UCL regular starter',                  trajectory:'rising' },
+  { name:'Hwang Hee-chan',     age:28, nation:'South Korea', flag:'🇰🇷', league:'Premier League',   club:'Wolves',          role:'Pressing Forward',   rating:79, readiness:80, trend:'+3%',  region:'east',   nextStep:'Mid-table PL or step up',               trajectory:'peak'   },
+  { name:'Lee Kang-in',        age:23, nation:'South Korea', flag:'🇰🇷', league:'Ligue 1',          club:'PSG',             role:'Advanced Playmaker', rating:82, readiness:84, trend:'+7%',  region:'east',   nextStep:'More UCL minutes, potential move',      trajectory:'rising' },
+  { name:'Gue-sung Cho',       age:26, nation:'South Korea', flag:'🇰🇷', league:'Bundesliga',       club:'Freiburg',        role:'Target Striker',     rating:76, readiness:78, trend:'+4%',  region:'east',   nextStep:'Bigger Bundesliga club',                trajectory:'rising' },
+  { name:'Chanathip Songkrasin',age:30,nation:'Thailand',    flag:'🇹🇭', league:'J-League',         club:'Kawasaki',        role:'Creative Midfielder',rating:72, readiness:68, trend:'+2%',  region:'sea',    nextStep:'Final elite Asian years',               trajectory:'peak'   },
+  { name:'Egy Maulana Vikri',  age:23, nation:'Indonesia',   flag:'🇮🇩', league:'Ekstraklasa',      club:'Lechia Gdańsk',   role:'Wide Creator',       rating:71, readiness:72, trend:'+8%',  region:'sea',    nextStep:'Mid-table Bundesliga or Serie B',        trajectory:'rising' },
+  { name:'Nguyen Quang Hai',   age:27, nation:'Vietnam',     flag:'🇻🇳', league:'Ligue 2',          club:'Pau FC',          role:'Creative Midfielder',rating:70, readiness:69, trend:'+3%',  region:'sea',    nextStep:'Consistent Ligue 2 or step to Ligue 1', trajectory:'stable' },
+  // Middle East / Saudi Pro League
+  { name:'Salem Al-Dawsari',   age:32, nation:'Saudi Arabia',flag:'🇸🇦', league:'Saudi Pro League', club:'Al-Hilal',        role:'Wide Forward',       rating:78, readiness:72, trend:'+1%',  region:'saudi',  nextStep:'Veteran leadership role',               trajectory:'peak'   },
+  { name:'Mohammed Al-Qasim',  age:21, nation:'Saudi Arabia',flag:'🇸🇦', league:'Saudi Pro League', club:'Al-Nassr',        role:'Controller',         rating:72, readiness:74, trend:'+9%',  region:'saudi',  nextStep:'Move to European league recommended',   trajectory:'rising' },
+  { name:'Sami Al-Najei',      age:19, nation:'Saudi Arabia',flag:'🇸🇦', league:'Saudi Pro League', club:'Al-Ittihad',      role:'Pressing Engine',    rating:70, readiness:68, trend:'+11%', region:'saudi',  nextStep:'Loan to mid-table European club',       trajectory:'rising' },
+  { name:'Yasser Al-Shahrani', age:30, nation:'Saudi Arabia',flag:'🇸🇦', league:'Saudi Pro League', club:'Al-Hilal',        role:'Attacking Fullback', rating:75, readiness:74, trend:'+2%',  region:'saudi',  nextStep:'Established Saudi starter',             trajectory:'stable' },
+  { name:'Nasser Al-Dawsari',  age:24, nation:'Saudi Arabia',flag:'🇸🇦', league:'Saudi Pro League', club:'Al-Qadsiah',      role:'Box-to-Box',         rating:73, readiness:75, trend:'+7%',  region:'saudi',  nextStep:'Top Saudi club or European trial',      trajectory:'rising' },
+  { name:'Akram Afif',         age:27, nation:'Qatar',       flag:'🇶🇦', league:'Qatar Stars League',club:'Al-Sadd',        role:'Wide Creator',       rating:77, readiness:76, trend:'+3%',  region:'saudi',  nextStep:'European move still viable',            trajectory:'stable' },
+];
+
+export const TALENT_REGIONS = [
+  { key: 'all',    label: 'All Regions'           },
+  { key: 'africa', label: 'West & Southern Africa' },
+  { key: 'south_america', label: 'South America'  },
+  { key: 'europe', label: 'Eastern Europe'        },
+  { key: 'east',   label: 'East Asia'             },
+  { key: 'sea',    label: 'Southeast Asia'        },
+  { key: 'saudi',  label: 'Saudi & Gulf'          },
+  { key: 'academy',label: 'Academy / U21'         },
+];

@@ -7,15 +7,17 @@ import Competitions from './pages/Competitions.jsx';
 import Talents from './pages/Talents.jsx';
 import SystemFit from './pages/SystemFit.jsx';
 import Pricing from './pages/Pricing.jsx';
+import WorldCup from './pages/WorldCup.jsx';
 
 const routes = {
-  '/':            Home,
-  '/debates':     Debates,
-  '/players':     Players,
-  '/competitions':Competitions,
-  '/talents':     Talents,
-  '/system-fit':  SystemFit,
-  '/pricing':     Pricing,
+  '/':             Home,
+  '/debates':      Debates,
+  '/players':      Players,
+  '/competitions': Competitions,
+  '/talents':      Talents,
+  '/system-fit':   SystemFit,
+  '/pricing':      Pricing,
+  '/world-cup':    WorldCup,
 };
 
 function usePathname() {

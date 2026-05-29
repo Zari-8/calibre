@@ -1,7 +1,0 @@
-<svg width="500" height="650" viewBox="0 0 500 650" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="500" height="650" rx="40" fill="#07100b"/>
-  <path d="M80 560C100 455 156 398 250 398C344 398 400 455 420 560" fill="#122217" stroke="#b9ff39" stroke-width="5"/>
-  <circle cx="250" cy="235" r="98" fill="#15251a" stroke="#b9ff39" stroke-width="5"/>
-  <path d="M138 110C198 54 304 48 368 113" stroke="#2cf57b" stroke-width="6" stroke-linecap="round" opacity=".7"/>
-  <text x="250" y="610" text-anchor="middle" fill="#b9ff39" font-family="Arial Black, Arial" font-size="30">CALIBRE</text>
-</svg>

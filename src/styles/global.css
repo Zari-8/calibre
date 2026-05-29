@@ -823,3 +823,66 @@ body::after {
   .talent-summary-strip { grid-template-columns: repeat(2,1fr); }
   .region-tabs      { gap: 4px; }
 }
+
+/* ── WORLD CUP FACTS ── */
+.wc-facts-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.wc-fact-cats { display: flex; gap: 6px; flex-wrap: wrap; }
+.wc-fact-cat {
+  display: flex; align-items: center; gap: 6px;
+  border: 1px solid var(--thin); border-radius: 999px;
+  padding: 7px 14px; color: #90928a;
+  font: 700 12px/1 "Rajdhani"; text-transform: capitalize; letter-spacing: .06em;
+  transition: all .12s;
+}
+.wc-fact-cat:hover, .wc-fact-cat.active { border-color: var(--lime); color: var(--lime); }
+.wc-fact-count {
+  background: rgba(215,249,0,.15); color: var(--lime);
+  border-radius: 999px; padding: 1px 6px; font-size: 10px;
+}
+.wc-fact-search {
+  border: 1px solid var(--thin); border-radius: 8px; padding: 11px 16px;
+  background: rgba(6,7,6,.9); color: var(--text); font: inherit; font-size: 14px;
+  width: 100%; max-width: 420px; outline: none;
+  transition: border-color .12s;
+}
+.wc-fact-search:focus { border-color: var(--lime); }
+.wc-fact-search::placeholder { color: #50524a; }
+
+.wc-facts-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+.wc-fact-card {
+  border: 1px solid var(--thin); border-radius: 10px;
+  background: rgba(6,7,6,.88); padding: 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color .15s;
+}
+.wc-fact-card:hover { border-color: rgba(215,249,0,.35); }
+
+/* subtle left-border accent by category */
+.wc-fact-cat--tournament { border-left: 3px solid rgba(215,249,0,.5); }
+.wc-fact-cat--goals      { border-left: 3px solid rgba(21,196,90,.5); }
+.wc-fact-cat--players    { border-left: 3px solid rgba(80,120,255,.5); }
+.wc-fact-cat--hosts      { border-left: 3px solid rgba(245,197,24,.5); }
+.wc-fact-cat--records    { border-left: 3px solid rgba(255,100,50,.5); }
+.wc-fact-cat--curiosities{ border-left: 3px solid rgba(180,80,220,.5); }
+
+.wc-fact-emoji { font-size: 26px; line-height: 1; }
+.wc-fact-text  { color: #d0d2ca; font-size: 13px; line-height: 1.7; margin: 0; flex: 1; }
+.wc-fact-tags  { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.wc-fact-cat-label {
+  border-radius: 4px; padding: 2px 8px;
+  font: 900 9px/1.6 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  background: rgba(215,249,0,.1); color: var(--lime); border: 1px solid var(--line);
+}
+.wc-fact-tag {
+  border: 1px solid var(--thin); border-radius: 4px; padding: 2px 7px;
+  font-size: 10px; color: #70726a; transition: all .1s;
+}
+.wc-fact-tag:hover { border-color: var(--lime); color: var(--lime); }
+.wc-facts-empty {
+  grid-column: 1/-1; text-align: center; padding: 32px;
+  color: #60625a; border: 1px dashed var(--thin); border-radius: 10px;
+}
+
+/* Responsive facts */
+@media (max-width: 1100px) { .wc-facts-grid { grid-template-columns: repeat(2,1fr); } }
+@media (max-width: 720px)  { .wc-facts-grid { grid-template-columns: 1fr; } }

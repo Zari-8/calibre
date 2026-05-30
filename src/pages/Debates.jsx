@@ -300,7 +300,7 @@ export default function Debates() {
                   {[[[60,8],[105,34],[105,86],[60,112],[15,86],[15,34]]].map((axes,_)=>{
                     const pts=axes.map(([x,y])=>`${x},${y}`).join(' ');
                     const score=[[60,22],[92,48],[84,79],[60,88],[28,78],[35,42]].map(([x,y])=>`${x},${y}`).join(' ');
-                    return <g key="r"><polygon fill="none" stroke="rgba(125,220,0,.25)" strokeWidth="1" points={pts}/><polygon fill="rgba(125,220,0,.3)" stroke="var(--lime)" strokeWidth="1.5" points={score}/></g>;
+                    return <g key="r"><polygon fill="none" stroke="rgba(166,255,0,.25)" strokeWidth="1" points={pts}/><polygon fill="rgba(166,255,0,.3)" stroke="var(--lime)" strokeWidth="1.5" points={score}/></g>;
                   })}
                 </svg>
               </div>

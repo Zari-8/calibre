@@ -186,7 +186,7 @@ export default function Competitions() {
                   <span style={{font:'700 12px/1 "Barlow Condensed"',color:'var(--text3)'}}>{s.pos}</span>
                   <img src={s.img} alt="" style={{width:22,height:26,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
                   <span style={{font:'700 13px/1 "Barlow Condensed"'}}>{s.name}</span>
-                  <span style={{font:'500 11px/1 "Exo 2"',color:'var(--text2)'}}>{s.team}</span>
+                  <span style={{font:'500 11px/1 "Barlow"',color:'var(--text2)'}}>{s.team}</span>
                   <span className="comp-scorer-goals">{s.goals}</span>
                 </div>
               ))}
@@ -207,7 +207,7 @@ export default function Competitions() {
                   <span style={{font:'700 12px/1 "Barlow Condensed"',color:'var(--text3)'}}>{c.pos}</span>
                   <img src={c.img} alt="" style={{width:22,height:26,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
                   <span style={{font:'700 13px/1 "Barlow Condensed"'}}>{c.name}</span>
-                  <span style={{font:'500 11px/1 "Exo 2"',color:'var(--text2)'}}>{c.team}</span>
+                  <span style={{font:'500 11px/1 "Barlow"',color:'var(--text2)'}}>{c.team}</span>
                   <span className="comp-scorer-goals">{c.assists}</span>
                 </div>
               ))}
@@ -220,9 +220,9 @@ export default function Competitions() {
             {/* Map */}
             <div className="panel">
               <div className="panel-head"><div className="panel-title">Global Coverage</div><span style={{font:'700 11px/1 "Barlow Condensed"',color:'var(--lime)'}}>Live competition coverage</span></div>
-              <div style={{width:'100%',height:120,background:'radial-gradient(ellipse at 50% 50%, rgba(125,220,0,.06), transparent 70%), #0a0c0a',borderRadius:6,display:'flex',alignItems:'flex-end',padding:12}}>
+              <div style={{width:'100%',height:120,background:'radial-gradient(ellipse at 50% 50%, rgba(166,255,0,.06), transparent 70%), #050607',borderRadius:6,display:'flex',alignItems:'flex-end',padding:12}}>
                 <span style={{font:'900 36px/1 "Barlow Condensed"',color:'var(--lime)'}}>200+</span>
-                <span style={{font:'600 12px/1 "Exo 2"',color:'var(--text2)',marginLeft:6,marginBottom:4}}>Countries</span>
+                <span style={{font:'600 12px/1 "Barlow"',color:'var(--text2)',marginLeft:6,marginBottom:4}}>Countries</span>
               </div>
             </div>
 
@@ -239,7 +239,7 @@ export default function Competitions() {
                   <img src={DB_PLAYERS[i].img} alt="" style={{width:28,height:28,borderRadius:'50%',objectFit:'cover'}}/>
                   <div style={{flex:1}}>
                     <div style={{font:'600 13px/1.3 "Barlow Condensed"'}}>{d.q}</div>
-                    <div style={{font:'500 10px/1 "Exo 2"',color:'var(--text2)',marginTop:3}}>{d.votes} · {d.comments} comments</div>
+                    <div style={{font:'500 10px/1 "Barlow"',color:'var(--text2)',marginTop:3}}>{d.votes} · {d.comments} comments</div>
                   </div>
                   <span className={`debate-badge ${d.badge==='HOT'?'badge-hot':d.badge==='LIVE'?'badge-live':'badge-new'}`}>{d.badge}</span>
                 </div>
@@ -253,10 +253,10 @@ export default function Competitions() {
                 <div key={i} className="row-item">
                   <div style={{minWidth:44}}>
                     <div style={{font:'700 11px/1 "Barlow Condensed"',color:'var(--lime)'}}>{f.date}</div>
-                    <div style={{font:'500 10px/1 "Exo 2"',color:'var(--text2)',marginTop:2}}>{f.day}</div>
+                    <div style={{font:'500 10px/1 "Barlow"',color:'var(--text2)',marginTop:2}}>{f.day}</div>
                   </div>
                   <div style={{flex:1,font:'700 13px/1 "Barlow Condensed"'}}>{f.homeClub} <span style={{color:'var(--text3)'}}>vs</span> {f.awayClub}</div>
-                  <div style={{font:'500 10px/1 "Exo 2"',color:'var(--text2)',textAlign:'right',fontSize:10}}>{f.league}</div>
+                  <div style={{font:'500 10px/1 "Barlow"',color:'var(--text2)',textAlign:'right',fontSize:10}}>{f.league}</div>
                 </div>
               ))}
               <button className="btn btn--ghost btn--sm" style={{width:'100%',marginTop:8,justifyContent:'center'}} type="button">VIEW ALL FIXTURES <ArrowRight size={13}/></button>

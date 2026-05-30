@@ -41,7 +41,7 @@ export default function BattleHero() {
 
   return (
     <div style={{
-      background: 'linear-gradient(160deg, #0b1008 0%, #080909 55%, #0c0808 100%)',
+      background: 'linear-gradient(160deg, #0b1008 0%, #030405 55%, #0c0808 100%)',
       position: 'relative', overflow: 'hidden',
     }}>
 
@@ -49,8 +49,8 @@ export default function BattleHero() {
       <div style={{
         position:'absolute', inset:0, pointerEvents:'none',
         background: `
-          radial-gradient(ellipse 55% 90% at 15% 50%, rgba(125,220,0,.055) 0%, transparent 70%),
-          radial-gradient(ellipse 55% 90% at 85% 50%, rgba(125,220,0,.04) 0%, transparent 70%)
+          radial-gradient(ellipse 55% 90% at 15% 50%, rgba(166,255,0,.055) 0%, transparent 70%),
+          radial-gradient(ellipse 55% 90% at 85% 50%, rgba(166,255,0,.04) 0%, transparent 70%)
         `,
       }} />
 
@@ -133,7 +133,7 @@ export default function BattleHero() {
             </h2>
             <div style={{ display:'flex', alignItems:'center', gap:5 }}>
               <div className="live-dot" style={{ width:5, height:5 }} />
-              <span style={{ font:'700 9px/1 "Exo 2"', letterSpacing:'.16em', textTransform:'uppercase', color:'var(--text3)' }}>
+              <span style={{ font:'700 9px/1 "Barlow"', letterSpacing:'.16em', textTransform:'uppercase', color:'var(--text3)' }}>
                 {h}:{m}:{s} LEFT
               </span>
             </div>

@@ -39,9 +39,9 @@ function SmallRadar({ attrs }) {
   const pts   = a => a.map(([x,y])=>`${x},${y}`).join(' ');
   return (
     <svg viewBox="0 0 120 120" style={{width:140,height:140}}>
-      <polygon fill="none" stroke="rgba(125,220,0,.2)" strokeWidth="1.2" points={pts(axes)}/>
-      {axes.map(([x,y],i)=><line key={i} stroke="rgba(125,220,0,.12)" strokeWidth="1" x1="60" y1="60" x2={x} y2={y}/>)}
-      <polygon fill="rgba(125,220,0,.28)" stroke="var(--lime)" strokeWidth="1.8" points={pts(scores)}/>
+      <polygon fill="none" stroke="rgba(166,255,0,.2)" strokeWidth="1.2" points={pts(axes)}/>
+      {axes.map(([x,y],i)=><line key={i} stroke="rgba(166,255,0,.12)" strokeWidth="1" x1="60" y1="60" x2={x} y2={y}/>)}
+      <polygon fill="rgba(166,255,0,.28)" stroke="var(--lime)" strokeWidth="1.8" points={pts(scores)}/>
     </svg>
   );
 }
@@ -210,14 +210,14 @@ export default function Talents() {
               <span style={{font:'700 13px/1 "Barlow Condensed"',letterSpacing:'.1em',textTransform:'uppercase'}}>Scout Shortlist<span className="td-shortlist-count">12</span></span>
               <button className="btn btn--lime btn--sm" type="button">VIEW SHORTLIST <ArrowRight size={13}/></button>
             </div>
-            <div style={{font:'500 11px/1 "Exo 2"',color:'var(--text2)'}}>Your saved talents</div>
+            <div style={{font:'500 11px/1 "Barlow"',color:'var(--text2)'}}>Your saved talents</div>
           </div>
 
           {/* Scouted regions */}
           <div className="panel">
             <div className="panel-head"><div className="panel-title">Scouted Regions</div><a className="panel-action">View all</a></div>
             <div className="td-world-map">
-              <div style={{font:'600 12px/1 "Exo 2"',color:'var(--text3)',textAlign:'center'}}>Global Scout Map</div>
+              <div style={{font:'600 12px/1 "Barlow"',color:'var(--text3)',textAlign:'center'}}>Global Scout Map</div>
             </div>
             {[['Europe','54%'],['South America','22%'],['Africa','12%'],['Asia','8%'],['North America','3%'],['Oceania','1%']].map(([r,p])=>(
               <div key={r} className="td-map-stat"><span>{r}</span><strong>{p}</strong></div>

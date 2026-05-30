@@ -39,9 +39,9 @@ function SmallRadar({ attrs }) {
   const pts   = a => a.map(([x,y])=>`${x},${y}`).join(' ');
   return (
     <svg viewBox="0 0 120 120" style={{width:140,height:140}}>
-      <polygon fill="none" stroke="rgba(215,249,0,.2)" strokeWidth="1.2" points={pts(axes)}/>
-      {axes.map(([x,y],i)=><line key={i} stroke="rgba(215,249,0,.12)" strokeWidth="1" x1="60" y1="60" x2={x} y2={y}/>)}
-      <polygon fill="rgba(215,249,0,.28)" stroke="var(--lime)" strokeWidth="1.8" points={pts(scores)}/>
+      <polygon fill="none" stroke="rgba(125,220,0,.2)" strokeWidth="1.2" points={pts(axes)}/>
+      {axes.map(([x,y],i)=><line key={i} stroke="rgba(125,220,0,.12)" strokeWidth="1" x1="60" y1="60" x2={x} y2={y}/>)}
+      <polygon fill="rgba(125,220,0,.28)" stroke="var(--lime)" strokeWidth="1.8" points={pts(scores)}/>
     </svg>
   );
 }

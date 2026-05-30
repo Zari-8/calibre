@@ -15,12 +15,12 @@
   /* Borders */
   --thin:        rgba(255,255,255,.09);
   --line:        rgba(255,255,255,.13);
-  --line-lime:   rgba(215,249,0,.25);
+  --line-lime:   rgba(125,220,0,.25);
 
   /* Accent */
-  --lime:        #d7f900;
-  --lime-dim:    rgba(215,249,0,.12);
-  --lime-glow:   rgba(215,249,0,.08);
+  --lime:        #7ddc00;
+  --lime-dim:    rgba(125,220,0,.12);
+  --lime-glow:   rgba(125,220,0,.08);
   --green:       #15c45a;
   --green-dim:   rgba(21,196,90,.12);
   --red:         #e03c3c;
@@ -62,9 +62,9 @@ body::before {
   content: "";
   position: fixed; inset: 0; pointer-events: none; z-index: -2;
   background:
-    radial-gradient(ellipse 55% 40% at 8% 0%,   rgba(215,249,0,.07)  0%, transparent 60%),
-    radial-gradient(ellipse 45% 35% at 92% 0%,  rgba(215,249,0,.05)  0%, transparent 55%),
-    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(215,249,0,.025) 0%, transparent 65%),
+    radial-gradient(ellipse 55% 40% at 8% 0%,   rgba(125,220,0,.07)  0%, transparent 60%),
+    radial-gradient(ellipse 45% 35% at 92% 0%,  rgba(125,220,0,.05)  0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(125,220,0,.025) 0%, transparent 65%),
     linear-gradient(180deg, #090a09 0%, #060706 100%);
 }
 body::after {
@@ -161,7 +161,7 @@ body::after {
 .founder-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 34px;
-  background: linear-gradient(135deg, #8fff00 0%, #5dcc00 100%); color: #050700;
+  background: linear-gradient(135deg, #9dff00 0%, #5dcc00 100%); color: #050700;
   border-radius: var(--r);
   font: 800 11px/1 "Barlow Condensed";
   letter-spacing: .06em; text-transform: uppercase;
@@ -221,8 +221,8 @@ body::after {
   content: "";
   position: absolute; inset: 0; pointer-events: none;
   background:
-    radial-gradient(ellipse 50% 80% at 15% 50%, rgba(215,249,0,.06) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 80% at 85% 50%, rgba(215,249,0,.04) 0%, transparent 70%);
+    radial-gradient(ellipse 50% 80% at 15% 50%, rgba(125,220,0,.06) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 80% at 85% 50%, rgba(125,220,0,.04) 0%, transparent 70%);
 }
 
 /* top bar */
@@ -488,7 +488,7 @@ body::after {
 }
 .radar-grid { fill: none; stroke: rgba(255,255,255,.08); stroke-width: 1; }
 .radar-axis { stroke: rgba(255,255,255,.05); stroke-width: 1; }
-.radar-fill   { fill: rgba(215,249,0,.18); stroke: none; }
+.radar-fill   { fill: rgba(125,220,0,.18); stroke: none; }
 .radar-stroke { fill: none; stroke: var(--lime); stroke-width: 1.5; }
 .radar-core   { fill: var(--lime); }
 
@@ -537,7 +537,7 @@ body::after {
 .rising-score {
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: 22px; border-radius: 4px;
-  border: 1px solid rgba(215,249,0,.3);
+  border: 1px solid rgba(125,220,0,.3);
   font: 900 13px/1 "Barlow Condensed"; color: var(--lime);
 }
 .rising-delta { font: 700 11px/1 "Barlow Condensed"; color: var(--green); width: 28px; text-align: right; }
@@ -586,7 +586,7 @@ body::after {
   display: flex; align-items: center; gap: 20px;
   margin: 12px -20px 0;
   padding: 18px 28px;
-  background: linear-gradient(90deg, rgba(215,249,0,.07) 0%, transparent 50%);
+  background: linear-gradient(90deg, rgba(125,220,0,.07) 0%, transparent 50%);
   border-top: 1px solid var(--thin);
   border-bottom: 1px solid var(--thin);
 }
@@ -1000,7 +1000,7 @@ body::after {
 .pt-rating {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 4px;
-  border: 1px solid rgba(215,249,0,.4);
+  border: 1px solid rgba(125,220,0,.4);
   font: 900 14px/1 "Barlow Condensed"; color: var(--lime);
 }
 .pt-buzz  { font: 700 13px/1 "Barlow Condensed"; color: var(--green); }
@@ -1051,7 +1051,7 @@ body::after {
 .rank-row-name { font: 700 12px/1 "Barlow"; color: var(--text); flex: 1; }
 .rank-row-score {
   width: 32px; height: 22px; border-radius: 4px;
-  border: 1px solid rgba(215,249,0,.35);
+  border: 1px solid rgba(125,220,0,.35);
   display: flex; align-items: center; justify-content: center;
   font: 900 13px/1 "Barlow Condensed"; color: var(--lime);
 }
@@ -1158,7 +1158,7 @@ body::after {
   min-width: 120px;
 }
 .league-tab:hover { border-color: var(--line); }
-.league-tab.active { border-color: var(--line-lime); background: rgba(215,249,0,.05); }
+.league-tab.active { border-color: var(--line-lime); background: rgba(125,220,0,.05); }
 .league-tab-logo { font-size: 24px; line-height: 1; }
 .league-tab-name { font: 800 13px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
 .league-tab-country { font: 600 9px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
@@ -1352,7 +1352,7 @@ body::after {
 .rt-img  { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
 .rt-name { font: 700 13px/1 "Barlow"; color: var(--text); }
 .rt-meta { font: 600 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
-.rt-score { display: flex; align-items: center; justify-content: center; width: 32px; height: 22px; border-radius: 4px; border: 1px solid rgba(215,249,0,.35); font: 900 13px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; }
+.rt-score { display: flex; align-items: center; justify-content: center; width: 32px; height: 22px; border-radius: 4px; border: 1px solid rgba(125,220,0,.35); font: 900 13px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; }
 .rt-delta { font: 700 11px/1 "Barlow Condensed"; color: var(--green); width: 28px; text-align: right; flex-shrink: 0; }
 
 /* emerging stars grid */
@@ -1625,7 +1625,7 @@ body::after {
   background-size: 30px 30px;
 }
 .tactical-pitch-center { width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255,255,255,.1); }
-.tactical-pitch-glow { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: rgba(215,249,0,.2); }
+.tactical-pitch-glow { position: absolute; width: 60px; height: 60px; border-radius: 50%; background: rgba(125,220,0,.2); }
 .other-role-row {
   display: flex; align-items: center; justify-content: space-between;
   padding: 7px 0; border-bottom: 1px solid var(--thin);
@@ -1707,7 +1707,7 @@ body::after {
   padding: 12px 16px; border-radius: var(--r-lg);
   border: 1px solid var(--thin); background: var(--panel);
 }
-.wc-moment--featured { border-color: var(--line-lime); background: linear-gradient(90deg, rgba(215,249,0,.04) 0%, var(--panel) 50%); }
+.wc-moment--featured { border-color: var(--line-lime); background: linear-gradient(90deg, rgba(125,220,0,.04) 0%, var(--panel) 50%); }
 .wc-moment-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .moment-badge {
   padding: 3px 7px; border-radius: 3px;
@@ -1776,7 +1776,7 @@ body::after {
   transition: border-color .15s;
 }
 .wc-fact-card:hover { border-top-color: var(--line); border-right-color: var(--line); border-bottom-color: var(--line); }
-.wc-fact-cat--tournament { border-left-color: rgba(215,249,0,.5); }
+.wc-fact-cat--tournament { border-left-color: rgba(125,220,0,.5); }
 .wc-fact-cat--goals      { border-left-color: rgba(21,196,90,.5); }
 .wc-fact-cat--players    { border-left-color: rgba(80,120,255,.5); }
 .wc-fact-cat--hosts      { border-left-color: rgba(245,197,24,.5); }
@@ -1863,7 +1863,7 @@ body::after {
 .wc-cta-strip {
   display: flex; align-items: center; gap: 16px;
   padding: 20px 24px; border-radius: var(--r-lg);
-  background: linear-gradient(90deg, rgba(215,249,0,.06) 0%, transparent 70%);
+  background: linear-gradient(90deg, rgba(125,220,0,.06) 0%, transparent 70%);
   border: 1px solid var(--line-lime);
   margin-top: 24px;
 }
@@ -1897,7 +1897,7 @@ body::after {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
   background: var(--panel); padding: 24px; display: flex; flex-direction: column; gap: 16px;
 }
-.pricing-card--featured { border-color: var(--line-lime); background: linear-gradient(160deg, rgba(215,249,0,.04) 0%, var(--panel) 60%); }
+.pricing-card--featured { border-color: var(--line-lime); background: linear-gradient(160deg, rgba(125,220,0,.04) 0%, var(--panel) 60%); }
 .pricing-tier-name { font: 700 10px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
 .pricing-price strong { font: 900 40px/1 "Barlow Condensed"; letter-spacing: -.02em; color: #fff; }
 .pricing-price span   { font: 500 14px/1 "Barlow"; color: var(--text2); }
@@ -1917,7 +1917,7 @@ body::after {
 .pricing-cta:hover { opacity: .85; }
 .founder-pass-card {
   border: 1px solid var(--line-lime); border-radius: var(--r-lg);
-  background: linear-gradient(90deg, rgba(215,249,0,.06) 0%, transparent 60%);
+  background: linear-gradient(90deg, rgba(125,220,0,.06) 0%, transparent 60%);
   padding: 24px 28px; display: flex; align-items: center; gap: 20px;
 }
 .founder-pass-icon { color: var(--lime); flex-shrink: 0; }
@@ -1964,7 +1964,7 @@ body::after {
 .rate-badge {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 4px;
-  border: 1px solid rgba(215,249,0,.4);
+  border: 1px solid rgba(125,220,0,.4);
   font: 900 14px/1 "Barlow Condensed"; color: var(--lime);
 }
 .rate-badge--green { border-color: rgba(21,196,90,.4); color: var(--green); }

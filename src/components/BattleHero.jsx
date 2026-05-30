@@ -49,8 +49,8 @@ export default function BattleHero() {
       <div style={{
         position:'absolute', inset:0, pointerEvents:'none',
         background: `
-          radial-gradient(ellipse 55% 90% at 15% 50%, rgba(215,249,0,.055) 0%, transparent 70%),
-          radial-gradient(ellipse 55% 90% at 85% 50%, rgba(215,249,0,.04) 0%, transparent 70%)
+          radial-gradient(ellipse 55% 90% at 15% 50%, rgba(125,220,0,.055) 0%, transparent 70%),
+          radial-gradient(ellipse 55% 90% at 85% 50%, rgba(125,220,0,.04) 0%, transparent 70%)
         `,
       }} />
 

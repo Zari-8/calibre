@@ -220,7 +220,7 @@ export default function Competitions() {
             {/* Map */}
             <div className="panel">
               <div className="panel-head"><div className="panel-title">Global Coverage</div><span style={{font:'700 11px/1 "Barlow Condensed"',color:'var(--lime)'}}>Live competition coverage</span></div>
-              <div style={{width:'100%',height:120,background:'radial-gradient(ellipse at 50% 50%, rgba(215,249,0,.06), transparent 70%), #0a0c0a',borderRadius:6,display:'flex',alignItems:'flex-end',padding:12}}>
+              <div style={{width:'100%',height:120,background:'radial-gradient(ellipse at 50% 50%, rgba(125,220,0,.06), transparent 70%), #0a0c0a',borderRadius:6,display:'flex',alignItems:'flex-end',padding:12}}>
                 <span style={{font:'900 36px/1 "Barlow Condensed"',color:'var(--lime)'}}>200+</span>
                 <span style={{font:'600 12px/1 "Barlow"',color:'var(--text2)',marginLeft:6,marginBottom:4}}>Countries</span>
               </div>

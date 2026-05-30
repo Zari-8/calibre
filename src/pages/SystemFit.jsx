@@ -11,10 +11,10 @@ const BREAKDOWN = [
   { label:'Growth Potential',       val:87 },
 ];
 const ALT_FITS = [
-  { name:'Real Madrid',    fmt:'4-3-1-2', pct:83, verdict:'Very Good Fit',  logo:'⚽' },
-  { name:'Manchester City',fmt:'4-3-3',   pct:81, verdict:'Very Good Fit',  logo:'⚽' },
-  { name:'Arsenal',        fmt:'4-3-3',   pct:79, verdict:'Good Fit',       logo:'⚽' },
-  { name:'Bayern München', fmt:'4-2-3-1', pct:78, verdict:'Good Fit',       logo:'⚽' },
+  { name:'Real Madrid',    fmt:'4-3-1-2', pct:83, verdict:'Very Good Fit',  abbr:'RM',  bg:'#00529f', fg:'#ffd700' },
+  { name:'Manchester City',fmt:'4-3-3',   pct:81, verdict:'Very Good Fit',  abbr:'MC',  bg:'#6cabdd', fg:'#1c2c5b' },
+  { name:'Arsenal',        fmt:'4-3-3',   pct:79, verdict:'Good Fit',       abbr:'ARS', bg:'#ef0107', fg:'#fff'    },
+  { name:'Bayern München', fmt:'4-2-3-1', pct:78, verdict:'Good Fit',       abbr:'FCB', bg:'#dc052d', fg:'#fff'    },
 ];
 const ROLE_PULSE = [
   { label:'Positioning',           val:92 },
@@ -31,11 +31,11 @@ const KEY_METRICS = [
   { label:'Defensive\nCover',     val:81, grade:'Good' },
 ];
 const BEST_FITS = [
-  { rank:1, logo:'⚽', club:'FC Barcelona',    fmt:'4-3-3 Possession', pct:86, verdict:'Excellent Fit',  cls:'#d7f900' },
-  { rank:2, logo:'⚽', club:'Real Madrid',     fmt:'4-3-1-2',          pct:83, verdict:'Very Good Fit',  cls:'#15c45a' },
-  { rank:3, logo:'⚽', club:'Manchester City', fmt:'4-3-3',            pct:81, verdict:'Very Good Fit',  cls:'#15c45a' },
-  { rank:4, logo:'⚽', club:'Arsenal',         fmt:'4-3-3',            pct:79, verdict:'Good Fit',       cls:'#c9b800' },
-  { rank:5, logo:'⚽', club:'Bayern München',  fmt:'4-2-3-1',          pct:78, verdict:'Good Fit',       cls:'#c9b800' },
+  { rank:1, abbr:'FCB', bg:'#a50044', fg:'#ffd700', club:'FC Barcelona',    fmt:'4-3-3 Possession', pct:86, verdict:'Excellent Fit',  cls:'#7ddc00' },
+  { rank:2, abbr:'RM',  bg:'#00529f', fg:'#ffd700', club:'Real Madrid',     fmt:'4-3-1-2',          pct:83, verdict:'Very Good Fit',  cls:'#15c45a' },
+  { rank:3, abbr:'MC',  bg:'#6cabdd', fg:'#1c2c5b', club:'Manchester City', fmt:'4-3-3',            pct:81, verdict:'Very Good Fit',  cls:'#15c45a' },
+  { rank:4, abbr:'ARS', bg:'#ef0107', fg:'#fff',    club:'Arsenal',         fmt:'4-3-3',            pct:79, verdict:'Good Fit',       cls:'#c9b800' },
+  { rank:5, abbr:'FCB', bg:'#dc052d', fg:'#fff',    club:'Bayern München',  fmt:'4-2-3-1',          pct:78, verdict:'Good Fit',       cls:'#c9b800' },
 ];
 const INSIGHTS = [
   { icon:'💡', text:"Bellingham's box-to-box dynamism perfectly suits Barcelona's high-tempo positional play." },
@@ -43,9 +43,9 @@ const INSIGHTS = [
   { icon:'△',  text:"Could become a top-3 performing midfielder in this system." },
 ];
 const RECENT = [
-  { name:'Jude Bellingham', pct:86, sub:'Fit Score', img:'/assets/players/jude-bellingham.jpg' },
-  { name:'Pedri',           pct:84, sub:'Fit Score', img:'/assets/players/pedri.jpg' },
-  { name:'Florian Wirtz',   pct:82, sub:'Fit Score', img:'/assets/players/florian-wirtz.jpg' },
+  { name:'Jude Bellingham', pct:86, sub:'Real Madrid',   img:'/assets/players/jude-bellingham.jpg' },
+  { name:'Pedri',           pct:84, sub:'FC Barcelona', img:'/assets/players/pedri.jpg' },
+  { name:'Florian Wirtz',   pct:82, sub:'Bayer Leverkusen', img:'/assets/players/florian-wirtz.jpg' },
 ];
 
 /* ── Tiny hex radar — FIXED SIZE ONLY ── */
@@ -59,9 +59,9 @@ function MiniRadar({ size = 80 }) {
   const pts = arr => arr.map(p=>p.join(',')).join(' ');
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{display:'block',flexShrink:0}}>
-      <polygon fill="none" stroke="rgba(215,249,0,.18)" strokeWidth="1" points={pts(hex)}/>
-      {hex.map(([x,y],i)=><line key={i} stroke="rgba(215,249,0,.1)" strokeWidth="1" x1={cx} y1={cy} x2={x} y2={y}/>)}
-      <polygon fill="rgba(215,249,0,.22)" stroke="#d7f900" strokeWidth="1.5" points={pts(score)}/>
+      <polygon fill="none" stroke="rgba(125,220,0,.18)" strokeWidth="1" points={pts(hex)}/>
+      {hex.map(([x,y],i)=><line key={i} stroke="rgba(125,220,0,.1)" strokeWidth="1" x1={cx} y1={cy} x2={x} y2={y}/>)}
+      <polygon fill="rgba(125,220,0,.22)" stroke="#7ddc00" strokeWidth="1.5" points={pts(score)}/>
     </svg>
   );
 }
@@ -73,12 +73,12 @@ function FitRing({ pct }) {
   return (
     <div style={{position:'relative',width:120,height:120,flexShrink:0}}>
       <svg width="120" height="120" viewBox="0 0 120 120" style={{transform:'rotate(-90deg)'}}>
-        <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(215,249,0,.08)" strokeWidth="8"/>
-        <circle cx="60" cy="60" r={r} fill="none" stroke="#d7f900" strokeWidth="8"
+        <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(125,220,0,.08)" strokeWidth="8"/>
+        <circle cx="60" cy="60" r={r} fill="none" stroke="#7ddc00" strokeWidth="8"
           strokeLinecap="round" strokeDasharray={`${fill} ${circ}`}/>
       </svg>
       <div style={{position:'absolute',inset:0,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2}}>
-        <span style={{font:'900 26px/1 "Barlow Condensed"',color:'#d7f900'}}>{pct}%</span>
+        <span style={{font:'900 26px/1 "Barlow Condensed"',color:'#7ddc00'}}>{pct}%</span>
         <span style={{font:'700 8px/1 "Rajdhani"',letterSpacing:'.15em',textTransform:'uppercase',color:'rgba(255,255,255,.4)'}}>FIT SCORE</span>
         <span style={{font:'700 10px/1 "Barlow Condensed"',color:'#15c45a',marginTop:2}}>Excellent Fit</span>
       </div>
@@ -92,8 +92,8 @@ function Dots({ val, total = 10 }) {
     <div style={{display:'flex',gap:2,flexShrink:0}}>
       {Array.from({length:total},(_,i)=>(
         <div key={i} style={{
-          width:9,height:9,borderRadius:2,
-          background: i < Math.round(val/10) ? '#d7f900' : 'rgba(255,255,255,.08)',
+          width:8,height:8,borderRadius:2,flexShrink:0,
+          background: i < Math.round(val/10) ? '#7ddc00' : 'rgba(255,255,255,.08)',
         }}/>
       ))}
     </div>
@@ -107,12 +107,12 @@ function MetricRing({ val, label, grade }) {
     <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:6}}>
       <div style={{position:'relative',width:70,height:70}}>
         <svg width="70" height="70" viewBox="0 0 70 70" style={{transform:'rotate(-90deg)'}}>
-          <circle cx="35" cy="35" r={r} fill="none" stroke="rgba(215,249,0,.08)" strokeWidth="6"/>
-          <circle cx="35" cy="35" r={r} fill="none" stroke="#d7f900" strokeWidth="6"
+          <circle cx="35" cy="35" r={r} fill="none" stroke="rgba(125,220,0,.08)" strokeWidth="6"/>
+          <circle cx="35" cy="35" r={r} fill="none" stroke="#7ddc00" strokeWidth="6"
             strokeLinecap="round" strokeDasharray={`${fill} ${circ}`}/>
         </svg>
         <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
-          <span style={{font:'900 18px/1 "Barlow Condensed"',color:'#d7f900'}}>{val}</span>
+          <span style={{font:'900 18px/1 "Barlow Condensed"',color:'#7ddc00'}}>{val}</span>
         </div>
       </div>
       <div style={{textAlign:'center'}}>
@@ -145,8 +145,8 @@ function Pitch() {
       {/* right goal area */}
       <rect x="455" y="125" width="35" height="70" fill="none" stroke="rgba(21,196,90,.2)" strokeWidth="1"/>
       {/* player dot — advanced midfielder position */}
-      <circle cx="330" cy="155" r="12" fill="#d7f900"/>
-      <circle cx="330" cy="155" r="20" fill="none" stroke="rgba(215,249,0,.3)" strokeWidth="1"/>
+      <circle cx="330" cy="155" r="12" fill="#7ddc00"/>
+      <circle cx="330" cy="155" r="20" fill="none" stroke="rgba(125,220,0,.3)" strokeWidth="1"/>
     </svg>
   );
 }
@@ -158,9 +158,8 @@ export default function SystemFit() {
     // Page wrapper
     page: {
       display:'grid',
-      gridTemplateColumns:'220px minmax(0,680px) 280px',
-      maxWidth:1260,
-      margin:'0 auto',
+      gridTemplateColumns:'240px 1fr 300px',
+      maxWidth:'100%',
       gap:0,
       minHeight:'calc(100vh - 54px)',
       maxWidth:'100%',
@@ -214,12 +213,12 @@ export default function SystemFit() {
       textTransform:'uppercase',
       color:'rgba(255,255,255,.5)',
     },
-    lime: { color:'#d7f900' },
+    lime: { color:'#7ddc00' },
     limeBtn: {
       font:'700 10px/1 "Rajdhani"',
       letterSpacing:'.12em',
       textTransform:'uppercase',
-      color:'#d7f900',
+      color:'#7ddc00',
       opacity:.8,
       cursor:'pointer',
     },
@@ -249,8 +248,8 @@ export default function SystemFit() {
             <button key={t} type="button" onClick={()=>setTab(t)} style={{
               padding:'10px 8px',textAlign:'center',
               font:'700 10px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',
-              color: tab===t ? '#d7f900' : 'rgba(255,255,255,.4)',
-              borderBottom: tab===t ? '2px solid #d7f900' : '2px solid transparent',
+              color: tab===t ? '#7ddc00' : 'rgba(255,255,255,.4)',
+              borderBottom: tab===t ? '2px solid #7ddc00' : '2px solid transparent',
               transition:'all .12s',
             }}>{t}</button>
           ))}
@@ -263,11 +262,11 @@ export default function SystemFit() {
         </div>
 
         {/* Club result */}
-        <div style={{margin:'0 12px 12px',padding:'10px',border:'1px solid rgba(215,249,0,.25)',borderRadius:8,background:'rgba(215,249,0,.03)',cursor:'pointer'}}>
+        <div style={{margin:'0 12px 12px',padding:'10px',border:'1px solid rgba(125,220,0,.25)',borderRadius:8,background:'rgba(125,220,0,.03)',cursor:'pointer'}}>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <div style={{width:32,height:32,borderRadius:6,background:'#1a3d8f',display:'grid',placeItems:'center',fontSize:18,flexShrink:0}}>🔵</div>
+            <div style={{width:32,height:32,borderRadius:6,background:'#a50044',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><span style={{font:'900 10px/1 "Barlow Condensed"',color:'#ffd700',letterSpacing:'.02em'}}>FCB</span></div>
             <div>
-              <div style={{font:'700 13px/1 "Barlow Condensed"',color:'#d7f900'}}>FC Barcelona</div>
+              <div style={{font:'700 13px/1 "Barlow Condensed"',color:'#7ddc00'}}>FC Barcelona</div>
               <div style={{font:'500 10px/1 "Barlow"',color:'rgba(255,255,255,.4)',marginTop:2}}>🇪🇸 LaLiga · SPAIN</div>
               <div style={{font:'600 10px/1 "Barlow Condensed"',color:'rgba(255,255,255,.5)',marginTop:2}}>4-3-3 Possession</div>
             </div>
@@ -280,9 +279,9 @@ export default function SystemFit() {
             <span style={S.label}>System Profile</span>
           </div>
           <div style={{padding:'12px',display:'flex',alignItems:'center',gap:10}}>
-            <MiniRadar size={72}/>
+            <MiniRadar size={84}/>
             <div>
-              <div style={{font:'900 22px/1 "Barlow Condensed"',color:'#d7f900'}}>86%</div>
+              <div style={{font:'900 22px/1 "Barlow Condensed"',color:'#7ddc00'}}>86%</div>
               <div style={{font:'600 9px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'rgba(255,255,255,.4)',marginTop:2}}>System Compatibility</div>
             </div>
           </div>
@@ -296,7 +295,7 @@ export default function SystemFit() {
             display:'flex',alignItems:'center',justifyContent:'center',gap:5,
             width:'100%',padding:'10px',
             font:'700 10px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',
-            color:'#d7f900',borderTop:'1px solid rgba(255,255,255,.07)',transition:'background .12s',
+            color:'#7ddc00',borderTop:'1px solid rgba(255,255,255,.07)',transition:'background .12s',
           }}>VIEW FULL SYSTEM BREAKDOWN <ArrowRight size={11}/></button>
         </div>
 
@@ -308,14 +307,14 @@ export default function SystemFit() {
               <span style={{fontSize:14}}>⚽</span>
               <span style={{flex:1,font:'600 12px/1 "Barlow"',color:'rgba(255,255,255,.7)'}}>{t}</span>
               <span style={{font:'600 10px/1 "Barlow"',color:'rgba(255,255,255,.35)'}}>{f}</span>
-              <span style={{font:'800 13px/1 "Barlow Condensed"',color:'#d7f900'}}>{p}%</span>
+              <span style={{font:'800 13px/1 "Barlow Condensed"',color:'#7ddc00'}}>{p}%</span>
             </div>
           ))}
           <button type="button" style={{
             display:'flex',alignItems:'center',justifyContent:'center',gap:5,
             width:'100%',padding:'10px 0',
             font:'700 10px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',
-            color:'#d7f900',marginTop:6,
+            color:'#7ddc00',marginTop:6,
           }}>COMPARE MULTIPLE SYSTEMS <ArrowRight size={11}/></button>
         </div>
 
@@ -329,13 +328,13 @@ export default function SystemFit() {
                 <div style={{font:'700 12px/1 "Barlow"',color:'rgba(255,255,255,.8)'}}>{r.name}</div>
                 <div style={{font:'500 10px/1 "Barlow"',color:'rgba(255,255,255,.4)',marginTop:2}}>{r.sub}</div>
               </div>
-              <div style={{font:'800 13px/1 "Barlow Condensed"',color:'#d7f900'}}>{r.pct}%</div>
+              <div style={{font:'800 13px/1 "Barlow Condensed"',color:'#7ddc00'}}>{r.pct}%</div>
             </div>
           ))}
           <button type="button" style={{
             display:'flex',alignItems:'center',justifyContent:'center',gap:5,
             width:'100%',padding:'10px 0',
-            font:'700 10px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#d7f900',
+            font:'700 10px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#7ddc00',
           }}>VIEW ALL HISTORY <ArrowRight size={11}/></button>
         </div>
       </div>
@@ -352,7 +351,7 @@ export default function SystemFit() {
             <div>
               <div style={{display:'flex',alignItems:'center',gap:6,marginBottom:4}}>
                 <span style={{font:'600 9px/1 "Barlow Condensed"',letterSpacing:'.14em',textTransform:'uppercase',color:'rgba(255,255,255,.4)'}}>Player to System Fit</span>
-                <span style={{display:'flex',alignItems:'center',gap:4,padding:'2px 7px',border:'1px solid rgba(215,249,0,.25)',borderRadius:3,font:'700 8px/1 "Rajdhani"',letterSpacing:'.14em',textTransform:'uppercase',color:'#d7f900'}}>AI Calculated</span>
+                <span style={{display:'flex',alignItems:'center',gap:4,padding:'2px 7px',border:'1px solid rgba(125,220,0,.25)',borderRadius:3,font:'700 8px/1 "Rajdhani"',letterSpacing:'.14em',textTransform:'uppercase',color:'#7ddc00'}}>AI Calculated</span>
               </div>
               <div style={{font:'900 22px/1 "Barlow Condensed"',letterSpacing:'.04em',textTransform:'uppercase',color:'#fff'}}>Jude Bellingham</div>
               <div style={{font:'500 11px/1 "Barlow"',color:'rgba(255,255,255,.45)',marginTop:3}}>CM · Age 21 · Real Madrid</div>
@@ -371,7 +370,7 @@ export default function SystemFit() {
           <div style={{display:'grid',gridTemplateColumns:'180px 1fr',minHeight:220}}>
             <div style={{position:'relative',overflow:'hidden',background:'#0a0b0a'}}>
               <img src="/assets/players/jude-bellingham.jpg" alt="Bellingham" style={{
-                width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 30%',
+                width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 45%',
                 maskImage:'linear-gradient(to right, rgba(0,0,0,1) 55%, transparent 100%)',
                 WebkitMaskImage:'linear-gradient(to right, rgba(0,0,0,1) 55%, transparent 100%)',
               }}/>
@@ -381,10 +380,10 @@ export default function SystemFit() {
               <div style={{flex:1}}>
                 <div style={{...S.label,display:'block',marginBottom:10}}>Fit Breakdown</div>
                 {BREAKDOWN.map(b=>(
-                  <div key={b.label} style={{display:'flex',alignItems:'center',gap:10,marginBottom:6}}>
-                    <span style={{font:'500 11px/1 "Barlow"',color:'rgba(255,255,255,.5)',flex:1,minWidth:160}}>{b.label}</span>
+                  <div key={b.label} style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                    <span style={{font:'500 11px/1 "Barlow"',color:'rgba(255,255,255,.5)',width:150,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{b.label}</span>
                     <Dots val={b.val}/>
-                    <span style={{font:'800 12px/1 "Barlow Condensed"',color:'#d7f900',width:24,textAlign:'right'}}>{b.val}</span>
+                    <span style={{font:'800 13px/1 "Barlow Condensed"',color:'#7ddc00',width:22,textAlign:'right',flexShrink:0}}>{b.val}</span>
                   </div>
                 ))}
                 <div style={{font:'500 10px/1 "Barlow"',color:'rgba(255,255,255,.3)',marginTop:8}}>🏆 Top 6% of CMs in World Football</div>
@@ -398,7 +397,7 @@ export default function SystemFit() {
               <button key={l} type="button" style={{
                 flex:1,display:'flex',alignItems:'center',justifyContent:'center',gap:5,
                 padding:'10px',border:'1px solid rgba(255,255,255,.08)',borderRadius:6,
-                font:'700 10px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#d7f900',
+                font:'700 10px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#7ddc00',
               }}>{l} <ArrowRight size={11}/></button>
             ))}
           </div>
@@ -413,18 +412,20 @@ export default function SystemFit() {
           <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:1,background:'rgba(255,255,255,.06)'}}>
             {ALT_FITS.map(f=>(
               <div key={f.name} style={{background:'#0f1010',padding:'14px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
-                <span style={{fontSize:22}}>{f.logo}</span>
+                <div style={{width:40,height:40,borderRadius:8,background:f.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <span style={{font:'900 11px/1 "Barlow Condensed"',color:f.fg,letterSpacing:'.04em'}}>{f.abbr}</span>
+                </div>
                 <div>
                   <div style={{font:'800 12px/1 "Barlow Condensed"',letterSpacing:'.04em',textTransform:'uppercase'}}>{f.name}</div>
                   <div style={{font:'600 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'rgba(255,255,255,.4)',marginTop:2}}>{f.fmt}</div>
                 </div>
-                <MiniRadar size={56}/>
-                <div style={{font:'900 20px/1 "Barlow Condensed"',color:'#d7f900'}}>{f.pct}%</div>
+                <MiniRadar size={68}/>
+                <div style={{font:'900 20px/1 "Barlow Condensed"',color:'#7ddc00'}}>{f.pct}%</div>
                 <div style={{font:'700 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'rgba(255,255,255,.4)'}}>Fit Score</div>
                 <div style={{font:'600 10px/1 "Barlow Condensed"',color: f.verdict.includes('Very') ? '#15c45a' : '#c9b800'}}>{f.verdict}</div>
                 <button type="button" style={{
                   width:'100%',padding:'7px',border:'1px solid rgba(255,255,255,.08)',borderRadius:5,
-                  font:'700 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#d7f900',
+                  font:'700 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#7ddc00',
                 }}>VIEW ANALYSIS <ArrowRight size={9} style={{verticalAlign:'middle'}}/></button>
               </div>
             ))}
@@ -441,9 +442,9 @@ export default function SystemFit() {
               <div style={{flex:1}}>
                 {ROLE_PULSE.map(r=>(
                   <div key={r.label} style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
-                    <span style={{font:'500 11px/1 "Barlow"',color:'rgba(255,255,255,.45)',flex:1,minWidth:140,fontSize:11}}>{r.label}</span>
+                    <span style={{font:'500 11px/1 "Barlow"',color:'rgba(255,255,255,.45)',width:140,flexShrink:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.label}</span>
                     <Dots val={r.val}/>
-                    <span style={{font:'800 12px/1 "Barlow Condensed"',color:'#d7f900',width:22,textAlign:'right'}}>{r.val}</span>
+                    <span style={{font:'800 13px/1 "Barlow Condensed"',color:'#7ddc00',width:22,textAlign:'right',flexShrink:0}}>{r.val}</span>
                   </div>
                 ))}
                 <div style={{display:'flex',gap:12,marginTop:8,font:'600 9px/1 "Barlow"',color:'rgba(255,255,255,.35)'}}>
@@ -464,7 +465,7 @@ export default function SystemFit() {
             <button type="button" style={{
               display:'flex',alignItems:'center',justifyContent:'center',gap:5,
               width:'100%',padding:'10px',borderTop:'1px solid rgba(255,255,255,.07)',
-              font:'700 10px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#d7f900',
+              font:'700 10px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#7ddc00',
             }}>VIEW ALL METRICS <ArrowRight size={11}/></button>
           </div>
         </div>
@@ -480,7 +481,7 @@ export default function SystemFit() {
               <div key={i} style={{flex:1,border:'1px solid rgba(255,255,255,.07)',borderRadius:6,padding:'10px',background:'rgba(0,0,0,.3)',display:'flex',flexDirection:'column',gap:4}}>
                 <span style={{font:'800 11px/1 "Barlow Condensed"',color:'#15c45a',padding:'2px 5px',background:'rgba(21,196,90,.12)',borderRadius:3,width:'fit-content'}}>{m.res} {m.score}</span>
                 <span style={{font:'500 10px/1 "Barlow"',color:'rgba(255,255,255,.4)',marginTop:2}}>{m.vs}</span>
-                <span style={{font:'900 16px/1 "Barlow Condensed"',color:'#d7f900'}}>Rating {m.r}</span>
+                <span style={{font:'900 16px/1 "Barlow Condensed"',color:'#7ddc00'}}>Rating {m.r}</span>
               </div>
             ))}
           </div>
@@ -498,8 +499,8 @@ export default function SystemFit() {
           <div style={{padding:'14px'}}>
             <div style={{font:'600 9px/1 "Rajdhani"',letterSpacing:'.18em',textTransform:'uppercase',color:'rgba(255,255,255,.35)',marginBottom:4}}>Primary Role Fit</div>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:3}}>
-              <span style={{font:'800 16px/1 "Barlow Condensed"',color:'#d7f900'}}>Advanced Midfielder</span>
-              <span style={{font:'900 20px/1 "Barlow Condensed"',color:'#d7f900'}}>90%</span>
+              <span style={{font:'800 16px/1 "Barlow Condensed"',color:'#7ddc00'}}>Advanced Midfielder</span>
+              <span style={{font:'900 20px/1 "Barlow Condensed"',color:'#7ddc00'}}>90%</span>
             </div>
             <div style={{font:'400 11px/1.5 "Barlow"',color:'rgba(255,255,255,.4)',marginBottom:12}}>Links midfield and attack, late box arrivals, chance creation.</div>
 
@@ -514,14 +515,14 @@ export default function SystemFit() {
               {[['Central Midfielder (B2B)',85],['Roaming Playmaker',82],['Deep-Lying Playmaker',74]].map(([r,p])=>(
                 <div key={r} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderTop:'1px solid rgba(255,255,255,.06)',font:'600 11px/1 "Barlow"'}}>
                   <span style={{color:'rgba(255,255,255,.55)'}}>{r}</span>
-                  <span style={{font:'700 12px/1 "Barlow Condensed"',color:'#d7f900'}}>{p}%</span>
+                  <span style={{font:'700 12px/1 "Barlow Condensed"',color:'#7ddc00'}}>{p}%</span>
                 </div>
               ))}
             </div>
             <button type="button" style={{
               display:'flex',alignItems:'center',justifyContent:'center',gap:5,width:'100%',padding:'9px',
               border:'1px solid rgba(255,255,255,.07)',borderRadius:5,marginTop:10,
-              font:'700 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#d7f900',
+              font:'700 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#7ddc00',
             }}>VIEW TACTICAL ROLE MAP <ArrowRight size={10}/></button>
           </div>
         </div>
@@ -530,19 +531,21 @@ export default function SystemFit() {
         <div style={S.card}>
           <div style={{...S.cardHead}}>
             <span style={S.h3}>Best Fit Recommendations</span>
-            <span style={{font:'700 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#d7f900',display:'flex',alignItems:'center',gap:4}}>AI Powered ✦</span>
+            <span style={{font:'700 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'#7ddc00',display:'flex',alignItems:'center',gap:4}}>AI Powered ✦</span>
           </div>
           <div style={{padding:'0 14px'}}>
             {BEST_FITS.map(f=>(
               <div key={f.rank} style={{display:'flex',alignItems:'center',gap:8,padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,.06)'}}>
                 <span style={{font:'900 16px/1 "Barlow Condensed"',color:'rgba(255,255,255,.25)',width:16,flexShrink:0}}>{f.rank}</span>
-                <span style={{fontSize:16}}>{f.logo}</span>
+                <div style={{width:28,height:28,borderRadius:5,background:f.bg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                  <span style={{font:'900 9px/1 "Barlow Condensed"',color:f.fg,letterSpacing:'.02em'}}>{f.abbr}</span>
+                </div>
                 <div style={{flex:1}}>
                   <div style={{font:'700 12px/1 "Barlow"',color:'rgba(255,255,255,.8)'}}>{f.club}</div>
                   <div style={{font:'600 9px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase',color:'rgba(255,255,255,.35)',marginTop:2}}>{f.fmt}</div>
                 </div>
                 <div style={{textAlign:'right'}}>
-                  <div style={{font:'900 14px/1 "Barlow Condensed"',color:'#d7f900'}}>{f.pct}%</div>
+                  <div style={{font:'900 14px/1 "Barlow Condensed"',color:'#7ddc00'}}>{f.pct}%</div>
                   <div style={{font:'600 9px/1 "Rajdhani"',letterSpacing:'.08em',textTransform:'uppercase',color:f.cls,marginTop:1}}>{f.verdict}</div>
                 </div>
               </div>
@@ -550,7 +553,7 @@ export default function SystemFit() {
           </div>
           <button type="button" style={{
             display:'flex',alignItems:'center',justifyContent:'center',gap:5,width:'100%',padding:'10px',
-            borderTop:'1px solid rgba(255,255,255,.07)',font:'700 9px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#d7f900',
+            borderTop:'1px solid rgba(255,255,255,.07)',font:'700 9px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#7ddc00',
           }}>VIEW FULL RANKINGS <ArrowRight size={10}/></button>
         </div>
 
@@ -567,19 +570,19 @@ export default function SystemFit() {
           </div>
           <button type="button" style={{
             display:'flex',alignItems:'center',justifyContent:'center',gap:5,width:'100%',padding:'10px',
-            borderTop:'1px solid rgba(255,255,255,.07)',font:'700 9px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#d7f900',
+            borderTop:'1px solid rgba(255,255,255,.07)',font:'700 9px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'#7ddc00',
           }}>VIEW FULL INSIGHTS <ArrowRight size={10}/></button>
         </div>
 
         {/* Founder strip */}
-        <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',border:'1px solid rgba(215,249,0,.22)',borderRadius:8,background:'rgba(215,249,0,.03)'}}>
-          <Crown size={18} style={{color:'#d7f900',flexShrink:0}}/>
+        <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',border:'1px solid rgba(125,220,0,.22)',borderRadius:8,background:'rgba(125,220,0,.03)'}}>
+          <Crown size={18} style={{color:'#7ddc00',flexShrink:0}}/>
           <div style={{flex:1}}>
-            <div style={{font:'700 12px/1 "Barlow Condensed"',letterSpacing:'.04em',textTransform:'uppercase',color:'#d7f900'}}>World Cup Founder Pass</div>
+            <div style={{font:'700 12px/1 "Barlow Condensed"',letterSpacing:'.04em',textTransform:'uppercase',color:'#7ddc00'}}>World Cup Founder Pass</div>
             <div style={{font:'400 10px/1.4 "Barlow"',color:'rgba(255,255,255,.4)',marginTop:3}}>Unlock premium insights &amp; exclusive World Cup content.</div>
           </div>
           <button type="button" onClick={()=>navigateTo('/pricing')} style={{
-            display:'flex',alignItems:'center',gap:5,padding:'8px 12px',background:'#d7f900',color:'#050700',borderRadius:5,
+            display:'flex',alignItems:'center',gap:5,padding:'8px 12px',background:'#7ddc00',color:'#050700',borderRadius:5,
             font:'800 10px/1 "Barlow Condensed"',letterSpacing:'.08em',textTransform:'uppercase',flexShrink:0,
           }}>EXPLORE <ArrowRight size={10}/></button>
         </div>

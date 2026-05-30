@@ -36,9 +36,9 @@ function HexRadarSmall() {
   const pts   = a => a.map(([x,y])=>`${x},${y}`).join(' ');
   return (
     <svg viewBox="0 0 80 80" style={{width:80,height:80}}>
-      <polygon fill="none" stroke="rgba(215,249,0,.25)" strokeWidth="1" points={pts(axes)}/>
-      {axes.map(([x,y],i)=><line key={i} stroke="rgba(215,249,0,.15)" strokeWidth=".8" x1="40" y1="40" x2={x} y2={y}/>)}
-      <polygon fill="rgba(215,249,0,.28)" stroke="var(--lime)" strokeWidth="1.5" points={pts(score)}/>
+      <polygon fill="none" stroke="rgba(125,220,0,.25)" strokeWidth="1" points={pts(axes)}/>
+      {axes.map(([x,y],i)=><line key={i} stroke="rgba(125,220,0,.15)" strokeWidth=".8" x1="40" y1="40" x2={x} y2={y}/>)}
+      <polygon fill="rgba(125,220,0,.28)" stroke="var(--lime)" strokeWidth="1.5" points={pts(score)}/>
     </svg>
   );
 }

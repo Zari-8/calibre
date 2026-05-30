@@ -196,7 +196,7 @@ export default function SystemFit() {
     card: {
       border:'1px solid rgba(255,255,255,.07)',
       borderRadius:10,
-      background:'#0f1010',
+      background:'#111211',
       overflow:'hidden',
     },
     cardHead: {

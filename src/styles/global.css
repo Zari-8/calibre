@@ -8,13 +8,13 @@
   /* Background */
   --bg:          #080909;
   --bg2:         #0b0c0b;
-  --panel:       #0f1010;
-  --panel2:      #111312;
+  --panel:       #111211;
+  --panel2:      #131413;
   --panel3:      #141514;
 
   /* Borders */
-  --thin:        rgba(255,255,255,.06);
-  --line:        rgba(255,255,255,.09);
+  --thin:        rgba(255,255,255,.09);
+  --line:        rgba(255,255,255,.13);
   --line-lime:   rgba(215,249,0,.25);
 
   /* Accent */
@@ -62,18 +62,19 @@ body::before {
   content: "";
   position: fixed; inset: 0; pointer-events: none; z-index: -2;
   background:
-    radial-gradient(ellipse 70% 35% at 20% 0%, rgba(215,249,0,.035) 0%, transparent 65%),
-    radial-gradient(ellipse 60% 40% at 90% 5%,  rgba(215,249,0,.025) 0%, transparent 60%),
-    linear-gradient(180deg, #080909 0%, #060707 100%);
+    radial-gradient(ellipse 55% 40% at 8% 0%,   rgba(215,249,0,.07)  0%, transparent 60%),
+    radial-gradient(ellipse 45% 35% at 92% 0%,  rgba(215,249,0,.05)  0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 50% 100%, rgba(215,249,0,.025) 0%, transparent 65%),
+    linear-gradient(180deg, #090a09 0%, #060706 100%);
 }
 body::after {
   content: "";
   position: fixed; inset: 0; pointer-events: none; z-index: -1;
   background-image:
-    linear-gradient(rgba(255,255,255,.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
-  background-size: 52px 52px;
-  opacity: .6;
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.014) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: .55;
 }
 
 /* ── LAYOUT ─────────────────────────────────────────────────────── */

@@ -37,7 +37,7 @@
   --shadow:      0 4px 24px rgba(0,0,0,.55);
   --shadow-lg:   0 8px 48px rgba(0,0,0,.8);
 
-  font-family: "Barlow", system-ui, sans-serif;
+  font-family: "Exo 2", system-ui, sans-serif;
   font-size: 14px;
   color-scheme: dark;
 }
@@ -90,16 +90,17 @@ body::after {
   width: 100%;
   height: 54px;
   display: flex; align-items: center;
-  padding: 0 20px;
-  background: rgba(8,9,9,.95);
+  padding: 0 24px;
+  background: rgba(8,9,9,.96);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--thin);
+  overflow: hidden;
 }
 
 /* Brand */
 .brand-lockup {
   display: flex; align-items: center; gap: 10px;
-  margin-right: 36px; flex-shrink: 0;
+  margin-right: 28px; flex-shrink: 0;
   color: var(--lime); text-decoration: none;
 }
 .brand-mark {
@@ -119,7 +120,7 @@ body::after {
   letter-spacing: .42em; text-transform: uppercase;
 }
 .brand-text em {
-  font: 600 8px/1 "Barlow";
+  font: 600 8px/1 "Exo 2";
   letter-spacing: .32em; text-transform: uppercase;
   color: rgba(255,255,255,.45); font-style: normal;
 }
@@ -177,7 +178,7 @@ body::after {
   padding: 0 10px; height: 32px;
   border: 1px solid var(--thin); border-radius: var(--r);
   color: var(--text2);
-  font: 600 11px/1 "Barlow";
+  font: 600 11px/1 "Exo 2";
   transition: border-color .12s;
 }
 .lang-pill:hover { border-color: var(--line); }
@@ -190,7 +191,7 @@ body::after {
 .lang-opt {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 10px; border-radius: 6px;
-  font: 500 13px/1 "Barlow"; color: var(--text2);
+  font: 500 13px/1 "Exo 2"; color: var(--text2);
   width: 100%; text-align: left;
   transition: background .1s, color .1s;
 }
@@ -233,7 +234,7 @@ body::after {
 }
 .battle-live-tag {
   display: flex; align-items: center; gap: 6px;
-  font: 800 11px/1 "Rajdhani";
+  font: 800 11px/1 "Exo 2";
   letter-spacing: .18em; text-transform: uppercase;
   color: var(--lime);
   border: 1px solid var(--line-lime);
@@ -257,7 +258,7 @@ body::after {
   margin-left: 12px;
 }
 .vote-box strong { font: 800 20px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.vote-box span   { font: 600 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
+.vote-box span   { font: 600 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
 
 /* fighter left */
 .fighter { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 12px; }
@@ -285,7 +286,7 @@ body::after {
   color: #fff;
 }
 .fighter-name span {
-  font: 700 11px/1 "Rajdhani";
+  font: 700 11px/1 "Exo 2";
   letter-spacing: .2em; text-transform: uppercase;
   color: var(--lime);
 }
@@ -311,7 +312,7 @@ body::after {
   margin-bottom: 2px;
 }
 .cat-label-text {
-  font: 600 10px/1 "Rajdhani";
+  font: 600 10px/1 "Exo 2";
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text3); margin-right: 4px; white-space: nowrap;
 }
@@ -319,7 +320,7 @@ body::after {
   display: flex; align-items: center; gap: 4px;
   padding: 4px 9px; border-radius: 4px;
   border: 1px solid var(--thin);
-  font: 700 10px/1 "Rajdhani";
+  font: 700 10px/1 "Exo 2";
   letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2);
   transition: all .12s;
@@ -347,7 +348,7 @@ body::after {
 }
 .question-box h2 mark { color: var(--lime); background: none; }
 .tap-hint {
-  font: 700 9px/1 "Rajdhani";
+  font: 700 9px/1 "Exo 2";
   letter-spacing: .2em; text-transform: uppercase;
   color: var(--text3);
 }
@@ -365,13 +366,13 @@ body::after {
 .tap-scale button.selected { background: var(--lime); border-color: var(--lime); color: #050700; }
 .scale-labels {
   display: flex; justify-content: space-between; width: 100%;
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 9px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text3);
 }
 .scale-labels .label-left  { color: #6ab4ff; }
 .scale-labels .label-right { color: #ffb06a; }
-.vote-confirm { font: 700 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
-.vote-hint    { font: 500 10px/1 "Barlow"; color: var(--text3); }
+.vote-confirm { font: 700 10px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+.vote-hint    { font: 500 10px/1 "Exo 2"; color: var(--text3); }
 
 /* proof strip */
 .proof-strip {
@@ -384,7 +385,7 @@ body::after {
 .proof-strip > span {
   display: flex; align-items: center; gap: 6px;
   padding: 0 20px; height: 100%;
-  font: 700 10px/1 "Rajdhani";
+  font: 700 10px/1 "Exo 2";
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text2);
   border-right: 1px solid var(--thin);
@@ -399,7 +400,7 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 14px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); white-space: nowrap;
   transition: border-color .12s, color .12s;
 }
@@ -438,12 +439,12 @@ body::after {
   color: var(--text);
 }
 .panel-eyebrow {
-  font: 700 9px/1 "Rajdhani";
+  font: 700 9px/1 "Exo 2";
   letter-spacing: .2em; text-transform: uppercase;
   color: var(--text3);
 }
 .view-all-link {
-  font: 700 10px/1 "Rajdhani";
+  font: 700 10px/1 "Exo 2";
   letter-spacing: .12em; text-transform: uppercase;
   color: var(--lime); opacity: .8;
   transition: opacity .1s;
@@ -469,7 +470,7 @@ body::after {
   margin-left: -6px;
 }
 .trending-avatars img:first-child { margin-left: 0; }
-.trending-label { flex: 1; font: 600 12px/1.3 "Barlow"; color: var(--text); }
+.trending-label { flex: 1; font: 600 12px/1.3 "Exo 2"; color: var(--text); }
 .trending-votes { font: 700 11px/1 "Barlow Condensed"; color: var(--text2); flex-shrink: 0; }
 .spark {
   width: 60px; height: 24px; flex-shrink: 0;
@@ -480,7 +481,7 @@ body::after {
 /* category breakdown radar */
 .cat-breakdown { padding: 16px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
 .cat-metric { display: flex; flex-direction: column; gap: 4px; }
-.cat-metric-label { font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.cat-metric-label { font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
 .cat-metric-pct   { font: 900 22px/1 "Barlow Condensed"; color: var(--text); }
 .cat-metric--right { align-items: flex-end; }
 .hex-radar {
@@ -513,8 +514,8 @@ body::after {
 }
 .feed-body { flex: 1; min-width: 0; }
 .feed-user   { font: 700 11px/1 "Barlow Condensed"; color: var(--lime); }
-.feed-action { font: 500 11px/1 "Barlow"; color: var(--text2); }
-.feed-battle { font: 700 12px/1.3 "Barlow"; color: var(--text); }
+.feed-action { font: 500 11px/1 "Exo 2"; color: var(--text2); }
+.feed-battle { font: 700 12px/1.3 "Exo 2"; color: var(--text); }
 .feed-score {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px;
@@ -522,8 +523,8 @@ body::after {
   font: 900 11px/1 "Barlow Condensed";
   margin-left: 4px;
 }
-.feed-quote { font: 500 11px/1.4 "Barlow"; color: var(--text2); font-style: italic; margin-top: 2px; }
-.feed-ago   { font: 500 10px/1 "Barlow"; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
+.feed-quote { font: 500 11px/1.4 "Exo 2"; color: var(--text2); font-style: italic; margin-top: 2px; }
+.feed-ago   { font: 500 10px/1 "Exo 2"; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
 
 /* rising talents */
 .rising-row {
@@ -532,8 +533,8 @@ body::after {
 }
 .rising-row:last-child { border-bottom: none; }
 .rising-rank  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
-.rising-name  { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
-.rising-role  { font: 600 10px/1 "Rajdhani"; letter-spacing: .1em; color: var(--text2); }
+.rising-name  { font: 700 13px/1 "Exo 2"; color: var(--text); flex: 1; }
+.rising-role  { font: 600 10px/1 "Exo 2"; letter-spacing: .1em; color: var(--text2); }
 .rising-score {
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: 22px; border-radius: 4px;
@@ -565,7 +566,7 @@ body::after {
   font: 900 48px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em;
 }
 .gordon-fit-label {
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2);
 }
 
 /* competitions teaser */
@@ -573,7 +574,7 @@ body::after {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; border-radius: 6px;
   border: 1px solid var(--thin); background: var(--panel2);
-  font: 700 12px/1 "Barlow"; color: var(--text);
+  font: 700 12px/1 "Exo 2"; color: var(--text);
   transition: border-color .12s;
   cursor: pointer;
 }
@@ -598,7 +599,7 @@ body::after {
   color: var(--lime);
 }
 .promo-strip-text span {
-  font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 3px; display: block;
+  font: 400 13px/1 "Exo 2"; color: var(--text2); margin-top: 3px; display: block;
 }
 .promo-cta {
   display: flex; align-items: center; gap: 8px;
@@ -634,7 +635,7 @@ body::after {
 }
 .dbp-live-tag {
   display: flex; align-items: center; gap: 6px;
-  font: 800 10px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase;
+  font: 800 10px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--line-lime); border-radius: 4px; padding: 5px 9px;
 }
 .dbp-voter-stack { display: flex; }
@@ -648,7 +649,7 @@ body::after {
   display: flex; flex-direction: column; gap: 1px; margin-left: 10px;
 }
 .dbp-vote-badge strong { font: 800 18px/1 "Barlow Condensed"; color: var(--lime); }
-.dbp-vote-badge span   { font: 700 8px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.dbp-vote-badge span   { font: 700 8px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
 
 /* hero body: 3-col fighters */
 .dbp-hero-body {
@@ -674,7 +675,7 @@ body::after {
   letter-spacing: .04em; text-transform: uppercase; color: #fff;
 }
 .dbp-fighter-club {
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
   margin-top: 3px;
 }
 
@@ -696,9 +697,9 @@ body::after {
 .dbp-question mark { color: var(--lime); background: none; }
 .dbp-countdown {
   display: flex; align-items: center; gap: 5px;
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .12em; color: var(--text2);
+  font: 700 11px/1 "Exo 2"; letter-spacing: .12em; color: var(--text2);
 }
-.dbp-tap { font: 700 9px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); }
+.dbp-tap { font: 700 9px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); }
 .dbp-scale { display: flex; gap: 3px; }
 .dbp-scale button {
   width: 24px; height: 24px; border-radius: 3px;
@@ -710,7 +711,7 @@ body::after {
 .dbp-scale button.sel  { background: var(--lime); border-color: var(--lime); color: #050700; }
 .dbp-slabels {
   display: flex; justify-content: space-between; width: 100%;
-  font: 700 8px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
+  font: 700 8px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
 }
 .dbp-slabels .lbl-l { color: #6ab4ff; }
 .dbp-slabels .lbl-r { color: #ffb06a; }
@@ -723,7 +724,7 @@ body::after {
   display: flex; align-items: center; gap: 5px;
   padding: 7px 13px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2);
   transition: all .12s;
 }
@@ -732,7 +733,7 @@ body::after {
 .dbp-sort-select {
   margin-left: auto; display: flex; align-items: center; gap: 6px;
   padding: 7px 13px; border-radius: var(--r); border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); appearance: none;
 }
 
@@ -747,7 +748,7 @@ body::after {
   letter-spacing: .16em; text-transform: uppercase; color: var(--text);
 }
 .section-heading-link {
-  margin-left: auto; font: 700 10px/1 "Rajdhani";
+  margin-left: auto; font: 700 10px/1 "Exo 2";
   letter-spacing: .12em; text-transform: uppercase; color: var(--lime); opacity: .8;
 }
 .section-heading-link:hover { opacity: 1; }
@@ -763,13 +764,13 @@ body::after {
 .battle-card-live {
   position: absolute; top: 8px; left: 8px;
   background: var(--red); color: #fff;
-  font: 800 8px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase;
+  font: 800 8px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase;
   padding: 3px 6px; border-radius: 3px; z-index: 2;
 }
 .battle-card-cat {
   position: absolute; top: 8px; right: 8px;
   display: flex; align-items: center; gap: 4px;
-  font: 700 8px/1 "Rajdhani"; letter-spacing: .15em; text-transform: uppercase;
+  font: 700 8px/1 "Exo 2"; letter-spacing: .15em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--line-lime); border-radius: 3px; padding: 3px 6px;
   z-index: 2;
 }
@@ -794,7 +795,7 @@ body::after {
 .battle-card-names span {
   font: 800 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text);
 }
-.battle-card-names .card-club { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
+.battle-card-names .card-club { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
 .battle-card-bar { margin: 0 10px 10px; height: 3px; border-radius: 2px; background: var(--panel2); overflow: hidden; }
 .battle-card-bar-fill { height: 100%; background: var(--lime); border-radius: 2px; }
 .battle-card-votes {
@@ -817,15 +818,15 @@ body::after {
   border: 1px solid var(--thin);
 }
 .upcoming-fighter-text {}
-.upcoming-fighter-name { font: 700 12px/1 "Barlow"; color: var(--text); }
-.upcoming-fighter-club { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.upcoming-fighter-name { font: 700 12px/1 "Exo 2"; color: var(--text); }
+.upcoming-fighter-club { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .upcoming-vs { font: 900 11px/1 "Barlow Condensed"; color: var(--text3); }
 .upcoming-cd { font: 800 12px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: .04em; white-space: nowrap; }
-.upcoming-cd-label { font: 600 8px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); display: block; text-align: right; margin-top: 2px; }
+.upcoming-cd-label { font: 600 8px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); display: block; text-align: right; margin-top: 2px; }
 .view-schedule-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 12px;
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin);
   transition: background .12s;
 }
@@ -839,13 +840,13 @@ body::after {
 }
 .nomination-row:last-child { border-bottom: none; }
 .nomination-rank { font: 900 16px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
-.nomination-title { font: 700 12px/1.3 "Barlow"; color: var(--text); flex: 1; }
-.nomination-by    { font: 600 10px/1 "Barlow"; color: var(--text2); margin-top: 2px; }
+.nomination-title { font: 700 12px/1.3 "Exo 2"; color: var(--text); flex: 1; }
+.nomination-by    { font: 600 10px/1 "Exo 2"; color: var(--text2); margin-top: 2px; }
 .nomination-votes { font: 700 12px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; white-space: nowrap; }
 .nominate-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 12px;
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin);
   transition: background .12s;
 }
@@ -858,7 +859,7 @@ body::after {
 .join-conv-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 12px;
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--thin); border-radius: var(--r-lg);
   transition: background .12s, border-color .12s;
 }
@@ -879,7 +880,7 @@ body::after {
   font: 900 48px/1 "Barlow Condensed";
   letter-spacing: .02em; text-transform: uppercase; color: #fff;
 }
-.players-hero-sub { font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.players-hero-sub { font: 400 13px/1 "Exo 2"; color: var(--text2); margin-top: 4px; }
 
 .players-stats-strip {
   display: flex; gap: 32px; margin-top: 16px;
@@ -888,8 +889,8 @@ body::after {
 .players-stat strong {
   font: 900 28px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em;
 }
-.players-stat span { font: 600 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
-.players-stat small { font: 500 10px/1 "Barlow"; color: var(--green); }
+.players-stat span { font: 600 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
+.players-stat small { font: 500 10px/1 "Exo 2"; color: var(--green); }
 
 .players-search-bar {
   display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
@@ -897,7 +898,7 @@ body::after {
 .players-search-input {
   flex: 1; max-width: 420px; height: 40px;
   background: var(--panel); border: 1px solid var(--thin); border-radius: var(--r);
-  padding: 0 40px 0 14px; color: var(--text); font: 400 13px/1 "Barlow";
+  padding: 0 40px 0 14px; color: var(--text); font: 400 13px/1 "Exo 2";
   transition: border-color .12s;
 }
 .players-search-input:focus { border-color: var(--line); }
@@ -906,7 +907,7 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 40px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
   transition: border-color .12s, color .12s;
 }
 .advanced-filters-btn:hover { border-color: var(--line); color: var(--text); }
@@ -917,7 +918,7 @@ body::after {
   display: flex; align-items: center; gap: 4px;
   padding: 0 12px; height: 34px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Exo 2"; color: var(--text2);
   transition: border-color .12s;
 }
 .filter-chip:hover { border-color: var(--line); }
@@ -941,7 +942,7 @@ body::after {
 .featured-tag {
   display: flex; align-items: center; gap: 6px;
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
-  font: 800 10px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
+  font: 800 10px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
 }
 .featured-player-img {
   width: 100%; height: 200px; object-fit: cover; object-position: top;
@@ -952,8 +953,8 @@ body::after {
 .featured-player-name {
   font: 900 22px/1.1 "Barlow Condensed"; letter-spacing: .03em; text-transform: uppercase; color: #fff;
 }
-.featured-player-club { font: 700 10px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
-.featured-player-pos  { display: flex; align-items: center; gap: 8px; margin-top: 4px; font: 500 11px/1 "Barlow"; color: var(--text2); }
+.featured-player-club { font: 700 10px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
+.featured-player-pos  { display: flex; align-items: center; gap: 8px; margin-top: 4px; font: 500 11px/1 "Exo 2"; color: var(--text2); }
 .calibre-rating-badge {
   display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: var(--r);
@@ -966,12 +967,12 @@ body::after {
 .featured-metric-val  { font: 900 20px/1 "Barlow Condensed"; color: var(--lime); }
 .featured-metric-val--green { color: var(--green); }
 .featured-metric-val--white { color: #fff; }
-.featured-metric-label { font: 600 8px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
-.featured-metric-sub   { font: 500 10px/1 "Barlow"; color: var(--text2); }
+.featured-metric-label { font: 600 8px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.featured-metric-sub   { font: 500 10px/1 "Exo 2"; color: var(--text2); }
 .view-profile-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 11px;
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--line-lime); border-radius: var(--r);
   margin-top: 12px; transition: background .12s;
 }
@@ -980,11 +981,11 @@ body::after {
 /* player table */
 .player-table-card { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); overflow: hidden; }
 .player-table-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--thin); }
-.player-table-count { font: 500 11px/1 "Barlow"; color: var(--text2); }
+.player-table-count { font: 500 11px/1 "Exo 2"; color: var(--text2); }
 .player-table { width: 100%; border-collapse: collapse; }
 .player-table th {
   padding: 8px 12px; text-align: left;
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   border-bottom: 1px solid var(--thin);
 }
 .player-table td { padding: 9px 12px; border-bottom: 1px solid var(--thin); vertical-align: middle; }
@@ -993,10 +994,10 @@ body::after {
 .pt-rank { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); }
 .pt-player { display: flex; align-items: center; gap: 8px; }
 .pt-player-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); }
-.pt-player-name { font: 700 13px/1 "Barlow"; color: var(--text); }
-.pt-player-team { font: 600 10px/1 "Barlow"; color: var(--text2); margin-top: 2px; }
-.pt-age  { font: 500 12px/1 "Barlow"; color: var(--text2); }
-.pt-pos  { display: flex; align-items: center; justify-content: center; width: 34px; height: 20px; border-radius: 3px; border: 1px solid var(--thin); font: 700 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.pt-player-name { font: 700 13px/1 "Exo 2"; color: var(--text); }
+.pt-player-team { font: 600 10px/1 "Exo 2"; color: var(--text2); margin-top: 2px; }
+.pt-age  { font: 500 12px/1 "Exo 2"; color: var(--text2); }
+.pt-pos  { display: flex; align-items: center; justify-content: center; width: 34px; height: 20px; border-radius: 3px; border: 1px solid var(--thin); font: 700 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
 .pt-rating {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 4px;
@@ -1007,7 +1008,7 @@ body::after {
 .pt-stars { display: flex; align-items: center; gap: 3px; font: 700 12px/1 "Barlow Condensed"; color: #f5c518; }
 .view-db-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 12px; font: 700 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase;
+  padding: 12px; font: 700 11px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin); transition: background .12s;
 }
 .view-db-btn:hover { background: var(--lime-dim); }
@@ -1017,17 +1018,17 @@ body::after {
 .compare-slots { display: flex; gap: 8px; padding: 12px 14px; }
 .compare-slot {
   flex: 1; border-radius: var(--r); border: 1px solid var(--thin);
-  padding: 8px; text-align: center; font: 600 11px/1 "Barlow"; color: var(--text2);
+  padding: 8px; text-align: center; font: 600 11px/1 "Exo 2"; color: var(--text2);
   min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   position: relative;
 }
 .compare-slot img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top; }
-.compare-slot strong { font: 700 11px/1 "Barlow"; color: var(--text); }
-.compare-slot span { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
-.compare-close { position: absolute; top: 4px; right: 6px; font: 700 12px/1 "Barlow"; color: var(--text3); }
+.compare-slot strong { font: 700 11px/1 "Exo 2"; color: var(--text); }
+.compare-slot span { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.compare-close { position: absolute; top: 4px; right: 6px; font: 700 12px/1 "Exo 2"; color: var(--text3); }
 .compare-cta {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 11px 14px; font: 700 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase;
+  padding: 11px 14px; font: 700 11px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin); transition: background .12s;
 }
 .compare-cta:hover { background: var(--lime-dim); }
@@ -1036,7 +1037,7 @@ body::after {
 .rank-tabs { display: flex; border-bottom: 1px solid var(--thin); }
 .rank-tab {
   flex: 1; padding: 10px 4px; text-align: center;
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 9px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2); border-bottom: 2px solid transparent;
   transition: color .12s, border-color .12s;
 }
@@ -1048,7 +1049,7 @@ body::after {
 .rank-row:last-child { border-bottom: none; }
 .rank-row-num { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
 .rank-row-img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); flex-shrink: 0; }
-.rank-row-name { font: 700 12px/1 "Barlow"; color: var(--text); flex: 1; }
+.rank-row-name { font: 700 12px/1 "Exo 2"; color: var(--text); flex: 1; }
 .rank-row-score {
   width: 32px; height: 22px; border-radius: 4px;
   border: 1px solid rgba(125,220,0,.35);
@@ -1057,7 +1058,7 @@ body::after {
 }
 .view-rankings-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 11px; font: 700 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase;
+  padding: 11px; font: 700 11px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin); transition: background .12s;
 }
 .view-rankings-btn:hover { background: var(--lime-dim); }
@@ -1066,7 +1067,7 @@ body::after {
 .archetype-dist { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); padding: 14px; }
 .archetype-dist-inner { display: flex; align-items: center; gap: 12px; }
 .archetype-labels { display: flex; flex-direction: column; gap: 6px; }
-.archetype-label { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: flex; justify-content: space-between; gap: 20px; }
+.archetype-label { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: flex; justify-content: space-between; gap: 20px; }
 .archetype-label span { color: var(--text3); }
 
 
@@ -1086,12 +1087,12 @@ body::after {
 }
 .comp-sidebar-section { padding: 8px 0; }
 .comp-sidebar-label {
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   padding: 6px 16px;
 }
 .comp-sidebar-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 16px; font: 600 13px/1 "Barlow"; color: var(--text2);
+  padding: 9px 16px; font: 600 13px/1 "Exo 2"; color: var(--text2);
   transition: color .12s, background .12s; cursor: pointer;
 }
 .comp-sidebar-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
@@ -1099,7 +1100,7 @@ body::after {
 .comp-sidebar-divider { height: 1px; background: var(--thin); margin: 8px 0; }
 .comp-sidebar-star { color: var(--lime); font-size: 11px; }
 .comp-sidebar-login-cta { margin: 16px; padding: 12px; border: 1px solid var(--thin); border-radius: var(--r); text-align: center; }
-.comp-sidebar-login-cta p { font: 400 11px/1.5 "Barlow"; color: var(--text2); margin-bottom: 8px; }
+.comp-sidebar-login-cta p { font: 400 11px/1.5 "Exo 2"; color: var(--text2); margin-bottom: 8px; }
 .comp-login-btn { display: block; width: 100%; padding: 8px; background: var(--lime); color: #050700; font: 800 10px/1 "Barlow Condensed"; letter-spacing: .1em; text-transform: uppercase; border-radius: 5px; }
 
 .comp-main { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
@@ -1122,29 +1123,29 @@ body::after {
 }
 .comp-banner-content { position: relative; z-index: 2; padding: 24px; flex: 1; }
 .comp-banner-eyebrow {
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.5);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.5);
   margin-bottom: 6px;
 }
 .comp-banner-title {
   font: 900 28px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
   margin-bottom: 4px;
 }
-.comp-banner-sub { font: 400 12px/1 "Barlow"; color: rgba(255,255,255,.6); margin-bottom: 12px; }
-.comp-banner-tagline { font: 400 12px/1.5 "Barlow"; color: rgba(255,255,255,.5); margin-bottom: 14px; }
+.comp-banner-sub { font: 400 12px/1 "Exo 2"; color: rgba(255,255,255,.6); margin-bottom: 12px; }
+.comp-banner-tagline { font: 400 12px/1.5 "Exo 2"; color: rgba(255,255,255,.5); margin-bottom: 14px; }
 .comp-view-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 9px 16px; border-radius: var(--r);
   background: rgba(255,255,255,.15); color: #fff;
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   border: 1px solid rgba(255,255,255,.2);
   transition: background .12s;
 }
 .comp-view-btn:hover { background: rgba(255,255,255,.22); }
 .comp-banner-next { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: 2; text-align: right; }
-.comp-banner-next-label { font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 10px; }
+.comp-banner-next-label { font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 10px; }
 .comp-next-match { display: flex; align-items: center; gap: 10px; }
 .comp-next-team img { width: 36px; height: 36px; object-fit: contain; }
-.comp-next-team span { display: block; font: 700 12px/1 "Barlow"; color: #fff; margin-top: 4px; text-align: center; }
+.comp-next-team span { display: block; font: 700 12px/1 "Exo 2"; color: #fff; margin-top: 4px; text-align: center; }
 .comp-next-vs { font: 900 18px/1 "Barlow Condensed"; color: rgba(255,255,255,.4); }
 .comp-next-date { font: 700 11px/1 "Barlow Condensed"; color: var(--lime); display: block; margin-top: 6px; text-align: center; }
 
@@ -1161,8 +1162,8 @@ body::after {
 .league-tab.active { border-color: var(--line-lime); background: rgba(125,220,0,.05); }
 .league-tab-logo { font-size: 24px; line-height: 1; }
 .league-tab-name { font: 800 13px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
-.league-tab-country { font: 600 9px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
-.league-tab-live { font: 700 9px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 4px; }
+.league-tab-country { font: 600 9px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
+.league-tab-live { font: 700 9px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 4px; }
 
 /* comp data grid */
 .comp-data-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
@@ -1172,11 +1173,11 @@ body::after {
   font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
 }
 .comp-table { width: 100%; border-collapse: collapse; }
-.comp-table td { padding: 7px 12px; border-bottom: 1px solid var(--thin); font: 500 12px/1 "Barlow"; }
+.comp-table td { padding: 7px 12px; border-bottom: 1px solid var(--thin); font: 500 12px/1 "Exo 2"; }
 .comp-table tr:last-child td { border-bottom: none; }
 .comp-table tr:hover td { background: rgba(255,255,255,.02); }
 .comp-rank-num { font: 700 12px/1 "Barlow Condensed"; color: var(--text3); }
-.comp-team-name { font: 700 12px/1 "Barlow"; color: var(--text); }
+.comp-team-name { font: 700 12px/1 "Exo 2"; color: var(--text); }
 .comp-pts { font: 900 13px/1 "Barlow Condensed"; color: var(--lime); }
 .comp-form { display: flex; gap: 2px; }
 .form-badge {
@@ -1201,7 +1202,7 @@ body::after {
   position: relative; overflow: hidden;
 }
 .coverage-count { font: 900 32px/1 "Barlow Condensed"; color: var(--lime); }
-.coverage-label { font: 600 10px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
+.coverage-label { font: 600 10px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
 
 /* hot debates */
 .hot-debate-row {
@@ -1210,11 +1211,11 @@ body::after {
 }
 .hot-debate-row:last-child { border-bottom: none; }
 .hot-debate-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--panel2); }
-.hot-debate-title { font: 700 12px/1.3 "Barlow"; color: var(--text); flex: 1; }
-.hot-debate-meta  { font: 500 10px/1 "Barlow"; color: var(--text2); margin-top: 3px; }
+.hot-debate-title { font: 700 12px/1.3 "Exo 2"; color: var(--text); flex: 1; }
+.hot-debate-meta  { font: 500 10px/1 "Exo 2"; color: var(--text2); margin-top: 3px; }
 .hot-badge {
   padding: 3px 7px; border-radius: 3px;
-  font: 800 8px/1 "Rajdhani"; letter-spacing: .15em; text-transform: uppercase;
+  font: 800 8px/1 "Exo 2"; letter-spacing: .15em; text-transform: uppercase;
 }
 .hot-badge--hot  { background: rgba(224,60,60,.15); color: var(--red); border: 1px solid rgba(224,60,60,.3); }
 .hot-badge--live { background: var(--green-dim); color: var(--green); border: 1px solid rgba(21,196,90,.3); }
@@ -1226,12 +1227,12 @@ body::after {
   padding: 9px 14px; border-bottom: 1px solid var(--thin);
 }
 .fixture-row:last-child { border-bottom: none; }
-.fixture-date { font: 700 9px/1.4 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); width: 50px; flex-shrink: 0; }
+.fixture-date { font: 700 9px/1.4 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); width: 50px; flex-shrink: 0; }
 .fixture-teams { flex: 1; }
-.fixture-home { font: 700 11px/1 "Barlow"; color: var(--text); }
-.fixture-away { font: 600 10px/1 "Barlow"; color: var(--text2); }
+.fixture-home { font: 700 11px/1 "Exo 2"; color: var(--text); }
+.fixture-away { font: 600 10px/1 "Exo 2"; color: var(--text2); }
 .fixture-time { font: 700 10px/1 "Barlow Condensed"; color: var(--lime); white-space: nowrap; }
-.fixture-comp { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+.fixture-comp { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -1255,13 +1256,13 @@ body::after {
   font: 900 36px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
 }
 .talents-hero-title span { color: var(--lime); }
-.talents-hero-sub { font: 400 12px/1 "Barlow"; color: var(--text2); }
+.talents-hero-sub { font: 400 12px/1 "Exo 2"; color: var(--text2); }
 .scout-shortlist-btn {
   margin-left: auto;
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 36px; border-radius: var(--r);
   border: 1px solid var(--line-lime);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: background .12s;
 }
 .scout-shortlist-btn:hover { background: var(--lime-dim); }
@@ -1271,7 +1272,7 @@ body::after {
   display: flex; align-items: center; gap: 4px;
   padding: 0 12px; height: 32px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Exo 2"; color: var(--text2);
   transition: all .12s;
 }
 .talent-filter-chip:hover { border-color: var(--line); }
@@ -1280,7 +1281,7 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 32px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: border-color .12s;
 }
 .more-filters-btn:hover { border-color: var(--line); }
@@ -1289,7 +1290,7 @@ body::after {
 .region-tab {
   padding: 6px 14px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: all .12s;
 }
 .region-tab:hover { border-color: var(--line); color: var(--text); }
@@ -1314,26 +1315,26 @@ body::after {
 .breakout-new-badge {
   position: absolute; top: 12px; left: 12px;
   background: var(--lime); color: #050700;
-  font: 900 9px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase;
+  font: 900 9px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase;
   padding: 4px 8px; border-radius: 4px;
 }
 .breakout-info { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
 .breakout-name { font: 900 32px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.breakout-meta { font: 600 11px/1 "Barlow"; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+.breakout-meta { font: 600 11px/1 "Exo 2"; color: var(--text2); display: flex; align-items: center; gap: 8px; }
 .breakout-scores { display: flex; gap: 20px; }
 .breakout-score-item {}
 .breakout-score-val { font: 900 40px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.breakout-score-label { font: 700 8px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.breakout-score-label { font: 700 8px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .breakout-radar-row { display: flex; gap: 24px; align-items: center; }
 .breakout-attr { display: flex; flex-direction: column; gap: 3px; }
-.breakout-attr-label { font: 600 8px/1 "Rajdhani"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.breakout-attr-label { font: 600 8px/1 "Exo 2"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
 .breakout-attr-val   { font: 900 20px/1 "Barlow Condensed"; color: var(--text); }
-.breakout-bio { font: 400 12px/1.6 "Barlow"; color: var(--text2); }
+.breakout-bio { font: 400 12px/1.6 "Exo 2"; color: var(--text2); }
 .view-report-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 9px 16px; border-radius: var(--r);
   border: 1px solid var(--line-lime);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); width: fit-content; transition: background .12s;
 }
 .view-report-btn:hover { background: var(--lime-dim); }
@@ -1350,8 +1351,8 @@ body::after {
 .rising-talent-row:last-child { border-bottom: none; }
 .rt-rank { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .rt-img  { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
-.rt-name { font: 700 13px/1 "Barlow"; color: var(--text); }
-.rt-meta { font: 600 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.rt-name { font: 700 13px/1 "Exo 2"; color: var(--text); }
+.rt-meta { font: 600 10px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .rt-score { display: flex; align-items: center; justify-content: center; width: 32px; height: 22px; border-radius: 4px; border: 1px solid rgba(125,220,0,.35); font: 900 13px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; }
 .rt-delta { font: 700 11px/1 "Barlow Condensed"; color: var(--green); width: 28px; text-align: right; flex-shrink: 0; }
 
@@ -1366,7 +1367,7 @@ body::after {
 .emerging-pos-badge {
   position: absolute; top: 6px; left: 6px;
   background: rgba(8,9,9,.7); border: 1px solid var(--thin);
-  font: 700 8px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 8px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); padding: 3px 5px; border-radius: 3px;
 }
 .emerging-img-wrap { position: relative; }
@@ -1377,12 +1378,12 @@ body::after {
 }
 .emerging-info { padding: 6px 8px 10px; }
 .emerging-name { font: 800 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
-.emerging-club { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.emerging-club { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .emerging-flag { font-size: 12px; }
 .emerging-scores { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
 .emerging-score-val { font: 900 16px/1 "Barlow Condensed"; color: var(--lime); }
 .emerging-pot { font: 700 10px/1 "Barlow Condensed"; color: var(--text2); }
-.emerging-pot span { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+.emerging-pot span { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
 
 /* talents bottom strip */
 .talents-bottom-strip {
@@ -1394,13 +1395,13 @@ body::after {
 }
 .talents-strip-stat { text-align: center; }
 .talents-strip-stat strong { font: 900 18px/1 "Barlow Condensed"; color: var(--text); display: block; }
-.talents-strip-stat span  { font: 700 9px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 3px; }
-.talents-strip-stat small { font: 400 10px/1 "Barlow"; color: var(--text3); display: block; margin-top: 2px; }
+.talents-strip-stat span  { font: 700 9px/1 "Exo 2"; letter-spacing: .14em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 3px; }
+.talents-strip-stat small { font: 400 10px/1 "Exo 2"; color: var(--text3); display: block; margin-top: 2px; }
 .advanced-search-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 16px; height: 36px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: border-color .12s, background .12s;
 }
 .advanced-search-btn:hover { border-color: var(--line-lime); background: var(--lime-dim); }
@@ -1420,7 +1421,7 @@ body::after {
 }
 .sysfit-tab {
   flex: 1; padding: 10px 8px; text-align: center;
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 10px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2); border-bottom: 2px solid transparent;
   transition: color .12s, border-color .12s;
 }
@@ -1430,7 +1431,7 @@ body::after {
   padding: 0 12px; margin: 0 12px 12px; height: 36px;
   background: var(--panel2); border: 1px solid var(--thin); border-radius: var(--r);
 }
-.sysfit-search input { flex: 1; background: none; color: var(--text); font: 400 12px/1 "Barlow"; }
+.sysfit-search input { flex: 1; background: none; color: var(--text); font: 400 12px/1 "Exo 2"; }
 .sysfit-search input::placeholder { color: var(--text3); }
 .sysfit-club {
   display: flex; align-items: center; gap: 10px;
@@ -1441,10 +1442,10 @@ body::after {
   width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--thin);
   display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
 }
-.sysfit-club-name { font: 700 13px/1 "Barlow"; color: var(--text); }
-.sysfit-club-meta { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.sysfit-club-name { font: 700 13px/1 "Exo 2"; color: var(--text); }
+.sysfit-club-meta { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .sysfit-section-label {
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   padding: 12px 14px 6px;
 }
 .sysfit-compare-row {
@@ -1452,11 +1453,11 @@ body::after {
   padding: 8px 14px; cursor: pointer; transition: background .1s;
 }
 .sysfit-compare-row:hover { background: rgba(255,255,255,.03); }
-.sysfit-compare-name { font: 600 12px/1 "Barlow"; color: var(--text2); }
+.sysfit-compare-name { font: 600 12px/1 "Exo 2"; color: var(--text2); }
 .sysfit-compare-pct  { font: 800 13px/1 "Barlow Condensed"; color: var(--text); }
 .sysfit-compare-pct--high { color: var(--green); }
 .sysfit-recent-label {
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   padding: 12px 14px 6px;
 }
 .sysfit-recent-row {
@@ -1465,7 +1466,7 @@ body::after {
 }
 .sysfit-recent-row:hover { background: rgba(255,255,255,.03); }
 .sysfit-recent-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); flex-shrink: 0; }
-.sysfit-recent-name { font: 700 12px/1 "Barlow"; color: var(--text); flex: 1; }
+.sysfit-recent-name { font: 700 12px/1 "Exo 2"; color: var(--text); flex: 1; }
 .sysfit-recent-pct  { font: 800 12px/1 "Barlow Condensed"; color: var(--lime); }
 
 .sysfit-main { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
@@ -1482,17 +1483,17 @@ body::after {
 .sysfit-player-info {}
 .sysfit-ai-label {
   display: flex; align-items: center; gap: 5px;
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   margin-bottom: 8px;
 }
 .sysfit-player-name { font: 900 24px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.sysfit-player-meta { font: 500 11px/1 "Barlow"; color: var(--text2); margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+.sysfit-player-meta { font: 500 11px/1 "Exo 2"; color: var(--text2); margin-top: 3px; display: flex; align-items: center; gap: 8px; }
 .sysfit-card-actions { display: flex; gap: 8px; }
 .sysfit-action-btn {
   display: flex; align-items: center; gap: 5px;
   padding: 7px 12px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 10px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: border-color .12s, color .12s;
 }
 .sysfit-action-btn:hover { border-color: var(--line); color: var(--text); }
@@ -1512,14 +1513,14 @@ body::after {
 .sysfit-ring-track { fill: none; stroke: var(--panel2); stroke-width: 8; }
 .sysfit-ring-fill  { fill: none; stroke: var(--lime); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .5s ease; }
 .sysfit-ring-text  { dominant-baseline: middle; text-anchor: middle; fill: var(--lime); font: 900 28px/1 "Barlow Condensed"; }
-.sysfit-ring-sub   { dominant-baseline: middle; text-anchor: middle; fill: var(--text2); font: 600 9px/1 "Barlow"; }
+.sysfit-ring-sub   { dominant-baseline: middle; text-anchor: middle; fill: var(--text2); font: 600 9px/1 "Exo 2"; }
 .sysfit-fit-label  { font: 700 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; margin-top: 6px; text-align: center; }
 .sysfit-fit-label--excellent { color: var(--lime); }
-.sysfit-fit-sub { font: 500 10px/1 "Barlow"; color: var(--text2); text-align: center; margin-top: 2px; }
+.sysfit-fit-sub { font: 500 10px/1 "Exo 2"; color: var(--text2); text-align: center; margin-top: 2px; }
 .sysfit-breakdown { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.sysfit-breakdown-head { font: 700 10px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-bottom: 4px; }
+.sysfit-breakdown-head { font: 700 10px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-bottom: 4px; }
 .sysfit-breakdown-row { display: flex; align-items: center; gap: 8px; }
-.sysfit-breakdown-label { font: 500 11px/1 "Barlow"; color: var(--text2); flex: 1; }
+.sysfit-breakdown-label { font: 500 11px/1 "Exo 2"; color: var(--text2); flex: 1; }
 .sysfit-breakdown-dots { display: flex; gap: 2px; }
 .sysfit-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--panel2); }
 .sysfit-dot.filled { background: var(--lime); }
@@ -1528,7 +1529,7 @@ body::after {
 .sysfit-footer-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 10px; border-radius: var(--r); border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: background .12s, border-color .12s;
 }
 .sysfit-footer-btn:hover { background: var(--lime-dim); border-color: var(--line-lime); }
@@ -1544,17 +1545,17 @@ body::after {
 .alt-fit-card:hover { border-color: var(--line); }
 .alt-fit-logo { font-size: 22px; }
 .alt-fit-club { font: 800 13px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
-.alt-fit-fmt  { font: 600 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.alt-fit-fmt  { font: 600 10px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
 .alt-fit-hex  { width: 60px; height: 60px; }
 .alt-fit-score { font: 900 22px/1 "Barlow Condensed"; color: var(--lime); }
-.alt-fit-label { font: 600 9px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; }
+.alt-fit-label { font: 600 9px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; }
 .alt-fit-label--vg { color: var(--green); }
 .alt-fit-label--ok { color: #b8a800; }
 .view-analysis-btn {
   display: flex; align-items: center; justify-content: center; gap: 4px;
   width: 100%; padding: 8px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 10px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: background .12s;
 }
 .view-analysis-btn:hover { background: var(--lime-dim); }
@@ -1563,14 +1564,14 @@ body::after {
 .sysfit-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .role-fit-card { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); padding: 14px; }
 .role-fit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.role-fit-label { font: 500 12px/1 "Barlow"; color: var(--text2); flex: 1; }
+.role-fit-label { font: 500 12px/1 "Exo 2"; color: var(--text2); flex: 1; }
 .role-fit-dots  { display: flex; gap: 2px; }
 .role-fit-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--panel2); }
 .role-fit-dot.filled { background: var(--lime); }
 .role-fit-dot.mid   { background: #b8a800; }
 .role-fit-val { font: 700 12px/1 "Barlow Condensed"; color: var(--lime); width: 24px; text-align: right; }
 .role-fit-legend { display: flex; gap: 12px; margin-top: 10px; }
-.role-fit-legend-item { display: flex; align-items: center; gap: 5px; font: 500 10px/1 "Barlow"; color: var(--text2); }
+.role-fit-legend-item { display: flex; align-items: center; gap: 5px; font: 500 10px/1 "Exo 2"; color: var(--text2); }
 .role-fit-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
 
 .sys-metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
@@ -1578,8 +1579,8 @@ body::after {
 .sys-metric-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .sys-metric-val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
 .sys-metric-num { font: 900 20px/1 "Barlow Condensed"; color: var(--lime); }
-.sys-metric-label { font: 600 8px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); margin-top: 4px; text-align: center; }
-.sys-metric-grade { font: 700 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-top: 2px; }
+.sys-metric-label { font: 600 8px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); margin-top: 4px; text-align: center; }
+.sys-metric-grade { font: 700 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-top: 2px; }
 
 /* match log */
 .match-log { display: flex; gap: 8px; }
@@ -1591,9 +1592,9 @@ body::after {
 .match-result { font: 800 12px/1 "Barlow Condensed"; display: flex; align-items: center; gap: 4px; }
 .match-result--W { color: var(--green); }
 .match-result--L { color: var(--red); }
-.match-opponent { font: 600 10px/1 "Barlow"; color: var(--text2); }
+.match-opponent { font: 600 10px/1 "Exo 2"; color: var(--text2); }
 .match-rating-val { font: 900 16px/1 "Barlow Condensed"; color: var(--lime); }
-.match-rating-label { font: 600 8px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
+.match-rating-label { font: 600 8px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
 
 /* sysfit right col */
 .sysfit-right {
@@ -1604,12 +1605,12 @@ body::after {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px; border-radius: var(--r);
   background: var(--lime-dim); border: 1px solid var(--line-lime);
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
   margin-bottom: 6px;
 }
 .tactical-role-name { font: 800 18px/1.1 "Barlow Condensed"; color: #fff; }
 .tactical-role-pct  { font: 900 28px/1 "Barlow Condensed"; color: var(--lime); float: right; }
-.tactical-role-desc { font: 400 11px/1.5 "Barlow"; color: var(--text2); margin-top: 4px; }
+.tactical-role-desc { font: 400 11px/1.5 "Exo 2"; color: var(--text2); margin-top: 4px; }
 .tactical-pitch {
   width: 100%; height: 120px; border-radius: var(--r);
   background: linear-gradient(180deg, #0a1a0a 0%, #081208 100%);
@@ -1631,7 +1632,7 @@ body::after {
   padding: 7px 0; border-bottom: 1px solid var(--thin);
 }
 .other-role-row:last-child { border-bottom: none; }
-.other-role-name { font: 600 12px/1 "Barlow"; color: var(--text2); }
+.other-role-name { font: 600 12px/1 "Exo 2"; color: var(--text2); }
 .other-role-pct  { font: 700 13px/1 "Barlow Condensed"; color: var(--text); }
 
 .best-fit-row {
@@ -1641,22 +1642,22 @@ body::after {
 .best-fit-row:last-child { border-bottom: none; }
 .best-fit-rank { font: 900 16px/1 "Barlow Condensed"; color: var(--lime); width: 18px; flex-shrink: 0; }
 .best-fit-logo { font-size: 18px; flex-shrink: 0; }
-.best-fit-club { font: 700 12px/1 "Barlow"; color: var(--text); flex: 1; }
-.best-fit-fmt  { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.best-fit-club { font: 700 12px/1 "Exo 2"; color: var(--text); flex: 1; }
+.best-fit-fmt  { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .best-fit-pct  { font: 800 14px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; }
-.best-fit-grade { font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; flex-shrink: 0; }
+.best-fit-grade { font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; flex-shrink: 0; }
 .best-fit-grade--excellent { color: var(--lime); }
 .best-fit-grade--vg { color: var(--green); }
 .best-fit-grade--good { color: #b8a800; }
 .best-fit-ai-tag {
   display: flex; align-items: center; gap: 4px;
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3);
 }
 
 .insight-row { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--thin); }
 .insight-row:last-child { border-bottom: none; }
 .insight-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: flex-start; justify-content: center; margin-top: 1px; }
-.insight-text { font: 400 11px/1.6 "Barlow"; color: var(--text2); }
+.insight-text { font: 400 11px/1.6 "Exo 2"; color: var(--text2); }
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -1669,29 +1670,29 @@ body::after {
 }
 .wc-hero-eyebrow {
   display: flex; align-items: center; gap: 6px;
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Exo 2"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime);
   margin-bottom: 8px;
 }
 .wc-hero-title {
   font: 900 56px/1 "Barlow Condensed"; letter-spacing: -.01em; text-transform: uppercase; color: #fff;
 }
-.wc-hero-sub { font: 400 14px/1 "Barlow"; color: var(--text2); margin-top: 6px; }
-.wc-host-flags { font: 700 14px/1 "Barlow"; color: var(--text2); margin-top: 8px; }
+.wc-hero-sub { font: 400 14px/1 "Exo 2"; color: var(--text2); margin-top: 6px; }
+.wc-host-flags { font: 700 14px/1 "Exo 2"; color: var(--text2); margin-top: 8px; }
 .wc-countdown-strip {
   display: flex; gap: 24px; margin-top: 16px; padding-top: 16px;
   border-top: 1px solid var(--thin);
 }
 .wc-cd-cell { display: flex; flex-direction: column; gap: 3px; }
 .wc-cd-cell strong { font: 900 32px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.wc-cd-cell span   { font: 700 9px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+.wc-cd-cell span   { font: 700 9px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
 .wc-section { margin-bottom: 28px; }
 .wc-section-head { margin-bottom: 14px; }
-.wc-eyebrow { display: block; font: 700 9px/1 "Rajdhani"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime); margin-bottom: 4px; }
+.wc-eyebrow { display: block; font: 700 9px/1 "Exo 2"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime); margin-bottom: 4px; }
 .wc-section-head h2 { font: 900 28px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .wc-moment-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .wc-mf-btn {
   padding: 6px 13px; border-radius: var(--r); border: 1px solid var(--thin);
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2);
+  font: 700 10px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2);
   transition: all .12s;
 }
 .wc-mf-btn:hover { border-color: var(--line); color: var(--text); }
@@ -1699,7 +1700,7 @@ body::after {
 .wc-moments-empty {
   padding: 24px; text-align: center; color: var(--text3);
   border: 1px dashed var(--thin); border-radius: var(--r-lg);
-  font: 400 13px/1.6 "Barlow";
+  font: 400 13px/1.6 "Exo 2";
 }
 .wc-moments-feed { display: flex; flex-direction: column; gap: 8px; }
 .wc-moment {
@@ -1711,7 +1712,7 @@ body::after {
 .wc-moment-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .moment-badge {
   padding: 3px 7px; border-radius: 3px;
-  font: 800 8px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase;
+  font: 800 8px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase;
 }
 .mb-goal  { background: rgba(21,196,90,.15); color: var(--green); border: 1px solid rgba(21,196,90,.3); }
 .mb-red   { background: rgba(224,60,60,.15); color: var(--red); border: 1px solid rgba(224,60,60,.3); }
@@ -1720,8 +1721,8 @@ body::after {
 .mb-upset { background: rgba(224,60,60,.15); color: var(--red); border: 1px solid rgba(224,60,60,.3); }
 .mb-stat  { background: rgba(255,255,255,.05); color: var(--text2); border: 1px solid var(--thin); }
 .wc-moment-match { font: 700 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text2); }
-.wc-moment-time  { font: 500 10px/1 "Barlow"; color: var(--text3); }
-.wc-moment-text  { font: 400 13px/1.5 "Barlow"; color: var(--text); flex: 1; }
+.wc-moment-time  { font: 500 10px/1 "Exo 2"; color: var(--text3); }
+.wc-moment-text  { font: 400 13px/1.5 "Exo 2"; color: var(--text); flex: 1; }
 .wc-breakout-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
 .wc-breakout-card {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
@@ -1731,15 +1732,15 @@ body::after {
 .wc-featured-tag {
   position: absolute; top: 10px; right: 10px;
   background: var(--lime); color: #050700;
-  font: 800 8px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase;
+  font: 800 8px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase;
   padding: 3px 6px; border-radius: 3px;
 }
 .wc-bc-top { display: flex; gap: 12px; margin-bottom: 12px; }
 .wc-bc-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid var(--thin); flex-shrink: 0; }
 .wc-bc-meta { flex: 1; }
-.wc-bc-flag { font: 600 10px/1 "Barlow"; color: var(--text2); margin-bottom: 3px; }
+.wc-bc-flag { font: 600 10px/1 "Exo 2"; color: var(--text2); margin-bottom: 3px; }
 .wc-bc-name { display: block; font: 800 15px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
-.wc-bc-role { display: block; font: 600 9px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.wc-bc-role { display: block; font: 600 9px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .wc-bc-rating { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
 .wc-bc-score { font: 900 24px/1 "Barlow Condensed"; color: var(--lime); }
 .wc-bc-trend { font: 700 12px/1 "Barlow Condensed"; color: var(--green); }
@@ -1747,14 +1748,14 @@ body::after {
 .wc-bc-stat { flex: 1; text-align: center; padding: 8px 4px; border-right: 1px solid var(--thin); }
 .wc-bc-stat:last-child { border-right: none; }
 .wc-bc-stat b { display: block; font: 900 16px/1 "Barlow Condensed"; color: var(--lime); }
-.wc-bc-stat span { font: 600 8px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); margin-top: 2px; display: block; }
-.wc-bc-note { font: 400 11px/1.6 "Barlow"; color: var(--text2); font-style: italic; }
+.wc-bc-stat span { font: 600 8px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); margin-top: 2px; display: block; }
+.wc-bc-note { font: 400 11px/1.6 "Exo 2"; color: var(--text2); font-style: italic; }
 .wc-facts-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
 .wc-fact-cats { display: flex; gap: 6px; flex-wrap: wrap; }
 .wc-fact-cat {
   display: flex; align-items: center; gap: 6px;
   border: 1px solid var(--thin); border-radius: 999px; padding: 7px 14px;
-  color: var(--text2); font: 700 11px/1 "Rajdhani"; text-transform: capitalize; letter-spacing: .06em;
+  color: var(--text2); font: 700 11px/1 "Exo 2"; text-transform: capitalize; letter-spacing: .06em;
   transition: all .12s;
 }
 .wc-fact-cat:hover, .wc-fact-cat.active { border-color: var(--lime); color: var(--lime); }
@@ -1783,19 +1784,19 @@ body::after {
 .wc-fact-cat--records    { border-left-color: rgba(255,100,50,.5); }
 .wc-fact-cat--curiosities{ border-left-color: rgba(180,80,220,.5); }
 .wc-fact-emoji { font-size: 24px; }
-.wc-fact-text  { font: 400 12px/1.7 "Barlow"; color: #d0d2ca; flex: 1; margin: 0; }
+.wc-fact-text  { font: 400 12px/1.7 "Exo 2"; color: #d0d2ca; flex: 1; margin: 0; }
 .wc-fact-tags  { display: flex; gap: 5px; flex-wrap: wrap; }
 .wc-fact-cat-label {
   border-radius: 4px; padding: 2px 7px;
-  font: 800 8px/1.6 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase;
+  font: 800 8px/1.6 "Exo 2"; letter-spacing: .12em; text-transform: uppercase;
   background: var(--lime-dim); color: var(--lime); border: 1px solid var(--line-lime);
 }
 .wc-fact-tag {
   border: 1px solid var(--thin); border-radius: 4px; padding: 2px 6px;
-  font: 500 9px/1.6 "Barlow"; color: var(--text3); transition: all .1s;
+  font: 500 9px/1.6 "Exo 2"; color: var(--text3); transition: all .1s;
 }
 .wc-fact-tag:hover { border-color: var(--lime); color: var(--lime); }
-.wc-facts-empty { grid-column: 1/-1; text-align: center; padding: 28px; color: var(--text3); border: 1px dashed var(--thin); border-radius: var(--r-lg); font: 400 13px/1.5 "Barlow"; }
+.wc-facts-empty { grid-column: 1/-1; text-align: center; padding: 28px; color: var(--text3); border: 1px dashed var(--thin); border-radius: var(--r-lg); font: 400 13px/1.5 "Exo 2"; }
 .wc-editions-layout { display: grid; grid-template-columns: 220px 1fr; gap: 14px; }
 .wc-edition-selector { display: flex; flex-direction: column; gap: 4px; }
 .wc-edition-btn {
@@ -1808,7 +1809,7 @@ body::after {
 .wc-edition-btn.active { background: var(--lime-dim); border-color: var(--line-lime); }
 .wc-ed-flag { font-size: 20px; }
 .wc-ed-year { font: 900 16px/1 "Barlow Condensed"; color: var(--text); }
-.wc-ed-host { font: 600 10px/1 "Barlow"; color: var(--text2); }
+.wc-ed-host { font: 600 10px/1 "Exo 2"; color: var(--text2); }
 .wc-edition-detail {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
   background: var(--panel); padding: 20px; display: flex; flex-direction: column; gap: 12px;
@@ -1816,22 +1817,22 @@ body::after {
 .wc-ed-detail-top { display: flex; align-items: flex-start; justify-content: space-between; }
 .wc-ed-detail-flag { font-size: 28px; margin-bottom: 6px; }
 .wc-ed-detail-top h3 { font: 900 20px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
-.wc-ed-winner { font: 600 11px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.wc-ed-winner { font: 600 11px/1 "Exo 2"; color: var(--text2); margin-top: 4px; }
 .wc-calibre-score { text-align: center; }
 .wc-calibre-score strong { display: block; font: 900 36px/1 "Barlow Condensed"; color: var(--lime); }
-.wc-calibre-score span   { font: 700 9px/1 "Rajdhani"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 2px; display: block; }
+.wc-calibre-score span   { font: 700 9px/1 "Exo 2"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 2px; display: block; }
 .wc-ed-theme  { font: 700 14px/1.4 "Barlow Condensed"; letter-spacing: .04em; color: var(--lime); font-style: italic; }
-.wc-ed-summary { font: 400 13px/1.7 "Barlow"; color: var(--text2); }
+.wc-ed-summary { font: 400 13px/1.7 "Exo 2"; color: var(--text2); }
 .wc-ed-moment {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--thin);
-  background: var(--panel2); font: 400 12px/1.6 "Barlow"; color: var(--text2);
+  background: var(--panel2); font: 400 12px/1.6 "Exo 2"; color: var(--text2);
 }
 .wc-ed-players { display: flex; gap: 6px; flex-wrap: wrap; }
 .wc-player-chip {
   padding: 5px 10px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel2);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Exo 2"; color: var(--text2);
 }
 .wc-goals-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
 .wc-goal-card {
@@ -1842,14 +1843,14 @@ body::after {
 .wc-goal-card:hover { border-color: var(--line); }
 .wc-goal-top { display: flex; align-items: center; gap: 8px; }
 .wc-goal-flag { font-size: 20px; flex-shrink: 0; }
-.wc-goal-top strong { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
-.wc-goal-top span { font: 600 10px/1 "Barlow"; color: var(--text2); display: block; margin-top: 2px; }
+.wc-goal-top strong { font: 700 13px/1 "Exo 2"; color: var(--text); flex: 1; }
+.wc-goal-top span { font: 600 10px/1 "Exo 2"; color: var(--text2); display: block; margin-top: 2px; }
 .wc-goal-year-badge {
   padding: 3px 7px; border-radius: 3px; border: 1px solid var(--thin);
   font: 800 11px/1 "Barlow Condensed"; color: var(--text2); flex-shrink: 0;
 }
 .wc-goal-label { font: 800 12px/1 "Barlow Condensed"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
-.wc-goal-card p { font: 400 12px/1.6 "Barlow"; color: var(--text2); margin: 0; }
+.wc-goal-card p { font: 400 12px/1.6 "Exo 2"; color: var(--text2); margin: 0; }
 .wc-award-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; }
 .wc-award-row {
   display: flex; align-items: center; gap: 10px;
@@ -1858,8 +1859,8 @@ body::after {
 }
 .wc-award-year { font: 900 16px/1 "Barlow Condensed"; color: var(--text2); width: 36px; flex-shrink: 0; }
 .wc-award-flag { font-size: 16px; flex-shrink: 0; }
-.wc-award-player { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
-.wc-award-label  { font: 700 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
+.wc-award-player { font: 700 13px/1 "Exo 2"; color: var(--text); flex: 1; }
+.wc-award-label  { font: 700 10px/1 "Exo 2"; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
 .wc-cta-strip {
   display: flex; align-items: center; gap: 16px;
   padding: 20px 24px; border-radius: var(--r-lg);
@@ -1869,7 +1870,7 @@ body::after {
 }
 .wc-cta-strip > div { flex: 1; }
 .wc-cta-strip strong { display: block; font: 800 18px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
-.wc-cta-strip span   { font: 400 12px/1 "Barlow"; color: var(--text2); display: block; margin-top: 4px; }
+.wc-cta-strip span   { font: 400 12px/1 "Exo 2"; color: var(--text2); display: block; margin-top: 4px; }
 .wc-cta-strip button {
   display: flex; align-items: center; gap: 8px;
   padding: 0 20px; height: 42px; border-radius: var(--r);
@@ -1887,23 +1888,23 @@ body::after {
 .pricing-hero { text-align: center; margin-bottom: 32px; }
 .pricing-hero-eyebrow {
   display: inline-flex; align-items: center; gap: 6px;
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase; color: var(--lime);
   border: 1px solid var(--line-lime); border-radius: 999px; padding: 6px 14px; margin-bottom: 14px;
 }
 .pricing-hero h1 { font: 900 52px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.pricing-hero p  { font: 400 14px/1 "Barlow"; color: var(--text2); margin-top: 8px; }
+.pricing-hero p  { font: 400 14px/1 "Exo 2"; color: var(--text2); margin-top: 8px; }
 .pricing-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
 .pricing-card {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
   background: var(--panel); padding: 24px; display: flex; flex-direction: column; gap: 16px;
 }
 .pricing-card--featured { border-color: var(--line-lime); background: linear-gradient(160deg, rgba(125,220,0,.04) 0%, var(--panel) 60%); }
-.pricing-tier-name { font: 700 10px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+.pricing-tier-name { font: 700 10px/1 "Exo 2"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
 .pricing-price strong { font: 900 40px/1 "Barlow Condensed"; letter-spacing: -.02em; color: #fff; }
-.pricing-price span   { font: 500 14px/1 "Barlow"; color: var(--text2); }
-.pricing-desc { font: 400 12px/1.6 "Barlow"; color: var(--text2); }
+.pricing-price span   { font: 500 14px/1 "Exo 2"; color: var(--text2); }
+.pricing-desc { font: 400 12px/1.6 "Exo 2"; color: var(--text2); }
 .pricing-features { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.pricing-feature { display: flex; align-items: flex-start; gap: 8px; font: 400 12px/1.5 "Barlow"; color: var(--text2); }
+.pricing-feature { display: flex; align-items: flex-start; gap: 8px; font: 400 12px/1.5 "Exo 2"; color: var(--text2); }
 .pricing-feature-icon { color: var(--lime); flex-shrink: 0; margin-top: 1px; }
 .pricing-cta {
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -1922,9 +1923,9 @@ body::after {
 }
 .founder-pass-icon { color: var(--lime); flex-shrink: 0; }
 .founder-pass-title { font: 900 24px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
-.founder-pass-sub   { font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 5px; }
+.founder-pass-sub   { font: 400 13px/1 "Exo 2"; color: var(--text2); margin-top: 5px; }
 .founder-pass-price strong { font: 900 36px/1 "Barlow Condensed"; color: #fff; }
-.founder-pass-price span   { font: 500 13px/1 "Barlow"; color: var(--text2); display: block; margin-top: 2px; }
+.founder-pass-price span   { font: 500 13px/1 "Exo 2"; color: var(--text2); display: block; margin-top: 2px; }
 .founder-pass-cta {
   display: flex; align-items: center; gap: 8px;
   padding: 0 22px; height: 48px; border-radius: var(--r);
@@ -1955,7 +1956,7 @@ body::after {
 }
 .card-title-icon { color: var(--lime); }
 .card-link {
-  font: 700 10px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 10px/1 "Exo 2"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--lime); opacity: .8; transition: opacity .1s;
 }
 .card-link:hover { opacity: 1; }
@@ -1982,7 +1983,7 @@ body::after {
   border: 1px dashed var(--thin); border-radius: var(--r-lg);
   color: var(--text3);
 }
-.empty-state-label { font: 500 13px/1 "Barlow"; }
+.empty-state-label { font: 500 13px/1 "Exo 2"; }
 
 /* ── RESPONSIVE ───────────────────────────────────────────────── */
 @media (max-width: 1200px) {

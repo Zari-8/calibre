@@ -133,7 +133,7 @@ export default function BattleHero() {
             </h2>
             <div style={{ display:'flex', alignItems:'center', gap:5 }}>
               <div className="live-dot" style={{ width:5, height:5 }} />
-              <span style={{ font:'700 9px/1 "Rajdhani"', letterSpacing:'.16em', textTransform:'uppercase', color:'var(--text3)' }}>
+              <span style={{ font:'700 9px/1 "Exo 2"', letterSpacing:'.16em', textTransform:'uppercase', color:'var(--text3)' }}>
                 {h}:{m}:{s} LEFT
               </span>
             </div>

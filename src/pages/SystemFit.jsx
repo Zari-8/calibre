@@ -158,7 +158,9 @@ export default function SystemFit() {
     // Page wrapper
     page: {
       display:'grid',
-      gridTemplateColumns:'220px 1fr 260px',
+      gridTemplateColumns:'220px minmax(0,680px) 280px',
+      maxWidth:1260,
+      margin:'0 auto',
       gap:0,
       minHeight:'calc(100vh - 54px)',
       maxWidth:'100%',
@@ -322,7 +324,7 @@ export default function SystemFit() {
           <div style={{...S.label,display:'block',padding:'8px 2px 8px'}}>Recently Viewed</div>
           {RECENT.map(r=>(
             <div key={r.name} style={{display:'flex',alignItems:'center',gap:8,padding:'8px 0',borderBottom:'1px solid rgba(255,255,255,.06)',cursor:'pointer'}}>
-              <img src={r.img} alt={r.name} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',objectPosition:'top',border:'1px solid rgba(255,255,255,.1)',flexShrink:0}}/>
+              <img src={r.img} alt={r.name} style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',objectPosition:'50% 20%',border:'1px solid rgba(255,255,255,.1)',flexShrink:0}}/>
               <div style={{flex:1}}>
                 <div style={{font:'700 12px/1 "Barlow"',color:'rgba(255,255,255,.8)'}}>{r.name}</div>
                 <div style={{font:'500 10px/1 "Barlow"',color:'rgba(255,255,255,.4)',marginTop:2}}>{r.sub}</div>
@@ -369,7 +371,7 @@ export default function SystemFit() {
           <div style={{display:'grid',gridTemplateColumns:'180px 1fr',minHeight:220}}>
             <div style={{position:'relative',overflow:'hidden',background:'#0a0b0a'}}>
               <img src="/assets/players/jude-bellingham.jpg" alt="Bellingham" style={{
-                width:'100%',height:'100%',objectFit:'cover',objectPosition:'top',
+                width:'100%',height:'100%',objectFit:'cover',objectPosition:'50% 30%',
                 maskImage:'linear-gradient(to right, rgba(0,0,0,1) 55%, transparent 100%)',
                 WebkitMaskImage:'linear-gradient(to right, rgba(0,0,0,1) 55%, transparent 100%)',
               }}/>

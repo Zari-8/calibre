@@ -137,7 +137,7 @@ body::after {
   white-space: nowrap;
 }
 .nav-item:hover { color: var(--text); }
-.nav-item.active { color: var(--lime); border-bottom-color: var(--lime); }
+.nav-item.active { color: #7ddc00; border-bottom-color: #7ddc00; }
 .nav-item--wc { color: var(--lime) !important; animation: wc-pulse 2.2s ease-in-out infinite; }
 @keyframes wc-pulse { 0%,100%{opacity:1} 50%{opacity:.55} }
 
@@ -161,7 +161,7 @@ body::after {
 .founder-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 34px;
-  background: var(--lime); color: #050700;
+  background: linear-gradient(135deg, #8fff00 0%, #5dcc00 100%); color: #050700;
   border-radius: var(--r);
   font: 800 11px/1 "Barlow Condensed";
   letter-spacing: .06em; text-transform: uppercase;

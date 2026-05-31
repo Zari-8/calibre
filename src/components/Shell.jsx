@@ -4,6 +4,7 @@ import { navItems } from '../data/calibreData.js';
 import { WC_CONFIG } from '../data/worldCupData.js';
 import NavLink, { navigateTo } from './NavLink.jsx';
 import LiveTicker from './LiveTicker.jsx';
+import LanguageSelector from './LanguageSelector.jsx';
 
 function useShowWorldCup() {
   const kick = new Date(WC_CONFIG.kickoff);
@@ -89,6 +90,7 @@ export default function Shell({ children, currentPath }) {
           </nav>
 
           <div className="site-header__actions">
+            <LanguageSelector />
             <button className="site-header__icon" type="button" aria-label="Search players and debates">
               <Search size={18} />
             </button>

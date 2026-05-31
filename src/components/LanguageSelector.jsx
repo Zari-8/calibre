@@ -22,7 +22,7 @@ const LANGUAGES = [
 const STORAGE_KEY = 'calibre_lang';
 
 export default function LanguageSelector() {
-  const stored   = localStorage.getItem(STORAGE_KEY) || 'en';
+  const stored   = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) || 'en' : 'en';
   const [current, setCurrent] = useState(stored);
   const [open,    setOpen]    = useState(false);
   const ref = useRef(null);
@@ -30,6 +30,7 @@ export default function LanguageSelector() {
   const active = LANGUAGES.find(l => l.code === current) || LANGUAGES[0];
 
   useEffect(() => {
+    document.documentElement.lang = current;
     function onClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) setOpen(false);
     }
@@ -39,8 +40,9 @@ export default function LanguageSelector() {
 
   function select(code) {
     setCurrent(code);
-    localStorage.setItem(STORAGE_KEY, code);
-    // In future: i18n context update goes here
+    window.localStorage.setItem(STORAGE_KEY, code);
+    document.documentElement.lang = code;
+    window.dispatchEvent(new CustomEvent('calibre:language-change', { detail: { code } }));
     setOpen(false);
   }
 

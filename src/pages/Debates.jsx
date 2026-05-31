@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Zap, Target, Star, MessageSquare, GaugeCircle, Users, ArrowRight, Crown, Filter, TrendingUp, LockKeyhole, LogIn, Send, X } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
+import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 
 /* ── Countdown to midnight ── */
 function useCountdown() {
@@ -47,11 +48,11 @@ const NOMINATIONS = [
 ];
 
 const TRENDING = [
-  { label:'Mbappé vs Haaland',      votes:'24.7K', l:'/assets/players/kylian-mbappe.jpg',    r:'/assets/players/lamine-yamal.jpg' },
-  { label:'Messi vs Ronaldo',       votes:'18.3K', l:'/assets/players/vinicius-junior.jpg',   r:'/assets/players/pedri.jpg' },
-  { label:'Bellingham vs Pedri',    votes:'15.1K', l:'/assets/players/jude-bellingham.jpg',   r:'/assets/players/pedri.jpg' },
-  { label:'Vinícius vs Saka',       votes:'12.6K', l:'/assets/players/vinicius-junior.jpg',   r:'/assets/players/lamine-yamal.jpg' },
-  { label:'Rodri vs Rice',          votes:'10.8K', l:'/assets/players/vitinha.jpg',            r:'/assets/players/florian-wirtz.jpg' },
+  { label:'Mbappé vs Haaland',      votes:'24.7K', left:'Kylian Mbappé', right:'Erling Haaland', l:'/assets/players/kylian-mbappe.jpg',    r:'/assets/players/lamine-yamal.jpg' },
+  { label:'Messi vs Ronaldo',       votes:'18.3K', left:'Lionel Messi', right:'Cristiano Ronaldo', l:'/assets/players/vinicius-junior.jpg',   r:'/assets/players/pedri.jpg' },
+  { label:'Bellingham vs Pedri',    votes:'15.1K', left:'Jude Bellingham', right:'Pedri', l:'/assets/players/jude-bellingham.jpg',   r:'/assets/players/pedri.jpg' },
+  { label:'Vinícius vs Saka',       votes:'12.6K', left:'Vinícius Júnior', right:'Bukayo Saka', l:'/assets/players/vinicius-junior.jpg',   r:'/assets/players/lamine-yamal.jpg' },
+  { label:'Rodri vs Rice',          votes:'10.8K', left:'Rodri', right:'Declan Rice', l:'/assets/players/vitinha.jpg',            r:'/assets/players/florian-wirtz.jpg' },
 ];
 
 const FEED = [
@@ -252,12 +253,12 @@ export default function Debates() {
                 <div key={i} className="panel" style={{overflow:'hidden', cursor:'pointer'}}>
                   {/* Image area */}
                   <div style={{position:'relative', display:'grid', gridTemplateColumns:'1fr auto 1fr', height:110}}>
-                    <img src={b.left.img} alt={b.left.name} style={{width:'100%', height:'100%', objectFit:'cover', objectPosition:'top center', maskImage:'linear-gradient(to right,rgba(0,0,0,1) 50%,transparent 100%)', WebkitMaskImage:'linear-gradient(to right,rgba(0,0,0,1) 50%,transparent 100%)'}}/>
+                    <ApiPlayerImage name={b.left.name} fallbackSrc={b.left.img} alt={b.left.name} style={{width:'100%', height:'100%', objectFit:'cover', objectPosition:'top center', maskImage:'linear-gradient(to right,rgba(0,0,0,1) 50%,transparent 100%)', WebkitMaskImage:'linear-gradient(to right,rgba(0,0,0,1) 50%,transparent 100%)'}}/>
                     <div style={{display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'0 10px', zIndex:2, flexShrink:0}}>
                       <span style={{fontSize:14, fontWeight:700, color:'var(--lime)', letterSpacing:'.04em'}}>VS</span>
                       <span style={{...S.label2, marginTop:4}}>{b.cat}</span>
                     </div>
-                    <img src={b.right.img} alt={b.right.name} style={{width:'100%', height:'100%', objectFit:'cover', objectPosition:'top center', maskImage:'linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%)', WebkitMaskImage:'linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%)'}}/>
+                    <ApiPlayerImage name={b.right.name} fallbackSrc={b.right.img} alt={b.right.name} style={{width:'100%', height:'100%', objectFit:'cover', objectPosition:'top center', maskImage:'linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%)', WebkitMaskImage:'linear-gradient(to left,rgba(0,0,0,1) 50%,transparent 100%)'}}/>
                     <div style={{position:'absolute', top:8, left:8}}>
                       <span style={{fontSize:9, fontWeight:700, letterSpacing:'.12em', color:'var(--lime)', background:'var(--lime-dim)', border:'1px solid var(--line-lime)', borderRadius:'var(--r)', padding:'3px 6px'}}>LIVE</span>
                     </div>
@@ -301,7 +302,7 @@ export default function Debates() {
             <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', minHeight:140}}>
               {/* Left player */}
               <div style={{display:'flex', alignItems:'center', gap:14, padding:16, borderRight:'1px solid var(--thin)'}}>
-                <img src="/assets/players/pedri.jpg" alt="Pedri" style={{width:56, height:68, objectFit:'cover', objectPosition:'top', borderRadius:'var(--r)', border:'1px solid var(--thin)'}}/>
+                <ApiPlayerImage name="Pedri" fallbackSrc="/assets/players/pedri.jpg" alt="Pedri" style={{width:56, height:68, objectFit:'cover', objectPosition:'top', borderRadius:'var(--r)', border:'1px solid var(--thin)'}}/>
                 <div>
                   <div style={{fontSize:16, fontWeight:700, color:'var(--text)', letterSpacing:'-.02em'}}>Pedri</div>
                   <div style={{...S.label2, marginTop:3}}>FC Barcelona · CM</div>
@@ -309,7 +310,7 @@ export default function Debates() {
               </div>
               {/* Right player */}
               <div style={{display:'flex', alignItems:'center', gap:14, padding:16}}>
-                <img src="/assets/players/jude-bellingham.jpg" alt="Bellingham" style={{width:56, height:68, objectFit:'cover', objectPosition:'top', borderRadius:'var(--r)', border:'1px solid var(--thin)'}}/>
+                <ApiPlayerImage name="Jude Bellingham" fallbackSrc="/assets/players/jude-bellingham.jpg" alt="Bellingham" style={{width:56, height:68, objectFit:'cover', objectPosition:'top', borderRadius:'var(--r)', border:'1px solid var(--thin)'}}/>
                 <div>
                   <div style={{fontSize:16, fontWeight:700, color:'var(--text)', letterSpacing:'-.02em'}}>Bellingham</div>
                   <div style={{...S.label2, marginTop:3}}>Real Madrid · CM</div>
@@ -469,7 +470,7 @@ export default function Debates() {
             <div className="panel" style={{padding:24}}>
               <div style={{display:'grid', gridTemplateColumns:'1fr 120px 1fr', alignItems:'center', gap:24, marginBottom:20}}>
                 <div style={{display:'flex', alignItems:'center', gap:14}}>
-                  <img src="/assets/players/vinicius-junior.jpg" alt="Messi" style={{width:64,height:76,objectFit:'cover',objectPosition:'top',borderRadius:'var(--r)',border:'2px solid var(--lime)'}}/>
+                  <ApiPlayerImage name="Lionel Messi" fallbackSrc="/assets/players/vinicius-junior.jpg" alt="Messi" style={{width:64,height:76,objectFit:'cover',objectPosition:'top',borderRadius:'var(--r)',border:'2px solid var(--lime)'}}/>
                   <div>
                     <div style={{fontSize:18,fontWeight:700,color:'var(--text)',letterSpacing:'-.02em'}}>Messi</div>
                     <div style={{...S.label2,marginTop:3}}>Inter Miami</div>
@@ -487,7 +488,7 @@ export default function Debates() {
                     <div style={{...S.label2,marginTop:3}}>Al Nassr</div>
                     <div style={{fontSize:22,fontWeight:700,color:'var(--text2)',marginTop:6}}>46%</div>
                   </div>
-                  <img src="/assets/players/kylian-mbappe.jpg" alt="Ronaldo" style={{width:64,height:76,objectFit:'cover',objectPosition:'top',borderRadius:'var(--r)',border:'1px solid var(--thin)'}}/>
+                  <ApiPlayerImage name="Cristiano Ronaldo" fallbackSrc="/assets/players/kylian-mbappe.jpg" alt="Ronaldo" style={{width:64,height:76,objectFit:'cover',objectPosition:'top',borderRadius:'var(--r)',border:'1px solid var(--thin)'}}/>
                 </div>
               </div>
               <div style={{display:'flex',gap:3,marginBottom:16}}>
@@ -516,8 +517,8 @@ export default function Debates() {
                 <div key={t.label} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 16px',...S.divider}}>
                   <span style={{fontSize:13,fontWeight:700,color:'var(--text3)',width:14,flexShrink:0}}>{i+1}</span>
                   <div style={{display:'flex',gap:2,flexShrink:0}}>
-                    <img src={t.l} alt="" style={{width:20,height:24,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
-                    <img src={t.r} alt="" style={{width:20,height:24,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
+                    <ApiPlayerImage name={t.left} fallbackSrc={t.l} alt="" style={{width:20,height:24,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
+                    <ApiPlayerImage name={t.right} fallbackSrc={t.r} alt="" style={{width:20,height:24,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
                   </div>
                   <div style={{flex:1}}>
                     <div style={{fontSize:12,fontWeight:600,color:'var(--text)',lineHeight:1.2}}>{t.label}</div>

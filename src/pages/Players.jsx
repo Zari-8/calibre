@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, ArrowRight, Crown, Star, TrendingUp } from 'lucide-react';
 import { players } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
+import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 
 const DB_PLAYERS = [
   { rank:1, name:"Kylian Mbappé",   age:25, club:'Real Madrid', clubIcon:'⚽', pos:'ST',  rating:91, buzz:96, fanRating:4.8, img:'/assets/players/kylian-mbappe.jpg' },
@@ -165,7 +166,7 @@ export default function Players() {
                     <td className="plp-rank-col">{p.rank}</td>
                     <td>
                       <div className="plp-player-cell">
-                        <img src={p.img} alt={p.name} style={{width:28,height:32,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
+                        <ApiPlayerImage name={p.name} fallbackSrc={p.img} alt={p.name} style={{width:28,height:32,objectFit:'cover',objectPosition:'top',borderRadius:3}}/>
                         <strong>{p.name}</strong>
                       </div>
                     </td>
@@ -215,14 +216,14 @@ export default function Players() {
             <div className="panel-head"><div className="panel-title">Compare Players</div><a className="panel-action">Clear</a></div>
             <div className="plp-compare-slots">
               <div className="plp-compare-slot">
-                <img src="/assets/players/jude-bellingham.jpg" alt="Bellingham" style={{width:48,height:56,objectFit:'cover',objectPosition:'top',borderRadius:4}}/>
+                <ApiPlayerImage name="Jude Bellingham" fallbackSrc="/assets/players/jude-bellingham.jpg" alt="Bellingham" style={{width:48,height:56,objectFit:'cover',objectPosition:'top',borderRadius:4}}/>
                 <strong>Jude Bellingham</strong>
                 <span>Real Madrid</span>
                 <div className="plp-compare-slot-rating"><div className="rating-badge rating-badge--sm">86</div><span>CM</span></div>
                 <button className="plp-compare-remove" type="button">×</button>
               </div>
               <div className="plp-compare-slot">
-                <img src="/assets/players/pedri.jpg" alt="Pedri" style={{width:48,height:56,objectFit:'cover',objectPosition:'top',borderRadius:4}}/>
+                <ApiPlayerImage name="Pedri" fallbackSrc="/assets/players/pedri.jpg" alt="Pedri" style={{width:48,height:56,objectFit:'cover',objectPosition:'top',borderRadius:4}}/>
                 <strong>Pedri</strong>
                 <span>Barcelona</span>
                 <div className="plp-compare-slot-rating"><div className="rating-badge rating-badge--sm">89</div><span>CM</span></div>

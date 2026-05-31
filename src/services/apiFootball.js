@@ -185,3 +185,77 @@ export async function getApiStatus() {
   const data = await apiFetch('status', {}, { ttl: TTL.status });
   return data?.response ?? null;
 }
+
+const PLAYER_PHOTO_TTL = 7 * 24 * 60 * 60 * 1000;
+const playerPhotoInflight = new Map();
+
+function photoCacheKey(name) {
+  return `calibre_player_photo_${String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+}
+
+function readPhotoCache(name) {
+  try {
+    const raw = window.localStorage.getItem(photoCacheKey(name));
+    if (!raw) return '';
+    const parsed = JSON.parse(raw);
+    if (!parsed?.url || Date.now() - parsed.ts > PLAYER_PHOTO_TTL) {
+      window.localStorage.removeItem(photoCacheKey(name));
+      return '';
+    }
+    return parsed.url;
+  } catch { return ''; }
+}
+
+function writePhotoCache(name, url) {
+  if (!url) return;
+  try { window.localStorage.setItem(photoCacheKey(name), JSON.stringify({ ts: Date.now(), url })); } catch {}
+}
+
+function normalisePlayerName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/gi, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+function scoreNameMatch(requestedName, candidateName) {
+  const requested = normalisePlayerName(requestedName);
+  const candidate = normalisePlayerName(candidateName);
+  if (!requested || !candidate) return 0;
+  if (requested === candidate) return 100;
+  if (candidate.includes(requested) || requested.includes(candidate)) return 80;
+  const requestedParts = requested.split(' ').filter(Boolean);
+  const candidateParts = candidate.split(' ').filter(Boolean);
+  return requestedParts.reduce((score, part) => score + (candidateParts.includes(part) ? 12 : 0), 0);
+}
+
+/**
+ * Resolve a current API-Football player portrait by name.
+ * Results are cached in localStorage for seven days and duplicate in-flight
+ * requests are collapsed so list views do not burn through the daily quota.
+ */
+export async function getPlayerPhotoByName(name) {
+  const search = String(name || '').trim();
+  if (search.length < 3) return '';
+
+  const cached = readPhotoCache(search);
+  if (cached) return cached;
+
+  const inflightKey = normalisePlayerName(search);
+  if (playerPhotoInflight.has(inflightKey)) return playerPhotoInflight.get(inflightKey);
+
+  const request = (async () => {
+    const rows = await searchPlayers(search);
+    const best = [...rows]
+      .filter(row => row.image)
+      .sort((a, b) => scoreNameMatch(search, b.name) - scoreNameMatch(search, a.name))[0];
+    const url = best?.image || '';
+    if (url) writePhotoCache(search, url);
+    return url;
+  })().finally(() => playerPhotoInflight.delete(inflightKey));
+
+  playerPhotoInflight.set(inflightKey, request);
+  return request;
+}

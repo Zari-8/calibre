@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BarChart3, Clock3, LockKeyhole, MessageCircle, Sparkles, Target, X, Zap } from 'lucide-react';
 import { useBattle } from '../hooks/useBattle.js';
 import { navigateTo } from './NavLink.jsx';
+import ApiPlayerImage from './ApiPlayerImage.jsx';
 
 function useCountdown() {
   const get = () => {
@@ -159,7 +160,7 @@ export default function BattleHero() {
           <article className="featured-player featured-player--left">
             <div className="featured-player__image-wrap">
               <div className="featured-player__glow" />
-              <img src={left.localImage} alt={left.name} className="featured-player__image" />
+              <ApiPlayerImage name={left.name} fallbackSrc={left.localImage} alt={left.name} className="featured-player__image" />
             </div>
             <div className="featured-player__meta">
               <span>Controller</span>
@@ -178,7 +179,7 @@ export default function BattleHero() {
           <article className="featured-player featured-player--right">
             <div className="featured-player__image-wrap">
               <div className="featured-player__glow" />
-              <img src={right.localImage} alt={right.name} className="featured-player__image" />
+              <ApiPlayerImage name={right.name} fallbackSrc={right.localImage} alt={right.name} className="featured-player__image" />
             </div>
             <div className="featured-player__meta">
               <span>Box crasher</span>

@@ -3538,3 +3538,34 @@ body::after { opacity: .22; background-size: 72px 72px; }
 .battle-rating__scale button:disabled{cursor:not-allowed;opacity:.58}.battle-rating__scale button.is-selected:disabled{opacity:1}
 .battle-rating__lock{display:flex;align-items:center;gap:5px;margin-top:8px;color:var(--text3);font:700 9px/1.35 "Barlow"}.battle-rating__lock svg{flex:none;color:var(--text3)}.battle-rating__lock.is-locked,.battle-rating__lock.is-locked svg{color:var(--lime)}
 @media(max-width:720px){.battle-matrix__grid--aggregate{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ════════════════════════════════════════════════════════════════
+   AUTOMATIC PAGE TRANSLATION
+   Keep the external translation engine invisible: Calibre uses its
+   own language dropdown while translated copy is applied in place.
+   ════════════════════════════════════════════════════════════════ */
+.calibre-google-translate {
+  position: fixed !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+.lang-spinner { animation: calibre-lang-spin .8s linear infinite; }
+@keyframes calibre-lang-spin { to { transform: rotate(360deg); } }
+.goog-te-banner-frame.skiptranslate,
+.goog-te-banner-frame,
+.goog-te-balloon-frame,
+#goog-gt-tt,
+.goog-te-spinner-pos,
+.goog-te-gadget-icon,
+.goog-te-menu-value,
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+body { top: 0 !important; }
+html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }

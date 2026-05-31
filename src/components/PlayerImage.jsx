@@ -1,16 +1,13 @@
-import { useState } from 'react';
+import ApiPlayerImage from './ApiPlayerImage.jsx';
 
-export default function PlayerImage({ player, className = '' }) {
-  const sourceStack = [player?.apiImage, player?.localImage, '/assets/players/neutral-player.svg'].filter(Boolean);
-  const [index, setIndex] = useState(0);
-
+export default function PlayerImage({ player, className = '', style }) {
   return (
-    <img
-      className={`player-img ${className}`}
-      src={sourceStack[index]}
+    <ApiPlayerImage
+      name={player?.name}
+      fallbackSrc={player?.apiImage || player?.localImage || player?.image || '/assets/players/neutral-player.svg'}
       alt={player?.name || 'Calibre player'}
-      onError={() => setIndex((current) => Math.min(current + 1, sourceStack.length - 1))}
-      loading="lazy"
+      className={`player-img ${className}`}
+      style={style}
     />
   );
 }

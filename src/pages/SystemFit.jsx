@@ -249,8 +249,9 @@ function TransferSpotlight({ spotlight, onLoad }) {
             <span className="sf-pitch-half" />
             <span className="sf-pitch-box sf-pitch-box--top" />
             <span className="sf-pitch-box sf-pitch-box--bottom" />
+            <span className="sf-pitch-direction">ATTACK ↑</span>
             {spotlight.lineup.map(position => (
-              <div className="sf-pitch-role" key={`${position.role}-${position.label}`} style={{ left: `${position.x}%`, top: `${position.y}%` }}>
+              <div className={`sf-pitch-role ${position.label === 'PRIMARY' ? 'sf-pitch-role--primary' : ''}`} key={`${position.role}-${position.label}`} style={{ left: `${position.x}%`, top: `${position.y}%` }}>
                 <CircleDot size={18} /><b>{position.role}</b><em>{position.score}%</em><small>{position.label}</small>
               </div>
             ))}

@@ -147,9 +147,9 @@ export const TRANSFER_SPOTLIGHTS = [
     verdict: 'Gordon gives Barcelona a different kind of wide threat: less pause, more rupture. The cleanest use is from the left, attacking the space created when the ball is held on the opposite side. He can also start from the right or arrive as an inside-left presser when the game needs speed rather than control.',
     sourceNote: 'Illustrative transfer-window scenario. The live transfer/news layer can replace this seed record when connected.',
     lineup: [
-      { role: 'LW', label: 'PRIMARY', score: 92, x: 18, y: 22 },
-      { role: 'RW', label: 'SECONDARY', score: 84, x: 82, y: 22 },
-      { role: 'L8', label: 'GAME-STATE OPTION', score: 78, x: 34, y: 48 },
+      { role: 'LW', label: 'PRIMARY', score: 92, x: 18, y: 20 },
+      { role: 'RW', label: 'SECONDARY', score: 84, x: 82, y: 20 },
+      { role: 'L8', label: 'GAME-STATE OPTION', score: 78, x: 34, y: 56 },
     ],
     talkingPoints: [
       'Left wing: attacks the back line while the opposite flank holds width.',

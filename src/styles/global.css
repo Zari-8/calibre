@@ -871,6 +871,191 @@ body::after {
    ════════════════════════════════════════════════════════════════ */
 .players-page { padding-top: 0; }
 
+/* ── plp-* aliases (JSX uses plp- prefix; mapped to existing rules) ── */
+
+/* Header */
+.plp-header {
+  padding: 20px 0 14px; border-bottom: 1px solid var(--thin); margin-bottom: 14px;
+}
+.plp-title { font: 900 42px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.plp-sub   { font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+
+/* Stats bar */
+.plp-stats-bar {
+  display: flex; gap: 32px; margin-bottom: 14px;
+  padding: 14px 20px; border: 1px solid var(--thin); border-radius: var(--r-lg);
+  background: var(--panel);
+}
+.plp-stat { display: flex; flex-direction: column; gap: 3px; }
+.plp-stat-label { font: 600 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.plp-stat-val   { font: 900 24px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
+.plp-stat-sub   { font: 500 10px/1 "Barlow"; color: var(--green); }
+
+/* Search bar */
+.plp-search-bar {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.plp-search {
+  flex: 1; display: flex; align-items: center; gap: 8px;
+  height: 40px; padding: 0 14px;
+  background: var(--panel); border: 1px solid var(--thin); border-radius: var(--r);
+  transition: border-color .12s;
+}
+.plp-search:focus-within { border-color: var(--line); }
+.plp-search input {
+  flex: 1; background: none; border: none; outline: none;
+  font: 400 13px/1 "Barlow"; color: var(--text);
+}
+.plp-search input::placeholder { color: var(--text3); }
+
+/* Filters */
+.plp-filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
+.plp-filter-select {
+  padding: 0 24px 0 12px; height: 34px; border-radius: var(--r);
+  border: 1px solid var(--thin); background: var(--panel);
+  font: 600 11px/1 "Barlow"; color: var(--text2);
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239BA2AA'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+  transition: border-color .12s;
+}
+.plp-filter-select:hover { border-color: var(--line); }
+
+/* 3-col layout */
+.plp-layout { display: grid; grid-template-columns: 280px 1fr 260px; gap: 14px; }
+
+/* Featured card */
+.plp-featured {
+  border: 1px solid var(--line-lime); border-radius: var(--r-lg);
+  background: linear-gradient(160deg, #111800 0%, var(--panel) 60%);
+  overflow: hidden;
+}
+.plp-featured-img-wrap { position: relative; }
+.plp-featured-img {
+  width: 100%; display: block;
+  object-fit: cover; object-position: top center;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,1) 55%, transparent 100%);
+}
+.plp-featured-img-overlay {
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, transparent 50%, var(--panel) 100%);
+}
+.plp-featured-rating-badge {
+  position: absolute; top: 10px; right: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: var(--r);
+  border: 2px solid var(--lime); background: rgba(0,0,0,.6);
+}
+.plp-featured-rating-badge strong { font: 900 22px/1 "Barlow Condensed"; color: var(--lime); }
+.plp-featured-rating-badge span   { font: 700 7px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime); margin-top: 2px; }
+.plp-featured-body { padding: 12px 14px; }
+.plp-featured-tag  { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.plp-featured-name { font: 900 24px/1.1 "Barlow Condensed"; letter-spacing: .03em; text-transform: uppercase; color: #fff; }
+.plp-featured-club { font: 700 10px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
+.plp-featured-meta { font: 500 11px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.plp-featured-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
+.plp-featured-stat  { display: flex; flex-direction: column; gap: 3px; }
+.plp-featured-stat strong { font: 900 20px/1 "Barlow Condensed"; }
+.plp-featured-stat span   { font: 600 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.plp-featured-stat small  { font: 500 10px/1 "Barlow"; color: var(--text2); }
+
+/* Rankings panel */
+.plp-rankings { margin-top: 12px; }
+.plp-rankings-tabs {
+  display: flex; border-bottom: 1px solid var(--thin); margin-bottom: 4px;
+}
+.plp-rank-tab {
+  flex: 1; padding: 9px 4px; text-align: center;
+  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text2); border-bottom: 2px solid transparent;
+  transition: color .12s, border-color .12s;
+}
+.plp-rank-tab.active { color: var(--lime); border-bottom-color: var(--lime); }
+.plp-rank-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.plp-rank-row:last-child { border-bottom: none; }
+.plp-rank-num  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.plp-rank-name { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
+
+/* Avatar utility (used in rankings + rated lists) */
+.avatar { object-fit: cover; object-position: top; border: 1px solid var(--thin); }
+.avatar--28 { width: 28px; height: 28px; border-radius: 50%; }
+
+/* Rating badge */
+.rating-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 4px; border: 1px solid rgba(166,255,0,.4);
+  font: 900 16px/1 "Barlow Condensed"; color: var(--lime);
+  padding: 3px 6px;
+}
+.rating-badge--sm { font-size: 13px; padding: 2px 5px; min-width: 30px; }
+
+/* Database panel */
+.plp-db-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0 10px; border-bottom: 1px solid var(--thin); margin-bottom: 4px;
+}
+.plp-db-count { font: 500 11px/1 "Barlow"; color: var(--text2); }
+.plp-db-table { width: 100%; border-collapse: collapse; }
+.plp-db-table th {
+  padding: 8px 10px; text-align: left;
+  font: 700 9px/1 "Barlow"; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--text3); border-bottom: 1px solid var(--thin);
+}
+.plp-db-table td { padding: 8px 10px; border-bottom: 1px solid var(--thin); vertical-align: middle; font: 500 12px/1 "Barlow"; color: var(--text); }
+.plp-db-table tr:last-child td { border-bottom: none; }
+.plp-db-table tr:hover td { background: rgba(255,255,255,.02); }
+.plp-db-table th.sortable { color: var(--lime); }
+.plp-rank-col { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); }
+.plp-player-cell { display: flex; align-items: center; gap: 8px; }
+.plp-player-cell strong { font: 700 13px/1 "Barlow"; color: var(--text); }
+.plp-pos-badge {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 2px 6px; border-radius: 3px; border: 1px solid var(--thin);
+  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
+}
+.plp-fan-rating { font: 700 13px/1 "Barlow Condensed"; color: #F5C84B; }
+
+/* Compare widget */
+.plp-compare-slots { display: flex; gap: 8px; margin-bottom: 10px; }
+.plp-compare-slot {
+  flex: 1; border-radius: var(--r); border: 1px solid var(--thin);
+  padding: 8px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 5px;
+  position: relative;
+}
+.plp-compare-slot strong { font: 700 12px/1.2 "Barlow"; color: var(--text); }
+.plp-compare-slot span   { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.plp-compare-slot-rating { display: flex; align-items: center; gap: 5px; }
+.plp-compare-remove {
+  position: absolute; top: 4px; right: 6px;
+  font: 700 14px/1 "Barlow"; color: var(--text3); line-height: 1;
+}
+.plp-compare-remove:hover { color: var(--text); }
+
+/* Rising players rows */
+.plp-rising-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.plp-rising-row:last-child { border-bottom: none; }
+.plp-rising-num  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.plp-rising-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.plp-rising-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
+.plp-rising-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+
+/* Row-item utility (used in most-rated, recently-compared) */
+.row-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.row-item:last-child { border-bottom: none; }
+
+
+
 .players-hero {
   padding: 24px 0 16px;
   border-bottom: 1px solid var(--thin);
@@ -1405,6 +1590,229 @@ body::after {
   color: var(--lime); transition: border-color .12s, background .12s;
 }
 .advanced-search-btn:hover { border-color: var(--line-lime); background: var(--lime-dim); }
+
+/* ── td-* aliases (JSX uses td- prefix; mapped to existing rules) ── */
+
+/* Header */
+.td-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 0 16px; border-bottom: 1px solid var(--thin); margin-bottom: 16px;
+}
+.td-title { display: flex; align-items: center; gap: 14px; }
+.td-title h1 { font: 900 36px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.td-title h1 em { color: var(--lime); font-style: normal; }
+.td-title p { font: 400 12px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.td-title-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--lime-dim); border: 1px solid var(--line-lime);
+  display: grid; place-items: center; color: var(--lime); flex-shrink: 0;
+}
+
+/* Filters */
+.td-filters { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
+.td-filter-select {
+  display: flex; align-items: center;
+  padding: 0 12px; height: 32px; border-radius: var(--r);
+  border: 1px solid var(--thin); background: var(--panel2);
+  font: 600 11px/1 "Barlow"; color: var(--text2);
+  cursor: pointer; transition: border-color .12s;
+  appearance: none; -webkit-appearance: none;
+  padding-right: 24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239BA2AA'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 8px center;
+}
+.td-filter-select:hover { border-color: var(--line); }
+
+/* Region tabs */
+.td-region-tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.td-region-tab {
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 14px; border-radius: var(--r);
+  border: 1px solid var(--thin);
+  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text2); transition: all .12s;
+}
+.td-region-tab:hover { border-color: var(--line); color: var(--text); }
+.td-region-tab.active { background: var(--lime); border-color: var(--lime); color: #050700; }
+.td-region-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 16px; height: 16px; border-radius: 4px; padding: 0 4px;
+  background: rgba(255,255,255,.1); font: 700 9px/1 "Barlow"; color: inherit;
+}
+.td-region-tab.active .td-region-count { background: rgba(0,0,0,.2); }
+
+/* Right rail */
+.td-right { display: flex; flex-direction: column; gap: 12px; }
+
+/* Panel base (used by right-rail panel divs) */
+.panel {
+  border: 1px solid var(--thin); border-radius: var(--r-lg);
+  background: var(--panel); overflow: hidden; padding: 14px;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.panel-title {
+  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--text);
+  display: flex; align-items: center;
+}
+.panel-action {
+  font: 700 10px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--lime); opacity: .8; cursor: pointer; transition: opacity .1s;
+}
+.panel-action:hover { opacity: 1; }
+
+/* Featured card */
+.td-featured {
+  border: 1px solid var(--thin); border-radius: var(--r-lg);
+  background: var(--panel); overflow: hidden;
+  display: grid; grid-template-columns: 260px 1fr;
+  margin-bottom: 14px;
+}
+.td-featured-img-wrap { position: relative; }
+.td-featured-img {
+  width: 100%; height: 100%; min-height: 280px;
+  object-fit: cover; object-position: top center;
+  mask-image: linear-gradient(to right, rgba(0,0,0,1) 55%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 55%, transparent 100%);
+}
+.td-featured-body {
+  padding: 20px; display: flex; flex-direction: column; gap: 12px;
+}
+.td-featured-new {
+  display: inline-block;
+  background: var(--lime); color: #050700;
+  font: 900 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase;
+  padding: 4px 8px; border-radius: 4px; margin-bottom: 6px;
+}
+.td-featured-name { font: 900 32px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.td-featured-club { font: 700 12px/1 "Barlow"; color: var(--lime); margin-top: 2px; }
+.td-featured-meta { font: 600 11px/1 "Barlow"; color: var(--text2); margin-top: 2px; }
+.td-featured-ratings { display: flex; gap: 24px; }
+.td-featured-rating { display: flex; flex-direction: column; gap: 3px; }
+.td-featured-rating strong { font: 900 40px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
+.td-featured-rating span { font: 700 8px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+.td-featured-radar-area { display: flex; align-items: center; gap: 16px; }
+.td-featured-attrs { display: flex; flex-direction: column; gap: 6px; }
+.td-featured-attr { display: flex; flex-direction: column; gap: 2px; }
+.td-featured-attr-label { font: 600 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.td-featured-attr-val   { font: 900 18px/1 "Barlow Condensed"; color: var(--text); }
+.td-featured-profile-label { font: 700 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); margin-bottom: 5px; }
+.td-featured-profile-text  { font: 400 12px/1.6 "Barlow"; color: var(--text2); }
+
+/* Rising talents rows */
+.td-rising-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 14px; border-bottom: 1px solid var(--thin);
+}
+.td-rising-row:last-child { border-bottom: none; }
+.td-rising-num { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.td-rising-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
+.td-rising-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.td-rising-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
+.td-rising-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+
+/* Emerging stars */
+.td-emerging-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.td-emerging-card {
+  border: 1px solid var(--thin); border-radius: var(--r-lg);
+  background: var(--panel); overflow: hidden; cursor: pointer;
+  transition: border-color .15s; position: relative;
+}
+.td-emerging-card:hover { border-color: var(--line); }
+.td-emerging-pos {
+  position: absolute; top: 6px; left: 6px; z-index: 1;
+  background: rgba(8,9,9,.75); border: 1px solid var(--thin);
+  font: 700 8px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--lime); padding: 3px 5px; border-radius: 3px;
+}
+.td-emerging-img {
+  width: 100%; height: 100px; object-fit: cover; object-position: top;
+  display: block;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.9) 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9) 50%, transparent 100%);
+}
+.td-emerging-body { padding: 6px 10px 10px; }
+.td-emerging-name { font: 800 12px/1.2 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.td-emerging-club { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 3px; }
+.td-emerging-ratings { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
+.td-emerging-rating strong { font: 900 18px/1 "Barlow Condensed"; color: var(--lime); }
+.td-emerging-potential { font: 700 10px/1 "Barlow Condensed"; color: var(--text2); }
+.td-emerging-potential strong { color: var(--lime); }
+
+/* Bottom strip */
+.td-bottom-strip {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; gap: 12px;
+  border: 1px solid var(--thin); border-radius: var(--r-lg);
+  background: var(--panel);
+}
+.td-bottom-cell {
+  display: flex; align-items: center; gap: 10px;
+  font: 400 11px/1 "Barlow"; color: var(--text2);
+}
+.td-bottom-cell strong { font: 900 15px/1 "Barlow Condensed"; color: var(--text); display: block; }
+.td-bottom-cell span   { font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
+.td-bottom-cell-icon   { color: var(--lime); flex-shrink: 0; }
+.td-adv-search { margin-left: auto; flex-shrink: 0; }
+
+/* Scout shortlist panel header */
+.td-shortlist-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.td-shortlist-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px; margin-left: 6px;
+  background: var(--lime-dim); border: 1px solid var(--line-lime);
+  font: 900 11px/1 "Barlow Condensed"; color: var(--lime);
+}
+
+/* Scouted regions map */
+.td-world-map {
+  height: 80px; border-radius: var(--r);
+  background: var(--panel2); border: 1px solid var(--thin);
+  display: grid; place-items: center; margin-bottom: 10px;
+}
+.td-map-stat {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 5px 0; border-bottom: 1px solid var(--thin);
+  font: 500 12px/1 "Barlow"; color: var(--text2);
+}
+.td-map-stat:last-child { border-bottom: none; }
+.td-map-stat strong { font: 800 12px/1 "Barlow Condensed"; color: var(--text); }
+
+/* Trend movers */
+.td-trend-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.td-trend-row:last-child { border-bottom: none; }
+.td-trend-row img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
+.td-trend-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.td-trend-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
+.td-trend-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.td-trend-delta  { font: 800 13px/1 "Barlow Condensed"; color: var(--lime); }
+.td-trend-period { font: 500 10px/1 "Barlow"; color: var(--text3); margin-top: 3px; }
+
+/* Youth standouts */
+.td-youth-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.td-youth-row:last-child { border-bottom: none; }
+.td-youth-row img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
+.td-youth-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.td-youth-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
+.td-youth-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.td-youth-scores { text-align: right; flex-shrink: 0; }
+.td-youth-scores strong { font: 900 18px/1 "Barlow Condensed"; color: var(--lime); display: block; }
+.td-youth-scores span   { font: 700 10px/1 "Barlow Condensed"; color: var(--text2); display: block; margin-top: 3px; }
+
+/* trend-up helper used in rising rows */
+.trend-up { font: 700 11px/1 "Barlow Condensed"; color: var(--lime); }
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -1984,6 +2392,270 @@ body::after {
   color: var(--text3);
 }
 .empty-state-label { font: 500 13px/1 "Barlow"; }
+
+/* ════════════════════════════════════════════════════════════════
+   DEBATES PAGE — missing dbp-* aliases
+   ════════════════════════════════════════════════════════════════ */
+
+/* Right rail */
+.dbp-right-rail { display: flex; flex-direction: column; gap: 12px; }
+
+/* Hero extras */
+.dbp-hero-right { display: flex; align-items: center; gap: 10px; }
+.dbp-rate-title {
+  display: flex; flex-direction: column; align-items: center;
+  font: 900 28px/1 "Barlow Condensed"; letter-spacing: .08em; text-transform: uppercase; color: #fff;
+}
+.dbp-vs {
+  font: 900 36px/1 "Barlow Condensed"; letter-spacing: .08em;
+  color: var(--lime); text-align: center; margin: 6px 0;
+}
+.dbp-vs-small {
+  font: 900 14px/1 "Barlow Condensed"; letter-spacing: .1em; color: var(--text3);
+}
+.dbp-rating-box {
+  background: rgba(0,0,0,.4); border: 1px solid var(--thin);
+  border-radius: var(--r-lg); padding: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.dbp-category-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.dbp-cat-label { font: 700 9px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.dbp-cat-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 4px 9px; border-radius: 20px;
+  border: 1px solid var(--thin);
+  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text2); transition: all .12s;
+}
+.dbp-cat-pill:hover { border-color: var(--line); color: var(--text); }
+.dbp-cat-pill.active { background: var(--lime); border-color: var(--lime); color: #050700; }
+.dbp-votes-count { font: 600 11px/1 "Barlow"; color: var(--text3); }
+.dbp-tap-label { font: 700 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); text-align: center; }
+.dbp-scale-labels {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
+}
+.dbp-confirm {
+  font: 700 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--lime); text-align: center; padding: 6px 0;
+}
+
+/* Proof strip */
+.dbp-proof-strip {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-top: 1px solid var(--thin);
+  background: rgba(0,0,0,.3);
+}
+.dbp-proof-cell { text-align: center; }
+.dbp-proof-val   { font: 900 20px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.01em; }
+.dbp-proof-label { font: 700 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); margin-top: 3px; }
+
+/* Filter bar */
+.dbp-filter-bar {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  margin: 12px 0; padding-bottom: 10px; border-bottom: 1px solid var(--thin);
+}
+.dbp-sort-bar { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.dbp-sort-label { font: 700 9px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.dbp-sort-select {
+  height: 30px; padding: 0 10px; border-radius: var(--r);
+  border: 1px solid var(--thin); background: var(--panel);
+  font: 600 11px/1 "Barlow"; color: var(--text2);
+  appearance: none; cursor: pointer;
+}
+
+/* Battles section */
+.dbp-battles-section { margin-bottom: 12px; }
+.dbp-section-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.dbp-section-title {
+  display: flex; align-items: center; gap: 7px;
+  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
+}
+.dbp-battles-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+
+/* Battle card */
+.dbp-battle-card {
+  border: 1px solid var(--thin); border-radius: var(--r-lg);
+  background: var(--panel); overflow: hidden; cursor: pointer;
+  transition: border-color .15s;
+}
+.dbp-battle-card:hover { border-color: var(--line); }
+.dbp-battle-card-img {
+  position: relative; display: grid; grid-template-columns: 1fr auto 1fr;
+  height: 110px; overflow: hidden;
+}
+.dbp-bc-fighter {
+  position: relative; overflow: hidden;
+}
+.dbp-bc-fighter-left {
+  mask-image: linear-gradient(to right, rgba(0,0,0,1) 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 50%, transparent 100%);
+}
+.dbp-bc-fighter-right {
+  mask-image: linear-gradient(to left, rgba(0,0,0,1) 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to left, rgba(0,0,0,1) 50%, transparent 100%);
+}
+.dbp-bc-vs {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 2; padding: 0 6px; flex-shrink: 0;
+}
+.dbp-bc-vs-text {
+  font: 900 18px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: .06em;
+}
+.dbp-bc-cat {
+  font: 700 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase;
+  color: var(--text3); margin-top: 4px;
+}
+.dbp-bc-fighter-name { font: 800 11px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.dbp-bc-fighter-club { font: 600 9px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.dbp-battle-card-foot { padding: 10px 12px; }
+.dbp-bc-votes { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); }
+.dbp-bc-bar { height: 4px; background: var(--thin); border-radius: 2px; margin-top: 4px; overflow: hidden; }
+.dbp-bc-bar-fill { height: 100%; background: var(--lime); border-radius: 2px; transition: width .3s; }
+
+/* Lower grid (upcoming + nominations) */
+.dbp-lower-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+
+/* Upcoming rows */
+.dbp-upcoming-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.dbp-upcoming-row:last-of-type { border-bottom: none; }
+.dbp-upcoming-players { display: flex; align-items: center; }
+.dbp-upcoming-player {
+  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 60px;
+}
+.dbp-upcoming-player img { width: 28px; height: 34px; object-fit: cover; object-position: top; border-radius: 3px; border: 1px solid var(--thin); }
+.dbp-upcoming-player span { font: 700 11px/1 "Barlow Condensed"; color: var(--text); text-align: center; }
+.dbp-upcoming-player small { font: 600 9px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.dbp-countdown-sm { text-align: right; flex-shrink: 0; }
+.dbp-cd-label { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+.dbp-cd-time  { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); margin-top: 3px; letter-spacing: .04em; }
+
+/* Nominations */
+.dbp-nom-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.dbp-nom-row:last-child { border-bottom: none; }
+.dbp-nom-rank { font: 900 16px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.dbp-nom-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.dbp-nom-info strong { font: 700 13px/1 "Barlow Condensed"; color: var(--text); }
+.dbp-nom-info small   { font: 500 10px/1 "Barlow"; color: var(--text2); }
+.dbp-nom-votes { font: 700 12px/1 "Barlow Condensed"; color: var(--lime); white-space: nowrap; flex-shrink: 0; }
+
+/* Trending rail */
+.dbp-trending-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--thin);
+}
+.dbp-trending-row:last-child { border-bottom: none; }
+.dbp-trending-num  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 14px; flex-shrink: 0; }
+.dbp-trending-avatars { display: flex; gap: 2px; flex-shrink: 0; }
+.dbp-trending-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.dbp-trending-info strong { font: 700 12px/1 "Barlow"; color: var(--text); }
+.dbp-trending-info span   { font: 500 10px/1 "Barlow"; color: var(--text2); }
+
+/* Category breakdown */
+.dbp-cat-label-text { font: 700 9px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.dbp-cat-pct { font: 900 22px/1 "Barlow Condensed"; color: var(--lime); margin-top: 3px; }
+
+/* Live feed */
+.dbp-feed-row {
+  display: flex; align-items: flex-start; gap: 9px;
+  padding: 8px 0; border-bottom: 1px solid var(--thin);
+}
+.dbp-feed-row:last-child { border-bottom: none; }
+.dbp-feed-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
+.dbp-feed-body { flex: 1; }
+.dbp-feed-user { font: 700 12px/1 "Barlow"; color: var(--lime); display: block; margin-bottom: 3px; }
+.dbp-feed-text { font: 400 12px/1.4 "Barlow"; color: var(--text2); }
+.dbp-feed-quote { font: 400 11px/1.5 "Barlow"; color: var(--text3); font-style: italic; margin-top: 3px; }
+.dbp-feed-time  { font: 500 10px/1 "Barlow"; color: var(--text3); flex-shrink: 0; white-space: nowrap; }
+.dbp-score-chip {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 20px; height: 20px; border-radius: 4px;
+  border: 1px solid rgba(166,255,0,.4);
+  font: 900 12px/1 "Barlow Condensed"; color: var(--lime);
+  margin-left: 5px; vertical-align: middle;
+}
+
+/* Debates badges (also used in Competitions) */
+.debate-badge {
+  display: inline-flex; align-items: center;
+  padding: 3px 7px; border-radius: 4px;
+  font: 800 9px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  flex-shrink: 0;
+}
+.badge-hot  { background: rgba(255,80,0,.15); border: 1px solid rgba(255,80,0,.4); color: #ff5000; }
+.badge-live { background: rgba(0,200,100,.1);  border: 1px solid rgba(0,200,100,.35); color: var(--green); }
+.badge-new  { background: rgba(166,255,0,.1);  border: 1px solid var(--line-lime); color: var(--lime); }
+
+/* Competitions form-pts */
+.comp-form-pts { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); }
+.comp-scorer-row {
+  display: grid; grid-template-columns: 16px 22px 1fr auto auto;
+  align-items: center; gap: 6px;
+  padding: 6px 0; border-bottom: 1px solid var(--thin);
+}
+.comp-scorer-row:last-child { border-bottom: none; }
+.comp-scorer-goals { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); }
+
+/* ════════════════════════════════════════════════════════════════
+   PRICING PAGE — missing aliases
+   ════════════════════════════════════════════════════════════════ */
+
+.pricing-header {
+  text-align: center; margin-bottom: 24px;
+}
+.pricing-header h1 { font: 900 42px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; margin-top: 10px; }
+.pricing-header p  { font: 400 14px/1.5 "Barlow"; color: var(--text2); margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
+.pricing-crown { color: var(--lime); }
+.pricing-name   { font: 700 11px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-bottom: 10px; }
+.pricing-amount { font: 900 40px/1 "Barlow Condensed"; letter-spacing: -.02em; color: #fff; }
+.pricing-period { font: 500 14px/1 "Barlow"; color: var(--text2); margin-left: 4px; }
+.pricing-tagline { font: 400 12px/1.6 "Barlow"; color: var(--text2); margin: 6px 0 12px; }
+.pricing-footer {
+  text-align: center; font: 400 12px/1.6 "Barlow"; color: var(--text3);
+  margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--thin);
+}
+.pricing-footer a { color: var(--lime); }
+
+/* Founder pass hero card */
+.founder-pass-hero {
+  border: 1px solid var(--line-lime); border-radius: var(--r-lg);
+  background: linear-gradient(90deg, rgba(166,255,0,.06) 0%, transparent 60%);
+  padding: 20px 24px; margin-bottom: 24px;
+}
+.founder-pass-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.founder-pass-left {
+  display: flex; align-items: center; gap: 14px; color: var(--lime);
+}
+.founder-pass-left strong { font: 900 22px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); display: block; }
+.founder-pass-left span   { font: 400 12px/1 "Barlow"; color: var(--text2); display: block; margin-top: 4px; }
+.founder-pass-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
+.founder-price { font: 900 40px/1 "Barlow Condensed"; color: #fff; letter-spacing: -.02em; }
+.founder-pass-note { font: 400 11px/1 "Barlow"; color: var(--text3); margin-top: 12px; text-align: center; }
+
+/* ════════════════════════════════════════════════════════════════
+   SHARED — founder strip (used on every page footer)
+   ════════════════════════════════════════════════════════════════ */
+
+.founder-strip {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 16px 20px; margin-top: 16px;
+  border: 1px solid var(--line-lime); border-radius: var(--r-lg);
+  background: linear-gradient(90deg, rgba(166,255,0,.05) 0%, transparent 60%);
+}
+.founder-strip-icon { color: var(--lime); flex-shrink: 0; }
+.founder-strip strong { font: 800 14px/1 "Barlow Condensed"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
+.founder-strip span   { font: 400 12px/1 "Barlow"; color: var(--text2); }
+.founder-strip .btn   { margin-left: auto; flex-shrink: 0; }
 
 /* ── RESPONSIVE ───────────────────────────────────────────────── */
 @media (max-width: 1200px) {

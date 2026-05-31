@@ -39,6 +39,11 @@ const CREATORS = [
   { pos:4, name:'M. Ødegaard',   team:'Arsenal',   assists:9,  img:'/assets/players/vitinha.jpg' },
   { pos:5, name:'D. Szoboszlai', team:'Liverpool', assists:8,  img:'/assets/players/kylian-mbappe.jpg' },
 ];
+const DB_PLAYERS = [
+  { img:'/assets/players/lamine-yamal.jpg' },
+  { img:'/assets/players/pedri.jpg' },
+  { img:'/assets/players/florian-wirtz.jpg' },
+];
 const DEBATES = [
   { q:'Is Arsenal now genuine title contenders?', votes:'1.2k votes', comments:342, badge:'HOT' },
   { q:'Can anyone stop Haaland winning the Golden Boot?', votes:'980 votes', comments:210, badge:'LIVE' },

@@ -19,6 +19,7 @@ export const SYSTEM_PLAYERS = [
   { id: 762, name: 'Lamine Yamal', team: 'FC Barcelona', age: 18, position: 'RW', archetype: 'Paintbrush', image: '/assets/players/lamine-yamal.jpg', rating: 88, traits: { control: 88, transition: 96, pressing: 72, width: 98, tempo: 91, defensiveLoad: 54 }, roleMetrics: { Positioning: 84, 'Decision making': 88, 'Link-up play': 86, 'Final-third impact': 96, 'Press resistance': 91, 'Transition contribution': 93 } },
   { id: 278, name: 'Vinícius Júnior', team: 'Real Madrid', age: 25, position: 'LW', archetype: 'Dagger', image: '/assets/players/vinicius-junior.jpg', rating: 93, traits: { control: 82, transition: 99, pressing: 69, width: 96, tempo: 95, defensiveLoad: 48 }, roleMetrics: { Positioning: 87, 'Decision making': 85, 'Link-up play': 82, 'Final-third impact': 98, 'Press resistance': 89, 'Transition contribution': 99 } },
   { id: 521, name: 'Kylian Mbappé', team: 'Real Madrid', age: 27, position: 'CF / LW', archetype: 'Fox', image: '/assets/players/kylian-mbappe.jpg', rating: 94, traits: { control: 80, transition: 99, pressing: 62, width: 90, tempo: 98, defensiveLoad: 42 }, roleMetrics: { Positioning: 95, 'Decision making': 91, 'Link-up play': 79, 'Final-third impact': 99, 'Press resistance': 86, 'Transition contribution': 99 } },
+  { id: 9091, name: 'Anthony Gordon', team: 'Newcastle United', age: 25, position: 'LW / RW / AM', archetype: 'Transition Monster', image: '/assets/players/gordon.jpg', rating: 86, traits: { control: 78, transition: 95, pressing: 91, width: 92, tempo: 94, defensiveLoad: 73 }, roleMetrics: { Positioning: 83, 'Decision making': 81, 'Link-up play': 79, 'Final-third impact': 87, 'Press resistance': 76, 'Transition contribution': 96 } },
 ];
 
 const ROLE_MAP = {
@@ -29,6 +30,7 @@ const ROLE_MAP = {
   Paintbrush: ['Wide creator', 'Inside forward', 'Touchline isolator'],
   Dagger: ['Inside forward', 'Transition monster', 'Wide outlet'],
   Fox: ['Poacher', 'Channel runner', 'Transition finisher'],
+  'Transition Monster': ['Left-wing runner', 'Right-wing outlet', 'Inside-left presser'],
 };
 
 function average(values) {
@@ -131,3 +133,28 @@ export function searchLocalPlayers(query = '') {
   if (!needle) return SYSTEM_PLAYERS.slice(0, 6);
   return SYSTEM_PLAYERS.filter(player => `${player.name} ${player.team} ${player.position} ${player.archetype}`.toLowerCase().includes(needle)).slice(0, 8);
 }
+
+
+export const TRANSFER_SPOTLIGHTS = [
+  {
+    id: 'gordon-barcelona-scenario',
+    status: 'SCENARIO MODEL',
+    window: 'TRANSFER WINDOW SPOTLIGHT',
+    playerId: 9091,
+    teamId: 529,
+    headline: 'Anthony Gordon at Barcelona: where does the chaos fit?',
+    dek: 'A top-club move is not only a talent question. It is a role-design question. This spotlight shows how one player can solve different match states from more than one starting position.',
+    verdict: 'Gordon gives Barcelona a different kind of wide threat: less pause, more rupture. The cleanest use is from the left, attacking the space created when the ball is held on the opposite side. He can also start from the right or arrive as an inside-left presser when the game needs speed rather than control.',
+    sourceNote: 'Illustrative transfer-window scenario. The live transfer/news layer can replace this seed record when connected.',
+    lineup: [
+      { role: 'LW', label: 'PRIMARY', score: 92, x: 18, y: 22 },
+      { role: 'RW', label: 'SECONDARY', score: 84, x: 82, y: 22 },
+      { role: 'L8', label: 'GAME-STATE OPTION', score: 78, x: 34, y: 48 },
+    ],
+    talkingPoints: [
+      'Left wing: attacks the back line while the opposite flank holds width.',
+      'Right wing: gives the team a direct outlet when the game becomes stretched.',
+      'Inside-left role: useful as a pressing and transition option, not as the permanent controller.',
+    ],
+  },
+];

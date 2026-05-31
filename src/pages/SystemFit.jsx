@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Activity, ArrowRight, BarChart3, CheckCircle2, Crown, Database,
-  Download, FileText, GitCompare, Search, Share2, ShieldCheck, Star,
+  Activity, ArrowRight, BarChart3, CheckCircle2, CircleDot, Crown, Database,
+  Download, FileText, GitCompare, Layers3, Search, Share2, ShieldCheck, Sparkles, Star,
 } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import { searchPlayers as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
 import {
-  SYSTEM_PLAYERS, SYSTEM_TEAMS, buildPlayerComparison, buildSystemFitReport,
+  SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams,
 } from '../data/systemFitData.js';
 import {
@@ -223,6 +223,50 @@ function PlayerHero({ report, mode, comparison, challenger }) {
   );
 }
 
+
+function TransferSpotlight({ spotlight, onLoad }) {
+  const player = SYSTEM_PLAYERS.find(item => item.id === spotlight.playerId) || SYSTEM_PLAYERS[0];
+  const team = SYSTEM_TEAMS.find(item => item.id === spotlight.teamId) || SYSTEM_TEAMS[0];
+  return (
+    <section className="sf-transfer-spotlight">
+      <div className="sf-transfer-topline">
+        <span><Sparkles size={14} /> {spotlight.window}</span>
+        <em>{spotlight.status}</em>
+      </div>
+      <div className="sf-transfer-grid">
+        <div className="sf-transfer-player">
+          <img src={player.image} alt={player.name} />
+          <div className="sf-transfer-player-copy">
+            <small>{player.team} → {team.name}</small>
+            <h2>{spotlight.headline}</h2>
+            <p>{spotlight.dek}</p>
+            <button type="button" className="btn btn--lime btn--sm" onClick={() => onLoad(player, team)}>LOAD FULL FIT REPORT <ArrowRight size={13} /></button>
+          </div>
+        </div>
+        <div className="sf-lineup-board" aria-label="Possible lineup positions">
+          <div className="sf-lineup-board__title"><Layers3 size={14} /> POSSIBLE LINEUP POSITIONS <b>{team.formation}</b></div>
+          <div className="sf-pitch">
+            <span className="sf-pitch-half" />
+            <span className="sf-pitch-box sf-pitch-box--top" />
+            <span className="sf-pitch-box sf-pitch-box--bottom" />
+            {spotlight.lineup.map(position => (
+              <div className="sf-pitch-role" key={`${position.role}-${position.label}`} style={{ left: `${position.x}%`, top: `${position.y}%` }}>
+                <CircleDot size={18} /><b>{position.role}</b><em>{position.score}%</em><small>{position.label}</small>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="sf-transfer-read">
+          <div className="sf-kicker">TRANSFER FIT READ</div>
+          <p>{spotlight.verdict}</p>
+          <div className="sf-transfer-points">{spotlight.talkingPoints.map(text => <span key={text}><i />{text}</span>)}</div>
+          <small>{spotlight.sourceNote}</small>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FitOverview({ report }) {
   return (
     <div className="sf-content-grid">
@@ -315,6 +359,7 @@ export default function SystemFit() {
           <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER</button>
           <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS</button>
         </div>
+        <TransferSpotlight spotlight={TRANSFER_SPOTLIGHTS[0]} onLoad={(player, team) => { setSelectedPlayer(player); setSelectedTeam(team); setMode('fit'); }} />
         <PlayerHero report={report} mode={mode} comparison={comparison} challenger={challenger} />
         {mode === 'fit' && <FitOverview report={report} />}
         {mode === 'compare' && <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} />}

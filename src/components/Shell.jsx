@@ -5,6 +5,7 @@ import { WC_CONFIG } from '../data/worldCupData.js';
 import NavLink, { navigateTo } from './NavLink.jsx';
 import LiveTicker from './LiveTicker.jsx';
 import LanguageSelector from './LanguageSelector.jsx';
+import DataFlowBar from './DataFlowBar.jsx';
 
 function useShowWorldCup() {
   const kick = new Date(WC_CONFIG.kickoff);
@@ -124,6 +125,7 @@ export default function Shell({ children, currentPath }) {
       </header>
 
       <LiveTicker />
+      <DataFlowBar />
       <main>{children}</main>
 
       <footer className="site-footer">

@@ -1,4 +1,5 @@
-import { Search, Crown } from 'lucide-react';
+import { Menu, Search, X } from 'lucide-react';
+import { useState } from 'react';
 import { navItems } from '../data/calibreData.js';
 import { WC_CONFIG } from '../data/worldCupData.js';
 import NavLink, { navigateTo } from './NavLink.jsx';
@@ -11,54 +12,87 @@ function useShowWorldCup() {
 
 export default function Shell({ children, currentPath }) {
   const showWC = useShowWorldCup();
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const go = (href) => {
+    setMenuOpen(false);
+    navigateTo(href);
+  };
 
   return (
     <div className="app-shell">
-      <header className="top-nav">
-
-        {/* Brand logo — the supplied master artwork is used directly, without recreating the mark in CSS. */}
-        <NavLink href="/" className="nav-brand" aria-label="Calibre home">
-          <img
-            src="/assets/calibre-logo.png"
-            alt="Calibre"
-            className="nav-brand-logo"
-          />
-        </NavLink>
-
-        {/* Nav links */}
-        <nav className="nav-center">
-          {navItems.map(item => (
-            <NavLink key={item.href} href={item.href}
-              className={`nav-item${currentPath === item.href ? ' active' : ''}`}>
-              {item.label}
-            </NavLink>
-          ))}
-          {showWC && (
-            <NavLink href="/world-cup"
-              className={`nav-item nav-item--wc${currentPath === '/world-cup' ? ' active' : ''}`}>
-              🏆 World Cup
-            </NavLink>
-          )}
-        </nav>
-
-        {/* Actions */}
-        <div className="nav-actions">
-          <button className="icon-btn" type="button" aria-label="Search">
-            <Search size={17} />
+      <header className="site-header">
+        <div className="site-header__inner">
+          <button className="site-brand" type="button" onClick={() => go('/')} aria-label="Calibre home">
+            <img src="/assets/calibre-wordmark.png" alt="Calibre" className="site-brand__logo" />
           </button>
-          <button className="login-btn" type="button">LOG IN</button>
-          <button className="founder-btn" type="button" onClick={() => navigateTo('/pricing')}>
-            <Crown size={12} />
-            GET WORLD CUP FOUNDER PASS
-          </button>
+
+          <nav className="site-nav" aria-label="Primary navigation">
+            {navItems.map(item => (
+              <NavLink
+                key={item.href}
+                href={item.href}
+                className={`site-nav__link${currentPath === item.href ? ' is-active' : ''}`}
+              >
+                {item.label}
+              </NavLink>
+            ))}
+            {showWC && (
+              <NavLink
+                href="/world-cup"
+                className={`site-nav__link site-nav__link--world-cup${currentPath === '/world-cup' ? ' is-active' : ''}`}
+              >
+                World Cup
+              </NavLink>
+            )}
+          </nav>
+
+          <div className="site-header__actions">
+            <button className="site-header__icon" type="button" aria-label="Search players and debates">
+              <Search size={18} />
+            </button>
+            <button className="site-header__login" type="button">Log in</button>
+            <button className="site-header__cta" type="button" onClick={() => go('/pricing')}>
+              Get World Cup Founder Pass
+            </button>
+            <button
+              className="site-header__menu"
+              type="button"
+              aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+              onClick={() => setMenuOpen(v => !v)}
+            >
+              {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
         </div>
 
+        {menuOpen && (
+          <div className="mobile-nav">
+            {navItems.map(item => (
+              <button key={item.href} type="button" className="mobile-nav__link" onClick={() => go(item.href)}>
+                {item.label}
+              </button>
+            ))}
+            {showWC && <button type="button" className="mobile-nav__link" onClick={() => go('/world-cup')}>World Cup</button>}
+            <button type="button" className="mobile-nav__pass" onClick={() => go('/pricing')}>Get World Cup Founder Pass</button>
+          </div>
+        )}
       </header>
 
-      {/* Live scores ticker — always visible below nav */}
       <LiveTicker />
-
       <main>{children}</main>
+
+      <footer className="site-footer">
+        <div className="site-footer__inner">
+          <img src="/assets/calibre-wordmark.png" alt="Calibre" className="site-footer__logo" />
+          <p>Football intelligence built for the arguments that matter.</p>
+          <div className="site-footer__links">
+            <button type="button" onClick={() => go('/players')}>Players</button>
+            <button type="button" onClick={() => go('/debates')}>Debates</button>
+            <button type="button" onClick={() => go('/pricing')}>Pricing</button>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }

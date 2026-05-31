@@ -1,48 +1,57 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Michroma&family=Rajdhani:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap");
 
 /* ═══════════════════════════════════════════════════════════════════
-   CALIBRE FOOTBALL INTELLIGENCE — GLOBAL STYLESHEET
-   Pixel-matched to approved mockups v5
+   CALIBRE FOOTBALL INTELLIGENCE — GLOBAL STYLESHEET v6
+   Premium / clean redesign
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── DESIGN TOKENS ─────────────────────────────────────────────── */
 :root {
-  /* Background */
-  --bg:          #030405;
-  --bg2:         #050607;
-  --panel:       #090C0F;
-  --panel2:      #0B0F13;
-  --panel3:      #10161C;
+  /* Background — slightly warmer, less cold blue */
+  --bg:          #050507;
+  --bg2:         #080809;
+  --panel:       #0D0D10;
+  --panel2:      #111115;
+  --panel3:      #161619;
 
-  /* Borders */
-  --thin:        rgba(255,255,255,.07);
-  --line:        rgba(255,255,255,.12);
-  --line-lime:   rgba(166,255,0,.25);
+  /* Borders — much more subtle */
+  --thin:        rgba(255,255,255,.055);
+  --line:        rgba(255,255,255,.10);
+  --line-lime:   rgba(166,255,0,.20);
+  --border:      rgba(255,255,255,.055);
 
-  /* Accent */
-  --lime:        #A6FF00;
-  --lime-dim:    rgba(166,255,0,.12);
-  --lime-glow:   rgba(166,255,0,.08);
-  --green:       #A6FF00;
-  --green-dim:   rgba(166,255,0,.12);
-  --red:         #FF6257;
-  --orange:      #FF6257;
+  /* Accent — slightly softer lime */
+  --lime:        #AAFF00;
+  --lime-dim:    rgba(170,255,0,.10);
+  --lime-glow:   rgba(170,255,0,.06);
+  --green:       #3DBA6F;
+  --green-dim:   rgba(61,186,111,.10);
+  --red:         #F45B5B;
+  --orange:      #F4855B;
 
-  /* Text */
-  --text:        #F4F6F8;
-  --text2:       #9BA2AA;
-  --text3:       #555D66;
+  /* Text — higher contrast, cleaner hierarchy */
+  --text:        #EDEEF0;
+  --text2:       #7C8490;
+  --text3:       #454C55;
 
-  /* Misc */
-  --r:           8px;
-  --r-lg:        12px;
-  --shadow:      0 4px 24px rgba(0,0,0,.55);
-  --shadow-lg:   0 8px 48px rgba(0,0,0,.8);
+  /* Spacing & shape */
+  --r:           6px;
+  --r-lg:        10px;
+  --r-xl:        16px;
+  --shadow:      0 2px 16px rgba(0,0,0,.45);
+  --shadow-lg:   0 8px 40px rgba(0,0,0,.7);
 
-  font-family: "Inter", system-ui, sans-serif;
+  /* Typography — premium stack */
+  font-family: "Inter", "DM Sans", system-ui, sans-serif;
   font-size: 14px;
+  line-height: 1.5;
   color-scheme: dark;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* ── Heading utility — use Space Grotesk for display text ── */
+.display { font-family: "Space Grotesk", "Inter", sans-serif; }
 
 /* ── RESET ──────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -111,14 +120,14 @@ body::after {
   border-right-color: transparent;
   border-radius: 50%;
   display: grid; place-items: center;
-  font-family: "Rajdhani", sans-serif;
+  font-family: "Space Grotesk", "Inter", sans-serif;
   font-size: 15px; font-weight: 900;
   letter-spacing: -.02em;
   position: relative;
 }
 .brand-text { display: flex; flex-direction: column; gap: 1px; }
 .brand-text b {
-  font: 900 14px/1 "Rajdhani";
+  font: 900 14px/1 "Space Grotesk", "Inter";
   letter-spacing: .42em; text-transform: uppercase;
 }
 .brand-text em {
@@ -132,7 +141,7 @@ body::after {
 .nav-item {
   display: flex; align-items: center;
   padding: 0 14px; height: 100%;
-  font: 700 12px/1 "Rajdhani";
+  font: 700 12px/1 "Space Grotesk", "Inter";
   letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2);
   border-bottom: 2px solid transparent;
@@ -155,7 +164,7 @@ body::after {
 .login-btn {
   padding: 0 14px; height: 32px;
   color: var(--text2);
-  font: 700 11px/1 "Rajdhani";
+  font: 700 11px/1 "Space Grotesk", "Inter";
   letter-spacing: .08em; text-transform: uppercase;
   border: 1px solid var(--thin); border-radius: var(--r);
   transition: border-color .12s, color .12s;
@@ -166,7 +175,7 @@ body::after {
   padding: 0 14px; height: 34px;
   background: linear-gradient(135deg, #B7FF3C 0%, #A6FF00 100%); color: #050700;
   border-radius: var(--r);
-  font: 800 11px/1 "Rajdhani";
+  font: 800 11px/1 "Space Grotesk", "Inter";
   letter-spacing: .06em; text-transform: uppercase;
   white-space: nowrap;
   transition: opacity .12s;
@@ -225,7 +234,7 @@ body::after {
 }
 .live-ticker-label {
   flex-shrink: 0; padding: 0 14px;
-  font: 900 9px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase;
+  font: 900 9px/1 "Space Grotesk", "Inter"; letter-spacing: .2em; text-transform: uppercase;
   color: var(--lime); border-right: 1px solid var(--thin);
   height: 100%; display: flex; align-items: center; white-space: nowrap;
   background: #070a07;
@@ -250,10 +259,10 @@ body::after {
 }
 .ticker-match:hover { background: rgba(255,255,255,.025); }
 .ticker-league { font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
-.ticker-home   { font: 700 12px/1 "Rajdhani"; color: var(--text); }
-.ticker-away   { font: 700 12px/1 "Rajdhani"; color: var(--text); }
+.ticker-home   { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--text); }
+.ticker-away   { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--text); }
 .ticker-score  {
-  font: 900 13px/1 "Rajdhani"; color: var(--text);
+  font: 900 13px/1 "Space Grotesk", "Inter"; color: var(--text);
   padding: 2px 7px; border-radius: 4px;
   background: rgba(255,255,255,.06); border: 1px solid var(--thin);
   letter-spacing: .04em;
@@ -263,7 +272,7 @@ body::after {
   background: rgba(166,255,0,.07);
 }
 .ticker-status {
-  font: 700 9px/1 "Rajdhani"; letter-spacing: .1em;
+  font: 700 9px/1 "Space Grotesk", "Inter"; letter-spacing: .1em;
   color: var(--text3); min-width: 32px;
 }
 
@@ -326,7 +335,7 @@ body::after {
   display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
   margin-left: 12px;
 }
-.vote-box strong { font: 800 20px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.vote-box strong { font: 800 20px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.02em; }
 .vote-box span   { font: 600 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
 
 /* fighter left */
@@ -341,7 +350,7 @@ body::after {
 }
 .club-ghost {
   position: absolute; top: 40px; left: 24px;
-  font: 900 80px/1 "Rajdhani";
+  font: 900 80px/1 "Space Grotesk", "Inter";
   letter-spacing: -.04em; text-transform: uppercase;
   color: rgba(255,255,255,.04); pointer-events: none;
   user-select: none;
@@ -350,7 +359,7 @@ body::after {
 .fighter-name { text-align: center; padding-bottom: 4px; }
 .fighter-name strong {
   display: block;
-  font: 900 28px/1 "Rajdhani";
+  font: 900 28px/1 "Space Grotesk", "Inter";
   letter-spacing: .04em; text-transform: uppercase;
   color: #fff;
 }
@@ -370,7 +379,7 @@ body::after {
 }
 .battle-title-row { text-align: center; margin-bottom: 4px; }
 .battle-title-row h1 {
-  font: 900 52px/1 "Rajdhani";
+  font: 900 52px/1 "Space Grotesk", "Inter";
   letter-spacing: -.01em; text-transform: uppercase;
   color: #fff;
   line-height: .92;
@@ -398,7 +407,7 @@ body::after {
 .cat-pill.active { background: var(--lime-dim); border-color: var(--line-lime); color: var(--lime); }
 
 .vs-mark {
-  font: 900 36px/1 "Rajdhani";
+  font: 900 36px/1 "Space Grotesk", "Inter";
   letter-spacing: .06em; color: rgba(255,255,255,.25);
   margin: 2px 0;
 }
@@ -411,7 +420,7 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
 .question-box h2 {
-  font: 700 14px/1.3 "Rajdhani";
+  font: 700 14px/1.3 "Space Grotesk", "Inter";
   letter-spacing: .06em; text-transform: uppercase;
   color: #fff;
 }
@@ -427,7 +436,7 @@ body::after {
 .tap-scale button {
   width: 26px; height: 26px; border-radius: 4px;
   border: 1px solid var(--thin);
-  font: 700 12px/1 "Rajdhani";
+  font: 700 12px/1 "Space Grotesk", "Inter";
   color: var(--text2);
   transition: all .1s;
 }
@@ -503,7 +512,7 @@ body::after {
 }
 .panel-head-left { display: flex; align-items: center; gap: 8px; }
 .panel-title {
-  font: 800 13px/1 "Rajdhani";
+  font: 800 13px/1 "Space Grotesk", "Inter";
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text);
 }
@@ -528,7 +537,7 @@ body::after {
 }
 .trending-row:last-child { border-bottom: none; }
 .trending-rank {
-  font: 900 18px/1 "Rajdhani";
+  font: 900 18px/1 "Space Grotesk", "Inter";
   color: var(--text3); width: 18px; flex-shrink: 0;
 }
 .trending-avatars { display: flex; flex-shrink: 0; }
@@ -540,7 +549,7 @@ body::after {
 }
 .trending-avatars img:first-child { margin-left: 0; }
 .trending-label { flex: 1; font: 600 12px/1.3 "Inter"; color: var(--text); }
-.trending-votes { font: 700 11px/1 "Rajdhani"; color: var(--text2); flex-shrink: 0; }
+.trending-votes { font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--text2); flex-shrink: 0; }
 .spark {
   width: 60px; height: 24px; flex-shrink: 0;
   fill: none; stroke: var(--lime); stroke-width: 1.5;
@@ -551,7 +560,7 @@ body::after {
 .cat-breakdown { padding: 16px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
 .cat-metric { display: flex; flex-direction: column; gap: 4px; }
 .cat-metric-label { font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
-.cat-metric-pct   { font: 900 22px/1 "Rajdhani"; color: var(--text); }
+.cat-metric-pct   { font: 900 22px/1 "Space Grotesk", "Inter"; color: var(--text); }
 .cat-metric--right { align-items: flex-end; }
 .hex-radar {
   width: 80px; height: 80px;
@@ -578,18 +587,18 @@ body::after {
   width: 30px; height: 30px; border-radius: 50%;
   background: var(--panel2); border: 1px solid var(--thin);
   display: grid; place-items: center;
-  font: 700 11px/1 "Rajdhani"; color: var(--lime);
+  font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--lime);
   flex-shrink: 0;
 }
 .feed-body { flex: 1; min-width: 0; }
-.feed-user   { font: 700 11px/1 "Rajdhani"; color: var(--lime); }
+.feed-user   { font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .feed-action { font: 500 11px/1 "Inter"; color: var(--text2); }
 .feed-battle { font: 700 12px/1.3 "Inter"; color: var(--text); }
 .feed-score {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px;
   background: var(--lime); color: #050700;
-  font: 900 11px/1 "Rajdhani";
+  font: 900 11px/1 "Space Grotesk", "Inter";
   margin-left: 4px;
 }
 .feed-quote { font: 500 11px/1.4 "Inter"; color: var(--text2); font-style: italic; margin-top: 2px; }
@@ -601,16 +610,16 @@ body::after {
   padding: 9px 16px; border-bottom: 1px solid var(--thin);
 }
 .rising-row:last-child { border-bottom: none; }
-.rising-rank  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.rising-rank  { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 16px; flex-shrink: 0; }
 .rising-name  { font: 700 13px/1 "Inter"; color: var(--text); flex: 1; }
 .rising-role  { font: 600 10px/1 "Inter"; letter-spacing: .1em; color: var(--text2); }
 .rising-score {
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: 22px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.3);
-  font: 900 13px/1 "Rajdhani"; color: var(--lime);
+  font: 900 13px/1 "Space Grotesk", "Inter"; color: var(--lime);
 }
-.rising-delta { font: 700 11px/1 "Rajdhani"; color: var(--green); width: 28px; text-align: right; }
+.rising-delta { font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--green); width: 28px; text-align: right; }
 
 /* archetype radar */
 .archetype-radar { width: 100px; height: 100px; }
@@ -632,7 +641,7 @@ body::after {
   background: linear-gradient(to top, rgba(8,9,9,1) 0%, transparent 100%);
 }
 .gordon-fit-score {
-  font: 900 48px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em;
+  font: 900 48px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.02em;
 }
 .gordon-fit-label {
   font: 700 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2);
@@ -664,7 +673,7 @@ body::after {
 .promo-strip-text { flex: 1; }
 .promo-strip-text strong {
   display: block;
-  font: 800 16px/1 "Rajdhani"; letter-spacing: .06em; text-transform: uppercase;
+  font: 800 16px/1 "Space Grotesk", "Inter"; letter-spacing: .06em; text-transform: uppercase;
   color: var(--lime);
 }
 .promo-strip-text span {
@@ -675,7 +684,7 @@ body::after {
   padding: 0 20px; height: 40px;
   background: var(--lime); color: #050700;
   border-radius: var(--r); flex-shrink: 0;
-  font: 800 12px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 12px/1 "Space Grotesk", "Inter"; letter-spacing: .08em; text-transform: uppercase;
   transition: opacity .12s;
 }
 .promo-cta:hover { opacity: .9; }
@@ -717,7 +726,7 @@ body::after {
 .dbp-vote-badge {
   display: flex; flex-direction: column; gap: 1px; margin-left: 10px;
 }
-.dbp-vote-badge strong { font: 800 18px/1 "Rajdhani"; color: var(--lime); }
+.dbp-vote-badge strong { font: 800 18px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .dbp-vote-badge span   { font: 700 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
 
 /* hero body: 3-col fighters */
@@ -740,7 +749,7 @@ body::after {
 }
 .dbp-fighter-info { text-align: center; padding-top: 8px; }
 .dbp-fighter-name {
-  font: 900 22px/1 "Rajdhani";
+  font: 900 22px/1 "Space Grotesk", "Inter";
   letter-spacing: .04em; text-transform: uppercase; color: #fff;
 }
 .dbp-fighter-club {
@@ -756,11 +765,11 @@ body::after {
 }
 .dbp-title {
   text-align: center;
-  font: 900 40px/.9 "Rajdhani"; text-transform: uppercase; color: #fff;
+  font: 900 40px/.9 "Space Grotesk", "Inter"; text-transform: uppercase; color: #fff;
 }
 .dbp-title .lime-word { color: var(--lime); display: block; }
 .dbp-question {
-  font: 700 13px/1.4 "Rajdhani"; letter-spacing: .04em;
+  font: 700 13px/1.4 "Space Grotesk", "Inter"; letter-spacing: .04em;
   text-transform: uppercase; color: #fff; text-align: center;
 }
 .dbp-question mark { color: var(--lime); background: none; }
@@ -773,7 +782,7 @@ body::after {
 .dbp-scale button {
   width: 24px; height: 24px; border-radius: 3px;
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Rajdhani"; color: var(--text2);
+  font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--text2);
   transition: all .1s;
 }
 .dbp-scale button:hover { border-color: var(--lime); color: var(--lime); }
@@ -813,7 +822,7 @@ body::after {
 }
 .section-heading-icon { color: var(--lime); }
 .section-heading h3 {
-  font: 800 13px/1 "Rajdhani";
+  font: 800 13px/1 "Space Grotesk", "Inter";
   letter-spacing: .16em; text-transform: uppercase; color: var(--text);
 }
 .section-heading-link {
@@ -855,21 +864,21 @@ body::after {
 }
 .battle-vs-badge {
   position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-  font: 900 11px/1 "Rajdhani"; color: rgba(255,255,255,.35); letter-spacing: .04em;
+  font: 900 11px/1 "Space Grotesk", "Inter"; color: rgba(255,255,255,.35); letter-spacing: .04em;
 }
 .battle-card-names {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 10px 4px;
 }
 .battle-card-names span {
-  font: 800 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text);
+  font: 800 12px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--text);
 }
 .battle-card-names .card-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
 .battle-card-bar { margin: 0 10px 10px; height: 3px; border-radius: 2px; background: var(--panel2); overflow: hidden; }
 .battle-card-bar-fill { height: 100%; background: var(--lime); border-radius: 2px; }
 .battle-card-votes {
   display: flex; justify-content: space-between; padding: 0 10px 10px;
-  font: 600 10px/1 "Rajdhani"; color: var(--text2);
+  font: 600 10px/1 "Space Grotesk", "Inter"; color: var(--text2);
 }
 
 /* upcoming battles */
@@ -889,8 +898,8 @@ body::after {
 .upcoming-fighter-text {}
 .upcoming-fighter-name { font: 700 12px/1 "Inter"; color: var(--text); }
 .upcoming-fighter-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
-.upcoming-vs { font: 900 11px/1 "Rajdhani"; color: var(--text3); }
-.upcoming-cd { font: 800 12px/1 "Rajdhani"; color: var(--lime); letter-spacing: .04em; white-space: nowrap; }
+.upcoming-vs { font: 900 11px/1 "Space Grotesk", "Inter"; color: var(--text3); }
+.upcoming-cd { font: 800 12px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: .04em; white-space: nowrap; }
 .upcoming-cd-label { font: 600 8px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); display: block; text-align: right; margin-top: 2px; }
 .view-schedule-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -908,10 +917,10 @@ body::after {
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
 }
 .nomination-row:last-child { border-bottom: none; }
-.nomination-rank { font: 900 16px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.nomination-rank { font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .nomination-title { font: 700 12px/1.3 "Inter"; color: var(--text); flex: 1; }
 .nomination-by    { font: 600 10px/1 "Inter"; color: var(--text2); margin-top: 2px; }
-.nomination-votes { font: 700 12px/1 "Rajdhani"; color: var(--lime); flex-shrink: 0; white-space: nowrap; }
+.nomination-votes { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--lime); flex-shrink: 0; white-space: nowrap; }
 .nominate-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 12px;
@@ -946,7 +955,7 @@ body::after {
 .plp-header {
   padding: 20px 0 14px; border-bottom: 1px solid var(--thin); margin-bottom: 14px;
 }
-.plp-title { font: 900 42px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.plp-title { font: 900 42px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .plp-sub   { font: 400 13px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 
 /* Stats bar */
@@ -957,7 +966,7 @@ body::after {
 }
 .plp-stat { display: flex; flex-direction: column; gap: 3px; }
 .plp-stat-label { font: 600 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
-.plp-stat-val   { font: 900 24px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.plp-stat-val   { font: 900 24px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.02em; }
 .plp-stat-sub   { font: 500 10px/1 "Inter"; color: var(--green); }
 
 /* Search bar */
@@ -1016,16 +1025,16 @@ body::after {
   width: 48px; height: 48px; border-radius: var(--r);
   border: 2px solid var(--lime); background: rgba(0,0,0,.6);
 }
-.plp-featured-rating-badge strong { font: 900 22px/1 "Rajdhani"; color: var(--lime); }
+.plp-featured-rating-badge strong { font: 900 22px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .plp-featured-rating-badge span   { font: 700 7px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime); margin-top: 2px; }
 .plp-featured-body { padding: 12px 14px; }
 .plp-featured-tag  { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.plp-featured-name { font: 900 24px/1.1 "Rajdhani"; letter-spacing: .03em; text-transform: uppercase; color: #fff; }
+.plp-featured-name { font: 900 24px/1.1 "Space Grotesk", "Inter"; letter-spacing: .03em; text-transform: uppercase; color: #fff; }
 .plp-featured-club { font: 700 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
 .plp-featured-meta { font: 500 11px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 .plp-featured-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
 .plp-featured-stat  { display: flex; flex-direction: column; gap: 3px; }
-.plp-featured-stat strong { font: 900 20px/1 "Rajdhani"; }
+.plp-featured-stat strong { font: 900 20px/1 "Space Grotesk", "Inter"; }
 .plp-featured-stat span   { font: 600 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
 .plp-featured-stat small  { font: 500 10px/1 "Inter"; color: var(--text2); }
 
@@ -1046,7 +1055,7 @@ body::after {
   padding: 8px 0; border-bottom: 1px solid var(--thin);
 }
 .plp-rank-row:last-child { border-bottom: none; }
-.plp-rank-num  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.plp-rank-num  { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 16px; flex-shrink: 0; }
 .plp-rank-name { font: 700 13px/1 "Inter"; color: var(--text); flex: 1; }
 
 /* Avatar utility (used in rankings + rated lists) */
@@ -1057,7 +1066,7 @@ body::after {
 .rating-badge {
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 4px; border: 1px solid rgba(166,255,0,.4);
-  font: 900 16px/1 "Rajdhani"; color: var(--lime);
+  font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--lime);
   padding: 3px 6px;
 }
 .rating-badge--sm { font-size: 13px; padding: 2px 5px; min-width: 30px; }
@@ -1078,7 +1087,7 @@ body::after {
 .plp-db-table tr:last-child td { border-bottom: none; }
 .plp-db-table tr:hover td { background: rgba(255,255,255,.02); }
 .plp-db-table th.sortable { color: var(--lime); }
-.plp-rank-col { font: 900 14px/1 "Rajdhani"; color: var(--text3); }
+.plp-rank-col { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); }
 .plp-player-cell { display: flex; align-items: center; gap: 8px; }
 .plp-player-cell strong { font: 700 13px/1 "Inter"; color: var(--text); }
 .plp-pos-badge {
@@ -1086,7 +1095,7 @@ body::after {
   padding: 2px 6px; border-radius: 3px; border: 1px solid var(--thin);
   font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
 }
-.plp-fan-rating { font: 700 13px/1 "Rajdhani"; color: #F5C84B; }
+.plp-fan-rating { font: 700 13px/1 "Space Grotesk", "Inter"; color: #F5C84B; }
 
 /* Compare widget */
 .plp-compare-slots { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -1111,7 +1120,7 @@ body::after {
   padding: 8px 0; border-bottom: 1px solid var(--thin);
 }
 .plp-rising-row:last-child { border-bottom: none; }
-.plp-rising-num  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.plp-rising-num  { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 16px; flex-shrink: 0; }
 .plp-rising-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .plp-rising-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
 .plp-rising-info span   { font: 600 10px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
@@ -1131,7 +1140,7 @@ body::after {
   margin-bottom: 16px;
 }
 .players-hero h1 {
-  font: 900 48px/1 "Rajdhani";
+  font: 900 48px/1 "Space Grotesk", "Inter";
   letter-spacing: .02em; text-transform: uppercase; color: #fff;
 }
 .players-hero-sub { font: 400 13px/1 "Inter"; color: var(--text2); margin-top: 4px; }
@@ -1141,7 +1150,7 @@ body::after {
 }
 .players-stat { display: flex; flex-direction: column; gap: 3px; }
 .players-stat strong {
-  font: 900 28px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em;
+  font: 900 28px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.02em;
 }
 .players-stat span { font: 600 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
 .players-stat small { font: 500 10px/1 "Inter"; color: var(--green); }
@@ -1183,7 +1192,7 @@ body::after {
 .apply-btn {
   padding: 0 16px; height: 34px; border-radius: var(--r);
   background: var(--lime); color: #050700;
-  font: 800 11px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 11px/1 "Space Grotesk", "Inter"; letter-spacing: .08em; text-transform: uppercase;
 }
 
 .players-layout { display: grid; grid-template-columns: 280px 1fr 260px; gap: 14px; }
@@ -1205,7 +1214,7 @@ body::after {
 }
 .featured-player-meta { padding: 12px 14px; }
 .featured-player-name {
-  font: 900 22px/1.1 "Rajdhani"; letter-spacing: .03em; text-transform: uppercase; color: #fff;
+  font: 900 22px/1.1 "Space Grotesk", "Inter"; letter-spacing: .03em; text-transform: uppercase; color: #fff;
 }
 .featured-player-club { font: 700 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
 .featured-player-pos  { display: flex; align-items: center; gap: 8px; margin-top: 4px; font: 500 11px/1 "Inter"; color: var(--text2); }
@@ -1213,12 +1222,12 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: var(--r);
   border: 2px solid var(--lime);
-  font: 900 24px/1 "Rajdhani"; color: var(--lime);
+  font: 900 24px/1 "Space Grotesk", "Inter"; color: var(--lime);
   float: right; margin-left: 8px;
 }
 .featured-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .featured-metric { display: flex; flex-direction: column; gap: 3px; }
-.featured-metric-val  { font: 900 20px/1 "Rajdhani"; color: var(--lime); }
+.featured-metric-val  { font: 900 20px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .featured-metric-val--green { color: var(--green); }
 .featured-metric-val--white { color: #fff; }
 .featured-metric-label { font: 600 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
@@ -1245,7 +1254,7 @@ body::after {
 .player-table td { padding: 9px 12px; border-bottom: 1px solid var(--thin); vertical-align: middle; }
 .player-table tr:last-child td { border-bottom: none; }
 .player-table tr:hover td { background: rgba(255,255,255,.02); }
-.pt-rank { font: 900 14px/1 "Rajdhani"; color: var(--text3); }
+.pt-rank { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); }
 .pt-player { display: flex; align-items: center; gap: 8px; }
 .pt-player-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); }
 .pt-player-name { font: 700 13px/1 "Inter"; color: var(--text); }
@@ -1256,10 +1265,10 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.4);
-  font: 900 14px/1 "Rajdhani"; color: var(--lime);
+  font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--lime);
 }
-.pt-buzz  { font: 700 13px/1 "Rajdhani"; color: var(--green); }
-.pt-stars { display: flex; align-items: center; gap: 3px; font: 700 12px/1 "Rajdhani"; color: #F5C84B; }
+.pt-buzz  { font: 700 13px/1 "Space Grotesk", "Inter"; color: var(--green); }
+.pt-stars { display: flex; align-items: center; gap: 3px; font: 700 12px/1 "Space Grotesk", "Inter"; color: #F5C84B; }
 .view-db-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 12px; font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
@@ -1301,14 +1310,14 @@ body::after {
   padding: 8px 14px; border-bottom: 1px solid var(--thin);
 }
 .rank-row:last-child { border-bottom: none; }
-.rank-row-num { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.rank-row-num { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 16px; flex-shrink: 0; }
 .rank-row-img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); flex-shrink: 0; }
 .rank-row-name { font: 700 12px/1 "Inter"; color: var(--text); flex: 1; }
 .rank-row-score {
   width: 32px; height: 22px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.35);
   display: flex; align-items: center; justify-content: center;
-  font: 900 13px/1 "Rajdhani"; color: var(--lime);
+  font: 900 13px/1 "Space Grotesk", "Inter"; color: var(--lime);
 }
 .view-rankings-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -1336,7 +1345,7 @@ body::after {
   position: sticky; top: 54px; height: calc(100vh - 54px); overflow-y: auto;
 }
 .comp-sidebar h2 {
-  font: 900 18px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
+  font: 900 18px/1 "Space Grotesk", "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
   padding: 0 16px 12px;
 }
 .comp-sidebar-section { padding: 8px 0; }
@@ -1355,7 +1364,7 @@ body::after {
 .comp-sidebar-star { color: var(--lime); font-size: 11px; }
 .comp-sidebar-login-cta { margin: 16px; padding: 12px; border: 1px solid var(--thin); border-radius: var(--r); text-align: center; }
 .comp-sidebar-login-cta p { font: 400 11px/1.5 "Inter"; color: var(--text2); margin-bottom: 8px; }
-.comp-login-btn { display: block; width: 100%; padding: 8px; background: var(--lime); color: #050700; font: 800 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; border-radius: 5px; }
+.comp-login-btn { display: block; width: 100%; padding: 8px; background: var(--lime); color: #050700; font: 800 10px/1 "Space Grotesk", "Inter"; letter-spacing: .1em; text-transform: uppercase; border-radius: 5px; }
 
 .comp-main { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -1381,7 +1390,7 @@ body::after {
   margin-bottom: 6px;
 }
 .comp-banner-title {
-  font: 900 28px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
+  font: 900 28px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
   margin-bottom: 4px;
 }
 .comp-banner-sub { font: 400 12px/1 "Inter"; color: rgba(255,255,255,.6); margin-bottom: 12px; }
@@ -1400,8 +1409,8 @@ body::after {
 .comp-next-match { display: flex; align-items: center; gap: 10px; }
 .comp-next-team img { width: 36px; height: 36px; object-fit: contain; }
 .comp-next-team span { display: block; font: 700 12px/1 "Inter"; color: #fff; margin-top: 4px; text-align: center; }
-.comp-next-vs { font: 900 18px/1 "Rajdhani"; color: rgba(255,255,255,.4); }
-.comp-next-date { font: 700 11px/1 "Rajdhani"; color: var(--lime); display: block; margin-top: 6px; text-align: center; }
+.comp-next-vs { font: 900 18px/1 "Space Grotesk", "Inter"; color: rgba(255,255,255,.4); }
+.comp-next-date { font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--lime); display: block; margin-top: 6px; text-align: center; }
 
 /* league pills row */
 .league-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
@@ -1415,7 +1424,7 @@ body::after {
 .league-tab:hover { border-color: var(--line); }
 .league-tab.active { border-color: var(--line-lime); background: rgba(166,255,0,.05); }
 .league-tab-logo { font-size: 24px; line-height: 1; }
-.league-tab-name { font: 800 13px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.league-tab-name { font: 800 13px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
 .league-tab-country { font: 600 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
 .league-tab-live { font: 700 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 4px; }
 
@@ -1424,20 +1433,20 @@ body::after {
 .comp-data-card { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); overflow: hidden; }
 .comp-data-card-head {
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
-  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
+  font: 800 11px/1 "Space Grotesk", "Inter"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
 }
 .comp-table { width: 100%; border-collapse: collapse; }
 .comp-table td { padding: 7px 12px; border-bottom: 1px solid var(--thin); font: 500 12px/1 "Inter"; }
 .comp-table tr:last-child td { border-bottom: none; }
 .comp-table tr:hover td { background: rgba(255,255,255,.02); }
-.comp-rank-num { font: 700 12px/1 "Rajdhani"; color: var(--text3); }
+.comp-rank-num { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--text3); }
 .comp-team-name { font: 700 12px/1 "Inter"; color: var(--text); }
-.comp-pts { font: 900 13px/1 "Rajdhani"; color: var(--lime); }
+.comp-pts { font: 900 13px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .comp-form { display: flex; gap: 2px; }
 .form-badge {
   width: 18px; height: 18px; border-radius: 3px;
   display: flex; align-items: center; justify-content: center;
-  font: 900 9px/1 "Rajdhani";
+  font: 900 9px/1 "Space Grotesk", "Inter";
 }
 .form-badge--W { background: var(--green); color: #050700; }
 .form-badge--D { background: #F5C84B; color: #050700; }
@@ -1453,7 +1462,7 @@ body::after {
 
 /* Sidebar */
 .comp-sidebar-title {
-  font: 900 18px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
+  font: 900 18px/1 "Space Grotesk", "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
   padding: 0 16px 12px;
 }
 .comp-sidebar-link {
@@ -1466,7 +1475,7 @@ body::after {
 .comp-my-section { padding: 8px 0; border-top: 1px solid var(--thin); margin-top: 8px; }
 .comp-my-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 16px; font: 600 12px/1 "Rajdhani"; color: var(--text2);
+  padding: 7px 16px; font: 600 12px/1 "Space Grotesk", "Inter"; color: var(--text2);
   cursor: pointer; transition: color .12s;
 }
 .comp-my-row:hover { color: var(--text); }
@@ -1494,7 +1503,7 @@ body::after {
   color: rgba(255,255,255,.5); margin-bottom: 6px;
 }
 .comp-hero-title {
-  font: 900 28px/1 "Rajdhani"; letter-spacing: .02em;
+  font: 900 28px/1 "Space Grotesk", "Inter"; letter-spacing: .02em;
   text-transform: uppercase; color: #fff; margin-bottom: 4px;
 }
 .comp-hero-season { font: 400 12px/1 "Inter"; color: rgba(255,255,255,.6); margin-bottom: 6px; }
@@ -1512,9 +1521,9 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   font: 700 12px/1 "Inter"; color: #fff;
 }
-.comp-hero-vs { font: 900 18px/1 "Rajdhani"; color: rgba(255,255,255,.4); }
+.comp-hero-vs { font: 900 18px/1 "Space Grotesk", "Inter"; color: rgba(255,255,255,.4); }
 .comp-hero-kickoff {
-  font: 700 11px/1 "Rajdhani"; color: var(--lime);
+  font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--lime);
   display: block; margin-top: 8px; text-align: center;
 }
 
@@ -1544,7 +1553,7 @@ body::after {
 }
 .comp-league-card:hover { border-color: var(--line); }
 .comp-league-card.active { border-color: var(--line-lime); background: rgba(166,255,0,.05); }
-.comp-league-name    { font: 800 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); margin-top: 4px; }
+.comp-league-name    { font: 800 12px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); margin-top: 4px; }
 .comp-league-country { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
 .comp-league-status  { display: flex; align-items: center; gap: 5px; margin-top: 4px; font: 600 9px/1 "Inter"; color: var(--text2); }
 
@@ -1554,7 +1563,7 @@ body::after {
   background: var(--panel); overflow: hidden; padding: 12px 14px;
 }
 .comp-data-panel-title {
-  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em;
+  font: 800 11px/1 "Space Grotesk", "Inter"; letter-spacing: .14em;
   text-transform: uppercase; color: var(--text); margin-bottom: 10px;
 }
 .comp-data-panel-sub { color: var(--lime); }
@@ -1572,9 +1581,9 @@ body::after {
   color: var(--text3); padding-bottom: 8px; margin-bottom: 2px;
 }
 .comp-standings-row:last-child { border-bottom: none; }
-.comp-standings-pos  { font: 900 12px/1 "Rajdhani"; color: var(--text3); }
+.comp-standings-pos  { font: 900 12px/1 "Space Grotesk", "Inter"; color: var(--text3); }
 .comp-standings-name { font: 700 12px/1 "Inter"; color: var(--text); }
-.comp-standings-pts  { font: 900 13px/1 "Rajdhani"; color: var(--lime); text-align: right; }
+.comp-standings-pts  { font: 900 13px/1 "Space Grotesk", "Inter"; color: var(--lime); text-align: right; }
 
 /* Lower 3-col row */
 .comp-lower { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
@@ -1588,7 +1597,7 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
 }
-.coverage-count { font: 900 32px/1 "Rajdhani"; color: var(--lime); }
+.coverage-count { font: 900 32px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .coverage-label { font: 600 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
 
 /* hot debates */
@@ -1618,7 +1627,7 @@ body::after {
 .fixture-teams { flex: 1; }
 .fixture-home { font: 700 11px/1 "Inter"; color: var(--text); }
 .fixture-away { font: 600 10px/1 "Inter"; color: var(--text2); }
-.fixture-time { font: 700 10px/1 "Rajdhani"; color: var(--lime); white-space: nowrap; }
+.fixture-time { font: 700 10px/1 "Space Grotesk", "Inter"; color: var(--lime); white-space: nowrap; }
 .fixture-comp { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
 
 
@@ -1640,7 +1649,7 @@ body::after {
   display: grid; place-items: center; color: var(--lime); flex-shrink: 0;
 }
 .talents-hero-title {
-  font: 900 36px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
+  font: 900 36px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
 }
 .talents-hero-title span { color: var(--lime); }
 .talents-hero-sub { font: 400 12px/1 "Inter"; color: var(--text2); }
@@ -1706,16 +1715,16 @@ body::after {
   padding: 4px 8px; border-radius: 4px;
 }
 .breakout-info { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-.breakout-name { font: 900 32px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.breakout-name { font: 900 32px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .breakout-meta { font: 600 11px/1 "Inter"; color: var(--text2); display: flex; align-items: center; gap: 8px; }
 .breakout-scores { display: flex; gap: 20px; }
 .breakout-score-item {}
-.breakout-score-val { font: 900 40px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.breakout-score-val { font: 900 40px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.02em; }
 .breakout-score-label { font: 700 8px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .breakout-radar-row { display: flex; gap: 24px; align-items: center; }
 .breakout-attr { display: flex; flex-direction: column; gap: 3px; }
 .breakout-attr-label { font: 600 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.breakout-attr-val   { font: 900 20px/1 "Rajdhani"; color: var(--text); }
+.breakout-attr-val   { font: 900 20px/1 "Space Grotesk", "Inter"; color: var(--text); }
 .breakout-bio { font: 400 12px/1.6 "Inter"; color: var(--text2); }
 .view-report-btn {
   display: inline-flex; align-items: center; gap: 6px;
@@ -1736,12 +1745,12 @@ body::after {
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
 }
 .rising-talent-row:last-child { border-bottom: none; }
-.rt-rank { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.rt-rank { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .rt-img  { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
 .rt-name { font: 700 13px/1 "Inter"; color: var(--text); }
 .rt-meta { font: 600 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
-.rt-score { display: flex; align-items: center; justify-content: center; width: 32px; height: 22px; border-radius: 4px; border: 1px solid rgba(166,255,0,.35); font: 900 13px/1 "Rajdhani"; color: var(--lime); flex-shrink: 0; }
-.rt-delta { font: 700 11px/1 "Rajdhani"; color: var(--green); width: 28px; text-align: right; flex-shrink: 0; }
+.rt-score { display: flex; align-items: center; justify-content: center; width: 32px; height: 22px; border-radius: 4px; border: 1px solid rgba(166,255,0,.35); font: 900 13px/1 "Space Grotesk", "Inter"; color: var(--lime); flex-shrink: 0; }
+.rt-delta { font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--green); width: 28px; text-align: right; flex-shrink: 0; }
 
 /* emerging stars grid */
 .emerging-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; }
@@ -1764,12 +1773,12 @@ body::after {
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9) 50%, transparent 100%);
 }
 .emerging-info { padding: 6px 8px 10px; }
-.emerging-name { font: 800 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.emerging-name { font: 800 12px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
 .emerging-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .emerging-flag { font-size: 12px; }
 .emerging-scores { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-.emerging-score-val { font: 900 16px/1 "Rajdhani"; color: var(--lime); }
-.emerging-pot { font: 700 10px/1 "Rajdhani"; color: var(--text2); }
+.emerging-score-val { font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--lime); }
+.emerging-pot { font: 700 10px/1 "Space Grotesk", "Inter"; color: var(--text2); }
 .emerging-pot span { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
 
 /* talents bottom strip */
@@ -1781,7 +1790,7 @@ body::after {
   margin-top: 4px;
 }
 .talents-strip-stat { text-align: center; }
-.talents-strip-stat strong { font: 900 18px/1 "Rajdhani"; color: var(--text); display: block; }
+.talents-strip-stat strong { font: 900 18px/1 "Space Grotesk", "Inter"; color: var(--text); display: block; }
 .talents-strip-stat span  { font: 700 9px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 3px; }
 .talents-strip-stat small { font: 400 10px/1 "Inter"; color: var(--text3); display: block; margin-top: 2px; }
 .advanced-search-btn {
@@ -1801,7 +1810,7 @@ body::after {
   padding: 20px 0 16px; border-bottom: 1px solid var(--thin); margin-bottom: 16px;
 }
 .td-title { display: flex; align-items: center; gap: 14px; }
-.td-title h1 { font: 900 36px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.td-title h1 { font: 900 36px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .td-title h1 em { color: var(--lime); font-style: normal; }
 .td-title p { font: 400 12px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 .td-title-icon {
@@ -1856,7 +1865,7 @@ body::after {
   margin-bottom: 10px;
 }
 .panel-title {
-  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em;
+  font: 800 11px/1 "Space Grotesk", "Inter"; letter-spacing: .14em;
   text-transform: uppercase; color: var(--text);
   display: flex; align-items: center;
 }
@@ -1889,18 +1898,18 @@ body::after {
   font: 900 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase;
   padding: 4px 8px; border-radius: 4px; margin-bottom: 6px;
 }
-.td-featured-name { font: 900 32px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.td-featured-name { font: 900 32px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .td-featured-club { font: 700 12px/1 "Inter"; color: var(--lime); margin-top: 2px; }
 .td-featured-meta { font: 600 11px/1 "Inter"; color: var(--text2); margin-top: 2px; }
 .td-featured-ratings { display: flex; gap: 24px; }
 .td-featured-rating { display: flex; flex-direction: column; gap: 3px; }
-.td-featured-rating strong { font: 900 40px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.td-featured-rating strong { font: 900 40px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.02em; }
 .td-featured-rating span { font: 700 8px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
 .td-featured-radar-area { display: flex; align-items: center; gap: 16px; }
 .td-featured-attrs { display: flex; flex-direction: column; gap: 6px; }
 .td-featured-attr { display: flex; flex-direction: column; gap: 2px; }
 .td-featured-attr-label { font: 600 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.td-featured-attr-val   { font: 900 18px/1 "Rajdhani"; color: var(--text); }
+.td-featured-attr-val   { font: 900 18px/1 "Space Grotesk", "Inter"; color: var(--text); }
 .td-featured-profile-label { font: 700 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); margin-bottom: 5px; }
 .td-featured-profile-text  { font: 400 12px/1.6 "Inter"; color: var(--text2); }
 
@@ -1910,7 +1919,7 @@ body::after {
   padding: 9px 14px; border-bottom: 1px solid var(--thin);
 }
 .td-rising-row:last-child { border-bottom: none; }
-.td-rising-num { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.td-rising-num { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .td-rising-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
 .td-rising-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .td-rising-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
@@ -1937,11 +1946,11 @@ body::after {
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9) 50%, transparent 100%);
 }
 .td-emerging-body { padding: 6px 10px 10px; }
-.td-emerging-name { font: 800 12px/1.2 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.td-emerging-name { font: 800 12px/1.2 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
 .td-emerging-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 3px; }
 .td-emerging-ratings { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
-.td-emerging-rating strong { font: 900 18px/1 "Rajdhani"; color: var(--lime); }
-.td-emerging-potential { font: 700 10px/1 "Rajdhani"; color: var(--text2); }
+.td-emerging-rating strong { font: 900 18px/1 "Space Grotesk", "Inter"; color: var(--lime); }
+.td-emerging-potential { font: 700 10px/1 "Space Grotesk", "Inter"; color: var(--text2); }
 .td-emerging-potential strong { color: var(--lime); }
 
 /* Bottom strip */
@@ -1955,7 +1964,7 @@ body::after {
   display: flex; align-items: center; gap: 10px;
   font: 400 11px/1 "Inter"; color: var(--text2);
 }
-.td-bottom-cell strong { font: 900 15px/1 "Rajdhani"; color: var(--text); display: block; }
+.td-bottom-cell strong { font: 900 15px/1 "Space Grotesk", "Inter"; color: var(--text); display: block; }
 .td-bottom-cell span   { font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
 .td-bottom-cell-icon   { color: var(--lime); flex-shrink: 0; }
 .td-adv-search { margin-left: auto; flex-shrink: 0; }
@@ -1969,7 +1978,7 @@ body::after {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px; margin-left: 6px;
   background: var(--lime-dim); border: 1px solid var(--line-lime);
-  font: 900 11px/1 "Rajdhani"; color: var(--lime);
+  font: 900 11px/1 "Space Grotesk", "Inter"; color: var(--lime);
 }
 
 /* Scouted regions map */
@@ -1984,7 +1993,7 @@ body::after {
   font: 500 12px/1 "Inter"; color: var(--text2);
 }
 .td-map-stat:last-child { border-bottom: none; }
-.td-map-stat strong { font: 800 12px/1 "Rajdhani"; color: var(--text); }
+.td-map-stat strong { font: 800 12px/1 "Space Grotesk", "Inter"; color: var(--text); }
 
 /* Trend movers */
 .td-trend-row {
@@ -1996,7 +2005,7 @@ body::after {
 .td-trend-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .td-trend-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
 .td-trend-info span   { font: 600 10px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
-.td-trend-delta  { font: 800 13px/1 "Rajdhani"; color: var(--lime); }
+.td-trend-delta  { font: 800 13px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .td-trend-period { font: 500 10px/1 "Inter"; color: var(--text3); margin-top: 3px; }
 
 /* Youth standouts */
@@ -2010,11 +2019,11 @@ body::after {
 .td-youth-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
 .td-youth-info span   { font: 600 10px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
 .td-youth-scores { text-align: right; flex-shrink: 0; }
-.td-youth-scores strong { font: 900 18px/1 "Rajdhani"; color: var(--lime); display: block; }
-.td-youth-scores span   { font: 700 10px/1 "Rajdhani"; color: var(--text2); display: block; margin-top: 3px; }
+.td-youth-scores strong { font: 900 18px/1 "Space Grotesk", "Inter"; color: var(--lime); display: block; }
+.td-youth-scores span   { font: 700 10px/1 "Space Grotesk", "Inter"; color: var(--text2); display: block; margin-top: 3px; }
 
 /* trend-up helper used in rising rows */
-.trend-up { font: 700 11px/1 "Rajdhani"; color: var(--lime); }
+.trend-up { font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -2064,7 +2073,7 @@ body::after {
 }
 .sysfit-compare-row:hover { background: rgba(255,255,255,.03); }
 .sysfit-compare-name { font: 600 12px/1 "Inter"; color: var(--text2); }
-.sysfit-compare-pct  { font: 800 13px/1 "Rajdhani"; color: var(--text); }
+.sysfit-compare-pct  { font: 800 13px/1 "Space Grotesk", "Inter"; color: var(--text); }
 .sysfit-compare-pct--high { color: var(--green); }
 .sysfit-recent-label {
   font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
@@ -2077,7 +2086,7 @@ body::after {
 .sysfit-recent-row:hover { background: rgba(255,255,255,.03); }
 .sysfit-recent-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); flex-shrink: 0; }
 .sysfit-recent-name { font: 700 12px/1 "Inter"; color: var(--text); flex: 1; }
-.sysfit-recent-pct  { font: 800 12px/1 "Rajdhani"; color: var(--lime); }
+.sysfit-recent-pct  { font: 800 12px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 
 .sysfit-main { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -2096,7 +2105,7 @@ body::after {
   font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   margin-bottom: 8px;
 }
-.sysfit-player-name { font: 900 24px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.sysfit-player-name { font: 900 24px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .sysfit-player-meta { font: 500 11px/1 "Inter"; color: var(--text2); margin-top: 3px; display: flex; align-items: center; gap: 8px; }
 .sysfit-card-actions { display: flex; gap: 8px; }
 .sysfit-action-btn {
@@ -2122,9 +2131,9 @@ body::after {
 .sysfit-ring { width: 120px; height: 120px; }
 .sysfit-ring-track { fill: none; stroke: var(--panel2); stroke-width: 8; }
 .sysfit-ring-fill  { fill: none; stroke: var(--lime); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .5s ease; }
-.sysfit-ring-text  { dominant-baseline: middle; text-anchor: middle; fill: var(--lime); font: 900 28px/1 "Rajdhani"; }
+.sysfit-ring-text  { dominant-baseline: middle; text-anchor: middle; fill: var(--lime); font: 900 28px/1 "Space Grotesk", "Inter"; }
 .sysfit-ring-sub   { dominant-baseline: middle; text-anchor: middle; fill: var(--text2); font: 600 9px/1 "Inter"; }
-.sysfit-fit-label  { font: 700 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; margin-top: 6px; text-align: center; }
+.sysfit-fit-label  { font: 700 12px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; margin-top: 6px; text-align: center; }
 .sysfit-fit-label--excellent { color: var(--lime); }
 .sysfit-fit-sub { font: 500 10px/1 "Inter"; color: var(--text2); text-align: center; margin-top: 2px; }
 .sysfit-breakdown { flex: 1; display: flex; flex-direction: column; gap: 6px; }
@@ -2134,7 +2143,7 @@ body::after {
 .sysfit-breakdown-dots { display: flex; gap: 2px; }
 .sysfit-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--panel2); }
 .sysfit-dot.filled { background: var(--lime); }
-.sysfit-breakdown-val { font: 700 12px/1 "Rajdhani"; color: var(--lime); width: 24px; text-align: right; }
+.sysfit-breakdown-val { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--lime); width: 24px; text-align: right; }
 .sysfit-card-footer { display: flex; gap: 12px; padding: 14px 16px; border-top: 1px solid var(--thin); }
 .sysfit-footer-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
@@ -2154,10 +2163,10 @@ body::after {
 }
 .alt-fit-card:hover { border-color: var(--line); }
 .alt-fit-logo { font-size: 22px; }
-.alt-fit-club { font: 800 13px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.alt-fit-club { font: 800 13px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
 .alt-fit-fmt  { font: 600 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
 .alt-fit-hex  { width: 60px; height: 60px; }
-.alt-fit-score { font: 900 22px/1 "Rajdhani"; color: var(--lime); }
+.alt-fit-score { font: 900 22px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .alt-fit-label { font: 600 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; }
 .alt-fit-label--vg { color: var(--green); }
 .alt-fit-label--ok { color: #F5C84B; }
@@ -2179,7 +2188,7 @@ body::after {
 .role-fit-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--panel2); }
 .role-fit-dot.filled { background: var(--lime); }
 .role-fit-dot.mid   { background: #F5C84B; }
-.role-fit-val { font: 700 12px/1 "Rajdhani"; color: var(--lime); width: 24px; text-align: right; }
+.role-fit-val { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--lime); width: 24px; text-align: right; }
 .role-fit-legend { display: flex; gap: 12px; margin-top: 10px; }
 .role-fit-legend-item { display: flex; align-items: center; gap: 5px; font: 500 10px/1 "Inter"; color: var(--text2); }
 .role-fit-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
@@ -2188,7 +2197,7 @@ body::after {
 .sys-metric-ring { position: relative; width: 72px; height: 72px; margin: 0 auto; }
 .sys-metric-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .sys-metric-val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.sys-metric-num { font: 900 20px/1 "Rajdhani"; color: var(--lime); }
+.sys-metric-num { font: 900 20px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .sys-metric-label { font: 600 8px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); margin-top: 4px; text-align: center; }
 .sys-metric-grade { font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-top: 2px; }
 
@@ -2199,11 +2208,11 @@ body::after {
   border: 1px solid var(--thin); background: var(--panel2);
   display: flex; flex-direction: column; gap: 4px;
 }
-.match-result { font: 800 12px/1 "Rajdhani"; display: flex; align-items: center; gap: 4px; }
+.match-result { font: 800 12px/1 "Space Grotesk", "Inter"; display: flex; align-items: center; gap: 4px; }
 .match-result--W { color: var(--green); }
 .match-result--L { color: var(--red); }
 .match-opponent { font: 600 10px/1 "Inter"; color: var(--text2); }
-.match-rating-val { font: 900 16px/1 "Rajdhani"; color: var(--lime); }
+.match-rating-val { font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .match-rating-label { font: 600 8px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
 
 /* sysfit right col */
@@ -2218,8 +2227,8 @@ body::after {
   font: 700 10px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
   margin-bottom: 6px;
 }
-.tactical-role-name { font: 800 18px/1.1 "Rajdhani"; color: #fff; }
-.tactical-role-pct  { font: 900 28px/1 "Rajdhani"; color: var(--lime); float: right; }
+.tactical-role-name { font: 800 18px/1.1 "Space Grotesk", "Inter"; color: #fff; }
+.tactical-role-pct  { font: 900 28px/1 "Space Grotesk", "Inter"; color: var(--lime); float: right; }
 .tactical-role-desc { font: 400 11px/1.5 "Inter"; color: var(--text2); margin-top: 4px; }
 .tactical-pitch {
   width: 100%; height: 120px; border-radius: var(--r);
@@ -2243,18 +2252,18 @@ body::after {
 }
 .other-role-row:last-child { border-bottom: none; }
 .other-role-name { font: 600 12px/1 "Inter"; color: var(--text2); }
-.other-role-pct  { font: 700 13px/1 "Rajdhani"; color: var(--text); }
+.other-role-pct  { font: 700 13px/1 "Space Grotesk", "Inter"; color: var(--text); }
 
 .best-fit-row {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 0; border-bottom: 1px solid var(--thin);
 }
 .best-fit-row:last-child { border-bottom: none; }
-.best-fit-rank { font: 900 16px/1 "Rajdhani"; color: var(--lime); width: 18px; flex-shrink: 0; }
+.best-fit-rank { font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--lime); width: 18px; flex-shrink: 0; }
 .best-fit-logo { font-size: 18px; flex-shrink: 0; }
 .best-fit-club { font: 700 12px/1 "Inter"; color: var(--text); flex: 1; }
 .best-fit-fmt  { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
-.best-fit-pct  { font: 800 14px/1 "Rajdhani"; color: var(--lime); flex-shrink: 0; }
+.best-fit-pct  { font: 800 14px/1 "Space Grotesk", "Inter"; color: var(--lime); flex-shrink: 0; }
 .best-fit-grade { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; flex-shrink: 0; }
 .best-fit-grade--excellent { color: var(--lime); }
 .best-fit-grade--vg { color: var(--green); }
@@ -2284,7 +2293,7 @@ body::after {
   margin-bottom: 8px;
 }
 .wc-hero-title {
-  font: 900 56px/1 "Rajdhani"; letter-spacing: -.01em; text-transform: uppercase; color: #fff;
+  font: 900 56px/1 "Space Grotesk", "Inter"; letter-spacing: -.01em; text-transform: uppercase; color: #fff;
 }
 .wc-hero-sub { font: 400 14px/1 "Inter"; color: var(--text2); margin-top: 6px; }
 .wc-host-flags { font: 700 14px/1 "Inter"; color: var(--text2); margin-top: 8px; }
@@ -2293,12 +2302,12 @@ body::after {
   border-top: 1px solid var(--thin);
 }
 .wc-cd-cell { display: flex; flex-direction: column; gap: 3px; }
-.wc-cd-cell strong { font: 900 32px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.wc-cd-cell strong { font: 900 32px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.02em; }
 .wc-cd-cell span   { font: 700 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
 .wc-section { margin-bottom: 28px; }
 .wc-section-head { margin-bottom: 14px; }
 .wc-eyebrow { display: block; font: 700 9px/1 "Inter"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime); margin-bottom: 4px; }
-.wc-section-head h2 { font: 900 28px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.wc-section-head h2 { font: 900 28px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .wc-moment-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .wc-mf-btn {
   padding: 6px 13px; border-radius: var(--r); border: 1px solid var(--thin);
@@ -2330,7 +2339,7 @@ body::after {
 .mb-mile  { background: var(--lime-dim); color: var(--lime); border: 1px solid var(--line-lime); }
 .mb-upset { background: rgba(224,60,60,.15); color: var(--red); border: 1px solid rgba(224,60,60,.3); }
 .mb-stat  { background: rgba(255,255,255,.05); color: var(--text2); border: 1px solid var(--thin); }
-.wc-moment-match { font: 700 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text2); }
+.wc-moment-match { font: 700 12px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--text2); }
 .wc-moment-time  { font: 500 10px/1 "Inter"; color: var(--text3); }
 .wc-moment-text  { font: 400 13px/1.5 "Inter"; color: var(--text); flex: 1; }
 .wc-breakout-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
@@ -2349,15 +2358,15 @@ body::after {
 .wc-bc-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid var(--thin); flex-shrink: 0; }
 .wc-bc-meta { flex: 1; }
 .wc-bc-flag { font: 600 10px/1 "Inter"; color: var(--text2); margin-bottom: 3px; }
-.wc-bc-name { display: block; font: 800 15px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.wc-bc-name { display: block; font: 800 15px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
 .wc-bc-role { display: block; font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .wc-bc-rating { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-.wc-bc-score { font: 900 24px/1 "Rajdhani"; color: var(--lime); }
-.wc-bc-trend { font: 700 12px/1 "Rajdhani"; color: var(--green); }
+.wc-bc-score { font: 900 24px/1 "Space Grotesk", "Inter"; color: var(--lime); }
+.wc-bc-trend { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--green); }
 .wc-bc-stats { display: flex; gap: 0; margin-bottom: 10px; border: 1px solid var(--thin); border-radius: var(--r); overflow: hidden; }
 .wc-bc-stat { flex: 1; text-align: center; padding: 8px 4px; border-right: 1px solid var(--thin); }
 .wc-bc-stat:last-child { border-right: none; }
-.wc-bc-stat b { display: block; font: 900 16px/1 "Rajdhani"; color: var(--lime); }
+.wc-bc-stat b { display: block; font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .wc-bc-stat span { font: 600 8px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); margin-top: 2px; display: block; }
 .wc-bc-note { font: 400 11px/1.6 "Inter"; color: var(--text2); font-style: italic; }
 .wc-facts-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
@@ -2418,7 +2427,7 @@ body::after {
 .wc-edition-btn:hover { background: rgba(255,255,255,.03); border-color: var(--thin); }
 .wc-edition-btn.active { background: var(--lime-dim); border-color: var(--line-lime); }
 .wc-ed-flag { font-size: 20px; }
-.wc-ed-year { font: 900 16px/1 "Rajdhani"; color: var(--text); }
+.wc-ed-year { font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--text); }
 .wc-ed-host { font: 600 10px/1 "Inter"; color: var(--text2); }
 .wc-edition-detail {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
@@ -2426,12 +2435,12 @@ body::after {
 }
 .wc-ed-detail-top { display: flex; align-items: flex-start; justify-content: space-between; }
 .wc-ed-detail-flag { font-size: 28px; margin-bottom: 6px; }
-.wc-ed-detail-top h3 { font: 900 20px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.wc-ed-detail-top h3 { font: 900 20px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
 .wc-ed-winner { font: 600 11px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 .wc-calibre-score { text-align: center; }
-.wc-calibre-score strong { display: block; font: 900 36px/1 "Rajdhani"; color: var(--lime); }
+.wc-calibre-score strong { display: block; font: 900 36px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .wc-calibre-score span   { font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 2px; display: block; }
-.wc-ed-theme  { font: 700 14px/1.4 "Rajdhani"; letter-spacing: .04em; color: var(--lime); font-style: italic; }
+.wc-ed-theme  { font: 700 14px/1.4 "Space Grotesk", "Inter"; letter-spacing: .04em; color: var(--lime); font-style: italic; }
 .wc-ed-summary { font: 400 13px/1.7 "Inter"; color: var(--text2); }
 .wc-ed-moment {
   display: flex; align-items: flex-start; gap: 8px;
@@ -2457,9 +2466,9 @@ body::after {
 .wc-goal-top span { font: 600 10px/1 "Inter"; color: var(--text2); display: block; margin-top: 2px; }
 .wc-goal-year-badge {
   padding: 3px 7px; border-radius: 3px; border: 1px solid var(--thin);
-  font: 800 11px/1 "Rajdhani"; color: var(--text2); flex-shrink: 0;
+  font: 800 11px/1 "Space Grotesk", "Inter"; color: var(--text2); flex-shrink: 0;
 }
-.wc-goal-label { font: 800 12px/1 "Rajdhani"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
+.wc-goal-label { font: 800 12px/1 "Space Grotesk", "Inter"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
 .wc-goal-card p { font: 400 12px/1.6 "Inter"; color: var(--text2); margin: 0; }
 .wc-award-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; }
 .wc-award-row {
@@ -2467,7 +2476,7 @@ body::after {
   padding: 10px 14px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel);
 }
-.wc-award-year { font: 900 16px/1 "Rajdhani"; color: var(--text2); width: 36px; flex-shrink: 0; }
+.wc-award-year { font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--text2); width: 36px; flex-shrink: 0; }
 .wc-award-flag { font-size: 16px; flex-shrink: 0; }
 .wc-award-player { font: 700 13px/1 "Inter"; color: var(--text); flex: 1; }
 .wc-award-label  { font: 700 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
@@ -2479,13 +2488,13 @@ body::after {
   margin-top: 24px;
 }
 .wc-cta-strip > div { flex: 1; }
-.wc-cta-strip strong { display: block; font: 800 18px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
+.wc-cta-strip strong { display: block; font: 800 18px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
 .wc-cta-strip span   { font: 400 12px/1 "Inter"; color: var(--text2); display: block; margin-top: 4px; }
 .wc-cta-strip button {
   display: flex; align-items: center; gap: 8px;
   padding: 0 20px; height: 42px; border-radius: var(--r);
   background: var(--lime); color: #050700;
-  font: 800 12px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 12px/1 "Space Grotesk", "Inter"; letter-spacing: .08em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0; transition: opacity .12s;
 }
 .wc-cta-strip button:hover { opacity: .9; }
@@ -2501,7 +2510,7 @@ body::after {
   font: 700 10px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--lime);
   border: 1px solid var(--line-lime); border-radius: 999px; padding: 6px 14px; margin-bottom: 14px;
 }
-.pricing-hero h1 { font: 900 52px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.pricing-hero h1 { font: 900 52px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .pricing-hero p  { font: 400 14px/1 "Inter"; color: var(--text2); margin-top: 8px; }
 .pricing-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
 .pricing-card {
@@ -2510,7 +2519,7 @@ body::after {
 }
 .pricing-card--featured { border-color: var(--line-lime); background: linear-gradient(160deg, rgba(166,255,0,.04) 0%, var(--panel) 60%); }
 .pricing-tier-name { font: 700 10px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
-.pricing-price strong { font: 900 40px/1 "Rajdhani"; letter-spacing: -.02em; color: #fff; }
+.pricing-price strong { font: 900 40px/1 "Space Grotesk", "Inter"; letter-spacing: -.02em; color: #fff; }
 .pricing-price span   { font: 500 14px/1 "Inter"; color: var(--text2); }
 .pricing-desc { font: 400 12px/1.6 "Inter"; color: var(--text2); }
 .pricing-features { display: flex; flex-direction: column; gap: 8px; flex: 1; }
@@ -2519,7 +2528,7 @@ body::after {
 .pricing-cta {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 12px; border-radius: var(--r); width: 100%;
-  font: 800 12px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 12px/1 "Space Grotesk", "Inter"; letter-spacing: .08em; text-transform: uppercase;
   transition: opacity .12s;
 }
 .pricing-cta--free { border: 1px solid var(--thin); color: var(--text2); }
@@ -2532,15 +2541,15 @@ body::after {
   padding: 24px 28px; display: flex; align-items: center; gap: 20px;
 }
 .founder-pass-icon { color: var(--lime); flex-shrink: 0; }
-.founder-pass-title { font: 900 24px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
+.founder-pass-title { font: 900 24px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
 .founder-pass-sub   { font: 400 13px/1 "Inter"; color: var(--text2); margin-top: 5px; }
-.founder-pass-price strong { font: 900 36px/1 "Rajdhani"; color: #fff; }
+.founder-pass-price strong { font: 900 36px/1 "Space Grotesk", "Inter"; color: #fff; }
 .founder-pass-price span   { font: 500 13px/1 "Inter"; color: var(--text2); display: block; margin-top: 2px; }
 .founder-pass-cta {
   display: flex; align-items: center; gap: 8px;
   padding: 0 22px; height: 48px; border-radius: var(--r);
   background: var(--lime); color: #050700;
-  font: 900 14px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
+  font: 900 14px/1 "Space Grotesk", "Inter"; letter-spacing: .08em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0; transition: opacity .12s;
 }
 .founder-pass-cta:hover { opacity: .9; }
@@ -2560,7 +2569,7 @@ body::after {
   padding: 12px 16px; border-bottom: 1px solid var(--thin);
 }
 .card-title {
-  font: 800 12px/1 "Rajdhani";
+  font: 800 12px/1 "Space Grotesk", "Inter";
   letter-spacing: .16em; text-transform: uppercase; color: var(--text);
   display: flex; align-items: center; gap: 7px;
 }
@@ -2576,7 +2585,7 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.4);
-  font: 900 14px/1 "Rajdhani"; color: var(--lime);
+  font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--lime);
 }
 .rate-badge--green { border-color: rgba(21,196,90,.4); color: var(--green); }
 .rate-badge--white { border-color: var(--thin); color: var(--text); }
@@ -2606,14 +2615,14 @@ body::after {
 .dbp-hero-right { display: flex; align-items: center; gap: 10px; }
 .dbp-rate-title {
   display: flex; flex-direction: column; align-items: center;
-  font: 900 28px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase; color: #fff;
+  font: 900 28px/1 "Space Grotesk", "Inter"; letter-spacing: .08em; text-transform: uppercase; color: #fff;
 }
 .dbp-vs {
-  font: 900 36px/1 "Rajdhani"; letter-spacing: .08em;
+  font: 900 36px/1 "Space Grotesk", "Inter"; letter-spacing: .08em;
   color: var(--lime); text-align: center; margin: 6px 0;
 }
 .dbp-vs-small {
-  font: 900 14px/1 "Rajdhani"; letter-spacing: .1em; color: var(--text3);
+  font: 900 14px/1 "Space Grotesk", "Inter"; letter-spacing: .1em; color: var(--text3);
 }
 .dbp-rating-box {
   background: rgba(0,0,0,.4); border: 1px solid var(--thin);
@@ -2648,7 +2657,7 @@ body::after {
   background: rgba(0,0,0,.3);
 }
 .dbp-proof-cell { text-align: center; }
-.dbp-proof-val   { font: 900 20px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.01em; }
+.dbp-proof-val   { font: 900 20px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: -.01em; }
 .dbp-proof-label { font: 700 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); margin-top: 3px; }
 
 /* Filter bar */
@@ -2673,7 +2682,7 @@ body::after {
 }
 .dbp-section-title {
   display: flex; align-items: center; gap: 7px;
-  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
+  font: 800 11px/1 "Space Grotesk", "Inter"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
 }
 .dbp-battles-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
 
@@ -2704,16 +2713,16 @@ body::after {
   z-index: 2; padding: 0 6px; flex-shrink: 0;
 }
 .dbp-bc-vs-text {
-  font: 900 18px/1 "Rajdhani"; color: var(--lime); letter-spacing: .06em;
+  font: 900 18px/1 "Space Grotesk", "Inter"; color: var(--lime); letter-spacing: .06em;
 }
 .dbp-bc-cat {
   font: 700 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase;
   color: var(--text3); margin-top: 4px;
 }
-.dbp-bc-fighter-name { font: 800 11px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.dbp-bc-fighter-name { font: 800 11px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
 .dbp-bc-fighter-club { font: 600 9px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .dbp-battle-card-foot { padding: 10px 12px; }
-.dbp-bc-votes { font: 900 14px/1 "Rajdhani"; color: var(--lime); }
+.dbp-bc-votes { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .dbp-bc-bar { height: 4px; background: var(--thin); border-radius: 2px; margin-top: 4px; overflow: hidden; }
 .dbp-bc-bar-fill { height: 100%; background: var(--lime); border-radius: 2px; transition: width .3s; }
 
@@ -2731,11 +2740,11 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 60px;
 }
 .dbp-upcoming-player img { width: 28px; height: 34px; object-fit: cover; object-position: top; border-radius: 3px; border: 1px solid var(--thin); }
-.dbp-upcoming-player span { font: 700 11px/1 "Rajdhani"; color: var(--text); text-align: center; }
+.dbp-upcoming-player span { font: 700 11px/1 "Space Grotesk", "Inter"; color: var(--text); text-align: center; }
 .dbp-upcoming-player small { font: 600 9px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
 .dbp-countdown-sm { text-align: right; flex-shrink: 0; }
 .dbp-cd-label { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
-.dbp-cd-time  { font: 900 14px/1 "Rajdhani"; color: var(--lime); margin-top: 3px; letter-spacing: .04em; }
+.dbp-cd-time  { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--lime); margin-top: 3px; letter-spacing: .04em; }
 
 /* Nominations */
 .dbp-nom-row {
@@ -2743,11 +2752,11 @@ body::after {
   padding: 8px 0; border-bottom: 1px solid var(--thin);
 }
 .dbp-nom-row:last-child { border-bottom: none; }
-.dbp-nom-rank { font: 900 16px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.dbp-nom-rank { font: 900 16px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .dbp-nom-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.dbp-nom-info strong { font: 700 13px/1 "Rajdhani"; color: var(--text); }
+.dbp-nom-info strong { font: 700 13px/1 "Space Grotesk", "Inter"; color: var(--text); }
 .dbp-nom-info small   { font: 500 10px/1 "Inter"; color: var(--text2); }
-.dbp-nom-votes { font: 700 12px/1 "Rajdhani"; color: var(--lime); white-space: nowrap; flex-shrink: 0; }
+.dbp-nom-votes { font: 700 12px/1 "Space Grotesk", "Inter"; color: var(--lime); white-space: nowrap; flex-shrink: 0; }
 
 /* Trending rail */
 .dbp-trending-row {
@@ -2755,7 +2764,7 @@ body::after {
   padding: 7px 0; border-bottom: 1px solid var(--thin);
 }
 .dbp-trending-row:last-child { border-bottom: none; }
-.dbp-trending-num  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 14px; flex-shrink: 0; }
+.dbp-trending-num  { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--text3); width: 14px; flex-shrink: 0; }
 .dbp-trending-avatars { display: flex; gap: 2px; flex-shrink: 0; }
 .dbp-trending-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
 .dbp-trending-info strong { font: 700 12px/1 "Inter"; color: var(--text); }
@@ -2763,7 +2772,7 @@ body::after {
 
 /* Category breakdown */
 .dbp-cat-label-text { font: 700 9px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.dbp-cat-pct { font: 900 22px/1 "Rajdhani"; color: var(--lime); margin-top: 3px; }
+.dbp-cat-pct { font: 900 22px/1 "Space Grotesk", "Inter"; color: var(--lime); margin-top: 3px; }
 
 /* Live feed */
 .dbp-feed-row {
@@ -2781,7 +2790,7 @@ body::after {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.4);
-  font: 900 12px/1 "Rajdhani"; color: var(--lime);
+  font: 900 12px/1 "Space Grotesk", "Inter"; color: var(--lime);
   margin-left: 5px; vertical-align: middle;
 }
 
@@ -2797,14 +2806,14 @@ body::after {
 .badge-new  { background: rgba(166,255,0,.1);  border: 1px solid var(--line-lime); color: var(--lime); }
 
 /* Competitions form-pts */
-.comp-form-pts { font: 900 14px/1 "Rajdhani"; color: var(--lime); }
+.comp-form-pts { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 .comp-scorer-row {
   display: grid; grid-template-columns: 16px 22px 1fr auto auto;
   align-items: center; gap: 6px;
   padding: 6px 0; border-bottom: 1px solid var(--thin);
 }
 .comp-scorer-row:last-child { border-bottom: none; }
-.comp-scorer-goals { font: 900 14px/1 "Rajdhani"; color: var(--lime); }
+.comp-scorer-goals { font: 900 14px/1 "Space Grotesk", "Inter"; color: var(--lime); }
 
 /* ════════════════════════════════════════════════════════════════
    PRICING PAGE — missing aliases
@@ -2813,11 +2822,11 @@ body::after {
 .pricing-header {
   text-align: center; margin-bottom: 24px;
 }
-.pricing-header h1 { font: 900 42px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; margin-top: 10px; }
+.pricing-header h1 { font: 900 42px/1 "Space Grotesk", "Inter"; letter-spacing: .02em; text-transform: uppercase; color: #fff; margin-top: 10px; }
 .pricing-header p  { font: 400 14px/1.5 "Inter"; color: var(--text2); margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
 .pricing-crown { color: var(--lime); }
 .pricing-name   { font: 700 11px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-bottom: 10px; }
-.pricing-amount { font: 900 40px/1 "Rajdhani"; letter-spacing: -.02em; color: #fff; }
+.pricing-amount { font: 900 40px/1 "Space Grotesk", "Inter"; letter-spacing: -.02em; color: #fff; }
 .pricing-period { font: 500 14px/1 "Inter"; color: var(--text2); margin-left: 4px; }
 .pricing-tagline { font: 400 12px/1.6 "Inter"; color: var(--text2); margin: 6px 0 12px; }
 .pricing-footer {
@@ -2838,10 +2847,10 @@ body::after {
 .founder-pass-left {
   display: flex; align-items: center; gap: 14px; color: var(--lime);
 }
-.founder-pass-left strong { font: 900 22px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); display: block; }
+.founder-pass-left strong { font: 900 22px/1 "Space Grotesk", "Inter"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); display: block; }
 .founder-pass-left span   { font: 400 12px/1 "Inter"; color: var(--text2); display: block; margin-top: 4px; }
 .founder-pass-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-.founder-price { font: 900 40px/1 "Rajdhani"; color: #fff; letter-spacing: -.02em; }
+.founder-price { font: 900 40px/1 "Space Grotesk", "Inter"; color: #fff; letter-spacing: -.02em; }
 .founder-pass-note { font: 400 11px/1 "Inter"; color: var(--text3); margin-top: 12px; text-align: center; }
 
 /* ════════════════════════════════════════════════════════════════
@@ -2855,7 +2864,7 @@ body::after {
   background: linear-gradient(90deg, rgba(166,255,0,.05) 0%, transparent 60%);
 }
 .founder-strip-icon { color: var(--lime); flex-shrink: 0; }
-.founder-strip strong { font: 800 14px/1 "Rajdhani"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
+.founder-strip strong { font: 800 14px/1 "Space Grotesk", "Inter"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
 .founder-strip span   { font: 400 12px/1 "Inter"; color: var(--text2); }
 .founder-strip .btn   { margin-left: auto; flex-shrink: 0; }
 
@@ -2894,216 +2903,238 @@ body::after {
 
 
 /* ═══════════════════════════════════════════════════════════════════
-   CALIBRE PRECISION UI OVERRIDE — logo-led visual system
-   The supplied master logo defines the palette: optical black,
-   silver-white type, and calibrated acid-green instrument accents.
+   CALIBRE v6 — PREMIUM VISUAL SYSTEM
+   Clean, editorial, data-forward. Less chrome, more clarity.
    ═══════════════════════════════════════════════════════════════════ */
 :root {
-  --bg: #010201;
-  --bg2: #030503;
-  --panel: rgba(7, 10, 8, .92);
-  --panel2: rgba(10, 14, 11, .94);
-  --panel3: rgba(14, 19, 15, .96);
-  --thin: rgba(235, 244, 237, .075);
-  --line: rgba(235, 244, 237, .15);
-  --line-lime: rgba(184, 255, 0, .38);
-  --lime: #B8FF00;
-  --lime-hot: #D7FF1F;
-  --lime-deep: #72BF00;
-  --lime-dim: rgba(184, 255, 0, .11);
-  --lime-glow: rgba(184, 255, 0, .055);
-  --green: #B8FF00;
-  --green-dim: rgba(184, 255, 0, .11);
-  --text: #F5F7F4;
-  --text2: #A6AEA7;
-  --text3: #667067;
-  --red: #FF665A;
-  --orange: #FF8A45;
-  --r: 2px;
-  --r-lg: 4px;
-  --shadow: 0 14px 36px rgba(0,0,0,.42);
-  --shadow-lg: 0 22px 72px rgba(0,0,0,.62);
+  --bg:       #08080A;
+  --bg2:      #0A0A0D;
+  --panel:    #0F0F13;
+  --panel2:   #141419;
+  --panel3:   #1A1A20;
+  --thin:     rgba(255,255,255,.06);
+  --line:     rgba(255,255,255,.10);
+  --border:   rgba(255,255,255,.06);
+  --line-lime: rgba(166,255,0,.18);
+
+  --lime:     #A8FF00;
+  --lime-hot: #BEFF2A;
+  --lime-deep: #72B800;
+  --lime-dim:  rgba(168,255,0,.08);
+  --lime-glow: rgba(168,255,0,.04);
+
+  --green:    #3CB872;
+  --green-dim: rgba(60,184,114,.10);
+  --red:      #F05050;
+  --orange:   #F07842;
+
+  --text:     #EFEFEF;
+  --text2:    #808898;
+  --text3:    #454C58;
+
+  /* Shape — rounded but not bloated */
+  --r:        6px;
+  --r-lg:     10px;
+  --r-xl:     14px;
+
+  --shadow:   0 2px 20px rgba(0,0,0,.5);
+  --shadow-lg: 0 8px 48px rgba(0,0,0,.72);
+
   font-family: "Inter", system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: -.01em;
 }
 
-html { background: #010201; }
-body {
-  background: #010201;
-  letter-spacing: -.005em;
-}
+html, body { background: #08080A; }
+body { color: var(--text); }
+
 body::before {
   background:
-    radial-gradient(ellipse 45% 35% at 14% -10%, rgba(184,255,0,.06), transparent 68%),
-    radial-gradient(ellipse 32% 28% at 88% 10%, rgba(114,191,0,.035), transparent 72%),
-    linear-gradient(180deg, #010201 0%, #020402 48%, #010201 100%);
+    radial-gradient(ellipse 50% 40% at 12% 0%, rgba(168,255,0,.05), transparent 65%),
+    radial-gradient(ellipse 35% 30% at 90% 5%, rgba(100,180,0,.025), transparent 70%),
+    #08080A;
 }
 body::after {
   background-image:
-    linear-gradient(rgba(184,255,0,.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(184,255,0,.018) 1px, transparent 1px);
-  background-size: 72px 72px;
-  opacity: .44;
-  mask-image: linear-gradient(to bottom, rgba(0,0,0,.68), transparent 88%);
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.68), transparent 88%);
+    linear-gradient(rgba(255,255,255,.016) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: .5;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.6), transparent 80%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.6), transparent 80%);
 }
 
-/* Headline hierarchy: restrained futuristic display type, not everywhere. */
-h1, h2, .page-hero h1, .pricing-header h1, .sf-hero-title,
-.wc-hero-title, .player-hero-name, .talent-hero-title {
-  font-family: "Michroma", "Rajdhani", sans-serif !important;
-  font-weight: 400 !important;
-  letter-spacing: .06em !important;
-}
-h3, h4, .panel-title, .section-heading h3, .dbp-section-title,
-.nav-item, .login-btn, .founder-btn, .btn, .battle-live-tag {
-  font-family: "Rajdhani", sans-serif !important;
-  font-weight: 700 !important;
-  letter-spacing: .14em;
+/* ── Typography hierarchy ── */
+h1, h2, h3, h4, h5, h6 {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -.02em;
+  line-height: 1.2;
 }
 
-/* Navigation — compact command bar built around the supplied artwork. */
+/* ── Nav refinements ── */
 .top-nav {
-  height: 70px;
-  padding: 0 26px;
-  background: rgba(1,2,1,.955);
-  border-bottom: 1px solid rgba(184,255,0,.20);
-  box-shadow: 0 8px 30px rgba(0,0,0,.34);
+  height: 64px;
+  padding: 0 28px;
+  background: rgba(8,8,10,.96);
+  border-bottom: 1px solid var(--thin);
+  box-shadow: none;
+  overflow: visible;
+  z-index: 200;
 }
-.top-nav::after {
-  content:"";
-  position:absolute; left:0; right:0; bottom:-1px; height:1px;
-  background: linear-gradient(90deg, transparent 0%, rgba(184,255,0,.42) 18%, rgba(184,255,0,.12) 58%, transparent 100%);
-  pointer-events:none;
-}
-.nav-brand {
-  display:flex; align-items:center; flex-shrink:0;
-  width: 188px; height: 100%; margin-right: 24px;
-  overflow:hidden;
-}
-.nav-brand-logo {
-  width: 184px; height: 98px; max-width:none;
-  object-fit: cover; object-position: center;
-  filter: contrast(1.08) saturate(1.02);
-}
-.nav-center { gap: 2px; }
+.top-nav::after { display: none; }
+
 .nav-item {
-  padding: 0 12px;
-  font-size: 11px;
-  color: #89938B;
-  border-bottom-width: 1px;
-  transition: color .16s ease, background .16s ease, border-color .16s ease;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: var(--text2);
+  padding: 0 14px;
+  transition: color .15s;
 }
-.nav-item:hover { color: #F5F7F4; background: rgba(255,255,255,.022); }
-.nav-item.active { color: var(--lime-hot); border-bottom-color: var(--lime); background: rgba(184,255,0,.035); }
-.nav-actions { gap: 8px; }
-.icon-btn, .login-btn { border-radius: 2px; }
-.icon-btn { border: 1px solid transparent; }
-.icon-btn:hover { border-color: var(--thin); background: rgba(255,255,255,.025); }
+.nav-item:hover  { color: var(--text); background: none; }
+.nav-item.active { color: var(--lime); background: none; border-bottom-color: var(--lime); }
+
 .login-btn {
-  height: 34px; padding: 0 13px; color: #B6BDB7;
-  border-color: rgba(235,244,237,.14);
+  height: 32px; padding: 0 14px;
+  font-size: 11px; font-weight: 500;
+  letter-spacing: .04em;
+  color: var(--text2);
+  border: 1px solid var(--thin);
+  border-radius: var(--r);
 }
+.login-btn:hover { border-color: var(--line); color: var(--text); }
+
 .founder-btn {
-  height: 36px; padding: 0 15px;
-  background: linear-gradient(135deg, #D7FF1F 0%, #A7F000 52%, #80C900 100%);
-  color:#071000; border-radius:2px; box-shadow: none;
+  height: 34px; padding: 0 14px;
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .04em;
+  background: var(--lime);
+  color: #060800;
+  border-radius: var(--r);
+  box-shadow: none;
+  transition: opacity .15s;
 }
-.founder-btn:hover { opacity:1; filter:brightness(1.07); }
+.founder-btn:hover { opacity: .88; filter: none; }
 
-.live-ticker { top:70px; height:36px; background:#030603; border-bottom-color:rgba(184,255,0,.13); }
-.live-ticker-label { background:#071006; color:var(--lime-hot); border-right-color:rgba(184,255,0,.28); }
-.ticker-score--live { box-shadow:none; }
+/* ── Live ticker ── */
+.live-ticker { top: 64px; height: 32px; background: var(--bg2); border-bottom: 1px solid var(--thin); }
+.live-ticker-label { background: var(--bg2); color: var(--lime); border-right: 1px solid var(--thin); font-size: 9px; }
+.ticker-score--live { color: var(--lime); border-color: var(--line-lime); background: var(--lime-dim); box-shadow: none; }
 
-/* Panels — calibrated instruments rather than glowing gaming cards. */
+/* ── Panels — clean, minimal chrome ── */
 .panel, .stat-card, .battle-card, .upcoming-battles, .nominations,
-.dbp-battle-card, .pricing-card, .sf-panel, .talent-card, .comp-card,
+.dbp-battle-card, .pricing-card, .sf-panel, .comp-card,
 .player-card, .wc-card, .founder-pass-hero, .founder-strip {
+  border-radius: var(--r-lg) !important;
+  border-color: var(--thin) !important;
+  background: var(--panel) !important;
+  box-shadow: none !important;
   position: relative;
-  border-radius: 3px !important;
-  border-color: rgba(235,244,237,.105) !important;
-  background: linear-gradient(145deg, rgba(11,15,12,.94), rgba(5,8,6,.96)) !important;
-  box-shadow: 0 14px 34px rgba(0,0,0,.23);
 }
-.panel::before, .stat-card::before, .battle-card::before, .pricing-card::before,
-.sf-panel::before, .talent-card::before, .comp-card::before, .player-card::before,
-.wc-card::before, .founder-pass-hero::before, .founder-strip::before {
-  content:"";
-  position:absolute; top:-1px; left:12px; width:34px; height:1px;
-  background:var(--lime);
-  opacity:.78;
-  pointer-events:none;
-}
-.panel:hover, .battle-card:hover, .dbp-battle-card:hover, .talent-card:hover,
-.comp-card:hover, .player-card:hover {
-  border-color: rgba(184,255,0,.28) !important;
-}
-.panel-head { background: rgba(255,255,255,.012); }
-.panel-title, .section-heading h3 { color:#EEF2EE; }
-.panel-action, .section-heading-link { color:var(--lime); }
+/* Subtle lime top-accent on panels */
+.panel::before, .stat-card::before, .battle-card::before,
+.pricing-card::before, .founder-pass-hero::before, .founder-strip::before { display: none; }
 
-/* Buttons and chips */
-.btn, .cat-pill, .debate-badge, .sf-chip, .tag, .position-pill,
-.pricing-badge, .wc-pill, .battle-card-cat, .battle-card-live {
-  border-radius: 2px !important;
-}
-.btn--primary, .btn-primary {
-  background: linear-gradient(135deg, #D7FF1F, #8ED600) !important;
-  color:#071000 !important; box-shadow:none !important;
-}
-.btn--outline, .btn-outline { border-color:rgba(184,255,0,.28) !important; }
-.cat-pill.active { background:rgba(184,255,0,.14); border-color:rgba(184,255,0,.5); color:var(--lime-hot); }
+.panel:hover, .battle-card:hover, .dbp-battle-card:hover { border-color: var(--line) !important; }
 
-/* Home rate battle — cleaner presentation, sharper scale, less glow. */
-.battle-live-tag { color: var(--lime-hot); border-color:rgba(184,255,0,.34); background:rgba(184,255,0,.055); border-radius:2px; }
+.panel-head {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--thin);
+  background: none;
+}
+.panel-title {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text2);
+}
+.panel-action {
+  font-size: 11px; font-weight: 500;
+  color: var(--lime); opacity: .7; cursor: pointer;
+  transition: opacity .12s;
+}
+.panel-action:hover { opacity: 1; }
+
+/* ── Section headings ── */
+.section-heading h3 {
+  font-size: 11px; font-weight: 600;
+  letter-spacing: .06em; text-transform: uppercase;
+  color: var(--text2);
+}
+.section-heading-link { font-size: 11px; color: var(--lime); opacity: .7; }
+
+/* ── Buttons ── */
+.btn {
+  border-radius: var(--r) !important;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  transition: all .15s;
+}
+.btn--lime, .btn-primary, .btn--primary, .promo-cta {
+  background: var(--lime) !important;
+  color: #060800 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.btn--lime:hover, .promo-cta:hover { opacity: .88; }
+.btn--outline, .btn-outline {
+  border: 1px solid var(--thin) !important;
+  color: var(--text2) !important;
+  background: none !important;
+}
+.btn--outline:hover { border-color: var(--line) !important; color: var(--text) !important; }
+.btn--ghost { color: var(--text2) !important; background: none !important; border: none !important; }
+.btn--ghost:hover { color: var(--text) !important; }
+
+/* Chips and pills */
+.cat-pill, .debate-badge, .battle-card-cat, .battle-card-live,
+.live-dot, .dbp-live-tag {
+  border-radius: var(--r) !important;
+}
+.cat-pill.active { background: var(--lime-dim) !important; border-color: var(--line-lime) !important; color: var(--lime) !important; }
+
+/* ── Battle hero scale ── */
+.battle-live-tag { color: var(--lime); border-color: var(--line-lime); background: var(--lime-dim); border-radius: var(--r) !important; }
 .question-box {
-  border-radius: 3px !important;
-  border-color: rgba(184,255,0,.27) !important;
-  background: rgba(4,7,5,.93) !important;
-  box-shadow: 0 18px 38px rgba(0,0,0,.32) !important;
+  border-radius: var(--r-lg) !important;
+  border: 1px solid var(--thin) !important;
+  background: var(--panel2) !important;
+  box-shadow: none !important;
 }
-.tap-scale button { border-radius:1px !important; }
-.tap-scale button:hover, .tap-scale button.selected { background:var(--lime) !important; color:#061000 !important; }
-.proof-strip { background:rgba(5,9,6,.96); border-color:rgba(184,255,0,.18); }
-.fighter-img { filter: contrast(1.04) saturate(.94); }
-.club-ghost { color:rgba(184,255,0,.065) !important; }
+.tap-scale button { border-radius: var(--r) !important; }
+.tap-scale button.selected { background: var(--lime) !important; color: #060800 !important; }
+.proof-strip { background: var(--bg2); border-top: 1px solid var(--thin); border-bottom: none; }
 
-/* Data readouts */
+/* ── Data readouts — lime accent, clean ── */
 .stat-card-value, .rating-number, .dbp-cat-pct, .dbp-bc-votes,
 .comp-form-pts, .comp-scorer-goals, .pricing-amount, .founder-price,
-.sf-score, .score-number, .wc-count-number {
-  color: var(--lime-hot) !important;
-  font-family:"Rajdhani", sans-serif !important;
-  font-weight:700 !important;
+.sf-score, .score-number {
+  color: var(--lime) !important;
+  font-weight: 700 !important;
 }
 .meter-fill, .battle-card-bar-fill, .dbp-bc-bar-fill {
-  background: linear-gradient(90deg, var(--lime-deep), var(--lime-hot)) !important;
-  box-shadow:none !important;
+  background: var(--lime) !important;
+  box-shadow: none !important;
 }
 
-/* Page frames */
-.page { max-width: 1340px; padding-bottom: 78px; }
-.page-hero { border-bottom-color: rgba(184,255,0,.18); }
-.page-hero::before { opacity:.55; }
+/* ── Page frame ── */
+.page { max-width: 1340px; padding-bottom: 80px; }
 
-/* Responsive navigation: preserve a clean usable shell. */
+/* ── Responsive ── */
 @media (max-width: 1160px) {
-  .nav-brand { width:150px; margin-right:12px; }
-  .nav-brand-logo { width:148px; height:82px; }
-  .nav-item { padding:0 8px; font-size:10px; }
-  .founder-btn { padding:0 10px; font-size:10px; }
+  .nav-item { padding: 0 10px; font-size: 10.5px; }
+  .founder-btn { padding: 0 10px; font-size: 10px; }
 }
 @media (max-width: 900px) {
-  .top-nav { padding:0 14px; }
-  .nav-center { overflow-x:auto; scrollbar-width:none; }
-  .nav-center::-webkit-scrollbar { display:none; }
-  .nav-brand { width:132px; margin-right:8px; }
-  .nav-brand-logo { width:130px; height:74px; }
-  .founder-btn { display:none; }
+  .top-nav { padding: 0 16px; }
+  .nav-center { overflow-x: auto; scrollbar-width: none; }
+  .nav-center::-webkit-scrollbar { display: none; }
+  .founder-btn { display: none; }
 }
 @media (max-width: 640px) {
-  .top-nav { height:62px; }
-  .live-ticker { top:62px; }
-  .nav-brand { width:112px; }
-  .nav-brand-logo { width:110px; height:64px; }
-  .icon-btn { display:none; }
+  .top-nav { height: 56px; }
+  .live-ticker { top: 56px; }
+  .icon-btn { display: none; }
 }
+

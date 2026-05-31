@@ -13,16 +13,24 @@ const BASE = 'https://v3.football.api-sports.io';
 const KEY  = import.meta.env.VITE_API_FOOTBALL_KEY || '';
 const TTL  = 6 * 60 * 60 * 1000; // 6 hours in ms
 
-// League IDs for the five major leagues
+// League IDs used by the launch build. Cups and women's competitions use
+// fallback snapshots when a standings table is not available for the selected round.
 export const LEAGUE_IDS = {
-  'Premier League': 39,
-  'La Liga':        140,
-  'Serie A':        135,
-  'Bundesliga':     78,
-  'Ligue 1':        61,
+  'Premier League':     39,
+  'La Liga':            140,
+  'Serie A':            135,
+  'Bundesliga':         78,
+  'Ligue 1':            61,
+  'Eredivisie':         88,
+  'Belgian Pro League': 144,
+  'Champions League':   2,
+  'Europa League':      3,
 };
 
-export const CURRENT_SEASON = 2024;
+// European seasons roll over in late summer. This prevents the site shipping
+// with a hard-coded stale season after a new campaign starts.
+const now = new Date();
+export const CURRENT_SEASON = now.getMonth() >= 6 ? now.getFullYear() : now.getFullYear() - 1;
 
 // ── Cache helpers ────────────────────────────────────────────────
 function cacheKey(url) {
@@ -105,8 +113,9 @@ export async function getPlayerStats(playerId, season = CURRENT_SEASON) {
  */
 export async function getAllLeagueStandings() {
   const results = {};
+  const launchLeagues = Object.entries(LEAGUE_IDS).filter(([name]) => !['Champions League', 'Europa League'].includes(name));
   await Promise.all(
-    Object.entries(LEAGUE_IDS).map(async ([name, id]) => {
+    launchLeagues.map(async ([name, id]) => {
       const standing = await getStandings(id);
       if (standing) results[name] = standing;
     })
@@ -120,8 +129,9 @@ export async function getAllLeagueStandings() {
  */
 export async function getAllTopScorers() {
   const results = {};
+  const launchLeagues = Object.entries(LEAGUE_IDS).filter(([name]) => !['Champions League', 'Europa League'].includes(name));
   await Promise.all(
-    Object.entries(LEAGUE_IDS).map(async ([name, id]) => {
+    launchLeagues.map(async ([name, id]) => {
       const scorers = await getTopScorers(id);
       if (scorers?.[0]) {
         results[name] = scorers[0].player.name;
@@ -129,6 +139,38 @@ export async function getAllTopScorers() {
     })
   );
   return results;
+}
+
+
+/** Search clubs in API-Football. Returns normalized team records. */
+export async function searchTeams(query) {
+  const search = String(query || '').trim();
+  if (search.length < 3) return [];
+  const data = await apiFetch(`/teams?search=${encodeURIComponent(search)}`);
+  return (data?.response ?? []).slice(0, 10).map(({ team, venue }) => ({
+    id: team.id,
+    name: team.name,
+    country: team.country,
+    crestUrl: team.logo,
+    venue: venue?.name ?? '',
+    source: 'api',
+  }));
+}
+
+/** Search players in API-Football. Returns normalized player records. */
+export async function searchPlayers(query, season = CURRENT_SEASON) {
+  const search = String(query || '').trim();
+  if (search.length < 3) return [];
+  const data = await apiFetch(`/players?search=${encodeURIComponent(search)}&season=${season}`);
+  return (data?.response ?? []).slice(0, 10).map(({ player, statistics }) => ({
+    id: player.id,
+    name: player.name,
+    age: player.age,
+    image: player.photo,
+    team: statistics?.[0]?.team?.name ?? '',
+    position: statistics?.[0]?.games?.position ?? '',
+    source: 'api',
+  }));
 }
 
 /** Remaining requests today (from cache-busted status endpoint) */

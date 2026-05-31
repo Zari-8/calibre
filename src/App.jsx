@@ -21,9 +21,9 @@ const routes = {
 };
 
 function usePathname() {
-  const [path, setPath] = React.useState(window.location.pathname);
+  const [path, setPath] = React.useState(window.location.pathname + window.location.search);
   React.useEffect(() => {
-    const handler = () => setPath(window.location.pathname);
+    const handler = () => setPath(window.location.pathname + window.location.search);
     window.addEventListener('popstate', handler);
     window.addEventListener('calibre:navigate', handler);
     return () => {
@@ -35,7 +35,8 @@ function usePathname() {
 }
 
 export default function App() {
-  const pathname = usePathname();
+  const locationPath = usePathname();
+  const pathname = locationPath.split('?')[0];
   const Page = routes[pathname] || Home;
   return (
     <Shell currentPath={pathname}>

@@ -1,543 +1,330 @@
-import { useState } from 'react';
-import { ArrowRight, Crown, Share2, Star, Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  Activity, ArrowRight, BarChart3, CheckCircle2, Crown, Database,
+  Download, FileText, GitCompare, Search, Share2, ShieldCheck, Star,
+} from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
+import { searchPlayers as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
+import {
+  SYSTEM_PLAYERS, SYSTEM_TEAMS, buildPlayerComparison, buildSystemFitReport,
+  searchLocalPlayers, searchLocalTeams,
+} from '../data/systemFitData.js';
+import {
+  exportComparisonCsv, exportComparisonPdf, exportFitCsv, exportFitPdf,
+} from '../services/reportExport.js';
 
-const BREAKDOWN = [
-  { label:'Tactical Role',          val:90 },
-  { label:'Position Compatibility', val:88 },
-  { label:'Playing Style Match',    val:85 },
-  { label:'Team Chemistry',         val:84 },
-  { label:'Physical Demands',       val:83 },
-  { label:'Growth Potential',       val:87 },
-];
-const ALT_FITS = [
-  { name:'Real Madrid',    fmt:'4-3-1-2', pct:83, verdict:'Very Good Fit',  abbr:'RM',  bg:'#00529f', fg:'#ffd700', ring:'#ffd700' },
-  { name:'Manchester City',fmt:'4-3-3',   pct:81, verdict:'Very Good Fit',  abbr:'MC',  bg:'#6cabdd', fg:'#1c2c5b', ring:'#6cabdd' },
-  { name:'Arsenal',        fmt:'4-3-3',   pct:79, verdict:'Good Fit',       abbr:'ARS', bg:'#ef0107', fg:'#fff',    ring:'#ef0107' },
-  { name:'Bayern München', fmt:'4-2-3-1', pct:78, verdict:'Good Fit',       abbr:'FCB', bg:'#dc052d', fg:'#fff',    ring:'#dc052d' },
-];
-const ROLE_PULSE = [
-  { label:'Positioning',            val:92 },
-  { label:'Decision Making',        val:91 },
-  { label:'Link-Up Play',           val:87 },
-  { label:'Final Third Impact',     val:86 },
-  { label:'Press Resistance',       val:85 },
-  { label:'Transition Contribution',val:83 },
-];
-const KEY_METRICS = [
-  { label:'Ball\nPossession',      val:92, grade:'Excellent' },
-  { label:'Chance\nCreation',      val:88, grade:'Very Good' },
-  { label:'Pressing\nInvolvement', val:84, grade:'Very Good' },
-  { label:'Defensive\nCover',      val:81, grade:'Good'      },
-];
-const BEST_FITS = [
-  { rank:1, abbr:'FCB', bg:'#a50044', fg:'#ffd700', club:'FC Barcelona',    fmt:'4-3-3 Possession', pct:86, verdict:'Excellent Fit',  clr:'#A6FF00' },
-  { rank:2, abbr:'RM',  bg:'#00529f', fg:'#ffd700', club:'Real Madrid',     fmt:'4-3-1-2',          pct:83, verdict:'Very Good Fit',  clr:'#A6FF00' },
-  { rank:3, abbr:'MC',  bg:'#6cabdd', fg:'#1c2c5b', club:'Manchester City', fmt:'4-3-3',            pct:81, verdict:'Very Good Fit',  clr:'#A6FF00' },
-  { rank:4, abbr:'ARS', bg:'#ef0107', fg:'#fff',    club:'Arsenal',         fmt:'4-3-3',            pct:79, verdict:'Good Fit',       clr:'#F5C84B' },
-  { rank:5, abbr:'FCB', bg:'#dc052d', fg:'#fff',    club:'Bayern München',  fmt:'4-2-3-1',          pct:78, verdict:'Good Fit',       clr:'#F5C84B' },
-];
-const INSIGHTS = [
-  { icon:'💡', text:"Bellingham's box-to-box dynamism perfectly suits Barcelona's high-tempo positional play." },
-  { icon:'✓',  text:"His progressive passing and intelligent runs match the team's chance creation patterns." },
-  { icon:'△',  text:"Could become a top-3 performing midfielder in this system." },
-];
-const RECENT = [
-  { name:'Jude Bellingham', pct:86, sub:'Real Madrid',      img:'/assets/players/jude-bellingham.jpg' },
-  { name:'Pedri',           pct:84, sub:'FC Barcelona',     img:'/assets/players/pedri.jpg' },
-  { name:'Florian Wirtz',   pct:82, sub:'Bayer Leverkusen', img:'/assets/players/florian-wirtz.jpg' },
-];
+const DEMO_PLAN = (import.meta.env.VITE_DEMO_PLAN || 'pro').toLowerCase();
+const CAN_EXPORT = ['pro', 'scout', 'club'].includes(DEMO_PLAN);
 
-/* Circular club crest badge */
-function Crest({ abbr, bg, fg, ring, size = 28 }) {
-  const r = size / 2;
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-      <circle cx={r} cy={r} r={r - 1} fill={bg} stroke={ring || bg} strokeWidth="1.5" strokeOpacity="0.6" />
-      <circle cx={r} cy={r} r={r * 0.62} fill="rgba(0,0,0,.25)" />
-      <text x={r} y={r + r * 0.22} textAnchor="middle" fill={fg}
-        fontSize={size < 32 ? 7 : 9} fontWeight="900"
-        fontFamily="'Rajdhani',sans-serif" letterSpacing=".04em">
-        {abbr}
-      </text>
-    </svg>
-  );
+function normalizeApiTeam(team) {
+  return {
+    ...SYSTEM_TEAMS[0],
+    id: team.id,
+    name: team.name,
+    short: team.name,
+    country: team.country || 'International',
+    league: team.league || 'API-Football database',
+    crestUrl: team.crestUrl,
+    crest: team.name.split(' ').slice(0, 2).map(word => word[0]).join('').slice(0, 3).toUpperCase(),
+    philosophy: 'Data profile pending enrichment',
+    source: 'api',
+  };
 }
 
-/* Dots meter */
-function Dots({ val, total = 10 }) {
+function normalizeApiPlayer(player) {
+  return {
+    ...SYSTEM_PLAYERS[0],
+    id: player.id,
+    name: player.name,
+    team: player.team || 'API-Football database',
+    age: player.age || '—',
+    image: player.image || '/assets/players/neutral-player.svg',
+    position: player.position || 'Profile pending',
+    archetype: 'Profile pending enrichment',
+    source: 'api',
+  };
+}
+
+function useDatabaseSearch(kind, query) {
+  const [remote, setRemote] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (query.trim().length < 3) {
+      setRemote([]);
+      setLoading(false);
+      return undefined;
+    }
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const rows = kind === 'team' ? await searchApiTeams(query) : await searchApiPlayers(query);
+        if (!cancelled) setRemote(rows || []);
+      } catch {
+        if (!cancelled) setRemote([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 350);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [kind, query]);
+
+  return { remote, loading };
+}
+
+function Crest({ team, size = 38 }) {
+  if (team.crestUrl) {
+    return <img src={team.crestUrl} alt="" className="sf-crest-img" style={{ width: size, height: size }} />;
+  }
   return (
-    <div style={{ display: 'flex', gap: 2, flexShrink: 0 }}>
-      {Array.from({ length: total }, (_, i) => (
-        <div key={i} style={{
-          width: 8, height: 8, borderRadius: 2, flexShrink: 0,
-          background: i < Math.round(val / 10) ? '#A6FF00' : 'rgba(255,255,255,.08)',
-        }} />
-      ))}
+    <div className="sf-crest" style={{ width: size, height: size, background: team.accent, color: team.secondary }}>
+      {team.crest}
     </div>
   );
 }
 
-/* Fit score ring */
-function FitRing({ pct }) {
-  const r = 46, circ = 2 * Math.PI * r, fill = circ * (pct / 100);
+function ScoreRing({ score, compact = false }) {
+  const radius = compact ? 31 : 43;
+  const width = compact ? 84 : 116;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (score / 100) * circumference;
   return (
-    <div style={{ position: 'relative', width: 120, height: 120, flexShrink: 0 }}>
-      <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
-        <circle cx="60" cy="60" r={r} fill="none" stroke="rgba(166,255,0,.08)" strokeWidth="8" />
-        <circle cx="60" cy="60" r={r} fill="none" stroke="#A6FF00" strokeWidth="8"
-          strokeLinecap="round" strokeDasharray={`${fill} ${circ}`} />
+    <div className={`sf-score-ring ${compact ? 'sf-score-ring--compact' : ''}`} style={{ width, height: width }}>
+      <svg width={width} height={width} viewBox={`0 0 ${width} ${width}`}>
+        <circle cx={width / 2} cy={width / 2} r={radius} className="sf-ring-track" />
+        <circle cx={width / 2} cy={width / 2} r={radius} className="sf-ring-fill" strokeDasharray={circumference} strokeDashoffset={offset} />
       </svg>
-      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-        <span style={{ font: '900 26px/1 "Rajdhani"', color: '#A6FF00' }}>{pct}%</span>
-        <span style={{ font: '700 8px/1 "Inter"', letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)' }}>FIT SCORE</span>
-        <span style={{ font: '700 10px/1 "Inter"', color: '#A6FF00', marginTop: 2 }}>Excellent Fit</span>
+      <div className="sf-score-ring-value"><strong>{score}</strong><span>FIT</span></div>
+    </div>
+  );
+}
+
+function MetricBar({ label, value, compare }) {
+  return (
+    <div className="sf-metric-row">
+      <div className="sf-metric-label"><span>{label}</span><b>{value}</b></div>
+      <div className="sf-metric-track">
+        <span className="sf-metric-fill" style={{ width: `${value}%` }} />
+        {typeof compare === 'number' && <span className="sf-metric-compare" style={{ left: `${compare}%` }} />}
       </div>
     </div>
   );
 }
 
-/* Metric circle */
-function MetricRing({ val, label, grade }) {
-  const r = 28, circ = 2 * Math.PI * r, fill = circ * (val / 100);
+function ExportButtons({ mode, fitReport, comparison }) {
+  function blocked() {
+    navigateTo('/pricing');
+  }
+  const fit = mode !== 'compare';
+  const run = (format) => {
+    if (!CAN_EXPORT) return blocked();
+    if (fit && format === 'csv') return exportFitCsv(fitReport);
+    if (fit && format === 'pdf') return exportFitPdf(fitReport);
+    if (!fit && format === 'csv') return exportComparisonCsv(comparison);
+    return exportComparisonPdf(comparison);
+  };
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
-      <div style={{ position: 'relative', width: 70, height: 70 }}>
-        <svg width="70" height="70" viewBox="0 0 70 70" style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx="35" cy="35" r={r} fill="none" stroke="rgba(166,255,0,.08)" strokeWidth="6" />
-          <circle cx="35" cy="35" r={r} fill="none" stroke="#A6FF00" strokeWidth="6"
-            strokeLinecap="round" strokeDasharray={`${fill} ${circ}`} />
-        </svg>
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ font: '900 18px/1 "Rajdhani"', color: '#A6FF00' }}>{val}</span>
+    <div className="sf-export-actions">
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => run('pdf')}>
+        <FileText size={14} /> PDF REPORT <span className="sf-pro-chip">PRO+</span>
+      </button>
+      <button type="button" className="btn btn--ghost btn--sm" onClick={() => run('csv')}>
+        <Download size={14} /> CSV DATA <span className="sf-pro-chip">PRO+</span>
+      </button>
+    </div>
+  );
+}
+
+function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelectedPlayer }) {
+  const [kind, setKind] = useState('team');
+  const [query, setQuery] = useState('');
+  const { remote, loading } = useDatabaseSearch(kind, query);
+  const local = kind === 'team' ? searchLocalTeams(query) : searchLocalPlayers(query);
+  const localIds = new Set(local.map(item => String(item.id)));
+  const merged = [...local, ...remote.filter(item => !localIds.has(String(item.id)))].slice(0, 8);
+
+  const choose = (item) => {
+    if (kind === 'team') setSelectedTeam(item.source === 'api' ? normalizeApiTeam(item) : item);
+    else setSelectedPlayer(item.source === 'api' ? normalizeApiPlayer(item) : item);
+  };
+
+  return (
+    <aside className="sf-sidebar">
+      <div className="sf-search-tabs">
+        <button type="button" className={kind === 'team' ? 'active' : ''} onClick={() => { setKind('team'); setQuery(''); }}>TEAM SEARCH</button>
+        <button type="button" className={kind === 'player' ? 'active' : ''} onClick={() => { setKind('player'); setQuery(''); }}>PLAYER SEARCH</button>
+      </div>
+      <label className="sf-search-box">
+        <Search size={14} />
+        <input value={query} onChange={event => setQuery(event.target.value)} placeholder={kind === 'team' ? 'Search clubs...' : 'Search players...'} />
+      </label>
+      <div className="sf-database-note"><Database size={13} /> Local index + API-Football database {loading && <span>SEARCHING…</span>}</div>
+      <div className="sf-search-results">
+        {merged.map(item => (
+          <button type="button" className="sf-search-result" key={`${kind}-${item.id}`} onClick={() => choose(item)}>
+            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <img src={item.image || '/assets/players/neutral-player.svg'} alt="" />}
+            <span><b>{item.name}</b><small>{kind === 'team' ? `${item.country} · ${item.league || 'database club'}` : `${item.team} · ${item.position}`}</small></span>
+          </button>
+        ))}
+      </div>
+      <div className="sf-sidebar-section">
+        <div className="sf-kicker">CURRENT REPORT</div>
+        <div className="sf-current-pair">
+          <Crest team={selectedTeam} size={38} />
+          <div><b>{selectedTeam.name}</b><small>{selectedTeam.formation} · {selectedTeam.philosophy}</small></div>
+        </div>
+        <div className="sf-current-pair">
+          <img src={selectedPlayer.image} alt="" />
+          <div><b>{selectedPlayer.name}</b><small>{selectedPlayer.position} · {selectedPlayer.archetype}</small></div>
         </div>
       </div>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ font: '600 8px/1.4 "Inter"', letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.45)', whiteSpace: 'pre-line' }}>{label}</div>
-        <div style={{ font: '700 9px/1 "Inter"', color: grade === 'Excellent' ? '#A6FF00' : grade === 'Very Good' ? '#A6FF00' : '#F5C84B', marginTop: 3 }}>{grade}</div>
+      <div className="sf-sidebar-section">
+        <div className="sf-kicker">REPORT ENGINE</div>
+        <div className="sf-engine-row"><CheckCircle2 size={14} /> Dynamic fit scoring</div>
+        <div className="sf-engine-row"><CheckCircle2 size={14} /> Compare-player dataset</div>
+        <div className="sf-engine-row"><CheckCircle2 size={14} /> PDF + CSV export layer</div>
       </div>
+    </aside>
+  );
+}
+
+function PlayerHero({ report, mode, comparison, challenger }) {
+  const player = report.player;
+  return (
+    <section className="sf-hero-card">
+      <div className="sf-hero-topline">
+        <div><span>CALIBRE SYSTEM FIT ENGINE</span><b>REPORT GENERATED FROM LIVE SELECTIONS</b></div>
+        <div className="sf-live"><i /> DATA MODEL ACTIVE</div>
+      </div>
+      <div className="sf-hero-grid">
+        <div className="sf-player-portrait">
+          <img src={player.image} alt={player.name} />
+          <div className="sf-player-portrait-fade" />
+          <div className="sf-player-portrait-label"><small>{player.archetype}</small><strong>{player.name}</strong><span>{player.position} · {player.team}</span></div>
+        </div>
+        <div className="sf-score-summary">
+          <div className="sf-kicker">DOES HE FIT?</div>
+          <div className="sf-score-main"><ScoreRing score={report.score} /><div><h2>{report.verdict}</h2><p>{report.conclusion}</p></div></div>
+          <div className="sf-score-chips"><span>{report.team.formation}</span><span>{report.team.philosophy}</span><span>{player.archetype}</span></div>
+        </div>
+        <div className="sf-breakdown-card">
+          <div className="sf-kicker">FIT BREAKDOWN</div>
+          {report.breakdown.slice(0, 6).map(item => <MetricBar key={item.label} label={item.label} value={item.value} />)}
+        </div>
+      </div>
+      {mode === 'compare' && (
+        <div className="sf-compare-banner"><GitCompare size={16} /><span>COMPARISON MODE</span><b>{player.name}</b><em>vs</em><b>{challenger.name}</b><strong>{comparison.primaryScore}% / {comparison.challengerScore}%</strong></div>
+      )}
+    </section>
+  );
+}
+
+function FitOverview({ report }) {
+  return (
+    <div className="sf-content-grid">
+      <section className="sf-panel sf-panel--wide">
+        <div className="sf-panel-head"><div><Activity size={17} /><span>ROLE FIT PULSE</span></div><b>{report.player.archetype}</b></div>
+        <div className="sf-role-pulse-intro"><div className="sf-pulse-icon"><Activity size={26} /><span /></div><p>The pulse measures how reliably the player's strongest actions survive inside the selected system. It is a football-role signal, not a body map.</p></div>
+        <div className="sf-pulse-grid">{report.rolePulse.map(item => <MetricBar key={item.label} label={item.label} value={item.value} />)}</div>
+      </section>
+      <section className="sf-panel">
+        <div className="sf-panel-head"><div><BarChart3 size={17} /><span>TEAM DNA MATCH</span></div></div>
+        {Object.entries(report.team.traits).map(([label, value]) => <MetricBar key={label} label={label.replace('defensiveLoad', 'defensive load')} value={value} compare={report.player.traits[label]} />)}
+        <div className="sf-panel-legend"><span><i className="lime" />team demand</span><span><i className="marker" />player profile</span></div>
+      </section>
+      <section className="sf-panel sf-panel--wide">
+        <div className="sf-panel-head"><div><ShieldCheck size={17} /><span>TACTICAL READ</span></div></div>
+        <div className="sf-analysis-columns">
+          <div><div className="sf-kicker">WHAT WORKS</div>{report.strengths.map(text => <p key={text}>+ {text}</p>)}</div>
+          <div><div className="sf-kicker">WHAT NEEDS PROTECTION</div>{report.risks.map(text => <p key={text}>- {text}</p>)}</div>
+        </div>
+      </section>
+      <section className="sf-panel">
+        <div className="sf-panel-head"><div><Star size={17} /><span>ROLE MAP</span></div></div>
+        <div className="sf-role-list">{report.primaryRoles.map((role, index) => <div key={role}><b>0{index + 1}</b><span>{role}</span><strong>{Math.max(72, report.score - index * 6)}%</strong></div>)}</div>
+      </section>
     </div>
   );
 }
 
-/* Body silhouette for Role Fit Pulse */
-function BodySilhouette() {
+function ComparePlayers({ comparison, challenger, setChallenger }) {
   return (
-    <svg width="32" height="80" viewBox="0 0 32 80" style={{ flexShrink: 0, marginTop: 2 }}>
-      <circle cx="16" cy="7" r="5.5" fill="none" stroke="rgba(166,255,0,.7)" strokeWidth="1.5" />
-      <line x1="16" y1="12.5" x2="16" y2="18" stroke="rgba(166,255,0,.5)" strokeWidth="1.5" />
-      <line x1="5" y1="21" x2="27" y2="21" stroke="rgba(166,255,0,.7)" strokeWidth="1.5" />
-      <line x1="16" y1="21" x2="16" y2="43" stroke="rgba(166,255,0,.7)" strokeWidth="1.5" />
-      <line x1="5" y1="21" x2="3" y2="38" stroke="rgba(166,255,0,.5)" strokeWidth="1.5" />
-      <line x1="27" y1="21" x2="29" y2="38" stroke="rgba(166,255,0,.5)" strokeWidth="1.5" />
-      <line x1="9" y1="43" x2="23" y2="43" stroke="rgba(166,255,0,.6)" strokeWidth="1.5" />
-      <line x1="11" y1="43" x2="9" y2="62" stroke="rgba(166,255,0,.5)" strokeWidth="1.5" />
-      <line x1="9" y1="62" x2="7" y2="77" stroke="rgba(166,255,0,.35)" strokeWidth="1.5" />
-      <line x1="21" y1="43" x2="23" y2="62" stroke="rgba(166,255,0,.5)" strokeWidth="1.5" />
-      <line x1="23" y1="62" x2="25" y2="77" stroke="rgba(166,255,0,.35)" strokeWidth="1.5" />
-      <circle cx="16" cy="21" r="2.5" fill="#A6FF00" opacity="0.85" />
-      <circle cx="16" cy="43" r="2"   fill="#A6FF00" opacity="0.7"  />
-      <circle cx="5"  cy="21" r="1.5" fill="#A6FF00" opacity="0.5"  />
-      <circle cx="27" cy="21" r="1.5" fill="#A6FF00" opacity="0.5"  />
-      <circle cx="9"  cy="62" r="1.5" fill="#A6FF00" opacity="0.4"  />
-      <circle cx="23" cy="62" r="1.5" fill="#A6FF00" opacity="0.4"  />
-    </svg>
+    <div className="sf-content-grid">
+      <section className="sf-panel sf-panel--wide">
+        <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div><select value={challenger.id} onChange={event => setChallenger(SYSTEM_PLAYERS.find(player => String(player.id) === event.target.value) || SYSTEM_PLAYERS[1])}>{SYSTEM_PLAYERS.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
+        <div className="sf-compare-head">
+          <div><img src={comparison.primary.image} alt="" /><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
+          <em>VS</em>
+          <div><img src={comparison.challenger.image} alt="" /><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
+        </div>
+        <div className="sf-versus-bars">{comparison.dimensions.map(item => (
+          <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>
+        ))}</div>
+      </section>
+      <section className="sf-panel">
+        <div className="sf-panel-head"><div><FileText size={17} /><span>COMPARISON VERDICT</span></div></div>
+        <p className="sf-verdict-copy">{comparison.verdict}</p>
+      </section>
+    </div>
   );
 }
 
-/* Top-down football pitch with position heatmap */
-function TacticalPitch() {
+function DetailedAnalysis({ report }) {
   return (
-    <svg viewBox="0 0 300 175" style={{ width: '100%', height: '100%', display: 'block' }}>
-      <defs>
-        <radialGradient id="posGlow" cx="66%" cy="47%" r="22%">
-          <stop offset="0%"   stopColor="#A6FF00" stopOpacity="0.65" />
-          <stop offset="45%"  stopColor="#A6FF00" stopOpacity="0.2"  />
-          <stop offset="100%" stopColor="#A6FF00" stopOpacity="0"    />
-        </radialGradient>
-      </defs>
-      <rect x="0" y="0" width="300" height="175" fill="#050607" />
-      {/* Alternating grass stripes */}
-      {[0,1,2,3,4,5,6,7,8,9].map(i => (
-        <rect key={i} x={i * 30} y="0" width="15" height="175" fill="rgba(255,255,255,.012)" />
-      ))}
-      {/* Pitch border */}
-      <rect x="7" y="7" width="286" height="161" fill="none" stroke="rgba(166,255,0,.45)" strokeWidth="1.2" />
-      {/* Halfway */}
-      <line x1="150" y1="7" x2="150" y2="168" stroke="rgba(166,255,0,.3)" strokeWidth="1" />
-      {/* Centre circle */}
-      <circle cx="150" cy="87.5" r="34" fill="none" stroke="rgba(166,255,0,.28)" strokeWidth="1" />
-      <circle cx="150" cy="87.5" r="2"  fill="rgba(166,255,0,.5)" />
-      {/* Left penalty box */}
-      <rect x="7" y="52" width="50" height="71" fill="none" stroke="rgba(166,255,0,.3)" strokeWidth="1" />
-      {/* Left goal box */}
-      <rect x="7" y="68" width="20" height="39" fill="none" stroke="rgba(166,255,0,.22)" strokeWidth="1" />
-      {/* Left penalty arc */}
-      <path d="M 57 67 A 26 26 0 0 1 57 108" fill="none" stroke="rgba(166,255,0,.2)" strokeWidth="1" />
-      {/* Right penalty box */}
-      <rect x="243" y="52" width="50" height="71" fill="none" stroke="rgba(166,255,0,.3)" strokeWidth="1" />
-      {/* Right goal box */}
-      <rect x="273" y="68" width="20" height="39" fill="none" stroke="rgba(166,255,0,.22)" strokeWidth="1" />
-      {/* Right penalty arc */}
-      <path d="M 243 67 A 26 26 0 0 0 243 108" fill="none" stroke="rgba(166,255,0,.2)" strokeWidth="1" />
-      {/* Position heatmap — Advanced Midfielder (right of centre, attacking third) */}
-      <ellipse cx="197" cy="84" rx="44" ry="36" fill="url(#posGlow)" />
-      {/* Player dot */}
-      <circle cx="197" cy="84" r="5.5" fill="#A6FF00" />
-      <circle cx="197" cy="84" r="10"  fill="none" stroke="#A6FF00" strokeWidth="1"   strokeOpacity="0.45" />
-      <circle cx="197" cy="84" r="16"  fill="none" stroke="#A6FF00" strokeWidth="0.5" strokeOpacity="0.2"  />
-    </svg>
+    <div className="sf-analysis-report">
+      <section className="sf-panel">
+        <div className="sf-panel-head"><div><FileText size={17} /><span>DETAILED ANALYSIS</span></div><b>{report.generatedAt.slice(0, 10)}</b></div>
+        <div className="sf-report-copy">
+          <div className="sf-report-lead"><ScoreRing score={report.score} compact /><div><h3>{report.player.name} at {report.team.name}</h3><p>{report.conclusion}</p></div></div>
+          <h4>Why the fit works</h4>{report.strengths.map(text => <p key={text}>• {text}</p>)}
+          <h4>Where the model is cautious</h4>{report.risks.map(text => <p key={text}>• {text}</p>)}
+          <h4>Recommended role usage</h4><p>{report.player.name} should be used primarily as a {report.primaryRoles[0].toLowerCase()}, with permission to attack the decisive phase rather than becoming a generic all-purpose midfielder.</p>
+        </div>
+      </section>
+      <section className="sf-panel">
+        <div className="sf-panel-head"><div><Database size={17} /><span>REPORT DATASET</span></div></div>
+        <div className="sf-data-table"><div><b>Metric</b><b>Score</b></div>{report.breakdown.map(item => <div key={item.label}><span>{item.label}</span><strong>{item.value}</strong></div>)}</div>
+      </section>
+    </div>
   );
 }
-
-const T = {
-  page:    { display:'grid', gridTemplateColumns:'240px 1fr 290px', gap:0, minHeight:'calc(100vh - 54px)', maxWidth:'100%' },
-  sidebar: { borderRight:'1px solid rgba(255,255,255,.08)', padding:'14px 0', display:'flex', flexDirection:'column', background:'#090C0F', overflowY:'auto' },
-  main:    { padding:'16px', display:'flex', flexDirection:'column', gap:12, background:'transparent', overflowY:'auto' },
-  right:   { borderLeft:'1px solid rgba(255,255,255,.08)', padding:'14px 12px', display:'flex', flexDirection:'column', gap:14, background:'#090C0F', overflowY:'auto' },
-  card:    { border:'1px solid rgba(255,255,255,.09)', borderRadius:10, background:'#0B0F13', overflow:'hidden' },
-  head:    { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid rgba(255,255,255,.07)' },
-  h3:      { font:'800 12px/1 "Rajdhani"', letterSpacing:'.14em', textTransform:'uppercase', color:'rgba(255,255,255,.75)' },
-  label:   { font:'600 11px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.38)' },
-  limeBtn: { font:'600 11px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', opacity:.8, cursor:'pointer', background:'none', border:'none' },
-  div:     { height:1, background:'rgba(255,255,255,.07)' },
-};
 
 export default function SystemFit() {
-  const [tab, setTab] = useState('Team Search');
+  const [selectedTeam, setSelectedTeam] = useState(SYSTEM_TEAMS[0]);
+  const [selectedPlayer, setSelectedPlayer] = useState(SYSTEM_PLAYERS[0]);
+  const [challenger, setChallenger] = useState(SYSTEM_PLAYERS[1]);
+  const [mode, setMode] = useState('fit');
+
+  const report = useMemo(() => buildSystemFitReport(selectedPlayer, selectedTeam), [selectedPlayer, selectedTeam]);
+  const comparison = useMemo(() => buildPlayerComparison(selectedPlayer, challenger, selectedTeam), [selectedPlayer, challenger, selectedTeam]);
 
   return (
-    <div style={T.page}>
-
-      {/* ═══ LEFT SIDEBAR ═══ */}
-      <div style={T.sidebar}>
-        {/* Search tabs */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', borderBottom:'1px solid rgba(255,255,255,.07)', marginBottom:12 }}>
-          {['Team Search','Player Search'].map(t => (
-            <button key={t} type="button" onClick={() => setTab(t)} style={{
-              padding:'10px 8px', textAlign:'center', background:'none', border:'none',
-              font:'700 10px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase',
-              color: tab === t ? '#A6FF00' : 'rgba(255,255,255,.38)',
-              borderBottom: `2px solid ${tab === t ? '#A6FF00' : 'transparent'}`,
-            }}>{t}</button>
-          ))}
+    <div className="page sf-page">
+      <SearchSidebar selectedTeam={selectedTeam} selectedPlayer={selectedPlayer} setSelectedTeam={setSelectedTeam} setSelectedPlayer={setSelectedPlayer} />
+      <main className="sf-main">
+        <div className="sf-pagebar">
+          <div><div className="sf-kicker">PLAYER INTELLIGENCE</div><h1>SYSTEM FIT ENGINE</h1></div>
+          <div className="sf-pagebar-actions"><button type="button" className="btn btn--ghost btn--sm"><Share2 size={14} /> SHARE</button><ExportButtons mode={mode} fitReport={report} comparison={comparison} /></div>
         </div>
-
-        {/* Search */}
-        <div style={{ display:'flex', alignItems:'center', gap:6, margin:'0 12px 12px', padding:'0 10px', height:34, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.07)', borderRadius:6 }}>
-          <Search size={13} color="rgba(255,255,255,.3)" />
-          <input placeholder="Search for a club..." style={{ flex:1, background:'none', color:'rgba(255,255,255,.6)', font:'400 12px/1 "Inter"' }} />
+        <div className="sf-mode-tabs">
+          <button type="button" className={mode === 'fit' ? 'active' : ''} onClick={() => setMode('fit')}>SYSTEM FIT</button>
+          <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER</button>
+          <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS</button>
         </div>
-
-        {/* Club result */}
-        <div style={{ margin:'0 12px 12px', padding:'10px', border:'1px solid rgba(166,255,0,.25)', borderRadius:8, background:'rgba(166,255,0,.03)', cursor:'pointer' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-            <Crest abbr="FCB" bg="#a50044" fg="#ffd700" ring="#ffd700" size={34} />
-            <div>
-              <div style={{ font:'700 13px/1 "Inter"', color:'#A6FF00' }}>FC Barcelona</div>
-              <div style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.4)', marginTop:3 }}>🇪🇸 LaLiga · SPAIN</div>
-              <div style={{ font:'600 10px/1 "Inter"', color:'rgba(255,255,255,.45)', marginTop:2 }}>4-3-3 Possession</div>
-            </div>
-          </div>
-        </div>
-
-        {/* System profile */}
-        <div style={{ ...T.card, margin:'0 12px 12px' }}>
-          <div style={T.head}><span style={T.label}>System Profile</span></div>
-          <div style={{ padding:'12px', display:'flex', alignItems:'center', gap:10 }}>
-            <svg width="76" height="76" viewBox="0 0 120 120" style={{ flexShrink:0 }}>
-              <polygon fill="none" stroke="rgba(166,255,0,.2)" strokeWidth="1.5" points="60,8 105,34 105,86 60,112 15,86 15,34" />
-              {[[60,8],[105,34],[105,86],[60,112],[15,86],[15,34]].map(([x,y],i) => (
-                <line key={i} stroke="rgba(166,255,0,.1)" strokeWidth="1" x1="60" y1="60" x2={x} y2={y} />
-              ))}
-              <polygon fill="rgba(166,255,0,.2)" stroke="#A6FF00" strokeWidth="1.5" points="60,22 92,46 84,78 60,90 28,76 35,44" />
-            </svg>
-            <div>
-              <div style={{ font:'900 24px/1 "Rajdhani"', color:'#A6FF00' }}>86%</div>
-              <div style={T.label}>System Compatibility</div>
-            </div>
-          </div>
-          {[['Philosophy','Positional Play'],['Balance','82/100'],['Intensity','High'],['Line Height','High']].map(([l,v]) => (
-            <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'6px 12px', borderTop:'1px solid rgba(255,255,255,.06)', font:'500 11px/1 "Inter"' }}>
-              <span style={{ color:'rgba(255,255,255,.4)' }}>{l}</span>
-              <span style={{ fontWeight:700 }}>{v}</span>
-            </div>
-          ))}
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 10px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
-            VIEW FULL SYSTEM BREAKDOWN <ArrowRight size={11} />
-          </button>
-        </div>
-
-        {/* Compare list */}
-        <div style={{ padding:'0 12px', marginBottom:4 }}>
-          <div style={{ ...T.label, display:'block', marginBottom:8 }}>Compare with Other Systems</div>
-          {[['Real Madrid','4-3-1-2',83,'RM','#00529f','#ffd700'],['Manchester City','4-3-3',81,'MC','#6cabdd','#1c2c5b'],['Arsenal','4-3-3',79,'ARS','#ef0107','#fff'],['Bayern München','4-2-3-1',78,'FCB','#dc052d','#fff'],['Liverpool','4-3-3',76,'LFC','#c8102e','#fff']].map(([t,f,p,abbr,bg,fg]) => (
-            <div key={t} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,.05)', cursor:'pointer' }}>
-              <Crest abbr={abbr} bg={bg} fg={fg} size={22} />
-              <span style={{ flex:1, font:'600 12px/1 "Inter"', color:'rgba(255,255,255,.7)' }}>{t}</span>
-              <span style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.35)' }}>{f}</span>
-              <span style={{ font:'800 13px/1 "Rajdhani"', color:'#A6FF00', width:36, textAlign:'right' }}>{p}%</span>
-            </div>
-          ))}
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px 0', font:'700 10px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
-            COMPARE MULTIPLE SYSTEMS <ArrowRight size={11} />
-          </button>
-        </div>
-
-        {/* Recently viewed */}
-        <div style={{ padding:'0 12px' }}>
-          <div style={{ ...T.label, display:'block', padding:'10px 0 8px' }}>Recently Viewed</div>
-          {RECENT.map(r => (
-            <div key={r.name} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,.06)', cursor:'pointer' }}>
-              <img src={r.img} alt={r.name} style={{ width:28, height:28, borderRadius:'50%', objectFit:'cover', objectPosition:'50% 25%', border:'1px solid rgba(255,255,255,.1)', flexShrink:0 }} />
-              <div style={{ flex:1 }}>
-                <div style={{ font:'700 12px/1 "Inter"', color:'rgba(255,255,255,.8)' }}>{r.name}</div>
-                <div style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.38)', marginTop:2 }}>{r.sub}</div>
-              </div>
-              <div style={{ font:'800 13px/1 "Rajdhani"', color:'#A6FF00' }}>{r.pct}%</div>
-            </div>
-          ))}
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px 0', font:'700 10px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
-            VIEW ALL HISTORY <ArrowRight size={11} />
-          </button>
-        </div>
-      </div>
-
-      {/* ═══ MAIN ═══ */}
-      <div style={T.main}>
-
-        {/* Player hero */}
-        <div style={T.card}>
-          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 16px', borderBottom:'1px solid rgba(255,255,255,.07)' }}>
-            <div>
-              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
-                <span style={T.label}>Player to System Fit</span>
-                <span style={{ background:'rgba(166,255,0,.12)', border:'1px solid rgba(166,255,0,.3)', borderRadius:3, padding:'2px 7px', font:'700 8px/1 "Inter"', letterSpacing:'.14em', textTransform:'uppercase', color:'#A6FF00' }}>AI Calculated</span>
-              </div>
-              <div style={{ font:'900 22px/1 "Rajdhani"', letterSpacing:'.04em', textTransform:'uppercase', color:'#fff' }}>Jude Bellingham</div>
-              <div style={{ font:'500 11px/1 "Inter"', color:'rgba(255,255,255,.45)', marginTop:3 }}>CM · Age 21 · Real Madrid</div>
-            </div>
-            <div style={{ display:'flex', gap:8 }}>
-              {['Share','Add to Watchlist'].map(l => (
-                <button key={l} type="button" style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 12px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 10px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.5)', background:'none', cursor:'pointer' }}>
-                  {l === 'Share' ? <Share2 size={11}/> : <Star size={11}/>} {l}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Body: photo (no name overlay) + ring + breakdown */}
-          <div style={{ display:'grid', gridTemplateColumns:'170px 1fr', minHeight:220 }}>
-            <div style={{ position:'relative', overflow:'hidden', background:'#050607' }}>
-              {/* Black cover at top hides the "VOTES" text baked into the photo file */}
-              <div style={{ position:'absolute', top:0, left:0, right:0, height:'24%', background:'#050607', zIndex:3 }} />
-              {/* Gradient fade at bottom */}
-              <div style={{ position:'absolute', bottom:0, left:0, right:0, height:'20%', background:'linear-gradient(to top,#0B0F13,transparent)', zIndex:3 }} />
-              <img
-                src="/assets/players/jude-bellingham.jpg"
-                alt="Bellingham"
-                style={{
-                  width:'100%', height:'130%', marginTop:'-8%',
-                  objectFit:'cover', objectPosition:'50% 40%',
-                  maskImage:'linear-gradient(to right, rgba(0,0,0,1) 60%, transparent 100%)',
-                  WebkitMaskImage:'linear-gradient(to right, rgba(0,0,0,1) 60%, transparent 100%)',
-                }}
-              />
-            </div>
-            <div style={{ padding:'16px 20px', display:'flex', gap:16, alignItems:'flex-start' }}>
-              <FitRing pct={86} />
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ ...T.label, display:'block', marginBottom:10 }}>Fit Breakdown</div>
-                {BREAKDOWN.map(b => (
-                  <div key={b.label} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-                    <span style={{ font:'500 11px/1 "Inter"', color:'rgba(255,255,255,.55)', width:165, flexShrink:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{b.label}</span>
-                    <div style={{ flex:1, display:'flex' }}><Dots val={b.val} /></div>
-                    <span style={{ font:'800 13px/1 "Rajdhani"', color:'#A6FF00', width:26, textAlign:'right', flexShrink:0 }}>{b.val}</span>
-                  </div>
-                ))}
-                <div style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.3)', marginTop:8 }}>🏆 Top 6% of CMs in World Football</div>
-              </div>
-            </div>
-          </div>
-          <div style={{ display:'flex', gap:8, padding:'12px 16px', borderTop:'1px solid rgba(255,255,255,.07)' }}>
-            {['DETAILED ANALYSIS','PLAYER REPORT','COMPARE'].map(l => (
-              <button key={l} type="button" style={{ flex:1, padding:'10px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 10px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
-                {l} <ArrowRight size={11} style={{ verticalAlign:'middle' }} />
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Alt system fits */}
-        <div style={T.card}>
-          <div style={T.head}>
-            <span style={T.h3}>Alternative System Fits</span>
-            <button style={T.limeBtn}>VIEW ALL <ArrowRight size={10} style={{ verticalAlign:'middle' }} /></button>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:1, background:'rgba(255,255,255,.06)' }}>
-            {ALT_FITS.map(f => (
-              <div key={f.name} style={{ background:'#0B0F13', padding:'14px', textAlign:'center', display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}>
-                <Crest abbr={f.abbr} bg={f.bg} fg={f.fg} ring={f.ring} size={44} />
-                <div>
-                  <div style={{ font:'800 11px/1 "Inter"', letterSpacing:'.04em', textTransform:'uppercase' }}>{f.name}</div>
-                  <div style={{ font:'600 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.38)', marginTop:2 }}>{f.fmt}</div>
-                </div>
-                <svg width="62" height="62" viewBox="0 0 120 120">
-                  <polygon fill="none" stroke="rgba(166,255,0,.2)" strokeWidth="1.5" points="60,8 105,34 105,86 60,112 15,86 15,34" />
-                  {[[60,8],[105,34],[105,86],[60,112],[15,86],[15,34]].map(([x,y],i) => (
-                    <line key={i} stroke="rgba(166,255,0,.1)" x1="60" y1="60" x2={x} y2={y} />
-                  ))}
-                  <polygon fill="rgba(166,255,0,.2)" stroke="#A6FF00" strokeWidth="2" points={
-                    f.pct > 82 ? "60,20 94,44 86,80 60,92 26,78 33,42" :
-                    f.pct > 80 ? "60,22 92,46 82,78 60,90 28,76 36,44" :
-                    "60,24 90,48 80,79 60,90 30,76 38,46"
-                  } />
-                </svg>
-                <div style={{ font:'900 22px/1 "Rajdhani"', color:'#A6FF00' }}>{f.pct}%</div>
-                <div style={{ font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'rgba(255,255,255,.35)' }}>Fit Score</div>
-                <div style={{ font:'600 10px/1 "Inter"', color: f.verdict.includes('Very') ? '#A6FF00' : '#F5C84B' }}>{f.verdict}</div>
-                <button type="button" style={{ width:'100%', padding:'7px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
-                  VIEW ANALYSIS <ArrowRight size={9} style={{ verticalAlign:'middle' }} />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Role Fit Pulse + Key Metrics */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>
-          <div style={T.card}>
-            <div style={T.head}><span style={T.h3}>Role Fit Pulse</span></div>
-            <div style={{ padding:'14px', display:'flex', gap:12, alignItems:'flex-start' }}>
-              <BodySilhouette />
-              <div style={{ flex:1, minWidth:0 }}>
-                {ROLE_PULSE.map(r => (
-                  <div key={r.label} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
-                    <span style={{ font:'500 11px/1 "Inter"', color:'rgba(255,255,255,.5)', width:158, flexShrink:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{r.label}</span>
-                    <div style={{ flex:1, display:'flex' }}><Dots val={r.val} /></div>
-                    <span style={{ font:'800 12px/1 "Rajdhani"', color:'#A6FF00', width:22, textAlign:'right', flexShrink:0 }}>{r.val}</span>
-                  </div>
-                ))}
-                <div style={{ display:'flex', gap:12, marginTop:8, font:'500 9px/1 "Inter"', color:'rgba(255,255,255,.3)' }}>
-                  <span>● Excellent</span><span>● Good</span><span>● Average</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div style={T.card}>
-            <div style={T.head}><span style={T.h3}>Key System Metrics</span></div>
-            <div style={{ padding:'16px', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
-              {KEY_METRICS.map(m => <MetricRing key={m.label} val={m.val} label={m.label} grade={m.grade} />)}
-            </div>
-            <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 10px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
-              VIEW ALL METRICS <ArrowRight size={11} />
-            </button>
-          </div>
-        </div>
-
-        {/* Recent match impact */}
-        <div style={T.card}>
-          <div style={T.head}>
-            <span style={T.h3}>Recent Match Impact in This System</span>
-            <button style={T.limeBtn}>View match log <ArrowRight size={10} style={{ verticalAlign:'middle' }} /></button>
-          </div>
-          <div style={{ display:'flex', gap:8, padding:'12px' }}>
-            {[{r:'W',s:'3-0',vs:'vs Atletico Madrid',rt:8.6},{r:'W',s:'4-1',vs:'vs Girona FC',rt:8.2},{r:'W',s:'2-1',vs:'vs Real Sociedad',rt:7.8},{r:'W',s:'5-0',vs:'vs Real Betis',rt:8.9}].map((m,i) => (
-              <div key={i} style={{ flex:1, border:'1px solid rgba(255,255,255,.07)', borderRadius:6, padding:'10px', background:'rgba(0,0,0,.3)', display:'flex', flexDirection:'column', gap:4 }}>
-                <span style={{ font:'800 11px/1 "Inter"', color:'#A6FF00', padding:'2px 5px', background:'rgba(166,255,0,.12)', borderRadius:3, width:'fit-content' }}>{m.r} {m.s}</span>
-                <span style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.4)', marginTop:2 }}>{m.vs}</span>
-                <span style={{ font:'900 16px/1 "Rajdhani"', color:'#A6FF00' }}>Rating {m.rt}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ═══ RIGHT ═══ */}
-      <div style={T.right}>
-        {/* Tactical Role Analysis */}
-        <div style={T.card}>
-          <div style={T.head}><span style={T.h3}>Tactical Role Analysis</span></div>
-          <div style={{ padding:'14px' }}>
-            <div style={{ font:'700 9px/1 "Inter"', letterSpacing:'.18em', textTransform:'uppercase', color:'rgba(255,255,255,.3)', marginBottom:4 }}>Primary Role Fit</div>
-            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-              <span style={{ font:'800 15px/1 "Inter"', color:'#A6FF00' }}>Advanced Midfielder</span>
-              <span style={{ font:'900 20px/1 "Rajdhani"', color:'#A6FF00' }}>90%</span>
-            </div>
-            <div style={{ font:'400 11px/1.5 "Inter"', color:'rgba(255,255,255,.4)', marginBottom:12 }}>Links midfield and attack, late box arrivals, chance creation.</div>
-            <div style={{ width:'100%', height:140, borderRadius:8, overflow:'hidden', border:'1px solid rgba(166,255,0,.2)', marginBottom:12 }}>
-              <TacticalPitch />
-            </div>
-            <div style={{ font:'700 9px/1 "Inter"', letterSpacing:'.14em', textTransform:'uppercase', color:'rgba(255,255,255,.3)', marginBottom:8 }}>Other Suitable Roles</div>
-            {[['Central Midfielder (B2B)',85],['Roaming Playmaker',82],['Deep-Lying Playmaker',74]].map(([r,p]) => (
-              <div key={r} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderTop:'1px solid rgba(255,255,255,.06)', font:'600 11px/1 "Inter"' }}>
-                <span style={{ color:'rgba(255,255,255,.55)' }}>{r}</span>
-                <span style={{ font:'700 12px/1 "Rajdhani"', color:'#A6FF00' }}>{p}%</span>
-              </div>
-            ))}
-            <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'9px', border:'1px solid rgba(255,255,255,.07)', borderRadius:5, marginTop:10, font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
-              VIEW TACTICAL ROLE MAP <ArrowRight size={10} />
-            </button>
-          </div>
-        </div>
-
-        {/* Best Fit */}
-        <div style={T.card}>
-          <div style={T.head}>
-            <span style={T.h3}>Best Fit Recommendations</span>
-            <span style={{ font:'700 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', display:'flex', alignItems:'center', gap:3 }}>AI Powered ✦</span>
-          </div>
-          <div style={{ padding:'0 14px' }}>
-            {BEST_FITS.map(f => (
-              <div key={f.rank} style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,.06)' }}>
-                <span style={{ font:'900 14px/1 "Rajdhani"', color:'rgba(255,255,255,.22)', width:16, flexShrink:0 }}>{f.rank}</span>
-                <Crest abbr={f.abbr} bg={f.bg} fg={f.fg} size={26} />
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ font:'700 12px/1 "Inter"', color:'rgba(255,255,255,.8)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.club}</div>
-                  <div style={{ font:'600 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.32)', marginTop:2 }}>{f.fmt}</div>
-                </div>
-                <div style={{ textAlign:'right', flexShrink:0 }}>
-                  <div style={{ font:'900 14px/1 "Rajdhani"', color:'#A6FF00' }}>{f.pct}%</div>
-                  <div style={{ font:'600 9px/1 "Inter"', letterSpacing:'.06em', textTransform:'uppercase', color:f.clr, marginTop:1 }}>{f.verdict}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
-            VIEW FULL RANKINGS <ArrowRight size={10} />
-          </button>
-        </div>
-
-        {/* System Fit Insights */}
-        <div style={T.card}>
-          <div style={T.head}><span style={T.h3}>System Fit Insights</span></div>
-          <div style={{ padding:'0 14px' }}>
-            {INSIGHTS.map((ins,i) => (
-              <div key={i} style={{ display:'flex', gap:8, padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,.06)', font:'400 11px/1.6 "Inter"', color:'rgba(255,255,255,.5)' }}>
-                <span style={{ flexShrink:0, marginTop:1 }}>{ins.icon}</span>
-                <span>{ins.text}</span>
-              </div>
-            ))}
-          </div>
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
-            VIEW FULL INSIGHTS <ArrowRight size={10} />
-          </button>
-        </div>
-
-        {/* Founder strip */}
-        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px', border:'1px solid rgba(166,255,0,.22)', borderRadius:8, background:'rgba(166,255,0,.03)' }}>
-          <Crown size={18} style={{ color:'#A6FF00', flexShrink:0 }} />
-          <div style={{ flex:1 }}>
-            <div style={{ font:'700 12px/1 "Inter"', letterSpacing:'.04em', textTransform:'uppercase', color:'#A6FF00' }}>World Cup Founder Pass</div>
-            <div style={{ font:'400 10px/1.4 "Inter"', color:'rgba(255,255,255,.4)', marginTop:3 }}>Unlock premium insights & exclusive World Cup content.</div>
-          </div>
-          <button type="button" onClick={() => navigateTo('/pricing')} style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 12px', background:'#A6FF00', color:'#050700', borderRadius:5, font:'800 10px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0, cursor:'pointer', border:'none' }}>
-            EXPLORE <ArrowRight size={10} />
-          </button>
-        </div>
-      </div>
-
+        <PlayerHero report={report} mode={mode} comparison={comparison} challenger={challenger} />
+        {mode === 'fit' && <FitOverview report={report} />}
+        {mode === 'compare' && <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} />}
+        {mode === 'analysis' && <DetailedAnalysis report={report} />}
+        <section className="sf-panel sf-ranking-panel">
+          <div className="sf-panel-head"><div><Star size={17} /><span>BEST-FIT CLUB RANKING</span></div><b>MODEL OUTPUT</b></div>
+          <div className="sf-ranking-grid">{report.alternativeFits.slice(0, 6).map((team, index) => <button type="button" key={team.id} onClick={() => setSelectedTeam(team)}><b>0{index + 1}</b><Crest team={team} size={32} /><span><strong>{team.name}</strong><small>{team.formation} · {team.league}</small></span><em>{team.score}%</em></button>)}</div>
+        </section>
+        <div className="sf-founder-strip"><Crown size={18} /><div><b>Get World Cup Founder Pass</b><span>Pro exports, advanced analysis and World Cup intelligence.</span></div><button type="button" className="btn btn--lime btn--sm" onClick={() => navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={13} /></button></div>
+      </main>
     </div>
   );
 }

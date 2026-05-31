@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Zap, Target, Star, MessageSquare, GaugeCircle, Users, ArrowRight, Crown, Filter, TrendingUp } from 'lucide-react';
+import { Zap, Target, Star, MessageSquare, GaugeCircle, Users, ArrowRight, Crown, Filter, TrendingUp, LockKeyhole, LogIn, Send, X } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 
 /* ── Countdown to midnight ── */
@@ -93,6 +93,70 @@ const S = {
   divider: { borderBottom:'1px solid var(--thin)' },
 };
 
+
+function BattleForumGate() {
+  const params = new URLSearchParams(window.location.search);
+  const forum = params.get('forum');
+  const authRequired = params.get('auth') === 'required';
+  const [draft, setDraft] = useState('');
+  const [posts, setPosts] = useState([
+    { user:'@MidfieldMaestro', text:'Pedri controls the temperature of a game. Jude attacks the moment. The question is whether England need the game protected or broken open.', ago:'4m' },
+    { user:'@MadridZone', text:'Control matters, but impact decides knockout games. Jude reaches zones Pedri does not even try to occupy.', ago:'9m' },
+    { user:'@BarcaData', text:'That is exactly why this cannot be reduced to goals. Pedri makes the next action easier for everyone around him.', ago:'12m' },
+  ]);
+
+  if (!forum) return null;
+
+  const accountExists = Boolean(window.localStorage.getItem('calibre:user'));
+  const closeForum = () => navigateTo('/debates');
+  const requestAccountAccess = () => {
+    window.dispatchEvent(new CustomEvent('calibre:open-auth', { detail:{ returnTo:`/debates?forum=${forum}` } }));
+  };
+  const submitPost = () => {
+    const clean = draft.trim();
+    if (!clean) return;
+    setPosts(previous => [{ user:'@You', text:clean, ago:'now' }, ...previous]);
+    setDraft('');
+  };
+
+  return (
+    <section className="debate-forum-gate" aria-label="Pedri versus Jude battle forum">
+      <div className="debate-forum-gate__topline">
+        <div>
+          <span><MessageSquare size={13}/>Battle forum</span>
+          <h2>Pedri vs Jude: who owns the midfield?</h2>
+        </div>
+        <button type="button" aria-label="Close forum" onClick={closeForum}><X size={17}/></button>
+      </div>
+      {accountExists && !authRequired ? (
+        <div className="debate-forum-gate__body">
+          <div className="debate-forum-composer">
+            <textarea value={draft} onChange={event=>setDraft(event.target.value)} placeholder="Add your argument. Keep it sharp." rows="3" />
+            <button type="button" className="btn btn--lime btn--sm" onClick={submitPost}>POST ARGUMENT <Send size={12}/></button>
+          </div>
+          <div className="debate-forum-posts">
+            {posts.map((post,index)=>(
+              <article key={`${post.user}-${index}`}>
+                <header><strong>{post.user}</strong><span>{post.ago}</span></header>
+                <p>{post.text}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="debate-forum-gate__locked">
+          <LockKeyhole size={22}/>
+          <div>
+            <h3>Account access required</h3>
+            <p>The rating matrix is public. Posting, replying and following this specific battle forum are reserved for signed-in Calibre accounts.</p>
+          </div>
+          <button type="button" className="btn btn--lime btn--sm" onClick={requestAccountAccess}>LOG IN OR CREATE ACCOUNT <LogIn size={12}/></button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export default function Debates() {
   const { h, m, s } = useCountdown();
   const [filter, setFilter] = useState('All');
@@ -130,6 +194,8 @@ export default function Debates() {
           </div>
         </div>
       </div>
+
+      <BattleForumGate />
 
       {/* ── 2-col layout ── */}
       <div style={{display:'grid', gridTemplateColumns:'1fr 300px', gap:24, alignItems:'start'}}>

@@ -167,9 +167,9 @@ export default function Home() {
                 </div>
                 {HOT_POTATO.map((h,i)=>(
                   <div key={i} className="row-item" style={{cursor:'pointer',flexDirection:'column',alignItems:'flex-start',gap:6}} onClick={()=>navigateTo('/debates')}>
-                    <span style={{font:'700 9px/1 "Barlow Condensed"',letterSpacing:'.12em',textTransform:'uppercase',color:'var(--lime)'}}>{h.badge}</span>
-                    <div style={{font:'600 13px/1.4 "Barlow Condensed"',color:'var(--text)'}}>{h.q}</div>
-                    <div style={{font:'500 10px/1 "Barlow"',color:'var(--text2)'}}>{h.votes} votes cast</div>
+                    <span style={{font:'700 9px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'var(--lime)'}}>{h.badge}</span>
+                    <div style={{font:'600 13px/1.4 "Rajdhani"',color:'var(--text)'}}>{h.q}</div>
+                    <div style={{font:'500 10px/1 "Inter"',color:'var(--text2)'}}>{h.votes} votes cast</div>
                   </div>
                 ))}
                 <button className="btn btn--outline btn--sm" style={{width:'100%',marginTop:8}} type="button" onClick={()=>navigateTo('/debates')}>
@@ -185,9 +185,9 @@ export default function Home() {
                 </div>
                 {BANGER_TWEETS.map((t,i)=>(
                   <div key={i} style={{padding:'10px 0',borderBottom:'1px solid var(--thin)'}}>
-                    <div style={{font:'700 11px/1 "Barlow Condensed"',color:'var(--lime)',marginBottom:5}}>{t.handle}</div>
-                    <div style={{font:'400 12px/1.5 "Barlow"',color:'var(--text)',fontStyle:'italic'}}>{t.text}</div>
-                    <div style={{font:'700 10px/1 "Barlow Condensed"',color:'var(--text3)',marginTop:5}}>♥ {t.likes}</div>
+                    <div style={{font:'700 11px/1 "Rajdhani"',color:'var(--lime)',marginBottom:5}}>{t.handle}</div>
+                    <div style={{font:'400 12px/1.5 "Inter"',color:'var(--text)',fontStyle:'italic'}}>{t.text}</div>
+                    <div style={{font:'700 10px/1 "Rajdhani"',color:'var(--text3)',marginTop:5}}>♥ {t.likes}</div>
                   </div>
                 ))}
               </div>
@@ -268,26 +268,26 @@ export default function Home() {
                   <thead>
                     <tr style={{borderBottom:'1px solid var(--thin)'}}>
                       {['#','Player','Club','Pos','Rating'].map(h=>(
-                        <th key={h} style={{padding:'8px 12px',font:'700 9px/1 "Barlow Condensed"',letterSpacing:'.14em',textTransform:'uppercase',color:'var(--text3)',textAlign:'left'}}>{h}</th>
+                        <th key={h} style={{padding:'8px 12px',font:'700 9px/1 "Rajdhani"',letterSpacing:'.14em',textTransform:'uppercase',color:'var(--text3)',textAlign:'left'}}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {TOP_PLAYERS.map(p=>(
                       <tr key={p.rank} style={{borderBottom:'1px solid var(--thin)',cursor:'pointer'}} onClick={()=>navigateTo('/players')}>
-                        <td style={{padding:'9px 12px',font:'900 14px/1 "Barlow Condensed"',color:'var(--text3)'}}>{p.rank}</td>
+                        <td style={{padding:'9px 12px',font:'900 14px/1 "Rajdhani"',color:'var(--text3)'}}>{p.rank}</td>
                         <td style={{padding:'9px 12px'}}>
                           <div style={{display:'flex',alignItems:'center',gap:8}}>
                             <img src={p.img} alt={p.name} style={{width:28,height:32,objectFit:'cover',objectPosition:'top',borderRadius:3,border:'1px solid var(--thin)'}}/>
-                            <span style={{font:'700 13px/1 "Barlow Condensed"',color:'var(--text)'}}>{p.name}</span>
+                            <span style={{font:'700 13px/1 "Rajdhani"',color:'var(--text)'}}>{p.name}</span>
                           </div>
                         </td>
-                        <td style={{padding:'9px 12px',font:'500 11px/1 "Barlow"',color:'var(--text2)'}}>{p.club}</td>
+                        <td style={{padding:'9px 12px',font:'500 11px/1 "Inter"',color:'var(--text2)'}}>{p.club}</td>
                         <td style={{padding:'9px 12px'}}>
-                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'2px 6px',border:'1px solid var(--thin)',borderRadius:3,font:'700 9px/1 "Barlow"',letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text2)'}}>{p.pos}</span>
+                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',padding:'2px 6px',border:'1px solid var(--thin)',borderRadius:3,font:'700 9px/1 "Inter"',letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text2)'}}>{p.pos}</span>
                         </td>
                         <td style={{padding:'9px 12px'}}>
-                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:32,padding:'3px 6px',border:'1px solid rgba(166,255,0,.4)',borderRadius:4,font:'900 14px/1 "Barlow Condensed"',color:'var(--lime)'}}>{p.rating}</span>
+                          <span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minWidth:32,padding:'3px 6px',border:'1px solid rgba(166,255,0,.4)',borderRadius:4,font:'900 14px/1 "Rajdhani"',color:'var(--lime)'}}>{p.rating}</span>
                         </td>
                       </tr>
                     ))}
@@ -312,12 +312,12 @@ export default function Home() {
                   <div key={t.name} className="row-item" style={{cursor:'pointer'}} onClick={()=>navigateTo('/talents')}>
                     <img src={t.img} alt={t.name} style={{width:32,height:38,objectFit:'cover',objectPosition:'top',borderRadius:3,border:'1px solid var(--thin)',flexShrink:0}}/>
                     <div style={{flex:1}}>
-                      <div style={{font:'700 13px/1 "Barlow Condensed"',color:'var(--text)'}}>{t.name}</div>
-                      <div style={{font:'600 9px/1 "Barlow"',letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text2)',marginTop:3}}>{t.pos} · {t.club} · {t.age} yrs</div>
+                      <div style={{font:'700 13px/1 "Rajdhani"',color:'var(--text)'}}>{t.name}</div>
+                      <div style={{font:'600 9px/1 "Inter"',letterSpacing:'.1em',textTransform:'uppercase',color:'var(--text2)',marginTop:3}}>{t.pos} · {t.club} · {t.age} yrs</div>
                     </div>
                     <div style={{textAlign:'right',flexShrink:0}}>
-                      <div style={{font:'700 9px/1 "Barlow"',letterSpacing:'.12em',textTransform:'uppercase',color:'var(--text3)'}}>POT</div>
-                      <div style={{font:'900 18px/1 "Barlow Condensed"',color:'var(--lime)'}}>{t.pot}</div>
+                      <div style={{font:'700 9px/1 "Inter"',letterSpacing:'.12em',textTransform:'uppercase',color:'var(--text3)'}}>POT</div>
+                      <div style={{font:'900 18px/1 "Rajdhani"',color:'var(--lime)'}}>{t.pot}</div>
                     </div>
                   </div>
                 ))}
@@ -333,11 +333,11 @@ export default function Home() {
                 {FIXTURES.map((f,i)=>(
                   <div key={i} className="row-item">
                     <div style={{minWidth:44,flexShrink:0}}>
-                      <div style={{font:'700 11px/1 "Barlow Condensed"',color:'var(--lime)'}}>{f.date}</div>
-                      <div style={{font:'500 10px/1 "Barlow"',color:'var(--text2)',marginTop:2}}>{f.time}</div>
+                      <div style={{font:'700 11px/1 "Rajdhani"',color:'var(--lime)'}}>{f.date}</div>
+                      <div style={{font:'500 10px/1 "Inter"',color:'var(--text2)',marginTop:2}}>{f.time}</div>
                     </div>
-                    <div style={{flex:1,font:'700 13px/1 "Barlow Condensed"',color:'var(--text)'}}>{f.home} <span style={{color:'var(--text3)'}}>vs</span> {f.away}</div>
-                    <div style={{font:'600 9px/1 "Barlow"',letterSpacing:'.08em',textTransform:'uppercase',color:'var(--text2)',textAlign:'right',flexShrink:0,fontSize:9}}>{f.league}</div>
+                    <div style={{flex:1,font:'700 13px/1 "Rajdhani"',color:'var(--text)'}}>{f.home} <span style={{color:'var(--text3)'}}>vs</span> {f.away}</div>
+                    <div style={{font:'600 9px/1 "Inter"',letterSpacing:'.08em',textTransform:'uppercase',color:'var(--text2)',textAlign:'right',flexShrink:0,fontSize:9}}>{f.league}</div>
                   </div>
                 ))}
                 <button className="btn btn--outline btn--sm" style={{width:'100%',marginTop:8}} type="button" onClick={()=>navigateTo('/competitions')}>VIEW COMPETITIONS <ArrowRight size={13}/></button>
@@ -399,7 +399,7 @@ export default function Home() {
             <div className="card">
               <div className="card-head">
                 <span className="card-title"><Zap size={13} className="card-title-icon"/> LIVE DEBATE FEED</span>
-                <select style={{background:'none',color:'var(--text2)',fontSize:10,fontFamily:'Barlow',fontWeight:700,letterSpacing:'.1em'}}>
+                <select style={{background:'none',color:'var(--text2)',fontSize:10,fontFamily:'Inter',fontWeight:700,letterSpacing:'.1em'}}>
                   <option>All Activity</option>
                 </select>
               </div>
@@ -436,8 +436,8 @@ export default function Home() {
                 <div key={item.path} className="row-item" style={{cursor:'pointer'}} onClick={()=>navigateTo(item.path)}>
                   <span style={{fontSize:18,flexShrink:0}}>{item.icon}</span>
                   <div style={{flex:1}}>
-                    <div style={{font:'700 13px/1 "Barlow Condensed"',color:'var(--text)'}}>{item.label}</div>
-                    <div style={{font:'500 10px/1 "Barlow"',color:'var(--text2)',marginTop:3}}>{item.sub}</div>
+                    <div style={{font:'700 13px/1 "Rajdhani"',color:'var(--text)'}}>{item.label}</div>
+                    <div style={{font:'500 10px/1 "Inter"',color:'var(--text2)',marginTop:3}}>{item.sub}</div>
                   </div>
                   <ArrowRight size={14} style={{color:'var(--text3)',flexShrink:0}}/>
                 </div>

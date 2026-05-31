@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Michroma&family=Rajdhani:wght@500;600;700&display=swap");
+
 /* ═══════════════════════════════════════════════════════════════════
    CALIBRE FOOTBALL INTELLIGENCE — GLOBAL STYLESHEET
    Pixel-matched to approved mockups v5
@@ -37,7 +39,7 @@
   --shadow:      0 4px 24px rgba(0,0,0,.55);
   --shadow-lg:   0 8px 48px rgba(0,0,0,.8);
 
-  font-family: "Barlow", system-ui, sans-serif;
+  font-family: "Inter", system-ui, sans-serif;
   font-size: 14px;
   color-scheme: dark;
 }
@@ -86,15 +88,15 @@ body::after {
    NAV
    ════════════════════════════════════════════════════════════════ */
 .top-nav {
-  position: sticky; top: 0; z-index: 100;
+  position: sticky; top: 0; z-index: 200;
   width: 100%;
-  height: 54px;
+  height: 60px;
   display: flex; align-items: center;
   padding: 0 24px;
   background: rgba(3,4,5,.97);
   backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--thin);
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Brand */
@@ -109,18 +111,18 @@ body::after {
   border-right-color: transparent;
   border-radius: 50%;
   display: grid; place-items: center;
-  font-family: "Barlow Condensed", sans-serif;
+  font-family: "Rajdhani", sans-serif;
   font-size: 15px; font-weight: 900;
   letter-spacing: -.02em;
   position: relative;
 }
 .brand-text { display: flex; flex-direction: column; gap: 1px; }
 .brand-text b {
-  font: 900 14px/1 "Barlow Condensed";
+  font: 900 14px/1 "Rajdhani";
   letter-spacing: .42em; text-transform: uppercase;
 }
 .brand-text em {
-  font: 600 8px/1 "Barlow";
+  font: 600 8px/1 "Inter";
   letter-spacing: .32em; text-transform: uppercase;
   color: rgba(255,255,255,.45); font-style: normal;
 }
@@ -130,7 +132,7 @@ body::after {
 .nav-item {
   display: flex; align-items: center;
   padding: 0 14px; height: 100%;
-  font: 700 12px/1 "Barlow Condensed";
+  font: 700 12px/1 "Rajdhani";
   letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2);
   border-bottom: 2px solid transparent;
@@ -153,7 +155,7 @@ body::after {
 .login-btn {
   padding: 0 14px; height: 32px;
   color: var(--text2);
-  font: 700 11px/1 "Barlow Condensed";
+  font: 700 11px/1 "Rajdhani";
   letter-spacing: .08em; text-transform: uppercase;
   border: 1px solid var(--thin); border-radius: var(--r);
   transition: border-color .12s, color .12s;
@@ -164,7 +166,7 @@ body::after {
   padding: 0 14px; height: 34px;
   background: linear-gradient(135deg, #B7FF3C 0%, #A6FF00 100%); color: #050700;
   border-radius: var(--r);
-  font: 800 11px/1 "Barlow Condensed";
+  font: 800 11px/1 "Rajdhani";
   letter-spacing: .06em; text-transform: uppercase;
   white-space: nowrap;
   transition: opacity .12s;
@@ -178,7 +180,7 @@ body::after {
   padding: 0 10px; height: 32px;
   border: 1px solid var(--thin); border-radius: var(--r);
   color: var(--text2);
-  font: 600 11px/1 "Barlow";
+  font: 600 11px/1 "Inter";
   transition: border-color .12s;
 }
 .lang-pill:hover { border-color: var(--line); }
@@ -191,12 +193,79 @@ body::after {
 .lang-opt {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 10px; border-radius: 6px;
-  font: 500 13px/1 "Barlow"; color: var(--text2);
+  font: 500 13px/1 "Inter"; color: var(--text2);
   width: 100%; text-align: left;
   transition: background .1s, color .1s;
 }
 .lang-opt:hover { background: rgba(255,255,255,.05); color: var(--text); }
 .lang-opt.active { color: var(--lime); }
+
+/* lang-option = alias used by LanguageSelector.jsx */
+.lang-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px; border-radius: 6px; list-style: none;
+  font: 500 13px/1 "Inter"; color: var(--text2);
+  cursor: pointer; transition: background .1s, color .1s;
+}
+.lang-option:hover { background: rgba(255,255,255,.05); color: var(--text); }
+.lang-option.active { color: var(--lime); }
+.lang-flag  { font-size: 14px; }
+.lang-label { flex: 1; }
+.chevron-up { transform: rotate(180deg); transition: transform .15s; }
+
+
+/* ════════════════════════════════════════════════════════════════
+   LIVE TICKER
+   ════════════════════════════════════════════════════════════════ */
+.live-ticker {
+  display: flex; align-items: center;
+  height: 34px; background: #070a07;
+  border-bottom: 1px solid var(--thin);
+  overflow: hidden; position: sticky; top: 60px; z-index: 99;
+}
+.live-ticker-label {
+  flex-shrink: 0; padding: 0 14px;
+  font: 900 9px/1 "Rajdhani"; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--lime); border-right: 1px solid var(--thin);
+  height: 100%; display: flex; align-items: center; white-space: nowrap;
+  background: #070a07;
+}
+.live-ticker-track { flex: 1; overflow: hidden; height: 100%; }
+.live-ticker-inner {
+  display: flex; align-items: center; height: 100%;
+  animation: ticker-scroll 45s linear infinite;
+  width: max-content;
+}
+.live-ticker-inner:hover { animation-play-state: paused; }
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.ticker-match {
+  display: flex; align-items: center; gap: 7px;
+  padding: 0 20px; height: 100%;
+  border-right: 1px solid var(--thin); flex-shrink: 0;
+  font: 600 11px/1 "Inter"; color: var(--text2);
+  cursor: default; white-space: nowrap;
+}
+.ticker-match:hover { background: rgba(255,255,255,.025); }
+.ticker-league { font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+.ticker-home   { font: 700 12px/1 "Rajdhani"; color: var(--text); }
+.ticker-away   { font: 700 12px/1 "Rajdhani"; color: var(--text); }
+.ticker-score  {
+  font: 900 13px/1 "Rajdhani"; color: var(--text);
+  padding: 2px 7px; border-radius: 4px;
+  background: rgba(255,255,255,.06); border: 1px solid var(--thin);
+  letter-spacing: .04em;
+}
+.ticker-score--live {
+  color: var(--lime); border-color: rgba(166,255,0,.35);
+  background: rgba(166,255,0,.07);
+}
+.ticker-status {
+  font: 700 9px/1 "Rajdhani"; letter-spacing: .1em;
+  color: var(--text3); min-width: 32px;
+}
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -234,7 +303,7 @@ body::after {
 }
 .battle-live-tag {
   display: flex; align-items: center; gap: 6px;
-  font: 800 11px/1 "Barlow";
+  font: 800 11px/1 "Inter";
   letter-spacing: .18em; text-transform: uppercase;
   color: var(--lime);
   border: 1px solid var(--line-lime);
@@ -257,8 +326,8 @@ body::after {
   display: flex; flex-direction: column; align-items: flex-end; gap: 2px;
   margin-left: 12px;
 }
-.vote-box strong { font: 800 20px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.vote-box span   { font: 600 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
+.vote-box strong { font: 800 20px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.vote-box span   { font: 600 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
 
 /* fighter left */
 .fighter { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 12px; }
@@ -272,7 +341,7 @@ body::after {
 }
 .club-ghost {
   position: absolute; top: 40px; left: 24px;
-  font: 900 80px/1 "Barlow Condensed";
+  font: 900 80px/1 "Rajdhani";
   letter-spacing: -.04em; text-transform: uppercase;
   color: rgba(255,255,255,.04); pointer-events: none;
   user-select: none;
@@ -281,12 +350,12 @@ body::after {
 .fighter-name { text-align: center; padding-bottom: 4px; }
 .fighter-name strong {
   display: block;
-  font: 900 28px/1 "Barlow Condensed";
+  font: 900 28px/1 "Rajdhani";
   letter-spacing: .04em; text-transform: uppercase;
   color: #fff;
 }
 .fighter-name span {
-  font: 700 11px/1 "Barlow";
+  font: 700 11px/1 "Inter";
   letter-spacing: .2em; text-transform: uppercase;
   color: var(--lime);
 }
@@ -301,7 +370,7 @@ body::after {
 }
 .battle-title-row { text-align: center; margin-bottom: 4px; }
 .battle-title-row h1 {
-  font: 900 52px/1 "Barlow Condensed";
+  font: 900 52px/1 "Rajdhani";
   letter-spacing: -.01em; text-transform: uppercase;
   color: #fff;
   line-height: .92;
@@ -312,7 +381,7 @@ body::after {
   margin-bottom: 2px;
 }
 .cat-label-text {
-  font: 600 10px/1 "Barlow";
+  font: 600 10px/1 "Inter";
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text3); margin-right: 4px; white-space: nowrap;
 }
@@ -320,7 +389,7 @@ body::after {
   display: flex; align-items: center; gap: 4px;
   padding: 4px 9px; border-radius: 4px;
   border: 1px solid var(--thin);
-  font: 700 10px/1 "Barlow";
+  font: 700 10px/1 "Inter";
   letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2);
   transition: all .12s;
@@ -329,7 +398,7 @@ body::after {
 .cat-pill.active { background: var(--lime-dim); border-color: var(--line-lime); color: var(--lime); }
 
 .vs-mark {
-  font: 900 36px/1 "Barlow Condensed";
+  font: 900 36px/1 "Rajdhani";
   letter-spacing: .06em; color: rgba(255,255,255,.25);
   margin: 2px 0;
 }
@@ -342,13 +411,13 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
 }
 .question-box h2 {
-  font: 700 14px/1.3 "Barlow Condensed";
+  font: 700 14px/1.3 "Rajdhani";
   letter-spacing: .06em; text-transform: uppercase;
   color: #fff;
 }
 .question-box h2 mark { color: var(--lime); background: none; }
 .tap-hint {
-  font: 700 9px/1 "Barlow";
+  font: 700 9px/1 "Inter";
   letter-spacing: .2em; text-transform: uppercase;
   color: var(--text3);
 }
@@ -358,7 +427,7 @@ body::after {
 .tap-scale button {
   width: 26px; height: 26px; border-radius: 4px;
   border: 1px solid var(--thin);
-  font: 700 12px/1 "Barlow Condensed";
+  font: 700 12px/1 "Rajdhani";
   color: var(--text2);
   transition: all .1s;
 }
@@ -366,13 +435,13 @@ body::after {
 .tap-scale button.selected { background: var(--lime); border-color: var(--lime); color: #050700; }
 .scale-labels {
   display: flex; justify-content: space-between; width: 100%;
-  font: 700 9px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text3);
 }
 .scale-labels .label-left  { color: #6ab4ff; }
 .scale-labels .label-right { color: #ffb06a; }
-.vote-confirm { font: 700 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
-.vote-hint    { font: 500 10px/1 "Barlow"; color: var(--text3); }
+.vote-confirm { font: 700 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); }
+.vote-hint    { font: 500 10px/1 "Inter"; color: var(--text3); }
 
 /* proof strip */
 .proof-strip {
@@ -385,7 +454,7 @@ body::after {
 .proof-strip > span {
   display: flex; align-items: center; gap: 6px;
   padding: 0 20px; height: 100%;
-  font: 700 10px/1 "Barlow";
+  font: 700 10px/1 "Inter";
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text2);
   border-right: 1px solid var(--thin);
@@ -400,7 +469,7 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 8px 14px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); white-space: nowrap;
   transition: border-color .12s, color .12s;
 }
@@ -434,17 +503,17 @@ body::after {
 }
 .panel-head-left { display: flex; align-items: center; gap: 8px; }
 .panel-title {
-  font: 800 13px/1 "Barlow Condensed";
+  font: 800 13px/1 "Rajdhani";
   letter-spacing: .14em; text-transform: uppercase;
   color: var(--text);
 }
 .panel-eyebrow {
-  font: 700 9px/1 "Barlow";
+  font: 700 9px/1 "Inter";
   letter-spacing: .2em; text-transform: uppercase;
   color: var(--text3);
 }
 .view-all-link {
-  font: 700 10px/1 "Barlow";
+  font: 700 10px/1 "Inter";
   letter-spacing: .12em; text-transform: uppercase;
   color: var(--lime); opacity: .8;
   transition: opacity .1s;
@@ -459,7 +528,7 @@ body::after {
 }
 .trending-row:last-child { border-bottom: none; }
 .trending-rank {
-  font: 900 18px/1 "Barlow Condensed";
+  font: 900 18px/1 "Rajdhani";
   color: var(--text3); width: 18px; flex-shrink: 0;
 }
 .trending-avatars { display: flex; flex-shrink: 0; }
@@ -470,8 +539,8 @@ body::after {
   margin-left: -6px;
 }
 .trending-avatars img:first-child { margin-left: 0; }
-.trending-label { flex: 1; font: 600 12px/1.3 "Barlow"; color: var(--text); }
-.trending-votes { font: 700 11px/1 "Barlow Condensed"; color: var(--text2); flex-shrink: 0; }
+.trending-label { flex: 1; font: 600 12px/1.3 "Inter"; color: var(--text); }
+.trending-votes { font: 700 11px/1 "Rajdhani"; color: var(--text2); flex-shrink: 0; }
 .spark {
   width: 60px; height: 24px; flex-shrink: 0;
   fill: none; stroke: var(--lime); stroke-width: 1.5;
@@ -481,8 +550,8 @@ body::after {
 /* category breakdown radar */
 .cat-breakdown { padding: 16px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: center; }
 .cat-metric { display: flex; flex-direction: column; gap: 4px; }
-.cat-metric-label { font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
-.cat-metric-pct   { font: 900 22px/1 "Barlow Condensed"; color: var(--text); }
+.cat-metric-label { font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.cat-metric-pct   { font: 900 22px/1 "Rajdhani"; color: var(--text); }
 .cat-metric--right { align-items: flex-end; }
 .hex-radar {
   width: 80px; height: 80px;
@@ -509,22 +578,22 @@ body::after {
   width: 30px; height: 30px; border-radius: 50%;
   background: var(--panel2); border: 1px solid var(--thin);
   display: grid; place-items: center;
-  font: 700 11px/1 "Barlow Condensed"; color: var(--lime);
+  font: 700 11px/1 "Rajdhani"; color: var(--lime);
   flex-shrink: 0;
 }
 .feed-body { flex: 1; min-width: 0; }
-.feed-user   { font: 700 11px/1 "Barlow Condensed"; color: var(--lime); }
-.feed-action { font: 500 11px/1 "Barlow"; color: var(--text2); }
-.feed-battle { font: 700 12px/1.3 "Barlow"; color: var(--text); }
+.feed-user   { font: 700 11px/1 "Rajdhani"; color: var(--lime); }
+.feed-action { font: 500 11px/1 "Inter"; color: var(--text2); }
+.feed-battle { font: 700 12px/1.3 "Inter"; color: var(--text); }
 .feed-score {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px;
   background: var(--lime); color: #050700;
-  font: 900 11px/1 "Barlow Condensed";
+  font: 900 11px/1 "Rajdhani";
   margin-left: 4px;
 }
-.feed-quote { font: 500 11px/1.4 "Barlow"; color: var(--text2); font-style: italic; margin-top: 2px; }
-.feed-ago   { font: 500 10px/1 "Barlow"; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
+.feed-quote { font: 500 11px/1.4 "Inter"; color: var(--text2); font-style: italic; margin-top: 2px; }
+.feed-ago   { font: 500 10px/1 "Inter"; color: var(--text3); white-space: nowrap; flex-shrink: 0; }
 
 /* rising talents */
 .rising-row {
@@ -532,16 +601,16 @@ body::after {
   padding: 9px 16px; border-bottom: 1px solid var(--thin);
 }
 .rising-row:last-child { border-bottom: none; }
-.rising-rank  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
-.rising-name  { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
-.rising-role  { font: 600 10px/1 "Barlow"; letter-spacing: .1em; color: var(--text2); }
+.rising-rank  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.rising-name  { font: 700 13px/1 "Inter"; color: var(--text); flex: 1; }
+.rising-role  { font: 600 10px/1 "Inter"; letter-spacing: .1em; color: var(--text2); }
 .rising-score {
   display: flex; align-items: center; justify-content: center;
   width: 32px; height: 22px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.3);
-  font: 900 13px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 13px/1 "Rajdhani"; color: var(--lime);
 }
-.rising-delta { font: 700 11px/1 "Barlow Condensed"; color: var(--green); width: 28px; text-align: right; }
+.rising-delta { font: 700 11px/1 "Rajdhani"; color: var(--green); width: 28px; text-align: right; }
 
 /* archetype radar */
 .archetype-radar { width: 100px; height: 100px; }
@@ -563,10 +632,10 @@ body::after {
   background: linear-gradient(to top, rgba(8,9,9,1) 0%, transparent 100%);
 }
 .gordon-fit-score {
-  font: 900 48px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em;
+  font: 900 48px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em;
 }
 .gordon-fit-label {
-  font: 700 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2);
+  font: 700 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2);
 }
 
 /* competitions teaser */
@@ -574,7 +643,7 @@ body::after {
   display: flex; align-items: center; gap: 8px;
   padding: 8px 12px; border-radius: 6px;
   border: 1px solid var(--thin); background: var(--panel2);
-  font: 700 12px/1 "Barlow"; color: var(--text);
+  font: 700 12px/1 "Inter"; color: var(--text);
   transition: border-color .12s;
   cursor: pointer;
 }
@@ -595,18 +664,18 @@ body::after {
 .promo-strip-text { flex: 1; }
 .promo-strip-text strong {
   display: block;
-  font: 800 16px/1 "Barlow Condensed"; letter-spacing: .06em; text-transform: uppercase;
+  font: 800 16px/1 "Rajdhani"; letter-spacing: .06em; text-transform: uppercase;
   color: var(--lime);
 }
 .promo-strip-text span {
-  font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 3px; display: block;
+  font: 400 13px/1 "Inter"; color: var(--text2); margin-top: 3px; display: block;
 }
 .promo-cta {
   display: flex; align-items: center; gap: 8px;
   padding: 0 20px; height: 40px;
   background: var(--lime); color: #050700;
   border-radius: var(--r); flex-shrink: 0;
-  font: 800 12px/1 "Barlow Condensed"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 12px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
   transition: opacity .12s;
 }
 .promo-cta:hover { opacity: .9; }
@@ -635,7 +704,7 @@ body::after {
 }
 .dbp-live-tag {
   display: flex; align-items: center; gap: 6px;
-  font: 800 10px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase;
+  font: 800 10px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--line-lime); border-radius: 4px; padding: 5px 9px;
 }
 .dbp-voter-stack { display: flex; }
@@ -648,8 +717,8 @@ body::after {
 .dbp-vote-badge {
   display: flex; flex-direction: column; gap: 1px; margin-left: 10px;
 }
-.dbp-vote-badge strong { font: 800 18px/1 "Barlow Condensed"; color: var(--lime); }
-.dbp-vote-badge span   { font: 700 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.dbp-vote-badge strong { font: 800 18px/1 "Rajdhani"; color: var(--lime); }
+.dbp-vote-badge span   { font: 700 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
 
 /* hero body: 3-col fighters */
 .dbp-hero-body {
@@ -671,11 +740,11 @@ body::after {
 }
 .dbp-fighter-info { text-align: center; padding-top: 8px; }
 .dbp-fighter-name {
-  font: 900 22px/1 "Barlow Condensed";
+  font: 900 22px/1 "Rajdhani";
   letter-spacing: .04em; text-transform: uppercase; color: #fff;
 }
 .dbp-fighter-club {
-  font: 700 10px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
   margin-top: 3px;
 }
 
@@ -687,31 +756,31 @@ body::after {
 }
 .dbp-title {
   text-align: center;
-  font: 900 40px/.9 "Barlow Condensed"; text-transform: uppercase; color: #fff;
+  font: 900 40px/.9 "Rajdhani"; text-transform: uppercase; color: #fff;
 }
 .dbp-title .lime-word { color: var(--lime); display: block; }
 .dbp-question {
-  font: 700 13px/1.4 "Barlow Condensed"; letter-spacing: .04em;
+  font: 700 13px/1.4 "Rajdhani"; letter-spacing: .04em;
   text-transform: uppercase; color: #fff; text-align: center;
 }
 .dbp-question mark { color: var(--lime); background: none; }
 .dbp-countdown {
   display: flex; align-items: center; gap: 5px;
-  font: 700 11px/1 "Barlow"; letter-spacing: .12em; color: var(--text2);
+  font: 700 11px/1 "Inter"; letter-spacing: .12em; color: var(--text2);
 }
-.dbp-tap { font: 700 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); }
+.dbp-tap { font: 700 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); }
 .dbp-scale { display: flex; gap: 3px; }
 .dbp-scale button {
   width: 24px; height: 24px; border-radius: 3px;
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow Condensed"; color: var(--text2);
+  font: 700 11px/1 "Rajdhani"; color: var(--text2);
   transition: all .1s;
 }
 .dbp-scale button:hover { border-color: var(--lime); color: var(--lime); }
 .dbp-scale button.sel  { background: var(--lime); border-color: var(--lime); color: #050700; }
 .dbp-slabels {
   display: flex; justify-content: space-between; width: 100%;
-  font: 700 8px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
+  font: 700 8px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
 }
 .dbp-slabels .lbl-l { color: #6ab4ff; }
 .dbp-slabels .lbl-r { color: #ffb06a; }
@@ -724,7 +793,7 @@ body::after {
   display: flex; align-items: center; gap: 5px;
   padding: 7px 13px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2);
   transition: all .12s;
 }
@@ -733,7 +802,7 @@ body::after {
 .dbp-sort-select {
   margin-left: auto; display: flex; align-items: center; gap: 6px;
   padding: 7px 13px; border-radius: var(--r); border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); appearance: none;
 }
 
@@ -744,11 +813,11 @@ body::after {
 }
 .section-heading-icon { color: var(--lime); }
 .section-heading h3 {
-  font: 800 13px/1 "Barlow Condensed";
+  font: 800 13px/1 "Rajdhani";
   letter-spacing: .16em; text-transform: uppercase; color: var(--text);
 }
 .section-heading-link {
-  margin-left: auto; font: 700 10px/1 "Barlow";
+  margin-left: auto; font: 700 10px/1 "Inter";
   letter-spacing: .12em; text-transform: uppercase; color: var(--lime); opacity: .8;
 }
 .section-heading-link:hover { opacity: 1; }
@@ -764,13 +833,13 @@ body::after {
 .battle-card-live {
   position: absolute; top: 8px; left: 8px;
   background: var(--red); color: #fff;
-  font: 800 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase;
+  font: 800 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase;
   padding: 3px 6px; border-radius: 3px; z-index: 2;
 }
 .battle-card-cat {
   position: absolute; top: 8px; right: 8px;
   display: flex; align-items: center; gap: 4px;
-  font: 700 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase;
+  font: 700 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--line-lime); border-radius: 3px; padding: 3px 6px;
   z-index: 2;
 }
@@ -786,21 +855,21 @@ body::after {
 }
 .battle-vs-badge {
   position: absolute; bottom: 4px; left: 50%; transform: translateX(-50%);
-  font: 900 11px/1 "Barlow Condensed"; color: rgba(255,255,255,.35); letter-spacing: .04em;
+  font: 900 11px/1 "Rajdhani"; color: rgba(255,255,255,.35); letter-spacing: .04em;
 }
 .battle-card-names {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 10px 4px;
 }
 .battle-card-names span {
-  font: 800 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text);
+  font: 800 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text);
 }
-.battle-card-names .card-club { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
+.battle-card-names .card-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
 .battle-card-bar { margin: 0 10px 10px; height: 3px; border-radius: 2px; background: var(--panel2); overflow: hidden; }
 .battle-card-bar-fill { height: 100%; background: var(--lime); border-radius: 2px; }
 .battle-card-votes {
   display: flex; justify-content: space-between; padding: 0 10px 10px;
-  font: 600 10px/1 "Barlow Condensed"; color: var(--text2);
+  font: 600 10px/1 "Rajdhani"; color: var(--text2);
 }
 
 /* upcoming battles */
@@ -818,15 +887,15 @@ body::after {
   border: 1px solid var(--thin);
 }
 .upcoming-fighter-text {}
-.upcoming-fighter-name { font: 700 12px/1 "Barlow"; color: var(--text); }
-.upcoming-fighter-club { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
-.upcoming-vs { font: 900 11px/1 "Barlow Condensed"; color: var(--text3); }
-.upcoming-cd { font: 800 12px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: .04em; white-space: nowrap; }
-.upcoming-cd-label { font: 600 8px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); display: block; text-align: right; margin-top: 2px; }
+.upcoming-fighter-name { font: 700 12px/1 "Inter"; color: var(--text); }
+.upcoming-fighter-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.upcoming-vs { font: 900 11px/1 "Rajdhani"; color: var(--text3); }
+.upcoming-cd { font: 800 12px/1 "Rajdhani"; color: var(--lime); letter-spacing: .04em; white-space: nowrap; }
+.upcoming-cd-label { font: 600 8px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); display: block; text-align: right; margin-top: 2px; }
 .view-schedule-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 12px;
-  font: 700 11px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin);
   transition: background .12s;
 }
@@ -839,14 +908,14 @@ body::after {
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
 }
 .nomination-row:last-child { border-bottom: none; }
-.nomination-rank { font: 900 16px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
-.nomination-title { font: 700 12px/1.3 "Barlow"; color: var(--text); flex: 1; }
-.nomination-by    { font: 600 10px/1 "Barlow"; color: var(--text2); margin-top: 2px; }
-.nomination-votes { font: 700 12px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; white-space: nowrap; }
+.nomination-rank { font: 900 16px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.nomination-title { font: 700 12px/1.3 "Inter"; color: var(--text); flex: 1; }
+.nomination-by    { font: 600 10px/1 "Inter"; color: var(--text2); margin-top: 2px; }
+.nomination-votes { font: 700 12px/1 "Rajdhani"; color: var(--lime); flex-shrink: 0; white-space: nowrap; }
 .nominate-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 12px;
-  font: 700 11px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin);
   transition: background .12s;
 }
@@ -859,7 +928,7 @@ body::after {
 .join-conv-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 12px;
-  font: 700 11px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--thin); border-radius: var(--r-lg);
   transition: background .12s, border-color .12s;
 }
@@ -877,8 +946,8 @@ body::after {
 .plp-header {
   padding: 20px 0 14px; border-bottom: 1px solid var(--thin); margin-bottom: 14px;
 }
-.plp-title { font: 900 42px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.plp-sub   { font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.plp-title { font: 900 42px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.plp-sub   { font: 400 13px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 
 /* Stats bar */
 .plp-stats-bar {
@@ -887,9 +956,9 @@ body::after {
   background: var(--panel);
 }
 .plp-stat { display: flex; flex-direction: column; gap: 3px; }
-.plp-stat-label { font: 600 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
-.plp-stat-val   { font: 900 24px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.plp-stat-sub   { font: 500 10px/1 "Barlow"; color: var(--green); }
+.plp-stat-label { font: 600 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.plp-stat-val   { font: 900 24px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.plp-stat-sub   { font: 500 10px/1 "Inter"; color: var(--green); }
 
 /* Search bar */
 .plp-search-bar {
@@ -904,7 +973,7 @@ body::after {
 .plp-search:focus-within { border-color: var(--line); }
 .plp-search input {
   flex: 1; background: none; border: none; outline: none;
-  font: 400 13px/1 "Barlow"; color: var(--text);
+  font: 400 13px/1 "Inter"; color: var(--text);
 }
 .plp-search input::placeholder { color: var(--text3); }
 
@@ -913,7 +982,7 @@ body::after {
 .plp-filter-select {
   padding: 0 24px 0 12px; height: 34px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Inter"; color: var(--text2);
   appearance: none; -webkit-appearance: none; cursor: pointer;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239BA2AA'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 8px center;
@@ -947,18 +1016,18 @@ body::after {
   width: 48px; height: 48px; border-radius: var(--r);
   border: 2px solid var(--lime); background: rgba(0,0,0,.6);
 }
-.plp-featured-rating-badge strong { font: 900 22px/1 "Barlow Condensed"; color: var(--lime); }
-.plp-featured-rating-badge span   { font: 700 7px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime); margin-top: 2px; }
+.plp-featured-rating-badge strong { font: 900 22px/1 "Rajdhani"; color: var(--lime); }
+.plp-featured-rating-badge span   { font: 700 7px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime); margin-top: 2px; }
 .plp-featured-body { padding: 12px 14px; }
 .plp-featured-tag  { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.plp-featured-name { font: 900 24px/1.1 "Barlow Condensed"; letter-spacing: .03em; text-transform: uppercase; color: #fff; }
-.plp-featured-club { font: 700 10px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
-.plp-featured-meta { font: 500 11px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.plp-featured-name { font: 900 24px/1.1 "Rajdhani"; letter-spacing: .03em; text-transform: uppercase; color: #fff; }
+.plp-featured-club { font: 700 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
+.plp-featured-meta { font: 500 11px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 .plp-featured-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0; }
 .plp-featured-stat  { display: flex; flex-direction: column; gap: 3px; }
-.plp-featured-stat strong { font: 900 20px/1 "Barlow Condensed"; }
-.plp-featured-stat span   { font: 600 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
-.plp-featured-stat small  { font: 500 10px/1 "Barlow"; color: var(--text2); }
+.plp-featured-stat strong { font: 900 20px/1 "Rajdhani"; }
+.plp-featured-stat span   { font: 600 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.plp-featured-stat small  { font: 500 10px/1 "Inter"; color: var(--text2); }
 
 /* Rankings panel */
 .plp-rankings { margin-top: 12px; }
@@ -967,7 +1036,7 @@ body::after {
 }
 .plp-rank-tab {
   flex: 1; padding: 9px 4px; text-align: center;
-  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); border-bottom: 2px solid transparent;
   transition: color .12s, border-color .12s;
 }
@@ -977,8 +1046,8 @@ body::after {
   padding: 8px 0; border-bottom: 1px solid var(--thin);
 }
 .plp-rank-row:last-child { border-bottom: none; }
-.plp-rank-num  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
-.plp-rank-name { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
+.plp-rank-num  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.plp-rank-name { font: 700 13px/1 "Inter"; color: var(--text); flex: 1; }
 
 /* Avatar utility (used in rankings + rated lists) */
 .avatar { object-fit: cover; object-position: top; border: 1px solid var(--thin); }
@@ -988,7 +1057,7 @@ body::after {
 .rating-badge {
   display: inline-flex; align-items: center; justify-content: center;
   border-radius: 4px; border: 1px solid rgba(166,255,0,.4);
-  font: 900 16px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 16px/1 "Rajdhani"; color: var(--lime);
   padding: 3px 6px;
 }
 .rating-badge--sm { font-size: 13px; padding: 2px 5px; min-width: 30px; }
@@ -998,26 +1067,26 @@ body::after {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 0 10px; border-bottom: 1px solid var(--thin); margin-bottom: 4px;
 }
-.plp-db-count { font: 500 11px/1 "Barlow"; color: var(--text2); }
+.plp-db-count { font: 500 11px/1 "Inter"; color: var(--text2); }
 .plp-db-table { width: 100%; border-collapse: collapse; }
 .plp-db-table th {
   padding: 8px 10px; text-align: left;
-  font: 700 9px/1 "Barlow"; letter-spacing: .16em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .16em; text-transform: uppercase;
   color: var(--text3); border-bottom: 1px solid var(--thin);
 }
-.plp-db-table td { padding: 8px 10px; border-bottom: 1px solid var(--thin); vertical-align: middle; font: 500 12px/1 "Barlow"; color: var(--text); }
+.plp-db-table td { padding: 8px 10px; border-bottom: 1px solid var(--thin); vertical-align: middle; font: 500 12px/1 "Inter"; color: var(--text); }
 .plp-db-table tr:last-child td { border-bottom: none; }
 .plp-db-table tr:hover td { background: rgba(255,255,255,.02); }
 .plp-db-table th.sortable { color: var(--lime); }
-.plp-rank-col { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); }
+.plp-rank-col { font: 900 14px/1 "Rajdhani"; color: var(--text3); }
 .plp-player-cell { display: flex; align-items: center; gap: 8px; }
-.plp-player-cell strong { font: 700 13px/1 "Barlow"; color: var(--text); }
+.plp-player-cell strong { font: 700 13px/1 "Inter"; color: var(--text); }
 .plp-pos-badge {
   display: inline-flex; align-items: center; justify-content: center;
   padding: 2px 6px; border-radius: 3px; border: 1px solid var(--thin);
-  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
+  font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
 }
-.plp-fan-rating { font: 700 13px/1 "Barlow Condensed"; color: #F5C84B; }
+.plp-fan-rating { font: 700 13px/1 "Rajdhani"; color: #F5C84B; }
 
 /* Compare widget */
 .plp-compare-slots { display: flex; gap: 8px; margin-bottom: 10px; }
@@ -1027,12 +1096,12 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 5px;
   position: relative;
 }
-.plp-compare-slot strong { font: 700 12px/1.2 "Barlow"; color: var(--text); }
-.plp-compare-slot span   { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.plp-compare-slot strong { font: 700 12px/1.2 "Inter"; color: var(--text); }
+.plp-compare-slot span   { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
 .plp-compare-slot-rating { display: flex; align-items: center; gap: 5px; }
 .plp-compare-remove {
   position: absolute; top: 4px; right: 6px;
-  font: 700 14px/1 "Barlow"; color: var(--text3); line-height: 1;
+  font: 700 14px/1 "Inter"; color: var(--text3); line-height: 1;
 }
 .plp-compare-remove:hover { color: var(--text); }
 
@@ -1042,10 +1111,10 @@ body::after {
   padding: 8px 0; border-bottom: 1px solid var(--thin);
 }
 .plp-rising-row:last-child { border-bottom: none; }
-.plp-rising-num  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.plp-rising-num  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
 .plp-rising-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.plp-rising-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
-.plp-rising-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.plp-rising-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
+.plp-rising-info span   { font: 600 10px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
 
 /* Row-item utility (used in most-rated, recently-compared) */
 .row-item {
@@ -1062,20 +1131,20 @@ body::after {
   margin-bottom: 16px;
 }
 .players-hero h1 {
-  font: 900 48px/1 "Barlow Condensed";
+  font: 900 48px/1 "Rajdhani";
   letter-spacing: .02em; text-transform: uppercase; color: #fff;
 }
-.players-hero-sub { font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.players-hero-sub { font: 400 13px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 
 .players-stats-strip {
   display: flex; gap: 32px; margin-top: 16px;
 }
 .players-stat { display: flex; flex-direction: column; gap: 3px; }
 .players-stat strong {
-  font: 900 28px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em;
+  font: 900 28px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em;
 }
-.players-stat span { font: 600 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
-.players-stat small { font: 500 10px/1 "Barlow"; color: var(--green); }
+.players-stat span { font: 600 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); }
+.players-stat small { font: 500 10px/1 "Inter"; color: var(--green); }
 
 .players-search-bar {
   display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
@@ -1083,7 +1152,7 @@ body::after {
 .players-search-input {
   flex: 1; max-width: 420px; height: 40px;
   background: var(--panel); border: 1px solid var(--thin); border-radius: var(--r);
-  padding: 0 40px 0 14px; color: var(--text); font: 400 13px/1 "Barlow";
+  padding: 0 40px 0 14px; color: var(--text); font: 400 13px/1 "Inter";
   transition: border-color .12s;
 }
 .players-search-input:focus { border-color: var(--line); }
@@ -1092,7 +1161,7 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 40px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2);
   transition: border-color .12s, color .12s;
 }
 .advanced-filters-btn:hover { border-color: var(--line); color: var(--text); }
@@ -1103,7 +1172,7 @@ body::after {
   display: flex; align-items: center; gap: 4px;
   padding: 0 12px; height: 34px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Inter"; color: var(--text2);
   transition: border-color .12s;
 }
 .filter-chip:hover { border-color: var(--line); }
@@ -1114,7 +1183,7 @@ body::after {
 .apply-btn {
   padding: 0 16px; height: 34px; border-radius: var(--r);
   background: var(--lime); color: #050700;
-  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 11px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
 }
 
 .players-layout { display: grid; grid-template-columns: 280px 1fr 260px; gap: 14px; }
@@ -1127,7 +1196,7 @@ body::after {
 .featured-tag {
   display: flex; align-items: center; gap: 6px;
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
-  font: 800 10px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
+  font: 800 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--lime);
 }
 .featured-player-img {
   width: 100%; height: 200px; object-fit: cover; object-position: top;
@@ -1136,28 +1205,28 @@ body::after {
 }
 .featured-player-meta { padding: 12px 14px; }
 .featured-player-name {
-  font: 900 22px/1.1 "Barlow Condensed"; letter-spacing: .03em; text-transform: uppercase; color: #fff;
+  font: 900 22px/1.1 "Rajdhani"; letter-spacing: .03em; text-transform: uppercase; color: #fff;
 }
-.featured-player-club { font: 700 10px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
-.featured-player-pos  { display: flex; align-items: center; gap: 8px; margin-top: 4px; font: 500 11px/1 "Barlow"; color: var(--text2); }
+.featured-player-club { font: 700 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
+.featured-player-pos  { display: flex; align-items: center; gap: 8px; margin-top: 4px; font: 500 11px/1 "Inter"; color: var(--text2); }
 .calibre-rating-badge {
   display: flex; align-items: center; justify-content: center;
   width: 44px; height: 44px; border-radius: var(--r);
   border: 2px solid var(--lime);
-  font: 900 24px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 24px/1 "Rajdhani"; color: var(--lime);
   float: right; margin-left: 8px;
 }
 .featured-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .featured-metric { display: flex; flex-direction: column; gap: 3px; }
-.featured-metric-val  { font: 900 20px/1 "Barlow Condensed"; color: var(--lime); }
+.featured-metric-val  { font: 900 20px/1 "Rajdhani"; color: var(--lime); }
 .featured-metric-val--green { color: var(--green); }
 .featured-metric-val--white { color: #fff; }
-.featured-metric-label { font: 600 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
-.featured-metric-sub   { font: 500 10px/1 "Barlow"; color: var(--text2); }
+.featured-metric-label { font: 600 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); }
+.featured-metric-sub   { font: 500 10px/1 "Inter"; color: var(--text2); }
 .view-profile-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   width: 100%; padding: 11px;
-  font: 700 11px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border: 1px solid var(--line-lime); border-radius: var(--r);
   margin-top: 12px; transition: background .12s;
 }
@@ -1166,34 +1235,34 @@ body::after {
 /* player table */
 .player-table-card { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); overflow: hidden; }
 .player-table-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--thin); }
-.player-table-count { font: 500 11px/1 "Barlow"; color: var(--text2); }
+.player-table-count { font: 500 11px/1 "Inter"; color: var(--text2); }
 .player-table { width: 100%; border-collapse: collapse; }
 .player-table th {
   padding: 8px 12px; text-align: left;
-  font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   border-bottom: 1px solid var(--thin);
 }
 .player-table td { padding: 9px 12px; border-bottom: 1px solid var(--thin); vertical-align: middle; }
 .player-table tr:last-child td { border-bottom: none; }
 .player-table tr:hover td { background: rgba(255,255,255,.02); }
-.pt-rank { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); }
+.pt-rank { font: 900 14px/1 "Rajdhani"; color: var(--text3); }
 .pt-player { display: flex; align-items: center; gap: 8px; }
 .pt-player-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); }
-.pt-player-name { font: 700 13px/1 "Barlow"; color: var(--text); }
-.pt-player-team { font: 600 10px/1 "Barlow"; color: var(--text2); margin-top: 2px; }
-.pt-age  { font: 500 12px/1 "Barlow"; color: var(--text2); }
-.pt-pos  { display: flex; align-items: center; justify-content: center; width: 34px; height: 20px; border-radius: 3px; border: 1px solid var(--thin); font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.pt-player-name { font: 700 13px/1 "Inter"; color: var(--text); }
+.pt-player-team { font: 600 10px/1 "Inter"; color: var(--text2); margin-top: 2px; }
+.pt-age  { font: 500 12px/1 "Inter"; color: var(--text2); }
+.pt-pos  { display: flex; align-items: center; justify-content: center; width: 34px; height: 20px; border-radius: 3px; border: 1px solid var(--thin); font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
 .pt-rating {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.4);
-  font: 900 14px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 14px/1 "Rajdhani"; color: var(--lime);
 }
-.pt-buzz  { font: 700 13px/1 "Barlow Condensed"; color: var(--green); }
-.pt-stars { display: flex; align-items: center; gap: 3px; font: 700 12px/1 "Barlow Condensed"; color: #F5C84B; }
+.pt-buzz  { font: 700 13px/1 "Rajdhani"; color: var(--green); }
+.pt-stars { display: flex; align-items: center; gap: 3px; font: 700 12px/1 "Rajdhani"; color: #F5C84B; }
 .view-db-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 12px; font: 700 11px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  padding: 12px; font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin); transition: background .12s;
 }
 .view-db-btn:hover { background: var(--lime-dim); }
@@ -1203,17 +1272,17 @@ body::after {
 .compare-slots { display: flex; gap: 8px; padding: 12px 14px; }
 .compare-slot {
   flex: 1; border-radius: var(--r); border: 1px solid var(--thin);
-  padding: 8px; text-align: center; font: 600 11px/1 "Barlow"; color: var(--text2);
+  padding: 8px; text-align: center; font: 600 11px/1 "Inter"; color: var(--text2);
   min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
   position: relative;
 }
 .compare-slot img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top; }
-.compare-slot strong { font: 700 11px/1 "Barlow"; color: var(--text); }
-.compare-slot span { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
-.compare-close { position: absolute; top: 4px; right: 6px; font: 700 12px/1 "Barlow"; color: var(--text3); }
+.compare-slot strong { font: 700 11px/1 "Inter"; color: var(--text); }
+.compare-slot span { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.compare-close { position: absolute; top: 4px; right: 6px; font: 700 12px/1 "Inter"; color: var(--text3); }
 .compare-cta {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 11px 14px; font: 700 11px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  padding: 11px 14px; font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin); transition: background .12s;
 }
 .compare-cta:hover { background: var(--lime-dim); }
@@ -1222,7 +1291,7 @@ body::after {
 .rank-tabs { display: flex; border-bottom: 1px solid var(--thin); }
 .rank-tab {
   flex: 1; padding: 10px 4px; text-align: center;
-  font: 700 9px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2); border-bottom: 2px solid transparent;
   transition: color .12s, border-color .12s;
 }
@@ -1232,18 +1301,18 @@ body::after {
   padding: 8px 14px; border-bottom: 1px solid var(--thin);
 }
 .rank-row:last-child { border-bottom: none; }
-.rank-row-num { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 16px; flex-shrink: 0; }
+.rank-row-num { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 16px; flex-shrink: 0; }
 .rank-row-img { width: 24px; height: 24px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); flex-shrink: 0; }
-.rank-row-name { font: 700 12px/1 "Barlow"; color: var(--text); flex: 1; }
+.rank-row-name { font: 700 12px/1 "Inter"; color: var(--text); flex: 1; }
 .rank-row-score {
   width: 32px; height: 22px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.35);
   display: flex; align-items: center; justify-content: center;
-  font: 900 13px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 13px/1 "Rajdhani"; color: var(--lime);
 }
 .view-rankings-btn {
   display: flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 11px; font: 700 11px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  padding: 11px; font: 700 11px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   color: var(--lime); border-top: 1px solid var(--thin); transition: background .12s;
 }
 .view-rankings-btn:hover { background: var(--lime-dim); }
@@ -1252,7 +1321,7 @@ body::after {
 .archetype-dist { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); padding: 14px; }
 .archetype-dist-inner { display: flex; align-items: center; gap: 12px; }
 .archetype-labels { display: flex; flex-direction: column; gap: 6px; }
-.archetype-label { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: flex; justify-content: space-between; gap: 20px; }
+.archetype-label { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: flex; justify-content: space-between; gap: 20px; }
 .archetype-label span { color: var(--text3); }
 
 
@@ -1267,17 +1336,17 @@ body::after {
   position: sticky; top: 54px; height: calc(100vh - 54px); overflow-y: auto;
 }
 .comp-sidebar h2 {
-  font: 900 18px/1 "Barlow Condensed"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
+  font: 900 18px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
   padding: 0 16px 12px;
 }
 .comp-sidebar-section { padding: 8px 0; }
 .comp-sidebar-label {
-  font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   padding: 6px 16px;
 }
 .comp-sidebar-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 16px; font: 600 13px/1 "Barlow"; color: var(--text2);
+  padding: 9px 16px; font: 600 13px/1 "Inter"; color: var(--text2);
   transition: color .12s, background .12s; cursor: pointer;
 }
 .comp-sidebar-item:hover { color: var(--text); background: rgba(255,255,255,.03); }
@@ -1285,8 +1354,8 @@ body::after {
 .comp-sidebar-divider { height: 1px; background: var(--thin); margin: 8px 0; }
 .comp-sidebar-star { color: var(--lime); font-size: 11px; }
 .comp-sidebar-login-cta { margin: 16px; padding: 12px; border: 1px solid var(--thin); border-radius: var(--r); text-align: center; }
-.comp-sidebar-login-cta p { font: 400 11px/1.5 "Barlow"; color: var(--text2); margin-bottom: 8px; }
-.comp-login-btn { display: block; width: 100%; padding: 8px; background: var(--lime); color: #050700; font: 800 10px/1 "Barlow Condensed"; letter-spacing: .1em; text-transform: uppercase; border-radius: 5px; }
+.comp-sidebar-login-cta p { font: 400 11px/1.5 "Inter"; color: var(--text2); margin-bottom: 8px; }
+.comp-login-btn { display: block; width: 100%; padding: 8px; background: var(--lime); color: #050700; font: 800 10px/1 "Rajdhani"; letter-spacing: .1em; text-transform: uppercase; border-radius: 5px; }
 
 .comp-main { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -1308,31 +1377,31 @@ body::after {
 }
 .comp-banner-content { position: relative; z-index: 2; padding: 24px; flex: 1; }
 .comp-banner-eyebrow {
-  font: 700 9px/1 "Barlow"; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.5);
+  font: 700 9px/1 "Inter"; letter-spacing: .22em; text-transform: uppercase; color: rgba(255,255,255,.5);
   margin-bottom: 6px;
 }
 .comp-banner-title {
-  font: 900 28px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
+  font: 900 28px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
   margin-bottom: 4px;
 }
-.comp-banner-sub { font: 400 12px/1 "Barlow"; color: rgba(255,255,255,.6); margin-bottom: 12px; }
-.comp-banner-tagline { font: 400 12px/1.5 "Barlow"; color: rgba(255,255,255,.5); margin-bottom: 14px; }
+.comp-banner-sub { font: 400 12px/1 "Inter"; color: rgba(255,255,255,.6); margin-bottom: 12px; }
+.comp-banner-tagline { font: 400 12px/1.5 "Inter"; color: rgba(255,255,255,.5); margin-bottom: 14px; }
 .comp-view-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 9px 16px; border-radius: var(--r);
   background: rgba(255,255,255,.15); color: #fff;
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   border: 1px solid rgba(255,255,255,.2);
   transition: background .12s;
 }
 .comp-view-btn:hover { background: rgba(255,255,255,.22); }
 .comp-banner-next { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); z-index: 2; text-align: right; }
-.comp-banner-next-label { font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 10px; }
+.comp-banner-next-label { font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 10px; }
 .comp-next-match { display: flex; align-items: center; gap: 10px; }
 .comp-next-team img { width: 36px; height: 36px; object-fit: contain; }
-.comp-next-team span { display: block; font: 700 12px/1 "Barlow"; color: #fff; margin-top: 4px; text-align: center; }
-.comp-next-vs { font: 900 18px/1 "Barlow Condensed"; color: rgba(255,255,255,.4); }
-.comp-next-date { font: 700 11px/1 "Barlow Condensed"; color: var(--lime); display: block; margin-top: 6px; text-align: center; }
+.comp-next-team span { display: block; font: 700 12px/1 "Inter"; color: #fff; margin-top: 4px; text-align: center; }
+.comp-next-vs { font: 900 18px/1 "Rajdhani"; color: rgba(255,255,255,.4); }
+.comp-next-date { font: 700 11px/1 "Rajdhani"; color: var(--lime); display: block; margin-top: 6px; text-align: center; }
 
 /* league pills row */
 .league-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; }
@@ -1346,29 +1415,29 @@ body::after {
 .league-tab:hover { border-color: var(--line); }
 .league-tab.active { border-color: var(--line-lime); background: rgba(166,255,0,.05); }
 .league-tab-logo { font-size: 24px; line-height: 1; }
-.league-tab-name { font: 800 13px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
-.league-tab-country { font: 600 9px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
-.league-tab-live { font: 700 9px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 4px; }
+.league-tab-name { font: 800 13px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.league-tab-country { font: 600 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); }
+.league-tab-live { font: 700 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 4px; }
 
 /* comp data grid */
 .comp-data-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; }
 .comp-data-card { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); overflow: hidden; }
 .comp-data-card-head {
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
-  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
+  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
 }
 .comp-table { width: 100%; border-collapse: collapse; }
-.comp-table td { padding: 7px 12px; border-bottom: 1px solid var(--thin); font: 500 12px/1 "Barlow"; }
+.comp-table td { padding: 7px 12px; border-bottom: 1px solid var(--thin); font: 500 12px/1 "Inter"; }
 .comp-table tr:last-child td { border-bottom: none; }
 .comp-table tr:hover td { background: rgba(255,255,255,.02); }
-.comp-rank-num { font: 700 12px/1 "Barlow Condensed"; color: var(--text3); }
-.comp-team-name { font: 700 12px/1 "Barlow"; color: var(--text); }
-.comp-pts { font: 900 13px/1 "Barlow Condensed"; color: var(--lime); }
+.comp-rank-num { font: 700 12px/1 "Rajdhani"; color: var(--text3); }
+.comp-team-name { font: 700 12px/1 "Inter"; color: var(--text); }
+.comp-pts { font: 900 13px/1 "Rajdhani"; color: var(--lime); }
 .comp-form { display: flex; gap: 2px; }
 .form-badge {
   width: 18px; height: 18px; border-radius: 3px;
   display: flex; align-items: center; justify-content: center;
-  font: 900 9px/1 "Barlow Condensed";
+  font: 900 9px/1 "Rajdhani";
 }
 .form-badge--W { background: var(--green); color: #050700; }
 .form-badge--D { background: #F5C84B; color: #050700; }
@@ -1384,12 +1453,12 @@ body::after {
 
 /* Sidebar */
 .comp-sidebar-title {
-  font: 900 18px/1 "Barlow Condensed"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
+  font: 900 18px/1 "Rajdhani"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
   padding: 0 16px 12px;
 }
 .comp-sidebar-link {
   display: flex; align-items: center; gap: 8px;
-  padding: 9px 16px; font: 600 13px/1 "Barlow"; color: var(--text2);
+  padding: 9px 16px; font: 600 13px/1 "Inter"; color: var(--text2);
   transition: color .12s, background .12s; cursor: pointer;
 }
 .comp-sidebar-link:hover { color: var(--text); background: rgba(255,255,255,.03); }
@@ -1397,7 +1466,7 @@ body::after {
 .comp-my-section { padding: 8px 0; border-top: 1px solid var(--thin); margin-top: 8px; }
 .comp-my-row {
   display: flex; align-items: center; gap: 8px;
-  padding: 7px 16px; font: 600 12px/1 "Barlow Condensed"; color: var(--text2);
+  padding: 7px 16px; font: 600 12px/1 "Rajdhani"; color: var(--text2);
   cursor: pointer; transition: color .12s;
 }
 .comp-my-row:hover { color: var(--text); }
@@ -1406,7 +1475,7 @@ body::after {
   margin: 16px; padding: 12px; border: 1px solid var(--thin);
   border-radius: var(--r); text-align: center;
 }
-.comp-login-box p { font: 400 11px/1.5 "Barlow"; color: var(--text2); margin-bottom: 8px; }
+.comp-login-box p { font: 400 11px/1.5 "Inter"; color: var(--text2); margin-bottom: 8px; }
 
 /* Hero banner */
 .comp-hero {
@@ -1421,31 +1490,31 @@ body::after {
 }
 .comp-hero-left { position: relative; z-index: 2; padding: 24px; flex: 1; }
 .comp-hero-eyebrow {
-  font: 700 9px/1 "Barlow"; letter-spacing: .22em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .22em; text-transform: uppercase;
   color: rgba(255,255,255,.5); margin-bottom: 6px;
 }
 .comp-hero-title {
-  font: 900 28px/1 "Barlow Condensed"; letter-spacing: .02em;
+  font: 900 28px/1 "Rajdhani"; letter-spacing: .02em;
   text-transform: uppercase; color: #fff; margin-bottom: 4px;
 }
-.comp-hero-season { font: 400 12px/1 "Barlow"; color: rgba(255,255,255,.6); margin-bottom: 6px; }
-.comp-hero-desc   { font: 400 12px/1.5 "Barlow"; color: rgba(255,255,255,.5); margin-bottom: 14px; }
+.comp-hero-season { font: 400 12px/1 "Inter"; color: rgba(255,255,255,.6); margin-bottom: 6px; }
+.comp-hero-desc   { font: 400 12px/1.5 "Inter"; color: rgba(255,255,255,.5); margin-bottom: 14px; }
 .comp-hero-right {
   position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
   z-index: 2; text-align: right;
 }
 .comp-hero-next-label {
-  font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase;
   color: rgba(255,255,255,.4); margin-bottom: 10px;
 }
 .comp-hero-matchup { display: flex; align-items: center; gap: 12px; }
 .comp-hero-team {
   display: flex; flex-direction: column; align-items: center; gap: 6px;
-  font: 700 12px/1 "Barlow"; color: #fff;
+  font: 700 12px/1 "Inter"; color: #fff;
 }
-.comp-hero-vs { font: 900 18px/1 "Barlow Condensed"; color: rgba(255,255,255,.4); }
+.comp-hero-vs { font: 900 18px/1 "Rajdhani"; color: rgba(255,255,255,.4); }
 .comp-hero-kickoff {
-  font: 700 11px/1 "Barlow Condensed"; color: var(--lime);
+  font: 700 11px/1 "Rajdhani"; color: var(--lime);
   display: block; margin-top: 8px; text-align: center;
 }
 
@@ -1456,7 +1525,7 @@ body::after {
 .comp-type-tab {
   padding: 7px 16px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); cursor: pointer; transition: all .12s;
 }
 .comp-type-tab:hover { border-color: var(--line); color: var(--text); }
@@ -1475,9 +1544,9 @@ body::after {
 }
 .comp-league-card:hover { border-color: var(--line); }
 .comp-league-card.active { border-color: var(--line-lime); background: rgba(166,255,0,.05); }
-.comp-league-name    { font: 800 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); margin-top: 4px; }
-.comp-league-country { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
-.comp-league-status  { display: flex; align-items: center; gap: 5px; margin-top: 4px; font: 600 9px/1 "Barlow"; color: var(--text2); }
+.comp-league-name    { font: 800 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); margin-top: 4px; }
+.comp-league-country { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.comp-league-status  { display: flex; align-items: center; gap: 5px; margin-top: 4px; font: 600 9px/1 "Inter"; color: var(--text2); }
 
 /* Data panels (standings, form, scorers, creators) */
 .comp-data-panel {
@@ -1485,7 +1554,7 @@ body::after {
   background: var(--panel); overflow: hidden; padding: 12px 14px;
 }
 .comp-data-panel-title {
-  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em;
+  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em;
   text-transform: uppercase; color: var(--text); margin-bottom: 10px;
 }
 .comp-data-panel-sub { color: var(--lime); }
@@ -1496,16 +1565,16 @@ body::after {
   grid-template-columns: 18px 20px 1fr 28px 28px 28px 28px 36px 36px;
   align-items: center; gap: 4px;
   padding: 6px 0; border-bottom: 1px solid var(--thin);
-  font: 500 11px/1 "Barlow"; color: var(--text2);
+  font: 500 11px/1 "Inter"; color: var(--text2);
 }
 .comp-standings-row.header {
-  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text3); padding-bottom: 8px; margin-bottom: 2px;
 }
 .comp-standings-row:last-child { border-bottom: none; }
-.comp-standings-pos  { font: 900 12px/1 "Barlow Condensed"; color: var(--text3); }
-.comp-standings-name { font: 700 12px/1 "Barlow"; color: var(--text); }
-.comp-standings-pts  { font: 900 13px/1 "Barlow Condensed"; color: var(--lime); text-align: right; }
+.comp-standings-pos  { font: 900 12px/1 "Rajdhani"; color: var(--text3); }
+.comp-standings-name { font: 700 12px/1 "Inter"; color: var(--text); }
+.comp-standings-pts  { font: 900 13px/1 "Rajdhani"; color: var(--lime); text-align: right; }
 
 /* Lower 3-col row */
 .comp-lower { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
@@ -1519,8 +1588,8 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   position: relative; overflow: hidden;
 }
-.coverage-count { font: 900 32px/1 "Barlow Condensed"; color: var(--lime); }
-.coverage-label { font: 600 10px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
+.coverage-count { font: 900 32px/1 "Rajdhani"; color: var(--lime); }
+.coverage-label { font: 600 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 4px; }
 
 /* hot debates */
 .hot-debate-row {
@@ -1529,11 +1598,11 @@ body::after {
 }
 .hot-debate-row:last-child { border-bottom: none; }
 .hot-debate-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: var(--panel2); }
-.hot-debate-title { font: 700 12px/1.3 "Barlow"; color: var(--text); flex: 1; }
-.hot-debate-meta  { font: 500 10px/1 "Barlow"; color: var(--text2); margin-top: 3px; }
+.hot-debate-title { font: 700 12px/1.3 "Inter"; color: var(--text); flex: 1; }
+.hot-debate-meta  { font: 500 10px/1 "Inter"; color: var(--text2); margin-top: 3px; }
 .hot-badge {
   padding: 3px 7px; border-radius: 3px;
-  font: 800 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase;
+  font: 800 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase;
 }
 .hot-badge--hot  { background: rgba(224,60,60,.15); color: var(--red); border: 1px solid rgba(224,60,60,.3); }
 .hot-badge--live { background: var(--green-dim); color: var(--green); border: 1px solid rgba(21,196,90,.3); }
@@ -1545,12 +1614,12 @@ body::after {
   padding: 9px 14px; border-bottom: 1px solid var(--thin);
 }
 .fixture-row:last-child { border-bottom: none; }
-.fixture-date { font: 700 9px/1.4 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); width: 50px; flex-shrink: 0; }
+.fixture-date { font: 700 9px/1.4 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); width: 50px; flex-shrink: 0; }
 .fixture-teams { flex: 1; }
-.fixture-home { font: 700 11px/1 "Barlow"; color: var(--text); }
-.fixture-away { font: 600 10px/1 "Barlow"; color: var(--text2); }
-.fixture-time { font: 700 10px/1 "Barlow Condensed"; color: var(--lime); white-space: nowrap; }
-.fixture-comp { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+.fixture-home { font: 700 11px/1 "Inter"; color: var(--text); }
+.fixture-away { font: 600 10px/1 "Inter"; color: var(--text2); }
+.fixture-time { font: 700 10px/1 "Rajdhani"; color: var(--lime); white-space: nowrap; }
+.fixture-comp { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -1571,16 +1640,16 @@ body::after {
   display: grid; place-items: center; color: var(--lime); flex-shrink: 0;
 }
 .talents-hero-title {
-  font: 900 36px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
+  font: 900 36px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff;
 }
 .talents-hero-title span { color: var(--lime); }
-.talents-hero-sub { font: 400 12px/1 "Barlow"; color: var(--text2); }
+.talents-hero-sub { font: 400 12px/1 "Inter"; color: var(--text2); }
 .scout-shortlist-btn {
   margin-left: auto;
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 36px; border-radius: var(--r);
   border: 1px solid var(--line-lime);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: background .12s;
 }
 .scout-shortlist-btn:hover { background: var(--lime-dim); }
@@ -1590,7 +1659,7 @@ body::after {
   display: flex; align-items: center; gap: 4px;
   padding: 0 12px; height: 32px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Inter"; color: var(--text2);
   transition: all .12s;
 }
 .talent-filter-chip:hover { border-color: var(--line); }
@@ -1599,7 +1668,7 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 0 14px; height: 32px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: border-color .12s;
 }
 .more-filters-btn:hover { border-color: var(--line); }
@@ -1608,7 +1677,7 @@ body::after {
 .region-tab {
   padding: 6px 14px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: all .12s;
 }
 .region-tab:hover { border-color: var(--line); color: var(--text); }
@@ -1633,26 +1702,26 @@ body::after {
 .breakout-new-badge {
   position: absolute; top: 12px; left: 12px;
   background: var(--lime); color: #050700;
-  font: 900 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase;
+  font: 900 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase;
   padding: 4px 8px; border-radius: 4px;
 }
 .breakout-info { padding: 20px; display: flex; flex-direction: column; gap: 10px; }
-.breakout-name { font: 900 32px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.breakout-meta { font: 600 11px/1 "Barlow"; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+.breakout-name { font: 900 32px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.breakout-meta { font: 600 11px/1 "Inter"; color: var(--text2); display: flex; align-items: center; gap: 8px; }
 .breakout-scores { display: flex; gap: 20px; }
 .breakout-score-item {}
-.breakout-score-val { font: 900 40px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.breakout-score-label { font: 700 8px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.breakout-score-val { font: 900 40px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.breakout-score-label { font: 700 8px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .breakout-radar-row { display: flex; gap: 24px; align-items: center; }
 .breakout-attr { display: flex; flex-direction: column; gap: 3px; }
-.breakout-attr-label { font: 600 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.breakout-attr-val   { font: 900 20px/1 "Barlow Condensed"; color: var(--text); }
-.breakout-bio { font: 400 12px/1.6 "Barlow"; color: var(--text2); }
+.breakout-attr-label { font: 600 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.breakout-attr-val   { font: 900 20px/1 "Rajdhani"; color: var(--text); }
+.breakout-bio { font: 400 12px/1.6 "Inter"; color: var(--text2); }
 .view-report-btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 9px 16px; border-radius: var(--r);
   border: 1px solid var(--line-lime);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); width: fit-content; transition: background .12s;
 }
 .view-report-btn:hover { background: var(--lime-dim); }
@@ -1667,12 +1736,12 @@ body::after {
   padding: 10px 14px; border-bottom: 1px solid var(--thin);
 }
 .rising-talent-row:last-child { border-bottom: none; }
-.rt-rank { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.rt-rank { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .rt-img  { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
-.rt-name { font: 700 13px/1 "Barlow"; color: var(--text); }
-.rt-meta { font: 600 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
-.rt-score { display: flex; align-items: center; justify-content: center; width: 32px; height: 22px; border-radius: 4px; border: 1px solid rgba(166,255,0,.35); font: 900 13px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; }
-.rt-delta { font: 700 11px/1 "Barlow Condensed"; color: var(--green); width: 28px; text-align: right; flex-shrink: 0; }
+.rt-name { font: 700 13px/1 "Inter"; color: var(--text); }
+.rt-meta { font: 600 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.rt-score { display: flex; align-items: center; justify-content: center; width: 32px; height: 22px; border-radius: 4px; border: 1px solid rgba(166,255,0,.35); font: 900 13px/1 "Rajdhani"; color: var(--lime); flex-shrink: 0; }
+.rt-delta { font: 700 11px/1 "Rajdhani"; color: var(--green); width: 28px; text-align: right; flex-shrink: 0; }
 
 /* emerging stars grid */
 .emerging-grid { display: grid; grid-template-columns: repeat(6,1fr); gap: 10px; }
@@ -1685,7 +1754,7 @@ body::after {
 .emerging-pos-badge {
   position: absolute; top: 6px; left: 6px;
   background: rgba(8,9,9,.7); border: 1px solid var(--thin);
-  font: 700 8px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 8px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); padding: 3px 5px; border-radius: 3px;
 }
 .emerging-img-wrap { position: relative; }
@@ -1695,13 +1764,13 @@ body::after {
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9) 50%, transparent 100%);
 }
 .emerging-info { padding: 6px 8px 10px; }
-.emerging-name { font: 800 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
-.emerging-club { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.emerging-name { font: 800 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.emerging-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .emerging-flag { font-size: 12px; }
 .emerging-scores { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; }
-.emerging-score-val { font: 900 16px/1 "Barlow Condensed"; color: var(--lime); }
-.emerging-pot { font: 700 10px/1 "Barlow Condensed"; color: var(--text2); }
-.emerging-pot span { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+.emerging-score-val { font: 900 16px/1 "Rajdhani"; color: var(--lime); }
+.emerging-pot { font: 700 10px/1 "Rajdhani"; color: var(--text2); }
+.emerging-pot span { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
 
 /* talents bottom strip */
 .talents-bottom-strip {
@@ -1712,14 +1781,14 @@ body::after {
   margin-top: 4px;
 }
 .talents-strip-stat { text-align: center; }
-.talents-strip-stat strong { font: 900 18px/1 "Barlow Condensed"; color: var(--text); display: block; }
-.talents-strip-stat span  { font: 700 9px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 3px; }
-.talents-strip-stat small { font: 400 10px/1 "Barlow"; color: var(--text3); display: block; margin-top: 2px; }
+.talents-strip-stat strong { font: 900 18px/1 "Rajdhani"; color: var(--text); display: block; }
+.talents-strip-stat span  { font: 700 9px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 3px; }
+.talents-strip-stat small { font: 400 10px/1 "Inter"; color: var(--text3); display: block; margin-top: 2px; }
 .advanced-search-btn {
   display: flex; align-items: center; gap: 6px;
   padding: 0 16px; height: 36px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: border-color .12s, background .12s;
 }
 .advanced-search-btn:hover { border-color: var(--line-lime); background: var(--lime-dim); }
@@ -1732,9 +1801,9 @@ body::after {
   padding: 20px 0 16px; border-bottom: 1px solid var(--thin); margin-bottom: 16px;
 }
 .td-title { display: flex; align-items: center; gap: 14px; }
-.td-title h1 { font: 900 36px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.td-title h1 { font: 900 36px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .td-title h1 em { color: var(--lime); font-style: normal; }
-.td-title p { font: 400 12px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.td-title p { font: 400 12px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 .td-title-icon {
   width: 44px; height: 44px; border-radius: 10px;
   background: var(--lime-dim); border: 1px solid var(--line-lime);
@@ -1747,7 +1816,7 @@ body::after {
   display: flex; align-items: center;
   padding: 0 12px; height: 32px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel2);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Inter"; color: var(--text2);
   cursor: pointer; transition: border-color .12s;
   appearance: none; -webkit-appearance: none;
   padding-right: 24px;
@@ -1762,7 +1831,7 @@ body::after {
   display: flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: all .12s;
 }
 .td-region-tab:hover { border-color: var(--line); color: var(--text); }
@@ -1770,7 +1839,7 @@ body::after {
 .td-region-count {
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 16px; height: 16px; border-radius: 4px; padding: 0 4px;
-  background: rgba(255,255,255,.1); font: 700 9px/1 "Barlow"; color: inherit;
+  background: rgba(255,255,255,.1); font: 700 9px/1 "Inter"; color: inherit;
 }
 .td-region-tab.active .td-region-count { background: rgba(0,0,0,.2); }
 
@@ -1787,12 +1856,12 @@ body::after {
   margin-bottom: 10px;
 }
 .panel-title {
-  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em;
+  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em;
   text-transform: uppercase; color: var(--text);
   display: flex; align-items: center;
 }
 .panel-action {
-  font: 700 10px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 10px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--lime); opacity: .8; cursor: pointer; transition: opacity .1s;
 }
 .panel-action:hover { opacity: 1; }
@@ -1817,23 +1886,23 @@ body::after {
 .td-featured-new {
   display: inline-block;
   background: var(--lime); color: #050700;
-  font: 900 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase;
+  font: 900 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase;
   padding: 4px 8px; border-radius: 4px; margin-bottom: 6px;
 }
-.td-featured-name { font: 900 32px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.td-featured-club { font: 700 12px/1 "Barlow"; color: var(--lime); margin-top: 2px; }
-.td-featured-meta { font: 600 11px/1 "Barlow"; color: var(--text2); margin-top: 2px; }
+.td-featured-name { font: 900 32px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.td-featured-club { font: 700 12px/1 "Inter"; color: var(--lime); margin-top: 2px; }
+.td-featured-meta { font: 600 11px/1 "Inter"; color: var(--text2); margin-top: 2px; }
 .td-featured-ratings { display: flex; gap: 24px; }
 .td-featured-rating { display: flex; flex-direction: column; gap: 3px; }
-.td-featured-rating strong { font: 900 40px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.td-featured-rating span { font: 700 8px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+.td-featured-rating strong { font: 900 40px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.td-featured-rating span { font: 700 8px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
 .td-featured-radar-area { display: flex; align-items: center; gap: 16px; }
 .td-featured-attrs { display: flex; flex-direction: column; gap: 6px; }
 .td-featured-attr { display: flex; flex-direction: column; gap: 2px; }
-.td-featured-attr-label { font: 600 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.td-featured-attr-val   { font: 900 18px/1 "Barlow Condensed"; color: var(--text); }
-.td-featured-profile-label { font: 700 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); margin-bottom: 5px; }
-.td-featured-profile-text  { font: 400 12px/1.6 "Barlow"; color: var(--text2); }
+.td-featured-attr-label { font: 600 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.td-featured-attr-val   { font: 900 18px/1 "Rajdhani"; color: var(--text); }
+.td-featured-profile-label { font: 700 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3); margin-bottom: 5px; }
+.td-featured-profile-text  { font: 400 12px/1.6 "Inter"; color: var(--text2); }
 
 /* Rising talents rows */
 .td-rising-row {
@@ -1841,11 +1910,11 @@ body::after {
   padding: 9px 14px; border-bottom: 1px solid var(--thin);
 }
 .td-rising-row:last-child { border-bottom: none; }
-.td-rising-num { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.td-rising-num { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .td-rising-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
 .td-rising-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.td-rising-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
-.td-rising-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.td-rising-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
+.td-rising-info span   { font: 600 10px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
 
 /* Emerging stars */
 .td-emerging-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -1858,7 +1927,7 @@ body::after {
 .td-emerging-pos {
   position: absolute; top: 6px; left: 6px; z-index: 1;
   background: rgba(8,9,9,.75); border: 1px solid var(--thin);
-  font: 700 8px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 8px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); padding: 3px 5px; border-radius: 3px;
 }
 .td-emerging-img {
@@ -1868,11 +1937,11 @@ body::after {
   -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.9) 50%, transparent 100%);
 }
 .td-emerging-body { padding: 6px 10px 10px; }
-.td-emerging-name { font: 800 12px/1.2 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
-.td-emerging-club { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 3px; }
+.td-emerging-name { font: 800 12px/1.2 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.td-emerging-club { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 3px; }
 .td-emerging-ratings { display: flex; justify-content: space-between; align-items: center; margin-top: 7px; }
-.td-emerging-rating strong { font: 900 18px/1 "Barlow Condensed"; color: var(--lime); }
-.td-emerging-potential { font: 700 10px/1 "Barlow Condensed"; color: var(--text2); }
+.td-emerging-rating strong { font: 900 18px/1 "Rajdhani"; color: var(--lime); }
+.td-emerging-potential { font: 700 10px/1 "Rajdhani"; color: var(--text2); }
 .td-emerging-potential strong { color: var(--lime); }
 
 /* Bottom strip */
@@ -1884,10 +1953,10 @@ body::after {
 }
 .td-bottom-cell {
   display: flex; align-items: center; gap: 10px;
-  font: 400 11px/1 "Barlow"; color: var(--text2);
+  font: 400 11px/1 "Inter"; color: var(--text2);
 }
-.td-bottom-cell strong { font: 900 15px/1 "Barlow Condensed"; color: var(--text); display: block; }
-.td-bottom-cell span   { font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
+.td-bottom-cell strong { font: 900 15px/1 "Rajdhani"; color: var(--text); display: block; }
+.td-bottom-cell span   { font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); display: block; margin-top: 2px; }
 .td-bottom-cell-icon   { color: var(--lime); flex-shrink: 0; }
 .td-adv-search { margin-left: auto; flex-shrink: 0; }
 
@@ -1900,7 +1969,7 @@ body::after {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px; margin-left: 6px;
   background: var(--lime-dim); border: 1px solid var(--line-lime);
-  font: 900 11px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 11px/1 "Rajdhani"; color: var(--lime);
 }
 
 /* Scouted regions map */
@@ -1912,10 +1981,10 @@ body::after {
 .td-map-stat {
   display: flex; justify-content: space-between; align-items: center;
   padding: 5px 0; border-bottom: 1px solid var(--thin);
-  font: 500 12px/1 "Barlow"; color: var(--text2);
+  font: 500 12px/1 "Inter"; color: var(--text2);
 }
 .td-map-stat:last-child { border-bottom: none; }
-.td-map-stat strong { font: 800 12px/1 "Barlow Condensed"; color: var(--text); }
+.td-map-stat strong { font: 800 12px/1 "Rajdhani"; color: var(--text); }
 
 /* Trend movers */
 .td-trend-row {
@@ -1925,10 +1994,10 @@ body::after {
 .td-trend-row:last-child { border-bottom: none; }
 .td-trend-row img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
 .td-trend-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.td-trend-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
-.td-trend-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
-.td-trend-delta  { font: 800 13px/1 "Barlow Condensed"; color: var(--lime); }
-.td-trend-period { font: 500 10px/1 "Barlow"; color: var(--text3); margin-top: 3px; }
+.td-trend-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
+.td-trend-info span   { font: 600 10px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.td-trend-delta  { font: 800 13px/1 "Rajdhani"; color: var(--lime); }
+.td-trend-period { font: 500 10px/1 "Inter"; color: var(--text3); margin-top: 3px; }
 
 /* Youth standouts */
 .td-youth-row {
@@ -1938,14 +2007,14 @@ body::after {
 .td-youth-row:last-child { border-bottom: none; }
 .td-youth-row img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
 .td-youth-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.td-youth-info strong { font: 700 13px/1 "Barlow"; color: var(--text); }
-.td-youth-info span   { font: 600 10px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.td-youth-info strong { font: 700 13px/1 "Inter"; color: var(--text); }
+.td-youth-info span   { font: 600 10px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
 .td-youth-scores { text-align: right; flex-shrink: 0; }
-.td-youth-scores strong { font: 900 18px/1 "Barlow Condensed"; color: var(--lime); display: block; }
-.td-youth-scores span   { font: 700 10px/1 "Barlow Condensed"; color: var(--text2); display: block; margin-top: 3px; }
+.td-youth-scores strong { font: 900 18px/1 "Rajdhani"; color: var(--lime); display: block; }
+.td-youth-scores span   { font: 700 10px/1 "Rajdhani"; color: var(--text2); display: block; margin-top: 3px; }
 
 /* trend-up helper used in rising rows */
-.trend-up { font: 700 11px/1 "Barlow Condensed"; color: var(--lime); }
+.trend-up { font: 700 11px/1 "Rajdhani"; color: var(--lime); }
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -1962,7 +2031,7 @@ body::after {
 }
 .sysfit-tab {
   flex: 1; padding: 10px 8px; text-align: center;
-  font: 700 10px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 10px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--text2); border-bottom: 2px solid transparent;
   transition: color .12s, border-color .12s;
 }
@@ -1972,7 +2041,7 @@ body::after {
   padding: 0 12px; margin: 0 12px 12px; height: 36px;
   background: var(--panel2); border: 1px solid var(--thin); border-radius: var(--r);
 }
-.sysfit-search input { flex: 1; background: none; color: var(--text); font: 400 12px/1 "Barlow"; }
+.sysfit-search input { flex: 1; background: none; color: var(--text); font: 400 12px/1 "Inter"; }
 .sysfit-search input::placeholder { color: var(--text3); }
 .sysfit-club {
   display: flex; align-items: center; gap: 10px;
@@ -1983,10 +2052,10 @@ body::after {
   width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--thin);
   display: grid; place-items: center; font-size: 18px; flex-shrink: 0;
 }
-.sysfit-club-name { font: 700 13px/1 "Barlow"; color: var(--text); }
-.sysfit-club-meta { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.sysfit-club-name { font: 700 13px/1 "Inter"; color: var(--text); }
+.sysfit-club-meta { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .sysfit-section-label {
-  font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   padding: 12px 14px 6px;
 }
 .sysfit-compare-row {
@@ -1994,11 +2063,11 @@ body::after {
   padding: 8px 14px; cursor: pointer; transition: background .1s;
 }
 .sysfit-compare-row:hover { background: rgba(255,255,255,.03); }
-.sysfit-compare-name { font: 600 12px/1 "Barlow"; color: var(--text2); }
-.sysfit-compare-pct  { font: 800 13px/1 "Barlow Condensed"; color: var(--text); }
+.sysfit-compare-name { font: 600 12px/1 "Inter"; color: var(--text2); }
+.sysfit-compare-pct  { font: 800 13px/1 "Rajdhani"; color: var(--text); }
 .sysfit-compare-pct--high { color: var(--green); }
 .sysfit-recent-label {
-  font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   padding: 12px 14px 6px;
 }
 .sysfit-recent-row {
@@ -2007,8 +2076,8 @@ body::after {
 }
 .sysfit-recent-row:hover { background: rgba(255,255,255,.03); }
 .sysfit-recent-img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; border: 1px solid var(--thin); flex-shrink: 0; }
-.sysfit-recent-name { font: 700 12px/1 "Barlow"; color: var(--text); flex: 1; }
-.sysfit-recent-pct  { font: 800 12px/1 "Barlow Condensed"; color: var(--lime); }
+.sysfit-recent-name { font: 700 12px/1 "Inter"; color: var(--text); flex: 1; }
+.sysfit-recent-pct  { font: 800 12px/1 "Rajdhani"; color: var(--lime); }
 
 .sysfit-main { padding: 16px; display: flex; flex-direction: column; gap: 14px; }
 
@@ -2024,17 +2093,17 @@ body::after {
 .sysfit-player-info {}
 .sysfit-ai-label {
   display: flex; align-items: center; gap: 5px;
-  font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text3);
   margin-bottom: 8px;
 }
-.sysfit-player-name { font: 900 24px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.sysfit-player-meta { font: 500 11px/1 "Barlow"; color: var(--text2); margin-top: 3px; display: flex; align-items: center; gap: 8px; }
+.sysfit-player-name { font: 900 24px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.sysfit-player-meta { font: 500 11px/1 "Inter"; color: var(--text2); margin-top: 3px; display: flex; align-items: center; gap: 8px; }
 .sysfit-card-actions { display: flex; gap: 8px; }
 .sysfit-action-btn {
   display: flex; align-items: center; gap: 5px;
   padding: 7px 12px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: border-color .12s, color .12s;
 }
 .sysfit-action-btn:hover { border-color: var(--line); color: var(--text); }
@@ -2053,24 +2122,24 @@ body::after {
 .sysfit-ring { width: 120px; height: 120px; }
 .sysfit-ring-track { fill: none; stroke: var(--panel2); stroke-width: 8; }
 .sysfit-ring-fill  { fill: none; stroke: var(--lime); stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset .5s ease; }
-.sysfit-ring-text  { dominant-baseline: middle; text-anchor: middle; fill: var(--lime); font: 900 28px/1 "Barlow Condensed"; }
-.sysfit-ring-sub   { dominant-baseline: middle; text-anchor: middle; fill: var(--text2); font: 600 9px/1 "Barlow"; }
-.sysfit-fit-label  { font: 700 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; margin-top: 6px; text-align: center; }
+.sysfit-ring-text  { dominant-baseline: middle; text-anchor: middle; fill: var(--lime); font: 900 28px/1 "Rajdhani"; }
+.sysfit-ring-sub   { dominant-baseline: middle; text-anchor: middle; fill: var(--text2); font: 600 9px/1 "Inter"; }
+.sysfit-fit-label  { font: 700 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; margin-top: 6px; text-align: center; }
 .sysfit-fit-label--excellent { color: var(--lime); }
-.sysfit-fit-sub { font: 500 10px/1 "Barlow"; color: var(--text2); text-align: center; margin-top: 2px; }
+.sysfit-fit-sub { font: 500 10px/1 "Inter"; color: var(--text2); text-align: center; margin-top: 2px; }
 .sysfit-breakdown { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-.sysfit-breakdown-head { font: 700 10px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-bottom: 4px; }
+.sysfit-breakdown-head { font: 700 10px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-bottom: 4px; }
 .sysfit-breakdown-row { display: flex; align-items: center; gap: 8px; }
-.sysfit-breakdown-label { font: 500 11px/1 "Barlow"; color: var(--text2); flex: 1; }
+.sysfit-breakdown-label { font: 500 11px/1 "Inter"; color: var(--text2); flex: 1; }
 .sysfit-breakdown-dots { display: flex; gap: 2px; }
 .sysfit-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--panel2); }
 .sysfit-dot.filled { background: var(--lime); }
-.sysfit-breakdown-val { font: 700 12px/1 "Barlow Condensed"; color: var(--lime); width: 24px; text-align: right; }
+.sysfit-breakdown-val { font: 700 12px/1 "Rajdhani"; color: var(--lime); width: 24px; text-align: right; }
 .sysfit-card-footer { display: flex; gap: 12px; padding: 14px 16px; border-top: 1px solid var(--thin); }
 .sysfit-footer-btn {
   flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 10px; border-radius: var(--r); border: 1px solid var(--thin);
-  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 11px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: background .12s, border-color .12s;
 }
 .sysfit-footer-btn:hover { background: var(--lime-dim); border-color: var(--line-lime); }
@@ -2085,18 +2154,18 @@ body::after {
 }
 .alt-fit-card:hover { border-color: var(--line); }
 .alt-fit-logo { font-size: 22px; }
-.alt-fit-club { font: 800 13px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
-.alt-fit-fmt  { font: 600 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.alt-fit-club { font: 800 13px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); }
+.alt-fit-fmt  { font: 600 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
 .alt-fit-hex  { width: 60px; height: 60px; }
-.alt-fit-score { font: 900 22px/1 "Barlow Condensed"; color: var(--lime); }
-.alt-fit-label { font: 600 9px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; }
+.alt-fit-score { font: 900 22px/1 "Rajdhani"; color: var(--lime); }
+.alt-fit-label { font: 600 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; }
 .alt-fit-label--vg { color: var(--green); }
 .alt-fit-label--ok { color: #F5C84B; }
 .view-analysis-btn {
   display: flex; align-items: center; justify-content: center; gap: 4px;
   width: 100%; padding: 8px; border-radius: var(--r);
   border: 1px solid var(--thin);
-  font: 700 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); transition: background .12s;
 }
 .view-analysis-btn:hover { background: var(--lime-dim); }
@@ -2105,23 +2174,23 @@ body::after {
 .sysfit-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .role-fit-card { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); padding: 14px; }
 .role-fit-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.role-fit-label { font: 500 12px/1 "Barlow"; color: var(--text2); flex: 1; }
+.role-fit-label { font: 500 12px/1 "Inter"; color: var(--text2); flex: 1; }
 .role-fit-dots  { display: flex; gap: 2px; }
 .role-fit-dot { width: 10px; height: 10px; border-radius: 2px; background: var(--panel2); }
 .role-fit-dot.filled { background: var(--lime); }
 .role-fit-dot.mid   { background: #F5C84B; }
-.role-fit-val { font: 700 12px/1 "Barlow Condensed"; color: var(--lime); width: 24px; text-align: right; }
+.role-fit-val { font: 700 12px/1 "Rajdhani"; color: var(--lime); width: 24px; text-align: right; }
 .role-fit-legend { display: flex; gap: 12px; margin-top: 10px; }
-.role-fit-legend-item { display: flex; align-items: center; gap: 5px; font: 500 10px/1 "Barlow"; color: var(--text2); }
+.role-fit-legend-item { display: flex; align-items: center; gap: 5px; font: 500 10px/1 "Inter"; color: var(--text2); }
 .role-fit-legend-dot { width: 8px; height: 8px; border-radius: 2px; }
 
 .sys-metrics-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; }
 .sys-metric-ring { position: relative; width: 72px; height: 72px; margin: 0 auto; }
 .sys-metric-ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .sys-metric-val { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.sys-metric-num { font: 900 20px/1 "Barlow Condensed"; color: var(--lime); }
-.sys-metric-label { font: 600 8px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); margin-top: 4px; text-align: center; }
-.sys-metric-grade { font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-top: 2px; }
+.sys-metric-num { font: 900 20px/1 "Rajdhani"; color: var(--lime); }
+.sys-metric-label { font: 600 8px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2); margin-top: 4px; text-align: center; }
+.sys-metric-grade { font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--green); margin-top: 2px; }
 
 /* match log */
 .match-log { display: flex; gap: 8px; }
@@ -2130,12 +2199,12 @@ body::after {
   border: 1px solid var(--thin); background: var(--panel2);
   display: flex; flex-direction: column; gap: 4px;
 }
-.match-result { font: 800 12px/1 "Barlow Condensed"; display: flex; align-items: center; gap: 4px; }
+.match-result { font: 800 12px/1 "Rajdhani"; display: flex; align-items: center; gap: 4px; }
 .match-result--W { color: var(--green); }
 .match-result--L { color: var(--red); }
-.match-opponent { font: 600 10px/1 "Barlow"; color: var(--text2); }
-.match-rating-val { font: 900 16px/1 "Barlow Condensed"; color: var(--lime); }
-.match-rating-label { font: 600 8px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
+.match-opponent { font: 600 10px/1 "Inter"; color: var(--text2); }
+.match-rating-val { font: 900 16px/1 "Rajdhani"; color: var(--lime); }
+.match-rating-label { font: 600 8px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); }
 
 /* sysfit right col */
 .sysfit-right {
@@ -2146,12 +2215,12 @@ body::after {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 5px 10px; border-radius: var(--r);
   background: var(--lime-dim); border: 1px solid var(--line-lime);
-  font: 700 10px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
   margin-bottom: 6px;
 }
-.tactical-role-name { font: 800 18px/1.1 "Barlow Condensed"; color: #fff; }
-.tactical-role-pct  { font: 900 28px/1 "Barlow Condensed"; color: var(--lime); float: right; }
-.tactical-role-desc { font: 400 11px/1.5 "Barlow"; color: var(--text2); margin-top: 4px; }
+.tactical-role-name { font: 800 18px/1.1 "Rajdhani"; color: #fff; }
+.tactical-role-pct  { font: 900 28px/1 "Rajdhani"; color: var(--lime); float: right; }
+.tactical-role-desc { font: 400 11px/1.5 "Inter"; color: var(--text2); margin-top: 4px; }
 .tactical-pitch {
   width: 100%; height: 120px; border-radius: var(--r);
   background: linear-gradient(180deg, #050607 0%, #081208 100%);
@@ -2173,32 +2242,32 @@ body::after {
   padding: 7px 0; border-bottom: 1px solid var(--thin);
 }
 .other-role-row:last-child { border-bottom: none; }
-.other-role-name { font: 600 12px/1 "Barlow"; color: var(--text2); }
-.other-role-pct  { font: 700 13px/1 "Barlow Condensed"; color: var(--text); }
+.other-role-name { font: 600 12px/1 "Inter"; color: var(--text2); }
+.other-role-pct  { font: 700 13px/1 "Rajdhani"; color: var(--text); }
 
 .best-fit-row {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 0; border-bottom: 1px solid var(--thin);
 }
 .best-fit-row:last-child { border-bottom: none; }
-.best-fit-rank { font: 900 16px/1 "Barlow Condensed"; color: var(--lime); width: 18px; flex-shrink: 0; }
+.best-fit-rank { font: 900 16px/1 "Rajdhani"; color: var(--lime); width: 18px; flex-shrink: 0; }
 .best-fit-logo { font-size: 18px; flex-shrink: 0; }
-.best-fit-club { font: 700 12px/1 "Barlow"; color: var(--text); flex: 1; }
-.best-fit-fmt  { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
-.best-fit-pct  { font: 800 14px/1 "Barlow Condensed"; color: var(--lime); flex-shrink: 0; }
-.best-fit-grade { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; flex-shrink: 0; }
+.best-fit-club { font: 700 12px/1 "Inter"; color: var(--text); flex: 1; }
+.best-fit-fmt  { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.best-fit-pct  { font: 800 14px/1 "Rajdhani"; color: var(--lime); flex-shrink: 0; }
+.best-fit-grade { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; flex-shrink: 0; }
 .best-fit-grade--excellent { color: var(--lime); }
 .best-fit-grade--vg { color: var(--green); }
 .best-fit-grade--good { color: #F5C84B; }
 .best-fit-ai-tag {
   display: flex; align-items: center; gap: 4px;
-  font: 700 9px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3);
 }
 
 .insight-row { display: flex; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--thin); }
 .insight-row:last-child { border-bottom: none; }
 .insight-icon { width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: flex-start; justify-content: center; margin-top: 1px; }
-.insight-text { font: 400 11px/1.6 "Barlow"; color: var(--text2); }
+.insight-text { font: 400 11px/1.6 "Inter"; color: var(--text2); }
 
 
 /* ════════════════════════════════════════════════════════════════
@@ -2211,29 +2280,29 @@ body::after {
 }
 .wc-hero-eyebrow {
   display: flex; align-items: center; gap: 6px;
-  font: 700 10px/1 "Barlow"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Inter"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime);
   margin-bottom: 8px;
 }
 .wc-hero-title {
-  font: 900 56px/1 "Barlow Condensed"; letter-spacing: -.01em; text-transform: uppercase; color: #fff;
+  font: 900 56px/1 "Rajdhani"; letter-spacing: -.01em; text-transform: uppercase; color: #fff;
 }
-.wc-hero-sub { font: 400 14px/1 "Barlow"; color: var(--text2); margin-top: 6px; }
-.wc-host-flags { font: 700 14px/1 "Barlow"; color: var(--text2); margin-top: 8px; }
+.wc-hero-sub { font: 400 14px/1 "Inter"; color: var(--text2); margin-top: 6px; }
+.wc-host-flags { font: 700 14px/1 "Inter"; color: var(--text2); margin-top: 8px; }
 .wc-countdown-strip {
   display: flex; gap: 24px; margin-top: 16px; padding-top: 16px;
   border-top: 1px solid var(--thin);
 }
 .wc-cd-cell { display: flex; flex-direction: column; gap: 3px; }
-.wc-cd-cell strong { font: 900 32px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.02em; }
-.wc-cd-cell span   { font: 700 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+.wc-cd-cell strong { font: 900 32px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.02em; }
+.wc-cd-cell span   { font: 700 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
 .wc-section { margin-bottom: 28px; }
 .wc-section-head { margin-bottom: 14px; }
-.wc-eyebrow { display: block; font: 700 9px/1 "Barlow"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime); margin-bottom: 4px; }
-.wc-section-head h2 { font: 900 28px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.wc-eyebrow { display: block; font: 700 9px/1 "Inter"; letter-spacing: .22em; text-transform: uppercase; color: var(--lime); margin-bottom: 4px; }
+.wc-section-head h2 { font: 900 28px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
 .wc-moment-filters { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
 .wc-mf-btn {
   padding: 6px 13px; border-radius: var(--r); border: 1px solid var(--thin);
-  font: 700 10px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2);
+  font: 700 10px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text2);
   transition: all .12s;
 }
 .wc-mf-btn:hover { border-color: var(--line); color: var(--text); }
@@ -2241,7 +2310,7 @@ body::after {
 .wc-moments-empty {
   padding: 24px; text-align: center; color: var(--text3);
   border: 1px dashed var(--thin); border-radius: var(--r-lg);
-  font: 400 13px/1.6 "Barlow";
+  font: 400 13px/1.6 "Inter";
 }
 .wc-moments-feed { display: flex; flex-direction: column; gap: 8px; }
 .wc-moment {
@@ -2253,7 +2322,7 @@ body::after {
 .wc-moment-left { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .moment-badge {
   padding: 3px 7px; border-radius: 3px;
-  font: 800 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase;
+  font: 800 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase;
 }
 .mb-goal  { background: rgba(21,196,90,.15); color: var(--green); border: 1px solid rgba(21,196,90,.3); }
 .mb-red   { background: rgba(224,60,60,.15); color: var(--red); border: 1px solid rgba(224,60,60,.3); }
@@ -2261,9 +2330,9 @@ body::after {
 .mb-mile  { background: var(--lime-dim); color: var(--lime); border: 1px solid var(--line-lime); }
 .mb-upset { background: rgba(224,60,60,.15); color: var(--red); border: 1px solid rgba(224,60,60,.3); }
 .mb-stat  { background: rgba(255,255,255,.05); color: var(--text2); border: 1px solid var(--thin); }
-.wc-moment-match { font: 700 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text2); }
-.wc-moment-time  { font: 500 10px/1 "Barlow"; color: var(--text3); }
-.wc-moment-text  { font: 400 13px/1.5 "Barlow"; color: var(--text); flex: 1; }
+.wc-moment-match { font: 700 12px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--text2); }
+.wc-moment-time  { font: 500 10px/1 "Inter"; color: var(--text3); }
+.wc-moment-text  { font: 400 13px/1.5 "Inter"; color: var(--text); flex: 1; }
 .wc-breakout-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
 .wc-breakout-card {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
@@ -2273,30 +2342,30 @@ body::after {
 .wc-featured-tag {
   position: absolute; top: 10px; right: 10px;
   background: var(--lime); color: #050700;
-  font: 800 8px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase;
+  font: 800 8px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase;
   padding: 3px 6px; border-radius: 3px;
 }
 .wc-bc-top { display: flex; gap: 12px; margin-bottom: 12px; }
 .wc-bc-img { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; object-position: top; border: 2px solid var(--thin); flex-shrink: 0; }
 .wc-bc-meta { flex: 1; }
-.wc-bc-flag { font: 600 10px/1 "Barlow"; color: var(--text2); margin-bottom: 3px; }
-.wc-bc-name { display: block; font: 800 15px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
-.wc-bc-role { display: block; font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.wc-bc-flag { font: 600 10px/1 "Inter"; color: var(--text2); margin-bottom: 3px; }
+.wc-bc-name { display: block; font: 800 15px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.wc-bc-role { display: block; font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .wc-bc-rating { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
-.wc-bc-score { font: 900 24px/1 "Barlow Condensed"; color: var(--lime); }
-.wc-bc-trend { font: 700 12px/1 "Barlow Condensed"; color: var(--green); }
+.wc-bc-score { font: 900 24px/1 "Rajdhani"; color: var(--lime); }
+.wc-bc-trend { font: 700 12px/1 "Rajdhani"; color: var(--green); }
 .wc-bc-stats { display: flex; gap: 0; margin-bottom: 10px; border: 1px solid var(--thin); border-radius: var(--r); overflow: hidden; }
 .wc-bc-stat { flex: 1; text-align: center; padding: 8px 4px; border-right: 1px solid var(--thin); }
 .wc-bc-stat:last-child { border-right: none; }
-.wc-bc-stat b { display: block; font: 900 16px/1 "Barlow Condensed"; color: var(--lime); }
-.wc-bc-stat span { font: 600 8px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); margin-top: 2px; display: block; }
-.wc-bc-note { font: 400 11px/1.6 "Barlow"; color: var(--text2); font-style: italic; }
+.wc-bc-stat b { display: block; font: 900 16px/1 "Rajdhani"; color: var(--lime); }
+.wc-bc-stat span { font: 600 8px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase; color: var(--text3); margin-top: 2px; display: block; }
+.wc-bc-note { font: 400 11px/1.6 "Inter"; color: var(--text2); font-style: italic; }
 .wc-facts-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
 .wc-fact-cats { display: flex; gap: 6px; flex-wrap: wrap; }
 .wc-fact-cat {
   display: flex; align-items: center; gap: 6px;
   border: 1px solid var(--thin); border-radius: 999px; padding: 7px 14px;
-  color: var(--text2); font: 700 11px/1 "Barlow"; text-transform: capitalize; letter-spacing: .06em;
+  color: var(--text2); font: 700 11px/1 "Inter"; text-transform: capitalize; letter-spacing: .06em;
   transition: all .12s;
 }
 .wc-fact-cat:hover, .wc-fact-cat.active { border-color: var(--lime); color: var(--lime); }
@@ -2325,19 +2394,19 @@ body::after {
 .wc-fact-cat--records    { border-left-color: rgba(255,100,50,.5); }
 .wc-fact-cat--curiosities{ border-left-color: rgba(180,80,220,.5); }
 .wc-fact-emoji { font-size: 24px; }
-.wc-fact-text  { font: 400 12px/1.7 "Barlow"; color: #d0d2ca; flex: 1; margin: 0; }
+.wc-fact-text  { font: 400 12px/1.7 "Inter"; color: #d0d2ca; flex: 1; margin: 0; }
 .wc-fact-tags  { display: flex; gap: 5px; flex-wrap: wrap; }
 .wc-fact-cat-label {
   border-radius: 4px; padding: 2px 7px;
-  font: 800 8px/1.6 "Barlow"; letter-spacing: .12em; text-transform: uppercase;
+  font: 800 8px/1.6 "Inter"; letter-spacing: .12em; text-transform: uppercase;
   background: var(--lime-dim); color: var(--lime); border: 1px solid var(--line-lime);
 }
 .wc-fact-tag {
   border: 1px solid var(--thin); border-radius: 4px; padding: 2px 6px;
-  font: 500 9px/1.6 "Barlow"; color: var(--text3); transition: all .1s;
+  font: 500 9px/1.6 "Inter"; color: var(--text3); transition: all .1s;
 }
 .wc-fact-tag:hover { border-color: var(--lime); color: var(--lime); }
-.wc-facts-empty { grid-column: 1/-1; text-align: center; padding: 28px; color: var(--text3); border: 1px dashed var(--thin); border-radius: var(--r-lg); font: 400 13px/1.5 "Barlow"; }
+.wc-facts-empty { grid-column: 1/-1; text-align: center; padding: 28px; color: var(--text3); border: 1px dashed var(--thin); border-radius: var(--r-lg); font: 400 13px/1.5 "Inter"; }
 .wc-editions-layout { display: grid; grid-template-columns: 220px 1fr; gap: 14px; }
 .wc-edition-selector { display: flex; flex-direction: column; gap: 4px; }
 .wc-edition-btn {
@@ -2349,31 +2418,31 @@ body::after {
 .wc-edition-btn:hover { background: rgba(255,255,255,.03); border-color: var(--thin); }
 .wc-edition-btn.active { background: var(--lime-dim); border-color: var(--line-lime); }
 .wc-ed-flag { font-size: 20px; }
-.wc-ed-year { font: 900 16px/1 "Barlow Condensed"; color: var(--text); }
-.wc-ed-host { font: 600 10px/1 "Barlow"; color: var(--text2); }
+.wc-ed-year { font: 900 16px/1 "Rajdhani"; color: var(--text); }
+.wc-ed-host { font: 600 10px/1 "Inter"; color: var(--text2); }
 .wc-edition-detail {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
   background: var(--panel); padding: 20px; display: flex; flex-direction: column; gap: 12px;
 }
 .wc-ed-detail-top { display: flex; align-items: flex-start; justify-content: space-between; }
 .wc-ed-detail-flag { font-size: 28px; margin-bottom: 6px; }
-.wc-ed-detail-top h3 { font: 900 20px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
-.wc-ed-winner { font: 600 11px/1 "Barlow"; color: var(--text2); margin-top: 4px; }
+.wc-ed-detail-top h3 { font: 900 20px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.wc-ed-winner { font: 600 11px/1 "Inter"; color: var(--text2); margin-top: 4px; }
 .wc-calibre-score { text-align: center; }
-.wc-calibre-score strong { display: block; font: 900 36px/1 "Barlow Condensed"; color: var(--lime); }
-.wc-calibre-score span   { font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 2px; display: block; }
-.wc-ed-theme  { font: 700 14px/1.4 "Barlow Condensed"; letter-spacing: .04em; color: var(--lime); font-style: italic; }
-.wc-ed-summary { font: 400 13px/1.7 "Barlow"; color: var(--text2); }
+.wc-calibre-score strong { display: block; font: 900 36px/1 "Rajdhani"; color: var(--lime); }
+.wc-calibre-score span   { font: 700 9px/1 "Inter"; letter-spacing: .18em; text-transform: uppercase; color: var(--text2); margin-top: 2px; display: block; }
+.wc-ed-theme  { font: 700 14px/1.4 "Rajdhani"; letter-spacing: .04em; color: var(--lime); font-style: italic; }
+.wc-ed-summary { font: 400 13px/1.7 "Inter"; color: var(--text2); }
 .wc-ed-moment {
   display: flex; align-items: flex-start; gap: 8px;
   padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--thin);
-  background: var(--panel2); font: 400 12px/1.6 "Barlow"; color: var(--text2);
+  background: var(--panel2); font: 400 12px/1.6 "Inter"; color: var(--text2);
 }
 .wc-ed-players { display: flex; gap: 6px; flex-wrap: wrap; }
 .wc-player-chip {
   padding: 5px 10px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel2);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Inter"; color: var(--text2);
 }
 .wc-goals-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
 .wc-goal-card {
@@ -2384,24 +2453,24 @@ body::after {
 .wc-goal-card:hover { border-color: var(--line); }
 .wc-goal-top { display: flex; align-items: center; gap: 8px; }
 .wc-goal-flag { font-size: 20px; flex-shrink: 0; }
-.wc-goal-top strong { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
-.wc-goal-top span { font: 600 10px/1 "Barlow"; color: var(--text2); display: block; margin-top: 2px; }
+.wc-goal-top strong { font: 700 13px/1 "Inter"; color: var(--text); flex: 1; }
+.wc-goal-top span { font: 600 10px/1 "Inter"; color: var(--text2); display: block; margin-top: 2px; }
 .wc-goal-year-badge {
   padding: 3px 7px; border-radius: 3px; border: 1px solid var(--thin);
-  font: 800 11px/1 "Barlow Condensed"; color: var(--text2); flex-shrink: 0;
+  font: 800 11px/1 "Rajdhani"; color: var(--text2); flex-shrink: 0;
 }
-.wc-goal-label { font: 800 12px/1 "Barlow Condensed"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
-.wc-goal-card p { font: 400 12px/1.6 "Barlow"; color: var(--text2); margin: 0; }
+.wc-goal-label { font: 800 12px/1 "Rajdhani"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
+.wc-goal-card p { font: 400 12px/1.6 "Inter"; color: var(--text2); margin: 0; }
 .wc-award-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 6px; }
 .wc-award-row {
   display: flex; align-items: center; gap: 10px;
   padding: 10px 14px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel);
 }
-.wc-award-year { font: 900 16px/1 "Barlow Condensed"; color: var(--text2); width: 36px; flex-shrink: 0; }
+.wc-award-year { font: 900 16px/1 "Rajdhani"; color: var(--text2); width: 36px; flex-shrink: 0; }
 .wc-award-flag { font-size: 16px; flex-shrink: 0; }
-.wc-award-player { font: 700 13px/1 "Barlow"; color: var(--text); flex: 1; }
-.wc-award-label  { font: 700 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
+.wc-award-player { font: 700 13px/1 "Inter"; color: var(--text); flex: 1; }
+.wc-award-label  { font: 700 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--lime); }
 .wc-cta-strip {
   display: flex; align-items: center; gap: 16px;
   padding: 20px 24px; border-radius: var(--r-lg);
@@ -2410,13 +2479,13 @@ body::after {
   margin-top: 24px;
 }
 .wc-cta-strip > div { flex: 1; }
-.wc-cta-strip strong { display: block; font: 800 18px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
-.wc-cta-strip span   { font: 400 12px/1 "Barlow"; color: var(--text2); display: block; margin-top: 4px; }
+.wc-cta-strip strong { display: block; font: 800 18px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
+.wc-cta-strip span   { font: 400 12px/1 "Inter"; color: var(--text2); display: block; margin-top: 4px; }
 .wc-cta-strip button {
   display: flex; align-items: center; gap: 8px;
   padding: 0 20px; height: 42px; border-radius: var(--r);
   background: var(--lime); color: #050700;
-  font: 800 12px/1 "Barlow Condensed"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 12px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0; transition: opacity .12s;
 }
 .wc-cta-strip button:hover { opacity: .9; }
@@ -2429,28 +2498,28 @@ body::after {
 .pricing-hero { text-align: center; margin-bottom: 32px; }
 .pricing-hero-eyebrow {
   display: inline-flex; align-items: center; gap: 6px;
-  font: 700 10px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--lime);
+  font: 700 10px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--lime);
   border: 1px solid var(--line-lime); border-radius: 999px; padding: 6px 14px; margin-bottom: 14px;
 }
-.pricing-hero h1 { font: 900 52px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
-.pricing-hero p  { font: 400 14px/1 "Barlow"; color: var(--text2); margin-top: 8px; }
+.pricing-hero h1 { font: 900 52px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; }
+.pricing-hero p  { font: 400 14px/1 "Inter"; color: var(--text2); margin-top: 8px; }
 .pricing-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 28px; }
 .pricing-card {
   border: 1px solid var(--thin); border-radius: var(--r-lg);
   background: var(--panel); padding: 24px; display: flex; flex-direction: column; gap: 16px;
 }
 .pricing-card--featured { border-color: var(--line-lime); background: linear-gradient(160deg, rgba(166,255,0,.04) 0%, var(--panel) 60%); }
-.pricing-tier-name { font: 700 10px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
-.pricing-price strong { font: 900 40px/1 "Barlow Condensed"; letter-spacing: -.02em; color: #fff; }
-.pricing-price span   { font: 500 14px/1 "Barlow"; color: var(--text2); }
-.pricing-desc { font: 400 12px/1.6 "Barlow"; color: var(--text2); }
+.pricing-tier-name { font: 700 10px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); }
+.pricing-price strong { font: 900 40px/1 "Rajdhani"; letter-spacing: -.02em; color: #fff; }
+.pricing-price span   { font: 500 14px/1 "Inter"; color: var(--text2); }
+.pricing-desc { font: 400 12px/1.6 "Inter"; color: var(--text2); }
 .pricing-features { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-.pricing-feature { display: flex; align-items: flex-start; gap: 8px; font: 400 12px/1.5 "Barlow"; color: var(--text2); }
+.pricing-feature { display: flex; align-items: flex-start; gap: 8px; font: 400 12px/1.5 "Inter"; color: var(--text2); }
 .pricing-feature-icon { color: var(--lime); flex-shrink: 0; margin-top: 1px; }
 .pricing-cta {
   display: flex; align-items: center; justify-content: center; gap: 6px;
   padding: 12px; border-radius: var(--r); width: 100%;
-  font: 800 12px/1 "Barlow Condensed"; letter-spacing: .08em; text-transform: uppercase;
+  font: 800 12px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
   transition: opacity .12s;
 }
 .pricing-cta--free { border: 1px solid var(--thin); color: var(--text2); }
@@ -2463,15 +2532,15 @@ body::after {
   padding: 24px 28px; display: flex; align-items: center; gap: 20px;
 }
 .founder-pass-icon { color: var(--lime); flex-shrink: 0; }
-.founder-pass-title { font: 900 24px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
-.founder-pass-sub   { font: 400 13px/1 "Barlow"; color: var(--text2); margin-top: 5px; }
-.founder-pass-price strong { font: 900 36px/1 "Barlow Condensed"; color: #fff; }
-.founder-pass-price span   { font: 500 13px/1 "Barlow"; color: var(--text2); display: block; margin-top: 2px; }
+.founder-pass-title { font: 900 24px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); }
+.founder-pass-sub   { font: 400 13px/1 "Inter"; color: var(--text2); margin-top: 5px; }
+.founder-pass-price strong { font: 900 36px/1 "Rajdhani"; color: #fff; }
+.founder-pass-price span   { font: 500 13px/1 "Inter"; color: var(--text2); display: block; margin-top: 2px; }
 .founder-pass-cta {
   display: flex; align-items: center; gap: 8px;
   padding: 0 22px; height: 48px; border-radius: var(--r);
   background: var(--lime); color: #050700;
-  font: 900 14px/1 "Barlow Condensed"; letter-spacing: .08em; text-transform: uppercase;
+  font: 900 14px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase;
   white-space: nowrap; flex-shrink: 0; transition: opacity .12s;
 }
 .founder-pass-cta:hover { opacity: .9; }
@@ -2491,13 +2560,13 @@ body::after {
   padding: 12px 16px; border-bottom: 1px solid var(--thin);
 }
 .card-title {
-  font: 800 12px/1 "Barlow Condensed";
+  font: 800 12px/1 "Rajdhani";
   letter-spacing: .16em; text-transform: uppercase; color: var(--text);
   display: flex; align-items: center; gap: 7px;
 }
 .card-title-icon { color: var(--lime); }
 .card-link {
-  font: 700 10px/1 "Barlow"; letter-spacing: .12em; text-transform: uppercase;
+  font: 700 10px/1 "Inter"; letter-spacing: .12em; text-transform: uppercase;
   color: var(--lime); opacity: .8; transition: opacity .1s;
 }
 .card-link:hover { opacity: 1; }
@@ -2507,7 +2576,7 @@ body::after {
   display: flex; align-items: center; justify-content: center;
   width: 36px; height: 24px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.4);
-  font: 900 14px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 14px/1 "Rajdhani"; color: var(--lime);
 }
 .rate-badge--green { border-color: rgba(21,196,90,.4); color: var(--green); }
 .rate-badge--white { border-color: var(--thin); color: var(--text); }
@@ -2524,7 +2593,7 @@ body::after {
   border: 1px dashed var(--thin); border-radius: var(--r-lg);
   color: var(--text3);
 }
-.empty-state-label { font: 500 13px/1 "Barlow"; }
+.empty-state-label { font: 500 13px/1 "Inter"; }
 
 /* ════════════════════════════════════════════════════════════════
    DEBATES PAGE — missing dbp-* aliases
@@ -2537,38 +2606,38 @@ body::after {
 .dbp-hero-right { display: flex; align-items: center; gap: 10px; }
 .dbp-rate-title {
   display: flex; flex-direction: column; align-items: center;
-  font: 900 28px/1 "Barlow Condensed"; letter-spacing: .08em; text-transform: uppercase; color: #fff;
+  font: 900 28px/1 "Rajdhani"; letter-spacing: .08em; text-transform: uppercase; color: #fff;
 }
 .dbp-vs {
-  font: 900 36px/1 "Barlow Condensed"; letter-spacing: .08em;
+  font: 900 36px/1 "Rajdhani"; letter-spacing: .08em;
   color: var(--lime); text-align: center; margin: 6px 0;
 }
 .dbp-vs-small {
-  font: 900 14px/1 "Barlow Condensed"; letter-spacing: .1em; color: var(--text3);
+  font: 900 14px/1 "Rajdhani"; letter-spacing: .1em; color: var(--text3);
 }
 .dbp-rating-box {
   background: rgba(0,0,0,.4); border: 1px solid var(--thin);
   border-radius: var(--r-lg); padding: 14px; display: flex; flex-direction: column; gap: 10px;
 }
 .dbp-category-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.dbp-cat-label { font: 700 9px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.dbp-cat-label { font: 700 9px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
 .dbp-cat-pill {
   display: inline-flex; align-items: center; gap: 4px;
   padding: 4px 9px; border-radius: 20px;
   border: 1px solid var(--thin);
-  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--text2); transition: all .12s;
 }
 .dbp-cat-pill:hover { border-color: var(--line); color: var(--text); }
 .dbp-cat-pill.active { background: var(--lime); border-color: var(--lime); color: #050700; }
-.dbp-votes-count { font: 600 11px/1 "Barlow"; color: var(--text3); }
-.dbp-tap-label { font: 700 9px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); text-align: center; }
+.dbp-votes-count { font: 600 11px/1 "Inter"; color: var(--text3); }
+.dbp-tap-label { font: 700 9px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text3); text-align: center; }
 .dbp-scale-labels {
   display: grid; grid-template-columns: 1fr 1fr 1fr;
-  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
+  font: 700 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3);
 }
 .dbp-confirm {
-  font: 700 10px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  font: 700 10px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase;
   color: var(--lime); text-align: center; padding: 6px 0;
 }
 
@@ -2579,8 +2648,8 @@ body::after {
   background: rgba(0,0,0,.3);
 }
 .dbp-proof-cell { text-align: center; }
-.dbp-proof-val   { font: 900 20px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: -.01em; }
-.dbp-proof-label { font: 700 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); margin-top: 3px; }
+.dbp-proof-val   { font: 900 20px/1 "Rajdhani"; color: var(--lime); letter-spacing: -.01em; }
+.dbp-proof-label { font: 700 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); margin-top: 3px; }
 
 /* Filter bar */
 .dbp-filter-bar {
@@ -2588,11 +2657,11 @@ body::after {
   margin: 12px 0; padding-bottom: 10px; border-bottom: 1px solid var(--thin);
 }
 .dbp-sort-bar { display: flex; align-items: center; gap: 6px; margin-left: auto; }
-.dbp-sort-label { font: 700 9px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.dbp-sort-label { font: 700 9px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
 .dbp-sort-select {
   height: 30px; padding: 0 10px; border-radius: var(--r);
   border: 1px solid var(--thin); background: var(--panel);
-  font: 600 11px/1 "Barlow"; color: var(--text2);
+  font: 600 11px/1 "Inter"; color: var(--text2);
   appearance: none; cursor: pointer;
 }
 
@@ -2604,7 +2673,7 @@ body::after {
 }
 .dbp-section-title {
   display: flex; align-items: center; gap: 7px;
-  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
+  font: 800 11px/1 "Rajdhani"; letter-spacing: .14em; text-transform: uppercase; color: var(--text);
 }
 .dbp-battles-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
 
@@ -2635,16 +2704,16 @@ body::after {
   z-index: 2; padding: 0 6px; flex-shrink: 0;
 }
 .dbp-bc-vs-text {
-  font: 900 18px/1 "Barlow Condensed"; color: var(--lime); letter-spacing: .06em;
+  font: 900 18px/1 "Rajdhani"; color: var(--lime); letter-spacing: .06em;
 }
 .dbp-bc-cat {
-  font: 700 8px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase;
+  font: 700 8px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase;
   color: var(--text3); margin-top: 4px;
 }
-.dbp-bc-fighter-name { font: 800 11px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
-.dbp-bc-fighter-club { font: 600 9px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
+.dbp-bc-fighter-name { font: 800 11px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: #fff; }
+.dbp-bc-fighter-club { font: 600 9px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); margin-top: 2px; }
 .dbp-battle-card-foot { padding: 10px 12px; }
-.dbp-bc-votes { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); }
+.dbp-bc-votes { font: 900 14px/1 "Rajdhani"; color: var(--lime); }
 .dbp-bc-bar { height: 4px; background: var(--thin); border-radius: 2px; margin-top: 4px; overflow: hidden; }
 .dbp-bc-bar-fill { height: 100%; background: var(--lime); border-radius: 2px; transition: width .3s; }
 
@@ -2662,11 +2731,11 @@ body::after {
   display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 60px;
 }
 .dbp-upcoming-player img { width: 28px; height: 34px; object-fit: cover; object-position: top; border-radius: 3px; border: 1px solid var(--thin); }
-.dbp-upcoming-player span { font: 700 11px/1 "Barlow Condensed"; color: var(--text); text-align: center; }
-.dbp-upcoming-player small { font: 600 9px/1 "Barlow"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
+.dbp-upcoming-player span { font: 700 11px/1 "Rajdhani"; color: var(--text); text-align: center; }
+.dbp-upcoming-player small { font: 600 9px/1 "Inter"; letter-spacing: .08em; text-transform: uppercase; color: var(--text2); }
 .dbp-countdown-sm { text-align: right; flex-shrink: 0; }
-.dbp-cd-label { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
-.dbp-cd-time  { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); margin-top: 3px; letter-spacing: .04em; }
+.dbp-cd-label { font: 600 9px/1 "Inter"; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+.dbp-cd-time  { font: 900 14px/1 "Rajdhani"; color: var(--lime); margin-top: 3px; letter-spacing: .04em; }
 
 /* Nominations */
 .dbp-nom-row {
@@ -2674,11 +2743,11 @@ body::after {
   padding: 8px 0; border-bottom: 1px solid var(--thin);
 }
 .dbp-nom-row:last-child { border-bottom: none; }
-.dbp-nom-rank { font: 900 16px/1 "Barlow Condensed"; color: var(--text3); width: 18px; flex-shrink: 0; }
+.dbp-nom-rank { font: 900 16px/1 "Rajdhani"; color: var(--text3); width: 18px; flex-shrink: 0; }
 .dbp-nom-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.dbp-nom-info strong { font: 700 13px/1 "Barlow Condensed"; color: var(--text); }
-.dbp-nom-info small   { font: 500 10px/1 "Barlow"; color: var(--text2); }
-.dbp-nom-votes { font: 700 12px/1 "Barlow Condensed"; color: var(--lime); white-space: nowrap; flex-shrink: 0; }
+.dbp-nom-info strong { font: 700 13px/1 "Rajdhani"; color: var(--text); }
+.dbp-nom-info small   { font: 500 10px/1 "Inter"; color: var(--text2); }
+.dbp-nom-votes { font: 700 12px/1 "Rajdhani"; color: var(--lime); white-space: nowrap; flex-shrink: 0; }
 
 /* Trending rail */
 .dbp-trending-row {
@@ -2686,15 +2755,15 @@ body::after {
   padding: 7px 0; border-bottom: 1px solid var(--thin);
 }
 .dbp-trending-row:last-child { border-bottom: none; }
-.dbp-trending-num  { font: 900 14px/1 "Barlow Condensed"; color: var(--text3); width: 14px; flex-shrink: 0; }
+.dbp-trending-num  { font: 900 14px/1 "Rajdhani"; color: var(--text3); width: 14px; flex-shrink: 0; }
 .dbp-trending-avatars { display: flex; gap: 2px; flex-shrink: 0; }
 .dbp-trending-info { flex: 1; display: flex; flex-direction: column; gap: 3px; }
-.dbp-trending-info strong { font: 700 12px/1 "Barlow"; color: var(--text); }
-.dbp-trending-info span   { font: 500 10px/1 "Barlow"; color: var(--text2); }
+.dbp-trending-info strong { font: 700 12px/1 "Inter"; color: var(--text); }
+.dbp-trending-info span   { font: 500 10px/1 "Inter"; color: var(--text2); }
 
 /* Category breakdown */
-.dbp-cat-label-text { font: 700 9px/1 "Barlow"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
-.dbp-cat-pct { font: 900 22px/1 "Barlow Condensed"; color: var(--lime); margin-top: 3px; }
+.dbp-cat-label-text { font: 700 9px/1 "Inter"; letter-spacing: .15em; text-transform: uppercase; color: var(--text3); }
+.dbp-cat-pct { font: 900 22px/1 "Rajdhani"; color: var(--lime); margin-top: 3px; }
 
 /* Live feed */
 .dbp-feed-row {
@@ -2704,15 +2773,15 @@ body::after {
 .dbp-feed-row:last-child { border-bottom: none; }
 .dbp-feed-avatar { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; flex-shrink: 0; border: 1px solid var(--thin); }
 .dbp-feed-body { flex: 1; }
-.dbp-feed-user { font: 700 12px/1 "Barlow"; color: var(--lime); display: block; margin-bottom: 3px; }
-.dbp-feed-text { font: 400 12px/1.4 "Barlow"; color: var(--text2); }
-.dbp-feed-quote { font: 400 11px/1.5 "Barlow"; color: var(--text3); font-style: italic; margin-top: 3px; }
-.dbp-feed-time  { font: 500 10px/1 "Barlow"; color: var(--text3); flex-shrink: 0; white-space: nowrap; }
+.dbp-feed-user { font: 700 12px/1 "Inter"; color: var(--lime); display: block; margin-bottom: 3px; }
+.dbp-feed-text { font: 400 12px/1.4 "Inter"; color: var(--text2); }
+.dbp-feed-quote { font: 400 11px/1.5 "Inter"; color: var(--text3); font-style: italic; margin-top: 3px; }
+.dbp-feed-time  { font: 500 10px/1 "Inter"; color: var(--text3); flex-shrink: 0; white-space: nowrap; }
 .dbp-score-chip {
   display: inline-flex; align-items: center; justify-content: center;
   width: 20px; height: 20px; border-radius: 4px;
   border: 1px solid rgba(166,255,0,.4);
-  font: 900 12px/1 "Barlow Condensed"; color: var(--lime);
+  font: 900 12px/1 "Rajdhani"; color: var(--lime);
   margin-left: 5px; vertical-align: middle;
 }
 
@@ -2720,7 +2789,7 @@ body::after {
 .debate-badge {
   display: inline-flex; align-items: center;
   padding: 3px 7px; border-radius: 4px;
-  font: 800 9px/1 "Barlow"; letter-spacing: .14em; text-transform: uppercase;
+  font: 800 9px/1 "Inter"; letter-spacing: .14em; text-transform: uppercase;
   flex-shrink: 0;
 }
 .badge-hot  { background: rgba(255,80,0,.15); border: 1px solid rgba(255,80,0,.4); color: #ff5000; }
@@ -2728,14 +2797,14 @@ body::after {
 .badge-new  { background: rgba(166,255,0,.1);  border: 1px solid var(--line-lime); color: var(--lime); }
 
 /* Competitions form-pts */
-.comp-form-pts { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); }
+.comp-form-pts { font: 900 14px/1 "Rajdhani"; color: var(--lime); }
 .comp-scorer-row {
   display: grid; grid-template-columns: 16px 22px 1fr auto auto;
   align-items: center; gap: 6px;
   padding: 6px 0; border-bottom: 1px solid var(--thin);
 }
 .comp-scorer-row:last-child { border-bottom: none; }
-.comp-scorer-goals { font: 900 14px/1 "Barlow Condensed"; color: var(--lime); }
+.comp-scorer-goals { font: 900 14px/1 "Rajdhani"; color: var(--lime); }
 
 /* ════════════════════════════════════════════════════════════════
    PRICING PAGE — missing aliases
@@ -2744,15 +2813,15 @@ body::after {
 .pricing-header {
   text-align: center; margin-bottom: 24px;
 }
-.pricing-header h1 { font: 900 42px/1 "Barlow Condensed"; letter-spacing: .02em; text-transform: uppercase; color: #fff; margin-top: 10px; }
-.pricing-header p  { font: 400 14px/1.5 "Barlow"; color: var(--text2); margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
+.pricing-header h1 { font: 900 42px/1 "Rajdhani"; letter-spacing: .02em; text-transform: uppercase; color: #fff; margin-top: 10px; }
+.pricing-header p  { font: 400 14px/1.5 "Inter"; color: var(--text2); margin-top: 8px; max-width: 480px; margin-left: auto; margin-right: auto; }
 .pricing-crown { color: var(--lime); }
-.pricing-name   { font: 700 11px/1 "Barlow"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-bottom: 10px; }
-.pricing-amount { font: 900 40px/1 "Barlow Condensed"; letter-spacing: -.02em; color: #fff; }
-.pricing-period { font: 500 14px/1 "Barlow"; color: var(--text2); margin-left: 4px; }
-.pricing-tagline { font: 400 12px/1.6 "Barlow"; color: var(--text2); margin: 6px 0 12px; }
+.pricing-name   { font: 700 11px/1 "Inter"; letter-spacing: .2em; text-transform: uppercase; color: var(--text2); margin-bottom: 10px; }
+.pricing-amount { font: 900 40px/1 "Rajdhani"; letter-spacing: -.02em; color: #fff; }
+.pricing-period { font: 500 14px/1 "Inter"; color: var(--text2); margin-left: 4px; }
+.pricing-tagline { font: 400 12px/1.6 "Inter"; color: var(--text2); margin: 6px 0 12px; }
 .pricing-footer {
-  text-align: center; font: 400 12px/1.6 "Barlow"; color: var(--text3);
+  text-align: center; font: 400 12px/1.6 "Inter"; color: var(--text3);
   margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--thin);
 }
 .pricing-footer a { color: var(--lime); }
@@ -2769,11 +2838,11 @@ body::after {
 .founder-pass-left {
   display: flex; align-items: center; gap: 14px; color: var(--lime);
 }
-.founder-pass-left strong { font: 900 22px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); display: block; }
-.founder-pass-left span   { font: 400 12px/1 "Barlow"; color: var(--text2); display: block; margin-top: 4px; }
+.founder-pass-left strong { font: 900 22px/1 "Rajdhani"; letter-spacing: .04em; text-transform: uppercase; color: var(--lime); display: block; }
+.founder-pass-left span   { font: 400 12px/1 "Inter"; color: var(--text2); display: block; margin-top: 4px; }
 .founder-pass-right { display: flex; align-items: center; gap: 14px; flex-shrink: 0; }
-.founder-price { font: 900 40px/1 "Barlow Condensed"; color: #fff; letter-spacing: -.02em; }
-.founder-pass-note { font: 400 11px/1 "Barlow"; color: var(--text3); margin-top: 12px; text-align: center; }
+.founder-price { font: 900 40px/1 "Rajdhani"; color: #fff; letter-spacing: -.02em; }
+.founder-pass-note { font: 400 11px/1 "Inter"; color: var(--text3); margin-top: 12px; text-align: center; }
 
 /* ════════════════════════════════════════════════════════════════
    SHARED — founder strip (used on every page footer)
@@ -2786,8 +2855,8 @@ body::after {
   background: linear-gradient(90deg, rgba(166,255,0,.05) 0%, transparent 60%);
 }
 .founder-strip-icon { color: var(--lime); flex-shrink: 0; }
-.founder-strip strong { font: 800 14px/1 "Barlow Condensed"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
-.founder-strip span   { font: 400 12px/1 "Barlow"; color: var(--text2); }
+.founder-strip strong { font: 800 14px/1 "Rajdhani"; letter-spacing: .06em; text-transform: uppercase; color: var(--lime); }
+.founder-strip span   { font: 400 12px/1 "Inter"; color: var(--text2); }
 .founder-strip .btn   { margin-left: auto; flex-shrink: 0; }
 
 /* ── RESPONSIVE ───────────────────────────────────────────────── */
@@ -2821,4 +2890,220 @@ body::after {
   .nav-center .nav-item { padding: 0 8px; font-size: 10px; }
   .login-btn { display: none; }
   .pricing-grid { grid-template-columns: 1fr; }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════
+   CALIBRE PRECISION UI OVERRIDE — logo-led visual system
+   The supplied master logo defines the palette: optical black,
+   silver-white type, and calibrated acid-green instrument accents.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  --bg: #010201;
+  --bg2: #030503;
+  --panel: rgba(7, 10, 8, .92);
+  --panel2: rgba(10, 14, 11, .94);
+  --panel3: rgba(14, 19, 15, .96);
+  --thin: rgba(235, 244, 237, .075);
+  --line: rgba(235, 244, 237, .15);
+  --line-lime: rgba(184, 255, 0, .38);
+  --lime: #B8FF00;
+  --lime-hot: #D7FF1F;
+  --lime-deep: #72BF00;
+  --lime-dim: rgba(184, 255, 0, .11);
+  --lime-glow: rgba(184, 255, 0, .055);
+  --green: #B8FF00;
+  --green-dim: rgba(184, 255, 0, .11);
+  --text: #F5F7F4;
+  --text2: #A6AEA7;
+  --text3: #667067;
+  --red: #FF665A;
+  --orange: #FF8A45;
+  --r: 2px;
+  --r-lg: 4px;
+  --shadow: 0 14px 36px rgba(0,0,0,.42);
+  --shadow-lg: 0 22px 72px rgba(0,0,0,.62);
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+html { background: #010201; }
+body {
+  background: #010201;
+  letter-spacing: -.005em;
+}
+body::before {
+  background:
+    radial-gradient(ellipse 45% 35% at 14% -10%, rgba(184,255,0,.06), transparent 68%),
+    radial-gradient(ellipse 32% 28% at 88% 10%, rgba(114,191,0,.035), transparent 72%),
+    linear-gradient(180deg, #010201 0%, #020402 48%, #010201 100%);
+}
+body::after {
+  background-image:
+    linear-gradient(rgba(184,255,0,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(184,255,0,.018) 1px, transparent 1px);
+  background-size: 72px 72px;
+  opacity: .44;
+  mask-image: linear-gradient(to bottom, rgba(0,0,0,.68), transparent 88%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,.68), transparent 88%);
+}
+
+/* Headline hierarchy: restrained futuristic display type, not everywhere. */
+h1, h2, .page-hero h1, .pricing-header h1, .sf-hero-title,
+.wc-hero-title, .player-hero-name, .talent-hero-title {
+  font-family: "Michroma", "Rajdhani", sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: .06em !important;
+}
+h3, h4, .panel-title, .section-heading h3, .dbp-section-title,
+.nav-item, .login-btn, .founder-btn, .btn, .battle-live-tag {
+  font-family: "Rajdhani", sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: .14em;
+}
+
+/* Navigation — compact command bar built around the supplied artwork. */
+.top-nav {
+  height: 70px;
+  padding: 0 26px;
+  background: rgba(1,2,1,.955);
+  border-bottom: 1px solid rgba(184,255,0,.20);
+  box-shadow: 0 8px 30px rgba(0,0,0,.34);
+}
+.top-nav::after {
+  content:"";
+  position:absolute; left:0; right:0; bottom:-1px; height:1px;
+  background: linear-gradient(90deg, transparent 0%, rgba(184,255,0,.42) 18%, rgba(184,255,0,.12) 58%, transparent 100%);
+  pointer-events:none;
+}
+.nav-brand {
+  display:flex; align-items:center; flex-shrink:0;
+  width: 188px; height: 100%; margin-right: 24px;
+  overflow:hidden;
+}
+.nav-brand-logo {
+  width: 184px; height: 98px; max-width:none;
+  object-fit: cover; object-position: center;
+  filter: contrast(1.08) saturate(1.02);
+}
+.nav-center { gap: 2px; }
+.nav-item {
+  padding: 0 12px;
+  font-size: 11px;
+  color: #89938B;
+  border-bottom-width: 1px;
+  transition: color .16s ease, background .16s ease, border-color .16s ease;
+}
+.nav-item:hover { color: #F5F7F4; background: rgba(255,255,255,.022); }
+.nav-item.active { color: var(--lime-hot); border-bottom-color: var(--lime); background: rgba(184,255,0,.035); }
+.nav-actions { gap: 8px; }
+.icon-btn, .login-btn { border-radius: 2px; }
+.icon-btn { border: 1px solid transparent; }
+.icon-btn:hover { border-color: var(--thin); background: rgba(255,255,255,.025); }
+.login-btn {
+  height: 34px; padding: 0 13px; color: #B6BDB7;
+  border-color: rgba(235,244,237,.14);
+}
+.founder-btn {
+  height: 36px; padding: 0 15px;
+  background: linear-gradient(135deg, #D7FF1F 0%, #A7F000 52%, #80C900 100%);
+  color:#071000; border-radius:2px; box-shadow: none;
+}
+.founder-btn:hover { opacity:1; filter:brightness(1.07); }
+
+.live-ticker { top:70px; height:36px; background:#030603; border-bottom-color:rgba(184,255,0,.13); }
+.live-ticker-label { background:#071006; color:var(--lime-hot); border-right-color:rgba(184,255,0,.28); }
+.ticker-score--live { box-shadow:none; }
+
+/* Panels — calibrated instruments rather than glowing gaming cards. */
+.panel, .stat-card, .battle-card, .upcoming-battles, .nominations,
+.dbp-battle-card, .pricing-card, .sf-panel, .talent-card, .comp-card,
+.player-card, .wc-card, .founder-pass-hero, .founder-strip {
+  position: relative;
+  border-radius: 3px !important;
+  border-color: rgba(235,244,237,.105) !important;
+  background: linear-gradient(145deg, rgba(11,15,12,.94), rgba(5,8,6,.96)) !important;
+  box-shadow: 0 14px 34px rgba(0,0,0,.23);
+}
+.panel::before, .stat-card::before, .battle-card::before, .pricing-card::before,
+.sf-panel::before, .talent-card::before, .comp-card::before, .player-card::before,
+.wc-card::before, .founder-pass-hero::before, .founder-strip::before {
+  content:"";
+  position:absolute; top:-1px; left:12px; width:34px; height:1px;
+  background:var(--lime);
+  opacity:.78;
+  pointer-events:none;
+}
+.panel:hover, .battle-card:hover, .dbp-battle-card:hover, .talent-card:hover,
+.comp-card:hover, .player-card:hover {
+  border-color: rgba(184,255,0,.28) !important;
+}
+.panel-head { background: rgba(255,255,255,.012); }
+.panel-title, .section-heading h3 { color:#EEF2EE; }
+.panel-action, .section-heading-link { color:var(--lime); }
+
+/* Buttons and chips */
+.btn, .cat-pill, .debate-badge, .sf-chip, .tag, .position-pill,
+.pricing-badge, .wc-pill, .battle-card-cat, .battle-card-live {
+  border-radius: 2px !important;
+}
+.btn--primary, .btn-primary {
+  background: linear-gradient(135deg, #D7FF1F, #8ED600) !important;
+  color:#071000 !important; box-shadow:none !important;
+}
+.btn--outline, .btn-outline { border-color:rgba(184,255,0,.28) !important; }
+.cat-pill.active { background:rgba(184,255,0,.14); border-color:rgba(184,255,0,.5); color:var(--lime-hot); }
+
+/* Home rate battle — cleaner presentation, sharper scale, less glow. */
+.battle-live-tag { color: var(--lime-hot); border-color:rgba(184,255,0,.34); background:rgba(184,255,0,.055); border-radius:2px; }
+.question-box {
+  border-radius: 3px !important;
+  border-color: rgba(184,255,0,.27) !important;
+  background: rgba(4,7,5,.93) !important;
+  box-shadow: 0 18px 38px rgba(0,0,0,.32) !important;
+}
+.tap-scale button { border-radius:1px !important; }
+.tap-scale button:hover, .tap-scale button.selected { background:var(--lime) !important; color:#061000 !important; }
+.proof-strip { background:rgba(5,9,6,.96); border-color:rgba(184,255,0,.18); }
+.fighter-img { filter: contrast(1.04) saturate(.94); }
+.club-ghost { color:rgba(184,255,0,.065) !important; }
+
+/* Data readouts */
+.stat-card-value, .rating-number, .dbp-cat-pct, .dbp-bc-votes,
+.comp-form-pts, .comp-scorer-goals, .pricing-amount, .founder-price,
+.sf-score, .score-number, .wc-count-number {
+  color: var(--lime-hot) !important;
+  font-family:"Rajdhani", sans-serif !important;
+  font-weight:700 !important;
+}
+.meter-fill, .battle-card-bar-fill, .dbp-bc-bar-fill {
+  background: linear-gradient(90deg, var(--lime-deep), var(--lime-hot)) !important;
+  box-shadow:none !important;
+}
+
+/* Page frames */
+.page { max-width: 1340px; padding-bottom: 78px; }
+.page-hero { border-bottom-color: rgba(184,255,0,.18); }
+.page-hero::before { opacity:.55; }
+
+/* Responsive navigation: preserve a clean usable shell. */
+@media (max-width: 1160px) {
+  .nav-brand { width:150px; margin-right:12px; }
+  .nav-brand-logo { width:148px; height:82px; }
+  .nav-item { padding:0 8px; font-size:10px; }
+  .founder-btn { padding:0 10px; font-size:10px; }
+}
+@media (max-width: 900px) {
+  .top-nav { padding:0 14px; }
+  .nav-center { overflow-x:auto; scrollbar-width:none; }
+  .nav-center::-webkit-scrollbar { display:none; }
+  .nav-brand { width:132px; margin-right:8px; }
+  .nav-brand-logo { width:130px; height:74px; }
+  .founder-btn { display:none; }
+}
+@media (max-width: 640px) {
+  .top-nav { height:62px; }
+  .live-ticker { top:62px; }
+  .nav-brand { width:112px; }
+  .nav-brand-logo { width:110px; height:64px; }
+  .icon-btn { display:none; }
 }

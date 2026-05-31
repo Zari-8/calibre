@@ -118,22 +118,22 @@ export default function BattleHero() {
         <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8, padding:'20px 16px' }}>
           {/* RATE BATTLE title */}
           <div style={{ textAlign:'center', lineHeight:.88, marginBottom:4 }}>
-            <div style={{ font:'900 54px/1 "Barlow Condensed"', textTransform:'uppercase', color:'#fff', letterSpacing:'-.01em' }}>RATE</div>
-            <div style={{ font:'900 54px/1 "Barlow Condensed"', textTransform:'uppercase', color:'var(--lime)', letterSpacing:'-.01em' }}>BATTLE</div>
+            <div style={{ font:'900 54px/1 "Rajdhani"', textTransform:'uppercase', color:'#fff', letterSpacing:'-.01em' }}>RATE</div>
+            <div style={{ font:'900 54px/1 "Rajdhani"', textTransform:'uppercase', color:'var(--lime)', letterSpacing:'-.01em' }}>BATTLE</div>
           </div>
 
-          <div style={{ font:'900 28px/1 "Barlow Condensed"', color:'rgba(255,255,255,.18)', letterSpacing:'.04em' }}>VS</div>
+          <div style={{ font:'900 28px/1 "Rajdhani"', color:'rgba(255,255,255,.18)', letterSpacing:'.04em' }}>VS</div>
 
           {/* question + rating box */}
           <div className="question-box" style={{ width:'100%', maxWidth:280 }} onClick={e => e.stopPropagation()}>
-            <h2 style={{ font:'700 13px/1.4 "Barlow Condensed"', textTransform:'uppercase', letterSpacing:'.06em', color:'#fff', textAlign:'center' }}>
+            <h2 style={{ font:'700 13px/1.4 "Rajdhani"', textTransform:'uppercase', letterSpacing:'.06em', color:'#fff', textAlign:'center' }}>
               {question.split('midfield').length > 1
                 ? <>{question.split('midfield')[0]}<mark>midfield</mark>{question.split('midfield')[1]}</>
                 : question}
             </h2>
             <div style={{ display:'flex', alignItems:'center', gap:5 }}>
               <div className="live-dot" style={{ width:5, height:5 }} />
-              <span style={{ font:'700 9px/1 "Barlow"', letterSpacing:'.16em', textTransform:'uppercase', color:'var(--text3)' }}>
+              <span style={{ font:'700 9px/1 "Inter"', letterSpacing:'.16em', textTransform:'uppercase', color:'var(--text3)' }}>
                 {h}:{m}:{s} LEFT
               </span>
             </div>

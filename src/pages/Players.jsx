@@ -109,7 +109,7 @@ export default function Players() {
             <div className="plp-featured-body">
               <div className="plp-featured-tag">
                 <Star size={12} color="var(--lime)"/>
-                <span style={{font:'700 10px/1 "Barlow Condensed"',color:'var(--lime)',letterSpacing:'.1em',textTransform:'uppercase'}}>Featured Player</span>
+                <span style={{font:'700 10px/1 "Rajdhani"',color:'var(--lime)',letterSpacing:'.1em',textTransform:'uppercase'}}>Featured Player</span>
               </div>
               <div className="plp-featured-name">{featured.name}</div>
               <div className="plp-featured-club">⚽ {featured.club}</div>
@@ -149,7 +149,7 @@ export default function Players() {
         <div>
           <div className="panel">
             <div className="plp-db-header">
-              <div style={{font:'700 13px/1 "Barlow Condensed"',letterSpacing:'.1em',textTransform:'uppercase'}}>Player Database</div>
+              <div style={{font:'700 13px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase'}}>Player Database</div>
               <div className="plp-db-count">128,457 players found</div>
             </div>
             <table className="plp-db-table">
@@ -173,7 +173,7 @@ export default function Players() {
                     <td style={{color:'var(--text2)',fontSize:12}}>{p.club}</td>
                     <td><span className="plp-pos-badge">{p.pos}</span></td>
                     <td><div className="rating-badge rating-badge--sm">{p.rating}</div></td>
-                    <td><span style={{color:'var(--green)',font:'700 13px/1 "Barlow Condensed"'}}>{p.buzz}</span></td>
+                    <td><span style={{color:'var(--green)',font:'700 13px/1 "Rajdhani"'}}>{p.buzz}</span></td>
                     <td><div className="plp-fan-rating">★ {p.fanRating}</div></td>
                   </tr>
                 ))}
@@ -188,8 +188,8 @@ export default function Players() {
               {[{name:'Jude Bellingham',club:'Real Madrid',rating:4.8,count:'12.4K'},{name:'Lionel Messi',club:'Inter Miami',rating:4.8,count:'11.1K'},{name:'Cristiano Ronaldo',club:'Al Nassr',rating:4.7,count:'9.8K'},{name:'Kylian Mbappé',club:'Real Madrid',rating:4.7,count:'9.3K'},{name:'Vinícius Júnior',club:'Real Madrid',rating:4.6,count:'8.7K'}].map((p,i)=>(
                 <div key={i} className="row-item">
                   <img src={DB_PLAYERS[i%DB_PLAYERS.length].img} alt="" className="avatar avatar--28" style={{borderRadius:3,height:32,objectPosition:'top'}}/>
-                  <div style={{flex:1}}><div style={{font:'700 13px/1 "Barlow Condensed"'}}>{p.name}</div><div style={{fontSize:11,color:'var(--text2)'}}>{p.club}</div></div>
-                  <span style={{color:'var(--lime)',font:'700 13px/1 "Barlow Condensed"'}}>★ {p.rating}</span>
+                  <div style={{flex:1}}><div style={{font:'700 13px/1 "Rajdhani"'}}>{p.name}</div><div style={{fontSize:11,color:'var(--text2)'}}>{p.club}</div></div>
+                  <span style={{color:'var(--lime)',font:'700 13px/1 "Rajdhani"'}}>★ {p.rating}</span>
                 </div>
               ))}
             </div>
@@ -201,7 +201,7 @@ export default function Players() {
                     <img src={DB_PLAYERS[i%5].img} alt="" style={{width:22,height:26,objectFit:'cover',borderRadius:2,objectPosition:'top'}}/>
                     <img src={DB_PLAYERS[(i+1)%5].img} alt="" style={{width:22,height:26,objectFit:'cover',borderRadius:2,objectPosition:'top'}}/>
                   </div>
-                  <div style={{flex:1,fontSize:13,font:'600 13px/1 "Barlow Condensed"'}}>{c.a} vs {c.b}</div>
+                  <div style={{flex:1,fontSize:13,font:'600 13px/1 "Rajdhani"'}}>{c.a} vs {c.b}</div>
                   <span style={{fontSize:11,color:'var(--text2)'}}>{c.n.toLocaleString()}</span>
                 </div>
               ))}

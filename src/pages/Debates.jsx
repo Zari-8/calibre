@@ -261,6 +261,95 @@ export default function Debates() {
               <button className="btn btn--outline btn--sm" style={{width:'100%',marginTop:12}} type="button">NOMINATE A DEBATE +</button>
             </div>
           </div>
+
+          {/* ── HOT POTATO OF THE WEEK ── */}
+          <div style={{marginTop:12}}>
+            <div className="dbp-section-head">
+              <div className="dbp-section-title"><span style={{fontSize:16}}>🔥</span> Hot Potato of the Week</div>
+              <a className="panel-action">Archive</a>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+              {[
+                { q:"Is Mbappé already better than Ronaldo ever was at Real Madrid?",     votes:'3,412', yes:61, badge:'🔥 HOT' },
+                { q:"Should Bellingham start every England game at the World Cup?",        votes:'2,108', yes:74, badge:'🗳️ VOTE' },
+                { q:"Is the Premier League still the best league in the world?",           votes:'1,876', yes:55, badge:'💬 DEBATE' },
+                { q:"Would Messi have been as great if he stayed at Barcelona his whole career?", votes:'1,543', yes:48, badge:'🧠 THINK' },
+              ].map((h,i)=>(
+                <div key={i} className="panel" style={{cursor:'pointer',transition:'border-color .15s'}}>
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+                    <span style={{font:'700 9px/1 "Rajdhani"',letterSpacing:'.14em',textTransform:'uppercase',color:'var(--lime)'}}>{h.badge}</span>
+                    <span style={{font:'500 10px/1 "Inter"',color:'var(--text3)'}}>{h.votes} votes</span>
+                  </div>
+                  <div style={{font:'700 13px/1.4 "Rajdhani"',color:'var(--text)',marginBottom:10}}>{h.q}</div>
+                  <div style={{display:'flex',gap:8}}>
+                    <div style={{flex:h.yes,height:6,background:'var(--lime)',borderRadius:3}}/>
+                    <div style={{flex:100-h.yes,height:6,background:'var(--thin)',borderRadius:3}}/>
+                  </div>
+                  <div style={{display:'flex',justifyContent:'space-between',marginTop:4,font:'700 9px/1 "Inter"',color:'var(--text3)'}}>
+                    <span>YES {h.yes}%</span><span>NO {100-h.yes}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── BANGER TWEET OF THE DAY ── */}
+          <div style={{marginTop:12}}>
+            <div className="dbp-section-head">
+              <div className="dbp-section-title"><span style={{fontSize:16}}>💬</span> Banger Tweet of the Day</div>
+              <a className="panel-action">View all</a>
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+              {[
+                { handle:'@GaryLineker',  text:'"Pedri at 21 is already the best Spanish midfielder since Xavi. No debate."',                    likes:'18.4K', retweets:'4.2K' },
+                { handle:'@OptaJoe',      text:'"Erling Haaland has scored in 14 consecutive home games. Absolutely frightening."',               likes:'12.7K', retweets:'3.1K' },
+                { handle:'@FabrizioRomano',text:'"Here we go! The transfer market never sleeps and neither do the debates."',                     likes:'31.2K', retweets:'8.6K' },
+                { handle:'@MikelArteta',  text:'"Every single player in this squad gives absolutely everything. I am incredibly proud."',        likes:'9.8K',  retweets:'1.9K' },
+              ].map((t,i)=>(
+                <div key={i} className="panel" style={{cursor:'pointer'}}>
+                  <div style={{font:'800 12px/1 "Rajdhani"',color:'var(--lime)',marginBottom:6}}>{t.handle}</div>
+                  <div style={{font:'400 13px/1.5 "Inter"',color:'var(--text)',fontStyle:'italic',marginBottom:8}}>{t.text}</div>
+                  <div style={{display:'flex',gap:12,font:'700 10px/1 "Rajdhani"',color:'var(--text3)'}}>
+                    <span>♥ {t.likes}</span><span>↩ {t.retweets}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── GOAT DEBATE ── */}
+          <div style={{marginTop:12}}>
+            <div className="dbp-section-head">
+              <div className="dbp-section-title"><span style={{fontSize:16}}>🐐</span> GOAT Debate</div>
+              <a className="panel-action">All time debates</a>
+            </div>
+            <div className="panel" style={{padding:20}}>
+              <div style={{display:'grid',gridTemplateColumns:'1fr auto 1fr',alignItems:'center',gap:20}}>
+                <div style={{textAlign:'center'}}>
+                  <img src="/assets/players/vinicius-junior.jpg" alt="Messi" style={{width:80,height:96,objectFit:'cover',objectPosition:'top',borderRadius:8,border:'2px solid var(--line-lime)',marginBottom:8}}/>
+                  <div style={{font:'900 18px/1 "Rajdhani"',color:'#fff'}}>MESSI</div>
+                  <div style={{font:'600 10px/1 "Inter"',color:'var(--text2)',marginTop:2}}>Inter Miami</div>
+                  <div style={{font:'900 28px/1 "Rajdhani"',color:'var(--lime)',marginTop:8}}>54%</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                  <div style={{font:'900 22px/1 "Rajdhani"',color:'var(--text3)',letterSpacing:'.06em'}}>VS</div>
+                  <div style={{font:'700 9px/1 "Inter"',letterSpacing:'.15em',textTransform:'uppercase',color:'var(--text3)',marginTop:6}}>All Time</div>
+                  <div style={{font:'900 16px/1 "Rajdhani"',color:'var(--lime)',marginTop:4}}>48.2K votes</div>
+                </div>
+                <div style={{textAlign:'center'}}>
+                  <img src="/assets/players/kylian-mbappe.jpg" alt="Ronaldo" style={{width:80,height:96,objectFit:'cover',objectPosition:'top',borderRadius:8,border:'1px solid var(--thin)',marginBottom:8}}/>
+                  <div style={{font:'900 18px/1 "Rajdhani"',color:'#fff'}}>RONALDO</div>
+                  <div style={{font:'600 10px/1 "Inter"',color:'var(--text2)',marginTop:2}}>Al Nassr</div>
+                  <div style={{font:'900 28px/1 "Rajdhani"',color:'var(--text)',marginTop:8}}>46%</div>
+                </div>
+              </div>
+              <div style={{display:'flex',gap:4,marginTop:16}}>
+                <div style={{flex:54,height:8,background:'var(--lime)',borderRadius:4}}/>
+                <div style={{flex:46,height:8,background:'rgba(255,255,255,.15)',borderRadius:4}}/>
+              </div>
+              <button className="btn btn--lime btn--sm" style={{width:'100%',marginTop:14}} type="button">CAST YOUR GOAT VOTE <ArrowRight size={13}/></button>
+            </div>
+          </div>
         </div>
 
         {/* RIGHT RAIL */}

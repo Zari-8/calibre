@@ -159,7 +159,7 @@ export default function Talents() {
                     <span>{r.sub}</span>
                   </div>
                   <div style={{textAlign:'right'}}>
-                    <div style={{font:'800 18px/1 "Barlow Condensed"',color:'var(--lime)'}}>{r.score}</div>
+                    <div style={{font:'800 18px/1 "Rajdhani"',color:'var(--lime)'}}>{r.score}</div>
                     <div className="trend-up">{r.delta}</div>
                   </div>
                 </div>
@@ -169,7 +169,7 @@ export default function Talents() {
 
           {/* Emerging stars */}
           <div style={{marginBottom:14}}>
-            <div style={{font:'700 12px/1 "Barlow Condensed"',letterSpacing:'.12em',textTransform:'uppercase',color:'var(--text2)',marginBottom:12}}>Emerging Stars</div>
+            <div style={{font:'700 12px/1 "Rajdhani"',letterSpacing:'.12em',textTransform:'uppercase',color:'var(--text2)',marginBottom:12}}>Emerging Stars</div>
             <div className="td-emerging-grid">
               {EMERGING.map(p=>(
                 <div key={p.name} className="td-emerging-card">
@@ -207,17 +207,17 @@ export default function Talents() {
           {/* Scout shortlist */}
           <div className="panel">
             <div className="td-shortlist-head">
-              <span style={{font:'700 13px/1 "Barlow Condensed"',letterSpacing:'.1em',textTransform:'uppercase'}}>Scout Shortlist<span className="td-shortlist-count">12</span></span>
+              <span style={{font:'700 13px/1 "Rajdhani"',letterSpacing:'.1em',textTransform:'uppercase'}}>Scout Shortlist<span className="td-shortlist-count">12</span></span>
               <button className="btn btn--lime btn--sm" type="button">VIEW SHORTLIST <ArrowRight size={13}/></button>
             </div>
-            <div style={{font:'500 11px/1 "Barlow"',color:'var(--text2)'}}>Your saved talents</div>
+            <div style={{font:'500 11px/1 "Inter"',color:'var(--text2)'}}>Your saved talents</div>
           </div>
 
           {/* Scouted regions */}
           <div className="panel">
             <div className="panel-head"><div className="panel-title">Scouted Regions</div><a className="panel-action">View all</a></div>
             <div className="td-world-map">
-              <div style={{font:'600 12px/1 "Barlow"',color:'var(--text3)',textAlign:'center'}}>Global Scout Map</div>
+              <div style={{font:'600 12px/1 "Inter"',color:'var(--text3)',textAlign:'center'}}>Global Scout Map</div>
             </div>
             {[['Europe','54%'],['South America','22%'],['Africa','12%'],['Asia','8%'],['North America','3%'],['Oceania','1%']].map(([r,p])=>(
               <div key={r} className="td-map-stat"><span>{r}</span><strong>{p}</strong></div>

@@ -2,7 +2,7 @@ import { Search, Crown } from 'lucide-react';
 import { navItems } from '../data/calibreData.js';
 import { WC_CONFIG } from '../data/worldCupData.js';
 import NavLink, { navigateTo } from './NavLink.jsx';
-import LanguageSelector from './LanguageSelector.jsx';
+import LiveTicker from './LiveTicker.jsx';
 
 function useShowWorldCup() {
   const kick = new Date(WC_CONFIG.kickoff);
@@ -16,15 +16,12 @@ export default function Shell({ children, currentPath }) {
     <div className="app-shell">
       <header className="top-nav">
 
-        {/* Brand — actual logo PNG, cropped to just the mark+wordmark */}
-        <NavLink href="/" style={{
-          display: 'flex', alignItems: 'center',
-          marginRight: 32, flexShrink: 0, textDecoration: 'none',
-        }}>
+        {/* Brand logo — the supplied master artwork is used directly, without recreating the mark in CSS. */}
+        <NavLink href="/" className="nav-brand" aria-label="Calibre home">
           <img
             src="/assets/calibre-logo.png"
-            alt="Calibre Football Intelligence"
-            style={{ height: 32, width: 'auto', objectFit: 'contain' }}
+            alt="Calibre"
+            className="nav-brand-logo"
           />
         </NavLink>
 
@@ -49,7 +46,6 @@ export default function Shell({ children, currentPath }) {
           <button className="icon-btn" type="button" aria-label="Search">
             <Search size={17} />
           </button>
-          <LanguageSelector />
           <button className="login-btn" type="button">LOG IN</button>
           <button className="founder-btn" type="button" onClick={() => navigateTo('/pricing')}>
             <Crown size={12} />
@@ -58,6 +54,10 @@ export default function Shell({ children, currentPath }) {
         </div>
 
       </header>
+
+      {/* Live scores ticker — always visible below nav */}
+      <LiveTicker />
+
       <main>{children}</main>
     </div>
   );

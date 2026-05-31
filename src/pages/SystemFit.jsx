@@ -57,7 +57,7 @@ function Crest({ abbr, bg, fg, ring, size = 28 }) {
       <circle cx={r} cy={r} r={r * 0.62} fill="rgba(0,0,0,.25)" />
       <text x={r} y={r + r * 0.22} textAnchor="middle" fill={fg}
         fontSize={size < 32 ? 7 : 9} fontWeight="900"
-        fontFamily="'Barlow Condensed',sans-serif" letterSpacing=".04em">
+        fontFamily="'Rajdhani',sans-serif" letterSpacing=".04em">
         {abbr}
       </text>
     </svg>
@@ -89,9 +89,9 @@ function FitRing({ pct }) {
           strokeLinecap="round" strokeDasharray={`${fill} ${circ}`} />
       </svg>
       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-        <span style={{ font: '900 26px/1 "Barlow Condensed"', color: '#A6FF00' }}>{pct}%</span>
-        <span style={{ font: '700 8px/1 "Barlow"', letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)' }}>FIT SCORE</span>
-        <span style={{ font: '700 10px/1 "Barlow"', color: '#A6FF00', marginTop: 2 }}>Excellent Fit</span>
+        <span style={{ font: '900 26px/1 "Rajdhani"', color: '#A6FF00' }}>{pct}%</span>
+        <span style={{ font: '700 8px/1 "Inter"', letterSpacing: '.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,.4)' }}>FIT SCORE</span>
+        <span style={{ font: '700 10px/1 "Inter"', color: '#A6FF00', marginTop: 2 }}>Excellent Fit</span>
       </div>
     </div>
   );
@@ -109,12 +109,12 @@ function MetricRing({ val, label, grade }) {
             strokeLinecap="round" strokeDasharray={`${fill} ${circ}`} />
         </svg>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ font: '900 18px/1 "Barlow Condensed"', color: '#A6FF00' }}>{val}</span>
+          <span style={{ font: '900 18px/1 "Rajdhani"', color: '#A6FF00' }}>{val}</span>
         </div>
       </div>
       <div style={{ textAlign: 'center' }}>
-        <div style={{ font: '600 8px/1.4 "Barlow"', letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.45)', whiteSpace: 'pre-line' }}>{label}</div>
-        <div style={{ font: '700 9px/1 "Barlow"', color: grade === 'Excellent' ? '#A6FF00' : grade === 'Very Good' ? '#A6FF00' : '#F5C84B', marginTop: 3 }}>{grade}</div>
+        <div style={{ font: '600 8px/1.4 "Inter"', letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(255,255,255,.45)', whiteSpace: 'pre-line' }}>{label}</div>
+        <div style={{ font: '700 9px/1 "Inter"', color: grade === 'Excellent' ? '#A6FF00' : grade === 'Very Good' ? '#A6FF00' : '#F5C84B', marginTop: 3 }}>{grade}</div>
       </div>
     </div>
   );
@@ -197,9 +197,9 @@ const T = {
   right:   { borderLeft:'1px solid rgba(255,255,255,.08)', padding:'14px 12px', display:'flex', flexDirection:'column', gap:14, background:'#090C0F', overflowY:'auto' },
   card:    { border:'1px solid rgba(255,255,255,.09)', borderRadius:10, background:'#0B0F13', overflow:'hidden' },
   head:    { display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 14px', borderBottom:'1px solid rgba(255,255,255,.07)' },
-  h3:      { font:'800 12px/1 "Barlow Condensed"', letterSpacing:'.14em', textTransform:'uppercase', color:'rgba(255,255,255,.75)' },
-  label:   { font:'600 11px/1 "Barlow"', letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.38)' },
-  limeBtn: { font:'600 11px/1 "Barlow"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', opacity:.8, cursor:'pointer', background:'none', border:'none' },
+  h3:      { font:'800 12px/1 "Rajdhani"', letterSpacing:'.14em', textTransform:'uppercase', color:'rgba(255,255,255,.75)' },
+  label:   { font:'600 11px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'rgba(255,255,255,.38)' },
+  limeBtn: { font:'600 11px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', opacity:.8, cursor:'pointer', background:'none', border:'none' },
   div:     { height:1, background:'rgba(255,255,255,.07)' },
 };
 
@@ -216,7 +216,7 @@ export default function SystemFit() {
           {['Team Search','Player Search'].map(t => (
             <button key={t} type="button" onClick={() => setTab(t)} style={{
               padding:'10px 8px', textAlign:'center', background:'none', border:'none',
-              font:'700 10px/1 "Barlow"', letterSpacing:'.1em', textTransform:'uppercase',
+              font:'700 10px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase',
               color: tab === t ? '#A6FF00' : 'rgba(255,255,255,.38)',
               borderBottom: `2px solid ${tab === t ? '#A6FF00' : 'transparent'}`,
             }}>{t}</button>
@@ -226,7 +226,7 @@ export default function SystemFit() {
         {/* Search */}
         <div style={{ display:'flex', alignItems:'center', gap:6, margin:'0 12px 12px', padding:'0 10px', height:34, background:'rgba(255,255,255,.04)', border:'1px solid rgba(255,255,255,.07)', borderRadius:6 }}>
           <Search size={13} color="rgba(255,255,255,.3)" />
-          <input placeholder="Search for a club..." style={{ flex:1, background:'none', color:'rgba(255,255,255,.6)', font:'400 12px/1 "Barlow"' }} />
+          <input placeholder="Search for a club..." style={{ flex:1, background:'none', color:'rgba(255,255,255,.6)', font:'400 12px/1 "Inter"' }} />
         </div>
 
         {/* Club result */}
@@ -234,9 +234,9 @@ export default function SystemFit() {
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <Crest abbr="FCB" bg="#a50044" fg="#ffd700" ring="#ffd700" size={34} />
             <div>
-              <div style={{ font:'700 13px/1 "Barlow"', color:'#A6FF00' }}>FC Barcelona</div>
-              <div style={{ font:'500 10px/1 "Barlow"', color:'rgba(255,255,255,.4)', marginTop:3 }}>🇪🇸 LaLiga · SPAIN</div>
-              <div style={{ font:'600 10px/1 "Barlow"', color:'rgba(255,255,255,.45)', marginTop:2 }}>4-3-3 Possession</div>
+              <div style={{ font:'700 13px/1 "Inter"', color:'#A6FF00' }}>FC Barcelona</div>
+              <div style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.4)', marginTop:3 }}>🇪🇸 LaLiga · SPAIN</div>
+              <div style={{ font:'600 10px/1 "Inter"', color:'rgba(255,255,255,.45)', marginTop:2 }}>4-3-3 Possession</div>
             </div>
           </div>
         </div>
@@ -253,17 +253,17 @@ export default function SystemFit() {
               <polygon fill="rgba(166,255,0,.2)" stroke="#A6FF00" strokeWidth="1.5" points="60,22 92,46 84,78 60,90 28,76 35,44" />
             </svg>
             <div>
-              <div style={{ font:'900 24px/1 "Barlow Condensed"', color:'#A6FF00' }}>86%</div>
+              <div style={{ font:'900 24px/1 "Rajdhani"', color:'#A6FF00' }}>86%</div>
               <div style={T.label}>System Compatibility</div>
             </div>
           </div>
           {[['Philosophy','Positional Play'],['Balance','82/100'],['Intensity','High'],['Line Height','High']].map(([l,v]) => (
-            <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'6px 12px', borderTop:'1px solid rgba(255,255,255,.06)', font:'500 11px/1 "Barlow"' }}>
+            <div key={l} style={{ display:'flex', justifyContent:'space-between', padding:'6px 12px', borderTop:'1px solid rgba(255,255,255,.06)', font:'500 11px/1 "Inter"' }}>
               <span style={{ color:'rgba(255,255,255,.4)' }}>{l}</span>
               <span style={{ fontWeight:700 }}>{v}</span>
             </div>
           ))}
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 10px/1 "Barlow"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
+          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 10px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
             VIEW FULL SYSTEM BREAKDOWN <ArrowRight size={11} />
           </button>
         </div>
@@ -274,12 +274,12 @@ export default function SystemFit() {
           {[['Real Madrid','4-3-1-2',83,'RM','#00529f','#ffd700'],['Manchester City','4-3-3',81,'MC','#6cabdd','#1c2c5b'],['Arsenal','4-3-3',79,'ARS','#ef0107','#fff'],['Bayern München','4-2-3-1',78,'FCB','#dc052d','#fff'],['Liverpool','4-3-3',76,'LFC','#c8102e','#fff']].map(([t,f,p,abbr,bg,fg]) => (
             <div key={t} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 0', borderBottom:'1px solid rgba(255,255,255,.05)', cursor:'pointer' }}>
               <Crest abbr={abbr} bg={bg} fg={fg} size={22} />
-              <span style={{ flex:1, font:'600 12px/1 "Barlow"', color:'rgba(255,255,255,.7)' }}>{t}</span>
-              <span style={{ font:'500 10px/1 "Barlow"', color:'rgba(255,255,255,.35)' }}>{f}</span>
-              <span style={{ font:'800 13px/1 "Barlow Condensed"', color:'#A6FF00', width:36, textAlign:'right' }}>{p}%</span>
+              <span style={{ flex:1, font:'600 12px/1 "Inter"', color:'rgba(255,255,255,.7)' }}>{t}</span>
+              <span style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.35)' }}>{f}</span>
+              <span style={{ font:'800 13px/1 "Rajdhani"', color:'#A6FF00', width:36, textAlign:'right' }}>{p}%</span>
             </div>
           ))}
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px 0', font:'700 10px/1 "Barlow"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
+          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px 0', font:'700 10px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
             COMPARE MULTIPLE SYSTEMS <ArrowRight size={11} />
           </button>
         </div>
@@ -291,13 +291,13 @@ export default function SystemFit() {
             <div key={r.name} style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 0', borderBottom:'1px solid rgba(255,255,255,.06)', cursor:'pointer' }}>
               <img src={r.img} alt={r.name} style={{ width:28, height:28, borderRadius:'50%', objectFit:'cover', objectPosition:'50% 25%', border:'1px solid rgba(255,255,255,.1)', flexShrink:0 }} />
               <div style={{ flex:1 }}>
-                <div style={{ font:'700 12px/1 "Barlow"', color:'rgba(255,255,255,.8)' }}>{r.name}</div>
-                <div style={{ font:'500 10px/1 "Barlow"', color:'rgba(255,255,255,.38)', marginTop:2 }}>{r.sub}</div>
+                <div style={{ font:'700 12px/1 "Inter"', color:'rgba(255,255,255,.8)' }}>{r.name}</div>
+                <div style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.38)', marginTop:2 }}>{r.sub}</div>
               </div>
-              <div style={{ font:'800 13px/1 "Barlow Condensed"', color:'#A6FF00' }}>{r.pct}%</div>
+              <div style={{ font:'800 13px/1 "Rajdhani"', color:'#A6FF00' }}>{r.pct}%</div>
             </div>
           ))}
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px 0', font:'700 10px/1 "Barlow"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
+          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px 0', font:'700 10px/1 "Inter"', letterSpacing:'.12em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
             VIEW ALL HISTORY <ArrowRight size={11} />
           </button>
         </div>
@@ -312,14 +312,14 @@ export default function SystemFit() {
             <div>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
                 <span style={T.label}>Player to System Fit</span>
-                <span style={{ background:'rgba(166,255,0,.12)', border:'1px solid rgba(166,255,0,.3)', borderRadius:3, padding:'2px 7px', font:'700 8px/1 "Barlow"', letterSpacing:'.14em', textTransform:'uppercase', color:'#A6FF00' }}>AI Calculated</span>
+                <span style={{ background:'rgba(166,255,0,.12)', border:'1px solid rgba(166,255,0,.3)', borderRadius:3, padding:'2px 7px', font:'700 8px/1 "Inter"', letterSpacing:'.14em', textTransform:'uppercase', color:'#A6FF00' }}>AI Calculated</span>
               </div>
-              <div style={{ font:'900 22px/1 "Barlow Condensed"', letterSpacing:'.04em', textTransform:'uppercase', color:'#fff' }}>Jude Bellingham</div>
-              <div style={{ font:'500 11px/1 "Barlow"', color:'rgba(255,255,255,.45)', marginTop:3 }}>CM · Age 21 · Real Madrid</div>
+              <div style={{ font:'900 22px/1 "Rajdhani"', letterSpacing:'.04em', textTransform:'uppercase', color:'#fff' }}>Jude Bellingham</div>
+              <div style={{ font:'500 11px/1 "Inter"', color:'rgba(255,255,255,.45)', marginTop:3 }}>CM · Age 21 · Real Madrid</div>
             </div>
             <div style={{ display:'flex', gap:8 }}>
               {['Share','Add to Watchlist'].map(l => (
-                <button key={l} type="button" style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 12px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 10px/1 "Barlow"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.5)', background:'none', cursor:'pointer' }}>
+                <button key={l} type="button" style={{ display:'flex', alignItems:'center', gap:5, padding:'7px 12px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 10px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.5)', background:'none', cursor:'pointer' }}>
                   {l === 'Share' ? <Share2 size={11}/> : <Star size={11}/>} {l}
                 </button>
               ))}
@@ -350,18 +350,18 @@ export default function SystemFit() {
                 <div style={{ ...T.label, display:'block', marginBottom:10 }}>Fit Breakdown</div>
                 {BREAKDOWN.map(b => (
                   <div key={b.label} style={{ display:'flex', alignItems:'center', gap:10, marginBottom:6 }}>
-                    <span style={{ font:'500 11px/1 "Barlow"', color:'rgba(255,255,255,.55)', width:165, flexShrink:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{b.label}</span>
+                    <span style={{ font:'500 11px/1 "Inter"', color:'rgba(255,255,255,.55)', width:165, flexShrink:0, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{b.label}</span>
                     <div style={{ flex:1, display:'flex' }}><Dots val={b.val} /></div>
-                    <span style={{ font:'800 13px/1 "Barlow Condensed"', color:'#A6FF00', width:26, textAlign:'right', flexShrink:0 }}>{b.val}</span>
+                    <span style={{ font:'800 13px/1 "Rajdhani"', color:'#A6FF00', width:26, textAlign:'right', flexShrink:0 }}>{b.val}</span>
                   </div>
                 ))}
-                <div style={{ font:'500 10px/1 "Barlow"', color:'rgba(255,255,255,.3)', marginTop:8 }}>🏆 Top 6% of CMs in World Football</div>
+                <div style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.3)', marginTop:8 }}>🏆 Top 6% of CMs in World Football</div>
               </div>
             </div>
           </div>
           <div style={{ display:'flex', gap:8, padding:'12px 16px', borderTop:'1px solid rgba(255,255,255,.07)' }}>
             {['DETAILED ANALYSIS','PLAYER REPORT','COMPARE'].map(l => (
-              <button key={l} type="button" style={{ flex:1, padding:'10px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 10px/1 "Barlow"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
+              <button key={l} type="button" style={{ flex:1, padding:'10px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 10px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
                 {l} <ArrowRight size={11} style={{ verticalAlign:'middle' }} />
               </button>
             ))}
@@ -379,8 +379,8 @@ export default function SystemFit() {
               <div key={f.name} style={{ background:'#0B0F13', padding:'14px', textAlign:'center', display:'flex', flexDirection:'column', alignItems:'center', gap:7 }}>
                 <Crest abbr={f.abbr} bg={f.bg} fg={f.fg} ring={f.ring} size={44} />
                 <div>
-                  <div style={{ font:'800 11px/1 "Barlow"', letterSpacing:'.04em', textTransform:'uppercase' }}>{f.name}</div>
-                  <div style={{ font:'600 9px/1 "Barlow"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.38)', marginTop:2 }}>{f.fmt}</div>
+                  <div style={{ font:'800 11px/1 "Inter"', letterSpacing:'.04em', textTransform:'uppercase' }}>{f.name}</div>
+                  <div style={{ font:'600 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.38)', marginTop:2 }}>{f.fmt}</div>
                 </div>
                 <svg width="62" height="62" viewBox="0 0 120 120">
                   <polygon fill="none" stroke="rgba(166,255,0,.2)" strokeWidth="1.5" points="60,8 105,34 105,86 60,112 15,86 15,34" />
@@ -393,10 +393,10 @@ export default function SystemFit() {
                     "60,24 90,48 80,79 60,90 30,76 38,46"
                   } />
                 </svg>
-                <div style={{ font:'900 22px/1 "Barlow Condensed"', color:'#A6FF00' }}>{f.pct}%</div>
-                <div style={{ font:'700 9px/1 "Barlow"', letterSpacing:'.1em', textTransform:'uppercase', color:'rgba(255,255,255,.35)' }}>Fit Score</div>
-                <div style={{ font:'600 10px/1 "Barlow"', color: f.verdict.includes('Very') ? '#A6FF00' : '#F5C84B' }}>{f.verdict}</div>
-                <button type="button" style={{ width:'100%', padding:'7px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 9px/1 "Barlow"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
+                <div style={{ font:'900 22px/1 "Rajdhani"', color:'#A6FF00' }}>{f.pct}%</div>
+                <div style={{ font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'rgba(255,255,255,.35)' }}>Fit Score</div>
+                <div style={{ font:'600 10px/1 "Inter"', color: f.verdict.includes('Very') ? '#A6FF00' : '#F5C84B' }}>{f.verdict}</div>
+                <button type="button" style={{ width:'100%', padding:'7px', border:'1px solid rgba(255,255,255,.08)', borderRadius:5, font:'700 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
                   VIEW ANALYSIS <ArrowRight size={9} style={{ verticalAlign:'middle' }} />
                 </button>
               </div>
@@ -413,12 +413,12 @@ export default function SystemFit() {
               <div style={{ flex:1, minWidth:0 }}>
                 {ROLE_PULSE.map(r => (
                   <div key={r.label} style={{ display:'flex', alignItems:'center', gap:8, marginBottom:5 }}>
-                    <span style={{ font:'500 11px/1 "Barlow"', color:'rgba(255,255,255,.5)', width:158, flexShrink:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{r.label}</span>
+                    <span style={{ font:'500 11px/1 "Inter"', color:'rgba(255,255,255,.5)', width:158, flexShrink:0, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{r.label}</span>
                     <div style={{ flex:1, display:'flex' }}><Dots val={r.val} /></div>
-                    <span style={{ font:'800 12px/1 "Barlow Condensed"', color:'#A6FF00', width:22, textAlign:'right', flexShrink:0 }}>{r.val}</span>
+                    <span style={{ font:'800 12px/1 "Rajdhani"', color:'#A6FF00', width:22, textAlign:'right', flexShrink:0 }}>{r.val}</span>
                   </div>
                 ))}
-                <div style={{ display:'flex', gap:12, marginTop:8, font:'500 9px/1 "Barlow"', color:'rgba(255,255,255,.3)' }}>
+                <div style={{ display:'flex', gap:12, marginTop:8, font:'500 9px/1 "Inter"', color:'rgba(255,255,255,.3)' }}>
                   <span>● Excellent</span><span>● Good</span><span>● Average</span>
                 </div>
               </div>
@@ -430,7 +430,7 @@ export default function SystemFit() {
             <div style={{ padding:'16px', display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8 }}>
               {KEY_METRICS.map(m => <MetricRing key={m.label} val={m.val} label={m.label} grade={m.grade} />)}
             </div>
-            <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 10px/1 "Barlow"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
+            <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 10px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
               VIEW ALL METRICS <ArrowRight size={11} />
             </button>
           </div>
@@ -445,9 +445,9 @@ export default function SystemFit() {
           <div style={{ display:'flex', gap:8, padding:'12px' }}>
             {[{r:'W',s:'3-0',vs:'vs Atletico Madrid',rt:8.6},{r:'W',s:'4-1',vs:'vs Girona FC',rt:8.2},{r:'W',s:'2-1',vs:'vs Real Sociedad',rt:7.8},{r:'W',s:'5-0',vs:'vs Real Betis',rt:8.9}].map((m,i) => (
               <div key={i} style={{ flex:1, border:'1px solid rgba(255,255,255,.07)', borderRadius:6, padding:'10px', background:'rgba(0,0,0,.3)', display:'flex', flexDirection:'column', gap:4 }}>
-                <span style={{ font:'800 11px/1 "Barlow"', color:'#A6FF00', padding:'2px 5px', background:'rgba(166,255,0,.12)', borderRadius:3, width:'fit-content' }}>{m.r} {m.s}</span>
-                <span style={{ font:'500 10px/1 "Barlow"', color:'rgba(255,255,255,.4)', marginTop:2 }}>{m.vs}</span>
-                <span style={{ font:'900 16px/1 "Barlow Condensed"', color:'#A6FF00' }}>Rating {m.rt}</span>
+                <span style={{ font:'800 11px/1 "Inter"', color:'#A6FF00', padding:'2px 5px', background:'rgba(166,255,0,.12)', borderRadius:3, width:'fit-content' }}>{m.r} {m.s}</span>
+                <span style={{ font:'500 10px/1 "Inter"', color:'rgba(255,255,255,.4)', marginTop:2 }}>{m.vs}</span>
+                <span style={{ font:'900 16px/1 "Rajdhani"', color:'#A6FF00' }}>Rating {m.rt}</span>
               </div>
             ))}
           </div>
@@ -460,23 +460,23 @@ export default function SystemFit() {
         <div style={T.card}>
           <div style={T.head}><span style={T.h3}>Tactical Role Analysis</span></div>
           <div style={{ padding:'14px' }}>
-            <div style={{ font:'700 9px/1 "Barlow"', letterSpacing:'.18em', textTransform:'uppercase', color:'rgba(255,255,255,.3)', marginBottom:4 }}>Primary Role Fit</div>
+            <div style={{ font:'700 9px/1 "Inter"', letterSpacing:'.18em', textTransform:'uppercase', color:'rgba(255,255,255,.3)', marginBottom:4 }}>Primary Role Fit</div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
-              <span style={{ font:'800 15px/1 "Barlow"', color:'#A6FF00' }}>Advanced Midfielder</span>
-              <span style={{ font:'900 20px/1 "Barlow Condensed"', color:'#A6FF00' }}>90%</span>
+              <span style={{ font:'800 15px/1 "Inter"', color:'#A6FF00' }}>Advanced Midfielder</span>
+              <span style={{ font:'900 20px/1 "Rajdhani"', color:'#A6FF00' }}>90%</span>
             </div>
-            <div style={{ font:'400 11px/1.5 "Barlow"', color:'rgba(255,255,255,.4)', marginBottom:12 }}>Links midfield and attack, late box arrivals, chance creation.</div>
+            <div style={{ font:'400 11px/1.5 "Inter"', color:'rgba(255,255,255,.4)', marginBottom:12 }}>Links midfield and attack, late box arrivals, chance creation.</div>
             <div style={{ width:'100%', height:140, borderRadius:8, overflow:'hidden', border:'1px solid rgba(166,255,0,.2)', marginBottom:12 }}>
               <TacticalPitch />
             </div>
-            <div style={{ font:'700 9px/1 "Barlow"', letterSpacing:'.14em', textTransform:'uppercase', color:'rgba(255,255,255,.3)', marginBottom:8 }}>Other Suitable Roles</div>
+            <div style={{ font:'700 9px/1 "Inter"', letterSpacing:'.14em', textTransform:'uppercase', color:'rgba(255,255,255,.3)', marginBottom:8 }}>Other Suitable Roles</div>
             {[['Central Midfielder (B2B)',85],['Roaming Playmaker',82],['Deep-Lying Playmaker',74]].map(([r,p]) => (
-              <div key={r} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderTop:'1px solid rgba(255,255,255,.06)', font:'600 11px/1 "Barlow"' }}>
+              <div key={r} style={{ display:'flex', justifyContent:'space-between', padding:'6px 0', borderTop:'1px solid rgba(255,255,255,.06)', font:'600 11px/1 "Inter"' }}>
                 <span style={{ color:'rgba(255,255,255,.55)' }}>{r}</span>
-                <span style={{ font:'700 12px/1 "Barlow Condensed"', color:'#A6FF00' }}>{p}%</span>
+                <span style={{ font:'700 12px/1 "Rajdhani"', color:'#A6FF00' }}>{p}%</span>
               </div>
             ))}
-            <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'9px', border:'1px solid rgba(255,255,255,.07)', borderRadius:5, marginTop:10, font:'700 9px/1 "Barlow"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
+            <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'9px', border:'1px solid rgba(255,255,255,.07)', borderRadius:5, marginTop:10, font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', cursor:'pointer' }}>
               VIEW TACTICAL ROLE MAP <ArrowRight size={10} />
             </button>
           </div>
@@ -486,25 +486,25 @@ export default function SystemFit() {
         <div style={T.card}>
           <div style={T.head}>
             <span style={T.h3}>Best Fit Recommendations</span>
-            <span style={{ font:'700 9px/1 "Barlow"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', display:'flex', alignItems:'center', gap:3 }}>AI Powered ✦</span>
+            <span style={{ font:'700 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'#A6FF00', display:'flex', alignItems:'center', gap:3 }}>AI Powered ✦</span>
           </div>
           <div style={{ padding:'0 14px' }}>
             {BEST_FITS.map(f => (
               <div key={f.rank} style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,.06)' }}>
-                <span style={{ font:'900 14px/1 "Barlow Condensed"', color:'rgba(255,255,255,.22)', width:16, flexShrink:0 }}>{f.rank}</span>
+                <span style={{ font:'900 14px/1 "Rajdhani"', color:'rgba(255,255,255,.22)', width:16, flexShrink:0 }}>{f.rank}</span>
                 <Crest abbr={f.abbr} bg={f.bg} fg={f.fg} size={26} />
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ font:'700 12px/1 "Barlow"', color:'rgba(255,255,255,.8)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.club}</div>
-                  <div style={{ font:'600 9px/1 "Barlow"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.32)', marginTop:2 }}>{f.fmt}</div>
+                  <div style={{ font:'700 12px/1 "Inter"', color:'rgba(255,255,255,.8)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{f.club}</div>
+                  <div style={{ font:'600 9px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', color:'rgba(255,255,255,.32)', marginTop:2 }}>{f.fmt}</div>
                 </div>
                 <div style={{ textAlign:'right', flexShrink:0 }}>
-                  <div style={{ font:'900 14px/1 "Barlow Condensed"', color:'#A6FF00' }}>{f.pct}%</div>
-                  <div style={{ font:'600 9px/1 "Barlow"', letterSpacing:'.06em', textTransform:'uppercase', color:f.clr, marginTop:1 }}>{f.verdict}</div>
+                  <div style={{ font:'900 14px/1 "Rajdhani"', color:'#A6FF00' }}>{f.pct}%</div>
+                  <div style={{ font:'600 9px/1 "Inter"', letterSpacing:'.06em', textTransform:'uppercase', color:f.clr, marginTop:1 }}>{f.verdict}</div>
                 </div>
               </div>
             ))}
           </div>
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 9px/1 "Barlow"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
+          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
             VIEW FULL RANKINGS <ArrowRight size={10} />
           </button>
         </div>
@@ -514,13 +514,13 @@ export default function SystemFit() {
           <div style={T.head}><span style={T.h3}>System Fit Insights</span></div>
           <div style={{ padding:'0 14px' }}>
             {INSIGHTS.map((ins,i) => (
-              <div key={i} style={{ display:'flex', gap:8, padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,.06)', font:'400 11px/1.6 "Barlow"', color:'rgba(255,255,255,.5)' }}>
+              <div key={i} style={{ display:'flex', gap:8, padding:'9px 0', borderBottom:'1px solid rgba(255,255,255,.06)', font:'400 11px/1.6 "Inter"', color:'rgba(255,255,255,.5)' }}>
                 <span style={{ flexShrink:0, marginTop:1 }}>{ins.icon}</span>
                 <span>{ins.text}</span>
               </div>
             ))}
           </div>
-          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 9px/1 "Barlow"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
+          <button type="button" style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:5, width:'100%', padding:'10px', borderTop:'1px solid rgba(255,255,255,.07)', font:'700 9px/1 "Inter"', letterSpacing:'.1em', textTransform:'uppercase', color:'#A6FF00', background:'none', border:'none', cursor:'pointer' }}>
             VIEW FULL INSIGHTS <ArrowRight size={10} />
           </button>
         </div>
@@ -529,10 +529,10 @@ export default function SystemFit() {
         <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px', border:'1px solid rgba(166,255,0,.22)', borderRadius:8, background:'rgba(166,255,0,.03)' }}>
           <Crown size={18} style={{ color:'#A6FF00', flexShrink:0 }} />
           <div style={{ flex:1 }}>
-            <div style={{ font:'700 12px/1 "Barlow"', letterSpacing:'.04em', textTransform:'uppercase', color:'#A6FF00' }}>World Cup Founder Pass</div>
-            <div style={{ font:'400 10px/1.4 "Barlow"', color:'rgba(255,255,255,.4)', marginTop:3 }}>Unlock premium insights & exclusive World Cup content.</div>
+            <div style={{ font:'700 12px/1 "Inter"', letterSpacing:'.04em', textTransform:'uppercase', color:'#A6FF00' }}>World Cup Founder Pass</div>
+            <div style={{ font:'400 10px/1.4 "Inter"', color:'rgba(255,255,255,.4)', marginTop:3 }}>Unlock premium insights & exclusive World Cup content.</div>
           </div>
-          <button type="button" onClick={() => navigateTo('/pricing')} style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 12px', background:'#A6FF00', color:'#050700', borderRadius:5, font:'800 10px/1 "Barlow"', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0, cursor:'pointer', border:'none' }}>
+          <button type="button" onClick={() => navigateTo('/pricing')} style={{ display:'flex', alignItems:'center', gap:5, padding:'8px 12px', background:'#A6FF00', color:'#050700', borderRadius:5, font:'800 10px/1 "Inter"', letterSpacing:'.08em', textTransform:'uppercase', flexShrink:0, cursor:'pointer', border:'none' }}>
             EXPLORE <ArrowRight size={10} />
           </button>
         </div>

@@ -1377,6 +1377,139 @@ body::after {
 /* comp bottom row */
 .comp-bottom { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
 
+/* ── comp-* aliases (JSX uses comp- prefix throughout) ── */
+
+/* Page layout */
+.comp-page { display: grid; grid-template-columns: 200px 1fr; gap: 0; min-height: calc(100vh - 54px); }
+
+/* Sidebar */
+.comp-sidebar-title {
+  font: 900 18px/1 "Barlow Condensed"; letter-spacing: .12em; text-transform: uppercase; color: var(--lime);
+  padding: 0 16px 12px;
+}
+.comp-sidebar-link {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px; font: 600 13px/1 "Barlow"; color: var(--text2);
+  transition: color .12s, background .12s; cursor: pointer;
+}
+.comp-sidebar-link:hover { color: var(--text); background: rgba(255,255,255,.03); }
+.comp-sidebar-link.active { color: var(--lime); background: var(--lime-dim); }
+.comp-my-section { padding: 8px 0; border-top: 1px solid var(--thin); margin-top: 8px; }
+.comp-my-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 16px; font: 600 12px/1 "Barlow Condensed"; color: var(--text2);
+  cursor: pointer; transition: color .12s;
+}
+.comp-my-row:hover { color: var(--text); }
+.comp-star { color: var(--lime); font-size: 12px; margin-left: auto; }
+.comp-login-box {
+  margin: 16px; padding: 12px; border: 1px solid var(--thin);
+  border-radius: var(--r); text-align: center;
+}
+.comp-login-box p { font: 400 11px/1.5 "Barlow"; color: var(--text2); margin-bottom: 8px; }
+
+/* Hero banner */
+.comp-hero {
+  border-radius: var(--r-lg); overflow: hidden; position: relative;
+  background: linear-gradient(120deg, #050818 0%, #0a0520 40%, #050818 100%);
+  min-height: 160px; display: flex; align-items: center;
+  border: 1px solid rgba(93,169,255,.15); margin-bottom: 14px;
+}
+.comp-hero-bg {
+  position: absolute; right: 280px; top: 50%; transform: translateY(-50%);
+  font-size: 120px; opacity: .06; pointer-events: none; user-select: none;
+}
+.comp-hero-left { position: relative; z-index: 2; padding: 24px; flex: 1; }
+.comp-hero-eyebrow {
+  font: 700 9px/1 "Barlow"; letter-spacing: .22em; text-transform: uppercase;
+  color: rgba(255,255,255,.5); margin-bottom: 6px;
+}
+.comp-hero-title {
+  font: 900 28px/1 "Barlow Condensed"; letter-spacing: .02em;
+  text-transform: uppercase; color: #fff; margin-bottom: 4px;
+}
+.comp-hero-season { font: 400 12px/1 "Barlow"; color: rgba(255,255,255,.6); margin-bottom: 6px; }
+.comp-hero-desc   { font: 400 12px/1.5 "Barlow"; color: rgba(255,255,255,.5); margin-bottom: 14px; }
+.comp-hero-right {
+  position: absolute; right: 24px; top: 50%; transform: translateY(-50%);
+  z-index: 2; text-align: right;
+}
+.comp-hero-next-label {
+  font: 700 9px/1 "Barlow"; letter-spacing: .18em; text-transform: uppercase;
+  color: rgba(255,255,255,.4); margin-bottom: 10px;
+}
+.comp-hero-matchup { display: flex; align-items: center; gap: 12px; }
+.comp-hero-team {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  font: 700 12px/1 "Barlow"; color: #fff;
+}
+.comp-hero-vs { font: 900 18px/1 "Barlow Condensed"; color: rgba(255,255,255,.4); }
+.comp-hero-kickoff {
+  font: 700 11px/1 "Barlow Condensed"; color: var(--lime);
+  display: block; margin-top: 8px; text-align: center;
+}
+
+/* Type tabs */
+.comp-type-tabs {
+  display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.comp-type-tab {
+  padding: 7px 16px; border-radius: var(--r);
+  border: 1px solid var(--thin); background: var(--panel);
+  font: 700 11px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text2); cursor: pointer; transition: all .12s;
+}
+.comp-type-tab:hover { border-color: var(--line); color: var(--text); }
+.comp-type-tab.active { background: var(--lime); border-color: var(--lime); color: #050700; }
+
+/* Leagues grid */
+.comp-leagues-grid {
+  display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px;
+}
+.comp-league-card {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 14px 18px; border-radius: var(--r-lg);
+  border: 1px solid var(--thin); background: var(--panel);
+  cursor: pointer; transition: border-color .12s, background .12s;
+  min-width: 110px; text-align: center;
+}
+.comp-league-card:hover { border-color: var(--line); }
+.comp-league-card.active { border-color: var(--line-lime); background: rgba(166,255,0,.05); }
+.comp-league-name    { font: 800 12px/1 "Barlow Condensed"; letter-spacing: .04em; text-transform: uppercase; color: var(--text); margin-top: 4px; }
+.comp-league-country { font: 600 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase; color: var(--text2); }
+.comp-league-status  { display: flex; align-items: center; gap: 5px; margin-top: 4px; font: 600 9px/1 "Barlow"; color: var(--text2); }
+
+/* Data panels (standings, form, scorers, creators) */
+.comp-data-panel {
+  border: 1px solid var(--thin); border-radius: var(--r-lg);
+  background: var(--panel); overflow: hidden; padding: 12px 14px;
+}
+.comp-data-panel-title {
+  font: 800 11px/1 "Barlow Condensed"; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--text); margin-bottom: 10px;
+}
+.comp-data-panel-sub { color: var(--lime); }
+
+/* Standings rows */
+.comp-standings-row {
+  display: grid;
+  grid-template-columns: 18px 20px 1fr 28px 28px 28px 28px 36px 36px;
+  align-items: center; gap: 4px;
+  padding: 6px 0; border-bottom: 1px solid var(--thin);
+  font: 500 11px/1 "Barlow"; color: var(--text2);
+}
+.comp-standings-row.header {
+  font: 700 9px/1 "Barlow"; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text3); padding-bottom: 8px; margin-bottom: 2px;
+}
+.comp-standings-row:last-child { border-bottom: none; }
+.comp-standings-pos  { font: 900 12px/1 "Barlow Condensed"; color: var(--text3); }
+.comp-standings-name { font: 700 12px/1 "Barlow"; color: var(--text); }
+.comp-standings-pts  { font: 900 13px/1 "Barlow Condensed"; color: var(--lime); text-align: right; }
+
+/* Lower 3-col row */
+.comp-lower { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 14px; }
+
 /* global coverage map */
 .coverage-card { border: 1px solid var(--thin); border-radius: var(--r-lg); background: var(--panel); padding: 16px; }
 .coverage-map-placeholder {

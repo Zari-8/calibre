@@ -20,6 +20,11 @@ export const LEAGUE_IDS = {
   'Belgian Pro League': 144,
   'Champions League': 2,
   'Europa League': 3,
+  'Europa Conference League': 848,
+  'Copa Libertadores': 13,
+  'CAF Champions League': 12,
+  'Primeira Liga': 94,
+  'Brasileirão Série A': 71,
 };
 
 const now = new Date();
@@ -30,8 +35,10 @@ const TTL = {
   status: 10 * 60 * 1000,
   teams: 60 * 60 * 1000,
   players: 60 * 60 * 1000,
+  'players/profiles': 60 * 60 * 1000,
   standings: 6 * 60 * 60 * 1000,
   'players/topscorers': 6 * 60 * 60 * 1000,
+  leagues: 24 * 60 * 60 * 1000,
 };
 
 function emitFlow(detail) {
@@ -122,6 +129,57 @@ export async function getTopScorers(leagueId, season = CURRENT_SEASON) {
   return data?.response ?? null;
 }
 
+export async function searchLeagues(query, season = CURRENT_SEASON) {
+  const search = String(query || '').trim();
+  if (search.length < 2) return [];
+  const data = await apiFetch('leagues', { search, season }, { ttl: TTL.leagues });
+  return (data?.response ?? []).map(({ league, country, seasons }) => ({
+    id: league?.id,
+    name: league?.name || '',
+    type: league?.type || '',
+    logo: league?.logo || '',
+    country: country?.name || '',
+    seasons: seasons || [],
+  })).filter(item => item.id && item.name);
+}
+
+export async function resolveLeagueId(competition, season = CURRENT_SEASON) {
+  if (competition?.id) return competition.id;
+  const rows = await searchLeagues(competition?.name || '', season);
+  const target = String(competition?.name || '').toLowerCase();
+  const exact = rows.find(item => item.name.toLowerCase() === target);
+  return (exact || rows[0])?.id || null;
+}
+
+export async function getCompetitionPlayers(leagueId, season = CURRENT_SEASON, pages = 2) {
+  if (!leagueId) return [];
+  const pageNumbers = Array.from({ length: Math.max(1, Math.min(3, pages)) }, (_, index) => index + 1);
+  const payloads = await Promise.all(pageNumbers.map(page => apiFetch('players', { league: leagueId, season, page }, { ttl: 6 * 60 * 60 * 1000 })));
+  return payloads.flatMap(data => data?.response ?? []);
+}
+
+export async function getTopCreators(leagueId, season = CURRENT_SEASON, limit = 5) {
+  const rows = await getCompetitionPlayers(leagueId, season, 2);
+  return rows
+    .map(row => {
+      const stats = row.statistics?.[0] || {};
+      return {
+        player: row.player || {},
+        team: stats.team?.name || '—',
+        assists: Number(stats.goals?.assists || 0),
+      };
+    })
+    .filter(row => row.player?.name && row.assists > 0)
+    .sort((a, b) => b.assists - a.assists)
+    .slice(0, limit);
+}
+
+export async function getRecentFixtures(leagueId, season = CURRENT_SEASON, last = 1) {
+  if (!leagueId) return null;
+  const data = await apiFetch('fixtures', { league: leagueId, season, last }, { ttl: TTL.fixtures });
+  return data?.response ?? null;
+}
+
 export async function getTeamForm(teamId, last = 5) {
   const data = await apiFetch('fixtures', { team: teamId, last }, { ttl: 15 * 60 * 1000 });
   return data?.response ?? null;
@@ -180,6 +238,61 @@ export async function searchPlayers(query, season = CURRENT_SEASON, options = {}
     position: statistics?.[0]?.games?.position ?? '',
     source: 'api',
   }));
+}
+
+
+export function playerPhotoUrl(playerId) {
+  return playerId ? `https://media.api-sports.io/football/players/${playerId}.png` : '';
+}
+
+/**
+ * Search the API-Football profile directory. Unlike the season-statistics
+ * endpoint, /players/profiles is intended for global player discovery and
+ * returns a stable player id that can be used for the official media URL.
+ */
+export async function searchPlayerProfiles(query, options = {}) {
+  const search = String(query || '').trim();
+  if (search.length < 3) return [];
+  const data = await apiFetch('players/profiles', { search }, options);
+  return (data?.response ?? []).slice(0, 25).map((row) => {
+    const player = row?.player ?? row ?? {};
+    return {
+      id: player.id,
+      name: player.name || [player.firstname, player.lastname].filter(Boolean).join(' '),
+      firstname: player.firstname || '',
+      lastname: player.lastname || '',
+      age: player.age ?? '',
+      nationality: player.nationality || player.birth?.country || '',
+      birth: player.birth || {},
+      height: player.height || '',
+      weight: player.weight || '',
+      position: player.position || '',
+      image: player.photo || playerPhotoUrl(player.id),
+      source: 'api-profile',
+    };
+  }).filter(player => player.id && player.name);
+}
+
+export async function getPlayerProfile(playerId) {
+  if (!playerId) return null;
+  const data = await apiFetch('players/profiles', { player: playerId });
+  const row = data?.response?.[0];
+  if (!row) return null;
+  const player = row?.player ?? row;
+  return {
+    id: player.id,
+    name: player.name || [player.firstname, player.lastname].filter(Boolean).join(' '),
+    firstname: player.firstname || '',
+    lastname: player.lastname || '',
+    age: player.age ?? '',
+    nationality: player.nationality || player.birth?.country || '',
+    birth: player.birth || {},
+    height: player.height || '',
+    weight: player.weight || '',
+    position: player.position || '',
+    image: player.photo || playerPhotoUrl(player.id),
+    source: 'api-profile',
+  };
 }
 
 export async function getApiStatus({ force = false } = {}) {
@@ -253,11 +366,10 @@ export async function getPlayerPhotoByName(name) {
   if (playerPhotoInflight.has(inflightKey)) return playerPhotoInflight.get(inflightKey);
 
   const request = (async () => {
-    // Bypass stale empty player-search caches during the live-data beta.
-    // Most portraits resolve against the current season; the second lookup
-    // is a safe fallback for players whose current-season row is unavailable.
-    let rows = await searchPlayers(search, CURRENT_SEASON, { skipCache: true, ttl: 5 * 60 * 1000 });
-    if (!rows.length) rows = await searchPlayers(search, null, { skipCache: true, ttl: 5 * 60 * 1000 });
+    // Use the global profile directory for portraits. The statistics endpoint
+    // only covers players attached to a specific season and was the reason
+    // some homepage cards remained stuck on local placeholder artwork.
+    const rows = await searchPlayerProfiles(search, { skipCache: true, ttl: 5 * 60 * 1000 });
     const best = [...rows]
       .filter(row => row.image)
       .sort((a, b) => scoreNameMatch(search, b.name) - scoreNameMatch(search, a.name))[0];

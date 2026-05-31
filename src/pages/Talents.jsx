@@ -1,10 +1,11 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, Bookmark, BookmarkCheck, ChevronRight, Crown, Filter,
   Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, Zap
 } from 'lucide-react';
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
+import { searchPlayerProfiles } from '../services/apiFootball.js';
 
 const LOCAL_TALENTS = [
   { name:'Ibrahim Musa', age:19, nation:'Nigeria', flag:'🇳🇬', league:'NPFL', club:'Remo Stars', role:'Wide Creator', position:'RW', rating:77, potential:87, readiness:82, trend:'+12%', region:'africa', trajectory:'rising', nextStep:'Belgian Pro League watchlist', pathway:['NPFL breakout','Belgian Pro League minutes','Top-five league rotation'], localImage:'/assets/players/ibrahim-musa.jpg' },
@@ -33,16 +34,52 @@ const POSITION_OPTIONS = ['all','RW','LW','CM','DM','ST','FB'];
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 function trendValue(trend='0') { return Number.parseFloat(String(trend).replace('%','').replace('+','')) || 0; }
-function imageFor(player) { return player.localImage || '/assets/players/neutral-player.svg'; }
+function imageFor(player) { return player.image || player.localImage || '/assets/players/neutral-player.svg'; }
+function playerKey(player) { return player.id ? `api-${player.id}` : player.name; }
+function regionForNation(nation='') {
+  const value = String(nation).toLowerCase();
+  if (/nigeria|ghana|senegal|morocco|egypt|algeria|south africa|zimbabwe|cameroon|mali|ivory coast|côte d/i.test(value)) return 'africa';
+  if (/brazil|argentina|uruguay|colombia|chile|ecuador|paraguay|peru|venezuela/i.test(value)) return 'south_america';
+  if (/japan|korea|china|india|indonesia|australia|thailand|vietnam|malaysia|singapore|saudi|qatar|uae/i.test(value)) return 'asia';
+  return 'europe';
+}
+function roleForPosition(position='') {
+  const value = String(position).toLowerCase();
+  if (/goalkeeper|keeper/.test(value)) return 'Goalkeeper';
+  if (/defender|back/.test(value)) return 'Defensive Prospect';
+  if (/midfielder/.test(value)) return 'Emerging Midfielder';
+  if (/attacker|forward|striker/.test(value)) return 'Emerging Forward';
+  return 'Emerging Talent';
+}
+function shortPosition(position='') {
+  const value = String(position).toLowerCase();
+  if (/goalkeeper|keeper/.test(value)) return 'GK';
+  if (/defender|back/.test(value)) return 'DF';
+  if (/midfielder/.test(value)) return 'CM';
+  if (/attacker|forward|striker/.test(value)) return 'ST';
+  return 'U23';
+}
+function liveTalentFromProfile(profile) {
+  const age = Number(profile.age || 0);
+  const position = shortPosition(profile.position);
+  const nation = profile.nationality || 'International';
+  return {
+    id: profile.id, name: profile.name, age: age || '—', nation, flag: '🌍', league: 'Live API profile', club: 'Club loads with stats feed',
+    role: roleForPosition(profile.position), position, rating: 'API', potential: 'Pending', readiness: 'LIVE', trend: 'Profile found',
+    region: regionForNation(nation), trajectory: 'profile', nextStep: 'Run Calibre trajectory analysis',
+    pathway: ['API-Football identity profile', 'Statistics and minutes ingest', 'Calibre Next Step projection'], image: profile.image, provisional: true, source: 'api-profile',
+  };
+}
+function numeric(value, fallback=0) { return Number.isFinite(Number(value)) ? Number(value) : fallback; }
 
 function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist }) {
   return (
     <article className={`talent-result-card${selected ? ' is-selected' : ''}`} onClick={() => onSelect(player)}>
       <img src={imageFor(player)} alt={player.name}/>
       <div className="talent-result-card__body">
-        <div className="talent-result-card__topline"><span>{player.flag} {player.nation}</span><b>{player.rating}</b></div>
+        <div className="talent-result-card__topline"><span>{player.flag} {player.nation}</span><b>{player.provisional ? 'LIVE' : player.rating}</b></div>
         <h3>{player.name}</h3>
-        <p>{player.position} · {player.club}</p>
+        <p>{player.position} · {player.club}</p>{player.provisional && <small className="talent-live-profile">API DIRECTORY PROFILE · MODEL PENDING</small>}
         <div className="talent-result-card__meta"><span>{player.role}</span><span>{player.age} yrs</span><span className="trend-up">{player.trend}</span></div>
         <div className="talent-result-card__footer">
           <span>{player.nextStep}</span>
@@ -61,9 +98,9 @@ function Pathway({ player }) {
     <section className="trajectory-panel">
       <div className="trajectory-panel__head">
         <div><span>Talent trajectory pathway</span><h2>{player.name}</h2></div>
-        <div className="trajectory-readiness"><strong>{player.readiness}</strong><small>Readiness</small></div>
+        <div className="trajectory-readiness"><strong>{player.provisional ? 'LIVE' : player.readiness}</strong><small>{player.provisional ? 'API profile' : 'Readiness'}</small></div>
       </div>
-      <p className="trajectory-panel__intro">The projection is relative to age, role, league strength, senior minutes and current trajectory. It is a development pathway, not a fixed transfer prediction.</p>
+      <p className="trajectory-panel__intro">{player.provisional ? 'This player identity is live from API-Football. The pathway shell is ready, but Calibre will only publish the rating and Next Step projection after the statistics, minutes and league-strength layers have been ingested.' : 'The projection is relative to age, role, league strength, senior minutes and current trajectory. It is a development pathway, not a fixed transfer prediction.'}</p>
       <div className="trajectory-path">
         {stages.map((stage, index) => (
           <div className={`trajectory-step${index === 1 ? ' is-next' : ''}`} key={`${stage}-${index}`}>
@@ -74,9 +111,9 @@ function Pathway({ player }) {
         ))}
       </div>
       <div className="trajectory-panel__metrics">
-        <div><span>Current rating</span><strong>{player.rating}</strong></div>
-        <div><span>Potential band</span><strong>{player.potential}</strong></div>
-        <div><span>30-day movement</span><strong>{player.trend}</strong></div>
+        <div><span>Current rating</span><strong>{player.provisional ? 'Pending ingest' : player.rating}</strong></div>
+        <div><span>Potential band</span><strong>{player.provisional ? 'Model pending' : player.potential}</strong></div>
+        <div><span>30-day movement</span><strong>{player.provisional ? 'Awaiting stats' : player.trend}</strong></div>
         <div><span>League context</span><strong>{player.league}</strong></div>
       </div>
     </section>
@@ -95,21 +132,46 @@ export default function Talents() {
   const [moreFilters, setMoreFilters] = useState(false);
   const [selectedName, setSelectedName] = useState('Ibrahim Musa');
   const [shortlist, setShortlist] = useState(['Ibrahim Musa','Mateo Silva']);
+  const [liveTalents, setLiveTalents] = useState([]);
+  const [liveLoading, setLiveLoading] = useState(false);
+  const [liveSearched, setLiveSearched] = useState(false);
   const resultsRef = useRef(null);
 
-  const filtered = useMemo(() => TALENTS
-    .filter(p => region === 'all' || p.region === region)
-    .filter(p => age === 'all' || (age === 'u18' ? p.age <= 18 : age === 'u21' ? p.age <= 21 : p.age <= 23))
-    .filter(p => position === 'all' || p.position === position)
-    .filter(p => p.potential >= Number(potential))
-    .filter(p => trajectory === 'all' || p.trajectory === trajectory)
-    .filter(p => `${p.name} ${p.club} ${p.league} ${p.role} ${p.nation}`.toLowerCase().includes(query.trim().toLowerCase()))
-    .sort((a,b) => sort === 'rating' ? b.rating - a.rating : sort === 'trend' ? trendValue(b.trend) - trendValue(a.trend) : sort === 'age' ? a.age - b.age : b.readiness - a.readiness),
-  [region, age, position, potential, trajectory, query, sort]);
+  useEffect(() => {
+    const search = query.trim();
+    if (search.length < 3) { setLiveTalents([]); setLiveSearched(false); setLiveLoading(false); return undefined; }
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      setLiveLoading(true);
+      searchPlayerProfiles(search)
+        .then(rows => {
+          if (cancelled) return;
+          const talents = rows.filter(row => !row.age || Number(row.age) <= 23).map(liveTalentFromProfile);
+          setLiveTalents(talents);
+          setLiveSearched(true);
+        })
+        .catch(() => { if (!cancelled) { setLiveTalents([]); setLiveSearched(true); } })
+        .finally(() => { if (!cancelled) setLiveLoading(false); });
+    }, 350);
+    return () => { cancelled = true; window.clearTimeout(timer); };
+  }, [query]);
 
-  const selected = TALENTS.find(player => player.name === selectedName) || filtered[0] || TALENTS[0];
-  const ranked = [...TALENTS].sort((a,b) => (b.readiness + b.potential + trendValue(b.trend)) - (a.readiness + a.potential + trendValue(a.trend))).slice(0,10);
-  const counts = Object.fromEntries(TALENT_REGIONS.map(item => [item.key, item.key === 'all' ? TALENTS.length : TALENTS.filter(p => p.region === item.key).length]));
+  const liveMode = query.trim().length >= 3;
+  const sourceTalents = liveMode && liveSearched ? liveTalents : TALENTS;
+
+  const filtered = useMemo(() => sourceTalents
+    .filter(p => region === 'all' || p.region === region)
+    .filter(p => age === 'all' || !Number.isFinite(Number(p.age)) || (age === 'u18' ? Number(p.age) <= 18 : age === 'u21' ? Number(p.age) <= 21 : Number(p.age) <= 23))
+    .filter(p => position === 'all' || p.position === position)
+    .filter(p => p.provisional || numeric(p.potential) >= Number(potential))
+    .filter(p => p.provisional || trajectory === 'all' || p.trajectory === trajectory)
+    .filter(p => liveMode || `${p.name} ${p.club} ${p.league} ${p.role} ${p.nation}`.toLowerCase().includes(query.trim().toLowerCase()))
+    .sort((a,b) => sort === 'rating' ? numeric(b.rating) - numeric(a.rating) : sort === 'trend' ? trendValue(b.trend) - trendValue(a.trend) : sort === 'age' ? numeric(a.age,99) - numeric(b.age,99) : numeric(b.readiness) - numeric(a.readiness)),
+  [sourceTalents, region, age, position, potential, trajectory, query, sort, liveMode]);
+
+  const selected = sourceTalents.find(player => player.name === selectedName) || TALENTS.find(player => player.name === selectedName) || filtered[0] || TALENTS[0];
+  const ranked = [...TALENTS].sort((a,b) => (numeric(b.readiness) + numeric(b.potential) + trendValue(b.trend)) - (numeric(a.readiness) + numeric(a.potential) + trendValue(a.trend))).slice(0,10);
+  const counts = Object.fromEntries(TALENT_REGIONS.map(item => [item.key, item.key === 'all' ? sourceTalents.length : sourceTalents.filter(p => p.region === item.key).length]));
 
   function toggleShortlist(name) {
     setShortlist(current => current.includes(name) ? current.filter(item => item !== name) : [...current, name]);
@@ -126,7 +188,7 @@ export default function Talents() {
           <div className="td-title-icon"><Zap size={20}/></div>
           <div><h1>Talent <em>Discovery</em></h1><p>Discover, compare and project the next generation of footballers.</p></div>
         </div>
-        <div className="td-header-stats"><span><b>{TALENTS.length}</b> indexed</span><span><b>{shortlist.length}</b> shortlisted</span></div>
+        <div className="td-header-stats"><span><b>{liveMode ? liveTalents.length : TALENTS.length}</b> {liveMode ? 'live matches' : 'indexed'}</span><span><b>{shortlist.length}</b> shortlisted</span></div>
       </div>
 
       <div className="talent-mode-tabs" role="tablist" aria-label="Talent discovery views">
@@ -146,22 +208,24 @@ export default function Talents() {
         {moreFilters && <div className="talent-advanced-filters"><Filter size={14}/><span>Trajectory</span>{['all','rising','stable','peak'].map(item=><button className={trajectory===item?'is-active':''} type="button" key={item} onClick={()=>setTrajectory(item)}>{item}</button>)}</div>}
       </section>
 
+      <div className={`talent-api-status${liveMode ? ' is-live' : ''}`}><span className="live-dot" />{liveLoading ? 'Searching API-Football U23 profiles…' : liveMode ? `${liveTalents.length} live U23 profile matches · identity and portraits from API-Football` : 'Curated launch pool · type at least 3 letters to search the live U23 directory'}</div>
+
       <div className="td-region-tabs">
         {TALENT_REGIONS.map(item => <button key={item.key} type="button" className={`td-region-tab ${region===item.key?'active':''}`} onClick={()=>setRegion(item.key)}>{item.label}<span className="td-region-count">{counts[item.key] || 0}</span></button>)}
       </div>
 
       {view === 'discover' && <>
         <Pathway player={selected}/>
-        <div className="talent-results-head" ref={resultsRef}><div><span>Live discovery pool</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
+        <div className="talent-results-head" ref={resultsRef}><div><span>{liveMode ? 'API-Football U23 directory' : 'Curated discovery pool'}</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
         <div className="talent-results-grid">
-          {filtered.length ? filtered.map(player => <TalentCard key={player.name} player={player} selected={selected.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={player=>setSelectedName(player.name)} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
+          {filtered.length ? filtered.map(player => <TalentCard key={playerKey(player)} player={player} selected={selected.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={player=>setSelectedName(player.name)} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
         </div>
       </>}
 
       {view === 'pathways' && <div className="pathway-workspace">
         <div className="pathway-list">
           <div className="pathway-list__head"><span>Trajectory watchlist</span><strong>Select a talent to inspect the pathway model</strong></div>
-          {filtered.map(player=><button type="button" className={player.name===selected.name?'is-active':''} key={player.name} onClick={()=>setSelectedName(player.name)}><img src={imageFor(player)} alt=""/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.readiness}</b></button>)}
+          {filtered.map(player=><button type="button" className={player.name===selected.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><img src={imageFor(player)} alt=""/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
         </div>
         <Pathway player={selected}/>
       </div>}

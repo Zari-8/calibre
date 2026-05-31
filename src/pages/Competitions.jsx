@@ -4,7 +4,7 @@ import {
   Send, ShieldCheck, Swords, Trophy, X, Zap,
 } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
-import { CURRENT_SEASON, getStandings, getTopScorers, getUpcomingFixtures } from '../services/apiFootball.js';
+import { CURRENT_SEASON, getRecentFixtures, getStandings, getTopCreators, getTopScorers, getUpcomingFixtures, resolveLeagueId } from '../services/apiFootball.js';
 import { COMPETITION_DEBATES, COMPETITION_GROUPS, featuredMatchFor, snapshotFor } from '../data/competitionData.js';
 
 const GROUPS = ['Top Leagues', 'Top Tournaments', 'Domestic Cups', "Women's Football"];
@@ -19,7 +19,7 @@ function CompetitionCard({ competition, active, onClick }) {
       <div className="comp-logo-token">{competition.logo}</div>
       <div className="comp-league-name">{competition.name}</div>
       <div className="comp-league-country">{competition.country}</div>
-      <div className="comp-league-status"><span className="live-dot" /> <span>{competition.stage}</span></div>
+      <div className="comp-league-status"><span className="live-dot" /> <span>{competition.stage}</span><small>{competition.id ? 'API' : 'AUTO'}</small></div>
     </button>
   );
 }
@@ -52,7 +52,7 @@ function FormPanel({ standings }) {
   );
 }
 
-function PlayerPanel({ title, suffix, rows, stat }) {
+function PlayerPanel({ title, suffix, rows, stat, live = false, loading = false }) {
   return (
     <section className="comp-data-panel">
       <div className="comp-data-panel-title">{title} <span className="comp-data-panel-sub">· {suffix}</span></div>
@@ -61,6 +61,7 @@ function PlayerPanel({ title, suffix, rows, stat }) {
           <span className="comp-standings-pos">{row.pos}</span><img src={row.img} alt="" /><span>{row.name}</span><small>{row.team}</small><strong>{row[stat]}</strong>
         </div>
       ))}
+      <div className="comp-panel-note">{loading ? 'Refreshing competition data…' : live ? 'Live API-Football data loaded.' : 'Snapshot fallback shown until a supported feed resolves.'}</div>
     </section>
   );
 }
@@ -196,8 +197,9 @@ export default function Competitions() {
   const [standings, setStandings] = useState(initialSnapshot.standings);
   const [scorers, setScorers] = useState(initialSnapshot.scorers);
   const [creators, setCreators] = useState(initialSnapshot.creators);
-  const [live, setLive] = useState(false);
+  const [liveState, setLiveState] = useState({ standings: false, scorers: false, creators: false, fixture: false });
   const [loading, setLoading] = useState(false);
+  const live = Object.values(liveState).some(Boolean);
   const [featuredMatch, setFeaturedMatch] = useState(() => featuredMatchFor(active));
   const [forumOpen, setForumOpen] = useState(false);
 
@@ -210,34 +212,59 @@ export default function Competitions() {
     setScorers(fallback.scorers);
     setCreators(fallback.creators);
     setFeaturedMatch(fallbackMatch);
-    setLive(false);
-    if (!active.id) return undefined;
+    setLiveState({ standings: false, scorers: false, creators: false, fixture: false });
     let cancelled = false;
     setLoading(true);
-    Promise.all([
-      active.table ? getStandings(active.id, CURRENT_SEASON) : Promise.resolve(null),
-      getTopScorers(active.id, CURRENT_SEASON),
-      getUpcomingFixtures(active.id, CURRENT_SEASON, 1),
-    ])
-      .then(([standingRows, scorerRows, fixtureRows]) => {
-        if (cancelled) return;
-        if (standingRows?.length) {
-          setStandings(standingRows.slice(0, 5).map(team => ({
-            pos: team.rank, team: team.team.name, P: team.all.played, W: team.all.win, D: team.all.draw, L: team.all.lose,
-            GD: team.goalsDiff >= 0 ? `+${team.goalsDiff}` : String(team.goalsDiff), pts: team.points,
-            form: (team.form || '').split('').slice(0, 5).map(result => result === 'W' ? 'W' : result === 'D' ? 'D' : 'L'),
-          })));
-          setLive(true);
-        }
-        if (scorerRows?.length) {
-          setScorers(scorerRows.slice(0, 5).map((row, index) => ({ pos: index + 1, name: row.player.name, team: row.statistics?.[0]?.team?.name || '—', goals: row.statistics?.[0]?.goals?.total || 0, img: row.player.photo || fallback.scorers[index]?.img })));
-        }
-        if (fixtureRows?.[0]) setFeaturedMatch(normalizeFixture(fixtureRows[0], fallbackMatch));
-      })
+
+    (async () => {
+      const season = active.season || CURRENT_SEASON;
+      const leagueId = await resolveLeagueId(active, season);
+      if (!leagueId || cancelled) return;
+
+      const [standingRows, scorerRows, creatorRows, upcomingRows] = await Promise.all([
+        active.table ? getStandings(leagueId, season) : Promise.resolve(null),
+        getTopScorers(leagueId, season),
+        getTopCreators(leagueId, season),
+        getUpcomingFixtures(leagueId, season, 1),
+      ]);
+      if (cancelled) return;
+
+      if (standingRows?.length) {
+        setStandings(standingRows.slice(0, 5).map(team => ({
+          pos: team.rank, team: team.team.name, P: team.all.played, W: team.all.win, D: team.all.draw, L: team.all.lose,
+          GD: team.goalsDiff >= 0 ? `+${team.goalsDiff}` : String(team.goalsDiff), pts: team.points,
+          form: (team.form || '').split('').slice(0, 5).map(result => result === 'W' ? 'W' : result === 'D' ? 'D' : 'L'),
+        })));
+        setLiveState(current => ({ ...current, standings: true }));
+      }
+      if (scorerRows?.length) {
+        setScorers(scorerRows.slice(0, 5).map((row, index) => ({
+          pos: index + 1, name: row.player.name, team: row.statistics?.[0]?.team?.name || '—',
+          goals: row.statistics?.[0]?.goals?.total || 0, img: row.player.photo || fallback.scorers[index]?.img,
+        })));
+        setLiveState(current => ({ ...current, scorers: true }));
+      }
+      if (creatorRows?.length) {
+        setCreators(creatorRows.map((row, index) => ({
+          pos: index + 1, name: row.player.name, team: row.team || '—', assists: row.assists || 0,
+          img: row.player.photo || fallback.creators[index]?.img,
+        })));
+        setLiveState(current => ({ ...current, creators: true }));
+      }
+
+      let fixtureRows = upcomingRows;
+      if (!fixtureRows?.length) fixtureRows = await getRecentFixtures(leagueId, season, 1);
+      if (!cancelled && fixtureRows?.[0]) {
+        setFeaturedMatch(normalizeFixture(fixtureRows[0], fallbackMatch));
+        setLiveState(current => ({ ...current, fixture: true }));
+      }
+    })()
       .catch(() => {})
       .finally(() => { if (!cancelled) setLoading(false); });
+
     return () => { cancelled = true; };
   }, [active]);
+
 
   const debates = COMPETITION_DEBATES[group];
 
@@ -253,7 +280,7 @@ export default function Competitions() {
               <div className="comp-hero-desc">{active.hero}. Explore standings, match analysis, form, scorers and creators without leaving the category hub.</div>
               <button className="btn btn--lime btn--sm" type="button">VIEW COMPETITION HUB <ArrowRight size={13} /></button>
             </div>
-            <div className="comp-hero-right"><div className="comp-hero-next-label">DATA STATUS</div><div className="comp-status-card"><Database size={17} /><b>{live ? 'LIVE DATABASE' : 'SNAPSHOT READY'}</b><span>{live ? 'API-Football refresh active' : 'Fallback model active'}</span></div></div>
+            <div className="comp-hero-right"><div className="comp-hero-next-label">DATA STATUS</div><div className="comp-status-card"><Database size={17} /><b>{live ? 'LIVE DATABASE' : 'SNAPSHOT READY'}</b><span>{live ? `${Object.values(liveState).filter(Boolean).length}/4 feeds refreshed` : 'Fallback model active'}</span></div></div>
           </section>
 
           <div className="comp-type-tabs">{GROUPS.map(item => <button type="button" key={item} className={`comp-type-tab ${group === item ? 'active' : ''}`} onClick={() => setGroup(item)}>{item}</button>)}</div>
@@ -262,7 +289,7 @@ export default function Competitions() {
           <FeaturedMatch match={featuredMatch} openForum={() => setForumOpen(true)} />
 
           <div className="comp-data-grid comp-data-grid--v7">
-            <StandingsPanel competition={active} standings={standings} live={live} loading={loading} /><FormPanel standings={standings} /><PlayerPanel title="Top Scorers" suffix={active.name} rows={scorers} stat="goals" /><PlayerPanel title="Top Creators" suffix={active.name} rows={creators} stat="assists" />
+            <StandingsPanel competition={active} standings={standings} live={liveState.standings} loading={loading} /><FormPanel standings={standings} /><PlayerPanel title="Top Scorers" suffix={active.name} rows={scorers} stat="goals" live={liveState.scorers} loading={loading} /><PlayerPanel title="Top Creators" suffix={active.name} rows={creators} stat="assists" live={liveState.creators} loading={loading} />
           </div>
 
           <div className="comp-lower">

@@ -5,14 +5,16 @@ const ENDPOINTS = {
   standings: ['league', 'season', 'team'],
   teams: ['id', 'name', 'league', 'season', 'country', 'code', 'search'],
   players: ['id', 'team', 'league', 'season', 'search', 'page'],
+  'players/profiles': ['player', 'search', 'page'],
   'players/topscorers': ['league', 'season'],
+  leagues: ['id', 'name', 'country', 'season', 'search', 'type', 'current'],
   status: [],
 };
 
 function getCachePolicy(endpoint) {
   if (endpoint === 'fixtures') return 's-maxage=90, stale-while-revalidate=180';
   if (endpoint === 'status') return 'no-store';
-  if (endpoint === 'teams' || endpoint === 'players') return 's-maxage=3600, stale-while-revalidate=86400';
+  if (endpoint === 'teams' || endpoint === 'players' || endpoint === 'players/profiles' || endpoint === 'leagues') return 's-maxage=3600, stale-while-revalidate=86400';
   return 's-maxage=21600, stale-while-revalidate=86400';
 }
 

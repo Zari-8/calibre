@@ -1,7 +1,7 @@
 {
   "name": "calibre-football-intelligence",
   "private": true,
-  "version": "0.7.0",
+  "version": "0.8.1",
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
@@ -9,12 +9,15 @@
     "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "lucide-react": "latest",
-    "jspdf": "^2.5.2"
+    "@vitejs/plugin-react": "6.0.2",
+    "vite": "8.0.14",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "lucide-react": "1.17.0",
+    "jspdf": "2.5.2"
   },
-  "devDependencies": {}
+  "devDependencies": {},
+  "engines": {
+    "node": "20.x"
+  }
 }

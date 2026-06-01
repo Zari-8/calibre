@@ -3,6 +3,7 @@ import { ArrowRight, BarChart3, Clock3, LockKeyhole, MessageCircle, Sparkles, Ta
 import { useBattle } from '../hooks/useBattle.js';
 import { navigateTo } from './NavLink.jsx';
 import ApiPlayerImage from './ApiPlayerImage.jsx';
+import useAuth from '../hooks/useAuth.js';
 
 function useCountdown() {
   const get = () => {
@@ -66,19 +67,9 @@ function readLocalVotes(battleSlug) {
   }
 }
 
-function getAccountId() {
-  try {
-    const raw = window.localStorage.getItem('calibre:user');
-    if (!raw) return '';
-    const parsed = JSON.parse(raw);
-    return parsed?.id || parsed?.email || parsed?.username || parsed?.name || raw;
-  } catch {
-    return window.localStorage.getItem('calibre:user') || '';
-  }
-}
-
 export default function BattleHero() {
   const { battle, playerA, playerB } = useBattle();
+  const { user } = useAuth();
   const battleSlug = 'pedri-vs-jude';
   const [category, setCategory] = useState('Control');
   const [ratings, setRatings] = useState(() => readLocalVotes(battleSlug));
@@ -92,7 +83,7 @@ export default function BattleHero() {
   const question = battle?.question ?? 'Who owns the midfield?';
   const activeMatrix = categoryMatrix.find(item => item.label === category) ?? categoryMatrix[0];
   const selectedRating = ratings[category] ?? null;
-  const accountExists = useMemo(() => Boolean(window.localStorage.getItem('calibre:user')), []);
+  const accountExists = Boolean(user);
 
   const displayedMatrix = useMemo(() => categoryMatrix.map(item => {
     const personalSplit = ratingToSplit(ratings[item.label]);
@@ -129,7 +120,7 @@ export default function BattleHero() {
       const response = await fetch('/api/rate-battle-vote', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ battleSlug, criterion: category, rating: number, accountId: getAccountId() }),
+        body: JSON.stringify({ battleSlug, criterion: category, rating: number, accountId: user?.id || '' }),
       });
       if (!response.ok) return;
       const body = await response.json();
@@ -141,7 +132,11 @@ export default function BattleHero() {
 
   const enterForum = () => {
     setForumModalOpen(false);
-    navigateTo(`/debates?forum=${battleSlug}${accountExists ? '' : '&auth=required'}`);
+    if (!accountExists) {
+      window.dispatchEvent(new CustomEvent('calibre:open-auth', { detail: { returnTo: `/debates?forum=${battleSlug}` } }));
+      return;
+    }
+    navigateTo(`/debates?forum=${battleSlug}`);
   };
 
   return (

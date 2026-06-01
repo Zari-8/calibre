@@ -1,13 +1,15 @@
 const API_BASE = 'https://v3.football.api-sports.io';
 
 const ENDPOINTS = {
-  fixtures: ['date', 'live', 'team', 'league', 'last', 'season', 'next', 'from', 'to', 'timezone'],
+  fixtures: ['id', 'date', 'live', 'team', 'league', 'last', 'season', 'next', 'from', 'to', 'timezone'],
+  'fixtures/lineups': ['fixture', 'team', 'player', 'type'],
   standings: ['league', 'season', 'team'],
   teams: ['id', 'name', 'league', 'season', 'country', 'code', 'search'],
   players: ['id', 'team', 'league', 'season', 'search', 'page'],
   'players/profiles': ['player', 'search', 'page'],
   'players/topscorers': ['league', 'season'],
   leagues: ['id', 'name', 'country', 'season', 'search', 'type', 'current'],
+  transfers: ['player', 'team'],
   status: [],
 };
 

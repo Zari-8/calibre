@@ -1,10 +1,4 @@
-const portraits = [
-  '/assets/players/kylian-mbappe.jpg',
-  '/assets/players/lamine-yamal.jpg',
-  '/assets/players/pedri.jpg',
-  '/assets/players/vitinha.jpg',
-  '/assets/players/florian-wirtz.jpg',
-];
+const portraits = ['/assets/players/neutral-player.svg'];
 
 function standings(names) {
   return names.map((team, index) => ({
@@ -63,7 +57,7 @@ export const COMPETITION_GROUPS = {
   ],
   "Women's Football": [
     { name: "Women's Super League", country: 'England', logo: 'WSL', id: null, table: false, stage: 'League Hub', hero: 'The English women’s game under a bigger spotlight', teams: ['Chelsea Women', 'Arsenal Women', 'Manchester City Women', 'Manchester United Women', 'Brighton Women'], scorerRows: [['K. Shaw', 'Manchester City Women', 19], ['A. Russo', 'Arsenal Women', 16], ['L. James', 'Chelsea Women', 14], ['E. Toone', 'Manchester United Women', 11], ['N. Parris', 'Brighton Women', 10]], creatorRows: [['L. Hemp', 'Manchester City Women', 12], ['C. Reiten', 'Chelsea Women', 11], ['B. Mead', 'Arsenal Women', 10], ['E. Toone', 'Manchester United Women', 9], ['F. Kirby', 'Brighton Women', 8]] },
-    { name: "Women's Champions League", country: 'Europe', logo: 'UWCL', id: null, table: false, stage: 'Knockout Stage', hero: 'Europe’s elite women’s clubs, same pressure', teams: ['FC Barcelona Femení', 'Chelsea Women', 'Lyon Féminin', 'Arsenal Women', 'Bayern Women'], scorerRows: [['A. Putellas', 'Barcelona Femení', 8], ['C. Graham Hansen', 'Barcelona Femení', 7], ['L. James', 'Chelsea Women', 6], ['K. Diani', 'Lyon Féminin', 6], ['A. Russo', 'Arsenal Women', 5]], creatorRows: [['A. Bonmatí', 'Barcelona Femení', 7], ['C. Graham Hansen', 'Barcelona Femení', 6], ['C. Reiten', 'Chelsea Women', 5], ['D. Marozsán', 'Lyon Féminin', 5], ['B. Mead', 'Arsenal Women', 4]] },
+    { name: "Women's Champions League", country: 'Europe', logo: 'UWCL', id: null, table: true, standingsMode:'tournament-only', stage: 'Knockout Stage', hero: 'Europe’s elite women’s clubs, same pressure', teams: ['FC Barcelona Femení', 'Chelsea Women', 'Lyon Féminin', 'Arsenal Women', 'Bayern Women'], scorerRows: [['A. Putellas', 'Barcelona Femení', 8], ['C. Graham Hansen', 'Barcelona Femení', 7], ['L. James', 'Chelsea Women', 6], ['K. Diani', 'Lyon Féminin', 6], ['A. Russo', 'Arsenal Women', 5]], creatorRows: [['A. Bonmatí', 'Barcelona Femení', 7], ['C. Graham Hansen', 'Barcelona Femení', 6], ['C. Reiten', 'Chelsea Women', 5], ['D. Marozsán', 'Lyon Féminin', 5], ['B. Mead', 'Arsenal Women', 4]] },
     { name: 'Liga F', country: 'Spain', logo: 'LIGAF', id: null, table: false, stage: 'League Hub', hero: 'Technical dominance and the Barcelona benchmark', teams: ['FC Barcelona Femení', 'Real Madrid Femenino', 'Atlético Femenino', 'Levante Women', 'Real Sociedad Women'], scorerRows: [['E. Pajor', 'Barcelona Femení', 22], ['A. Putellas', 'Barcelona Femení', 17], ['L. Caicedo', 'Real Madrid Femenino', 14], ['S. Ajibade', 'Atlético Femenino', 12], ['N. Eizagirre', 'Real Sociedad Women', 10]], creatorRows: [['A. Bonmatí', 'Barcelona Femení', 15], ['C. Graham Hansen', 'Barcelona Femení', 13], ['L. Caicedo', 'Real Madrid Femenino', 10], ['S. Ajibade', 'Atlético Femenino', 8], ['N. Eizagirre', 'Real Sociedad Women', 7]] },
     { name: 'NWSL', country: 'United States', logo: 'NWSL', id: null, table: false, stage: 'League Hub', hero: 'Athletic depth, parity and major-market energy', teams: ['Orlando Pride', 'Washington Spirit', 'Portland Thorns', 'Gotham FC', 'Kansas City Current'], scorerRows: [['B. Banda', 'Orlando Pride', 18], ['T. Rodman', 'Washington Spirit', 14], ['S. Smith', 'Portland Thorns', 13], ['E. González', 'Gotham FC', 12], ['T. Chawinga', 'Kansas City Current', 11]], creatorRows: [['M. Marta', 'Orlando Pride', 10], ['T. Rodman', 'Washington Spirit', 9], ['S. Smith', 'Portland Thorns', 8], ['R. Lavelle', 'Gotham FC', 8], ['D. DiBernardo', 'Kansas City Current', 7]] },
   ],

@@ -25,6 +25,10 @@ export const LEAGUE_IDS = {
   'CAF Champions League': 12,
   'Primeira Liga': 94,
   'Brasileirão Série A': 71,
+  "Women's Champions League": null,
+  "Women's Super League": null,
+  'Liga F': null,
+  'NWSL': null,
 };
 
 const now = new Date();
@@ -38,6 +42,8 @@ const TTL = {
   'players/profiles': 60 * 60 * 1000,
   standings: 6 * 60 * 60 * 1000,
   'players/topscorers': 6 * 60 * 60 * 1000,
+  'fixtures/lineups': 5 * 60 * 1000,
+  transfers: 60 * 60 * 1000,
   leagues: 24 * 60 * 60 * 1000,
 };
 
@@ -300,6 +306,52 @@ export async function getApiStatus({ force = false } = {}) {
   return data?.response ?? null;
 }
 
+
+
+export function leagueLogoUrl(leagueId) {
+  return leagueId ? `https://media.api-sports.io/football/leagues/${leagueId}.png` : '';
+}
+
+export function teamLogoUrl(teamId) {
+  return teamId ? `https://media.api-sports.io/football/teams/${teamId}.png` : '';
+}
+
+export async function getTeamsByLeague(leagueId, season = CURRENT_SEASON) {
+  if (!leagueId) return [];
+  const data = await apiFetch('teams', { league: leagueId, season });
+  return (data?.response ?? []).map(({ team, venue }) => ({
+    id: team?.id, name: team?.name || '', country: team?.country || '', crestUrl: team?.logo || teamLogoUrl(team?.id),
+    code: team?.code || '', venue: venue?.name || '', source:'api',
+  })).filter(team => team.id && team.name);
+}
+
+export async function getLeaguePlayers(leagueId, season = CURRENT_SEASON, page = 1) {
+  if (!leagueId) return [];
+  const data = await apiFetch('players', { league: leagueId, season, page }, { ttl: 60 * 60 * 1000 });
+  return (data?.response ?? []).map(({ player, statistics }) => {
+    const stat = statistics?.[0] || {};
+    return {
+      id:player?.id, name:player?.name || '', age:player?.age ?? '', image:player?.photo || playerPhotoUrl(player?.id),
+      nationality:player?.nationality || '', team:stat?.team?.name || '', teamId:stat?.team?.id || null, teamLogo:stat?.team?.logo || teamLogoUrl(stat?.team?.id),
+      position:stat?.games?.position || player?.position || '', appearances:stat?.games?.appearences ?? stat?.games?.appearances ?? 0,
+      goals:stat?.goals?.total ?? 0, assists:stat?.goals?.assists ?? 0, passes:stat?.passes?.total ?? 0, keyPasses:stat?.passes?.key ?? 0,
+      passAccuracy:stat?.passes?.accuracy ?? null, duelsWon:stat?.duels?.won ?? 0, tackles:stat?.tackles?.total ?? 0, interceptions:stat?.tackles?.interceptions ?? 0,
+      source:'api-stats', statistics:stat,
+    };
+  }).filter(player => player.id && player.name);
+}
+
+export async function getFixtureLineups(fixtureId) {
+  if (!fixtureId) return [];
+  const data = await apiFetch('fixtures/lineups', { fixture:fixtureId }, { ttl:TTL['fixtures/lineups'] });
+  return data?.response ?? [];
+}
+
+export async function getTransfersForPlayer(playerId) {
+  if (!playerId) return [];
+  const data = await apiFetch('transfers', { player:playerId }, { ttl:TTL.transfers });
+  return data?.response ?? [];
+}
 
 const PLAYER_PHOTO_TTL = 7 * 24 * 60 * 60 * 1000;
 const playerPhotoInflight = new Map();

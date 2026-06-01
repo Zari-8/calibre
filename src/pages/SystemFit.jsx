@@ -4,7 +4,8 @@ import {
   Download, FileText, GitCompare, Layers3, Search, Share2, ShieldCheck, Sparkles, Star,
 } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
-import { searchPlayers as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
+import { searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
+import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams,
@@ -36,7 +37,7 @@ function normalizeApiPlayer(player) {
     ...SYSTEM_PLAYERS[0],
     id: player.id,
     name: player.name,
-    team: player.team || 'API-Football database',
+    team: player.team || 'Live API player directory',
     age: player.age || '—',
     image: player.image || '/assets/players/neutral-player.svg',
     position: player.position || 'Profile pending',
@@ -148,8 +149,8 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
   const merged = [...local, ...remote.filter(item => !localIds.has(String(item.id)))].slice(0, 8);
 
   const choose = (item) => {
-    if (kind === 'team') setSelectedTeam(item.source === 'api' ? normalizeApiTeam(item) : item);
-    else setSelectedPlayer(item.source === 'api' ? normalizeApiPlayer(item) : item);
+    if (kind === 'team') setSelectedTeam(String(item.source || '').startsWith('api') ? normalizeApiTeam(item) : item);
+    else setSelectedPlayer(String(item.source || '').startsWith('api') ? normalizeApiPlayer(item) : item);
   };
 
   return (
@@ -166,7 +167,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
       <div className="sf-search-results">
         {merged.map(item => (
           <button type="button" className="sf-search-result" key={`${kind}-${item.id}`} onClick={() => choose(item)}>
-            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <img src={item.image || '/assets/players/neutral-player.svg'} alt="" />}
+            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />}
             <span><b>{item.name}</b><small>{kind === 'team' ? `${item.country} · ${item.league || 'database club'}` : `${item.team} · ${item.position}`}</small></span>
           </button>
         ))}
@@ -178,7 +179,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
           <div><b>{selectedTeam.name}</b><small>{selectedTeam.formation} · {selectedTeam.philosophy}</small></div>
         </div>
         <div className="sf-current-pair">
-          <img src={selectedPlayer.image} alt="" />
+          <ApiPlayerImage name={selectedPlayer.name} fallbackSrc={selectedPlayer.image} alt={selectedPlayer.name} />
           <div><b>{selectedPlayer.name}</b><small>{selectedPlayer.position} · {selectedPlayer.archetype}</small></div>
         </div>
       </div>
@@ -202,7 +203,7 @@ function PlayerHero({ report, mode, comparison, challenger }) {
       </div>
       <div className="sf-hero-grid">
         <div className="sf-player-portrait">
-          <img src={player.image} alt={player.name} />
+          <ApiPlayerImage name={player.name} fallbackSrc={player.image} alt={player.name} />
           <div className="sf-player-portrait-fade" />
           <div className="sf-player-portrait-label"><small>{player.archetype}</small><strong>{player.name}</strong><span>{player.position} · {player.team}</span></div>
         </div>
@@ -235,7 +236,7 @@ function TransferSpotlight({ spotlight, onLoad }) {
       </div>
       <div className="sf-transfer-grid">
         <div className="sf-transfer-player">
-          <img src={player.image} alt={player.name} />
+          <ApiPlayerImage name={player.name} fallbackSrc={player.image} alt={player.name} />
           <div className="sf-transfer-player-copy">
             <small>{player.team} → {team.name}</small>
             <h2>{spotlight.headline}</h2>
@@ -302,9 +303,9 @@ function ComparePlayers({ comparison, challenger, setChallenger }) {
       <section className="sf-panel sf-panel--wide">
         <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div><select value={challenger.id} onChange={event => setChallenger(SYSTEM_PLAYERS.find(player => String(player.id) === event.target.value) || SYSTEM_PLAYERS[1])}>{SYSTEM_PLAYERS.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
         <div className="sf-compare-head">
-          <div><img src={comparison.primary.image} alt="" /><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
+          <div><ApiPlayerImage name={comparison.primary.name} fallbackSrc={comparison.primary.image} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
           <em>VS</em>
-          <div><img src={comparison.challenger.image} alt="" /><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
+          <div><ApiPlayerImage name={comparison.challenger.name} fallbackSrc={comparison.challenger.image} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
         </div>
         <div className="sf-versus-bars">{comparison.dimensions.map(item => (
           <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>
@@ -343,6 +344,14 @@ export default function SystemFit() {
   const [selectedPlayer, setSelectedPlayer] = useState(SYSTEM_PLAYERS[0]);
   const [challenger, setChallenger] = useState(SYSTEM_PLAYERS[1]);
   const [mode, setMode] = useState('fit');
+
+  useEffect(() => {
+    const playerQuery = new URLSearchParams(window.location.search).get('player');
+    if (!playerQuery) return;
+    searchApiPlayers(playerQuery).then(rows => {
+      if (rows?.[0]) setSelectedPlayer(normalizeApiPlayer(rows[0]));
+    }).catch(() => {});
+  }, []);
 
   const report = useMemo(() => buildSystemFitReport(selectedPlayer, selectedTeam), [selectedPlayer, selectedTeam]);
   const comparison = useMemo(() => buildPlayerComparison(selectedPlayer, challenger, selectedTeam), [selectedPlayer, challenger, selectedTeam]);

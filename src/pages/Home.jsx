@@ -151,7 +151,7 @@ export default function Home() {
             <span><Users size={15} />8,421 votes</span>
             <span><BarChart3 size={15} />52–48 split</span>
           </div>
-          <button className="button button--primary" type="button" onClick={() => navigateTo('/debates')}>Enter the debate <ArrowRight size={15} /></button>
+          <button className="button button--primary" type="button" onClick={() => navigateTo('/debates?forum=arsenal-control-vs-chaos')}>Enter the debate <ArrowRight size={15} /></button>
         </article>
       </section>
 

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
+import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
 
 const LOCAL_TALENTS = [
@@ -75,7 +76,7 @@ function numeric(value, fallback=0) { return Number.isFinite(Number(value)) ? Nu
 function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist }) {
   return (
     <article className={`talent-result-card${selected ? ' is-selected' : ''}`} onClick={() => onSelect(player)}>
-      <img src={imageFor(player)} alt={player.name}/>
+      <ApiPlayerImage name={player.name} fallbackSrc={imageFor(player)} alt={player.name} loading="lazy"/>
       <div className="talent-result-card__body">
         <div className="talent-result-card__topline"><span>{player.flag} {player.nation}</span><b>{player.provisional ? 'LIVE' : player.rating}</b></div>
         <h3>{player.name}</h3>
@@ -225,14 +226,14 @@ export default function Talents() {
       {view === 'pathways' && <div className="pathway-workspace">
         <div className="pathway-list">
           <div className="pathway-list__head"><span>Trajectory watchlist</span><strong>Select a talent to inspect the pathway model</strong></div>
-          {filtered.map(player=><button type="button" className={player.name===selected.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><img src={imageFor(player)} alt=""/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
+          {filtered.map(player=><button type="button" className={player.name===selected.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><ApiPlayerImage name={player.name} fallbackSrc={imageFor(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
         </div>
         <Pathway player={selected}/>
       </div>}
 
       {view === 'rankings' && <section className="talent-ranking-panel">
         <div className="talent-ranking-panel__head"><div><span>Trajectory-adjusted ranking</span><h2>Players moving fastest</h2></div><p>Readiness, potential and recent movement combine to surface the most actionable prospects.</p></div>
-        {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><img src={imageFor(player)} alt=""/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
+        {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><ApiPlayerImage name={player.name} fallbackSrc={imageFor(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
       </section>}
 
       <div className="founder-strip" style={{marginTop:18}}>

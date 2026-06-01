@@ -38,6 +38,24 @@ function displayRating(rating){
   return Number.isFinite(numericRating) ? Math.round(numericRating) : '—';
 }
 
+function specificPosition(primaryPosition,fallbackPosition='Player'){
+  const broadPositions = new Set([
+    'attacker',
+    'forward',
+    'midfielder',
+    'defender',
+    'goalkeeper',
+    'player',
+  ]);
+
+  const primary = String(primaryPosition || '').trim();
+  const fallback = String(fallbackPosition || '').trim();
+
+  if(primary && !broadPositions.has(primary.toLowerCase())) return primary;
+  if(fallback) return fallback;
+  return primary || 'Player';
+}
+
 function fallbackFor(player){
   return player?.img || player?.image || '/assets/players/neutral-player.svg';
 }
@@ -47,7 +65,7 @@ function localToProfile(player){
     ...player,
     source:'calibre-index',
     image:player.img,
-    position:player.pos,
+    position:specificPosition(player.pos,player.position),
     team:player.club,
   };
 }
@@ -102,8 +120,8 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
       age:databasePlayer.age || curated.age,
       club:databasePlayer.club || curated.club,
       team:databasePlayer.team || databasePlayer.club || curated.club,
-      pos:databasePlayer.pos || curated.pos,
-      position:databasePlayer.position || databasePlayer.pos || curated.pos,
+      pos:specificPosition(databasePlayer.pos,curated.pos),
+      position:specificPosition(databasePlayer.position,specificPosition(databasePlayer.pos,curated.pos)),
       img:databasePlayer.img || curated.img,
       image:databasePlayer.image || databasePlayer.img || curated.img,
       rating:databasePlayer.rating ?? curated.rating,
@@ -118,8 +136,8 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
     age:player.age || null,
     club:player.club || player.team || 'Calibre database',
     team:player.team || player.club || 'Calibre database',
-    pos:player.pos || player.position || 'Player',
-    position:player.position || player.pos || 'Player',
+    pos:specificPosition(player.pos,player.position),
+    position:specificPosition(player.position,specificPosition(player.pos,'Player')),
     rating:player.rating ?? null,
     buzz:player.buzz ?? 0,
     fanRating:player.fanRating ?? 0,
@@ -137,7 +155,7 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
 
   const stat = stats?.statistics?.[0];
   const club = stat?.team?.name || player.club || player.team || 'Club data loading';
-  const position = stat?.games?.position || player.position || player.pos || 'Player';
+  const position = specificPosition(stat?.games?.position,specificPosition(player.position,player.pos));
 
   const items = [
     ['Age', player.age || '—'],

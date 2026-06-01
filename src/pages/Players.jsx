@@ -76,6 +76,57 @@ function sortCurated(rows,tab){
   return [...rows].sort((a,b)=>(b[key]||0)-(a[key]||0));
 }
 
+
+function mergeCuratedWithSupabase(curatedRows,dbRows){
+  const remaining = new Map(
+    (dbRows || []).map(player=>[String(player.name || '').toLowerCase(),player])
+  );
+
+  const merged = curatedRows.map(curated=>{
+    const key = String(curated.name || '').toLowerCase();
+    const databasePlayer = remaining.get(key);
+
+    if(!databasePlayer) return curated;
+
+    remaining.delete(key);
+
+    return {
+      ...curated,
+      ...databasePlayer,
+      rank:curated.rank,
+      age:databasePlayer.age || curated.age,
+      club:databasePlayer.club || curated.club,
+      team:databasePlayer.team || databasePlayer.club || curated.club,
+      pos:databasePlayer.pos || curated.pos,
+      position:databasePlayer.position || databasePlayer.pos || curated.pos,
+      img:databasePlayer.img || curated.img,
+      image:databasePlayer.image || databasePlayer.img || curated.img,
+      rating:databasePlayer.rating ?? curated.rating,
+      buzz:curated.buzz,
+      fanRating:curated.fanRating,
+      potential:curated.potential,
+    };
+  });
+
+  const additions = [...remaining.values()].map((player,index)=>({
+    rank:merged.length+index+1,
+    age:player.age || null,
+    club:player.club || player.team || 'Calibre database',
+    team:player.team || player.club || 'Calibre database',
+    pos:player.pos || player.position || 'Player',
+    position:player.position || player.pos || 'Player',
+    rating:player.rating ?? null,
+    buzz:player.buzz ?? 0,
+    fanRating:player.fanRating ?? 0,
+    potential:player.potential ?? 0,
+    img:player.img || player.image || '/assets/players/neutral-player.svg',
+    image:player.image || player.img || '/assets/players/neutral-player.svg',
+    ...player,
+  }));
+
+  return [...merged,...additions];
+}
+
 function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
   if(!player) return null;
 
@@ -182,7 +233,12 @@ export default function Players(){
     archetype:'all',
   });
 
-  const featured = CURATED_PLAYERS[weekIndex(CURATED_PLAYERS.length)];
+  const landingPlayers = useMemo(
+    ()=>mergeCuratedWithSupabase(CURATED_PLAYERS,supabaseRows),
+    [supabaseRows]
+  );
+
+  const featured = landingPlayers[weekIndex(landingPlayers.length)];
   const hasLiveQuery = search.trim().length>=3;
 
   useEffect(()=>{
@@ -267,7 +323,7 @@ export default function Players(){
     ? liveRows
     : browseRows.length
       ? browseRows
-      : CURATED_PLAYERS.map(localToProfile);
+      : landingPlayers.map(localToProfile);
 
   const tableRows = useMemo(
     ()=>sourceRows.filter(
@@ -279,20 +335,22 @@ export default function Players(){
   );
 
   const ranked = useMemo(
-    ()=>sortCurated(CURATED_PLAYERS,rankTab).slice(0,5),
-    [rankTab]
+    ()=>sortCurated(landingPlayers,rankTab).slice(0,5),
+    [landingPlayers,rankTab]
   );
 
   async function openProfile(player){
     setActivePlayer(player);
     setActiveStats(null);
 
-    if(!player?.id) return;
+    const apiId = player?.apiPlayerId ?? (typeof player?.id === 'number' ? player.id : null);
+
+    if(!apiId) return;
 
     setProfileLoading(true);
 
     try{
-      setActiveStats(await getPlayerStats(player.id));
+      setActiveStats(await getPlayerStats(apiId));
     }finally{
       setProfileLoading(false);
     }
@@ -314,16 +372,6 @@ export default function Players(){
 
   return (
     <div className="page players-page">
-      <div className="player-search-state" style={{marginBottom:10}}>
-        Supabase:{' '}
-        {supabaseLoading
-          ? 'connecting…'
-          : supabaseError
-            ? `connection error — ${supabaseError}`
-            : `${supabaseRows.length} player records connected`
-        }
-      </div>
-
       <div className="plp-header">
         <div className="plp-title">Players</div>
         <div className="plp-sub">Discover, analyse and compare football talent through the live API directory and Calibre enrichment layer.</div>
@@ -332,7 +380,7 @@ export default function Players(){
       <div className="plp-stats-bar">
         <div className="plp-stat"><div className="plp-stat-label">Player Directory</div><div className="plp-stat-val">LIVE</div><div className="plp-stat-sub">Global profile search connected</div></div>
         <div className="plp-stat"><div className="plp-stat-label">League Browse</div><div className="plp-stat-val">9</div><div className="plp-stat-sub">Beta league feeds enabled</div></div>
-        <div className="plp-stat"><div className="plp-stat-label">Scout Layer</div><div className="plp-stat-val">Beta</div><div className="plp-stat-sub">Calibre enrichment in progress</div></div>
+        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseRows.length}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Supabase rating profiles enriched'}</div></div>
         <div className="plp-stat"><div className="plp-stat-label">Featured Player</div><div className="plp-stat-val">Weekly</div><div className="plp-stat-sub">Editorial rotation</div></div>
       </div>
 

@@ -33,6 +33,11 @@ const POSITION_OPTIONS = ['all','Attacker','Midfielder','Defender','Goalkeeper']
 const AGE_OPTIONS = [['16-40','16–40'],['16-21','16–21'],['22-25','22–25'],['26-30','26–30'],['31-40','31–40']];
 const RANK_TABS = ['Calibre Rating','Market Buzz','Fan Rating','Potential'];
 
+function displayRating(rating){
+  const numericRating = Number(rating);
+  return Number.isFinite(numericRating) ? Math.round(numericRating) : '—';
+}
+
 function fallbackFor(player){
   return player?.img || player?.image || '/assets/players/neutral-player.svg';
 }
@@ -446,7 +451,7 @@ export default function Players(){
             <div className="plp-featured-img-wrap">
               <ApiPlayerImage className="plp-featured-img" name={featured.name} fallbackSrc={featured.img} alt={featured.name}/>
               <div className="plp-featured-img-overlay"/>
-              <div className="plp-featured-rating-badge"><strong>{featured.rating}</strong><span>Calibre</span></div>
+              <div className="plp-featured-rating-badge"><strong>{displayRating(featured.rating)}</strong><span>Calibre</span></div>
             </div>
 
             <div className="plp-featured-body">
@@ -457,7 +462,7 @@ export default function Players(){
               <p className="featured-selection-note"><Info size={12}/> Chosen from the current debate and transfer-window rotation, not solely by goals.</p>
 
               <div className="plp-featured-stats">
-                <div className="plp-featured-stat"><strong>{featured.rating}</strong><span>Calibre</span></div>
+                <div className="plp-featured-stat"><strong>{displayRating(featured.rating)}</strong><span>Calibre</span></div>
                 <div className="plp-featured-stat"><strong>{featured.buzz}</strong><span>Market Buzz</span></div>
                 <div className="plp-featured-stat"><strong>{featured.fanRating} ★</strong><span>Fan Rating</span></div>
                 <div className="plp-featured-stat"><strong>{featured.potential}</strong><span>Potential</span></div>
@@ -481,7 +486,7 @@ export default function Players(){
                 <div className="plp-rank-num">{index+1}</div>
                 <ApiPlayerImage className="avatar avatar--28" name={r.name} fallbackSrc={r.img}/>
                 <div className="plp-rank-name">{r.name}</div>
-                <div className="rating-badge rating-badge--sm">{rankTab==='Market Buzz'?r.buzz:rankTab==='Fan Rating'?r.fanRating:rankTab==='Potential'?r.potential:r.rating}</div>
+                <div className="rating-badge rating-badge--sm">{rankTab==='Market Buzz'?r.buzz:rankTab==='Fan Rating'?r.fanRating:rankTab==='Potential'?r.potential:displayRating(r.rating)}</div>
               </button>
             )}
           </div>
@@ -509,7 +514,7 @@ export default function Players(){
                     <td>{p.age||'—'}</td>
                     <td>{p.team||p.club||'API-Football profile'}</td>
                     <td><span className="plp-pos-badge">{p.position||p.pos||'—'}</span></td>
-                    <td>{p.rating?<div className="rating-badge rating-badge--sm">{p.rating}</div>:<span className="live-profile-pill">LIVE</span>}</td>
+                    <td>{p.rating!=null?<div className="rating-badge rating-badge--sm">{displayRating(p.rating)}</div>:<span className="live-profile-pill">LIVE</span>}</td>
                     <td><button className="btn btn--ghost btn--sm" type="button" onClick={event=>{event.stopPropagation();openProfile(p);}}>Open <ArrowRight size={12}/></button></td>
                   </tr>
                 )}
@@ -558,7 +563,7 @@ export default function Players(){
                 </div>
 
                 <div>
-                  <div className="rating-badge rating-badge--sm">{r.rating}</div>
+                  <div className="rating-badge rating-badge--sm">{displayRating(r.rating)}</div>
                   <div className="trend-up">{r.delta}</div>
                 </div>
               </button>

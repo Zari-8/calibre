@@ -3,7 +3,7 @@ import { Search, ArrowRight, Crown, Star, TrendingUp, X, LoaderCircle, Plus, Dat
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
-import { getSupabasePlayers } from '../services/supabasePlayers.js';
+import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
 
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
@@ -32,6 +32,7 @@ const LEAGUE_OPTIONS = [
 const POSITION_OPTIONS = ['all','Attacker','Midfielder','Defender','Goalkeeper'];
 const AGE_OPTIONS = [['16-40','16–40'],['16-21','16–21'],['22-25','22–25'],['26-30','26–30'],['31-40','31–40']];
 const RANK_TABS = ['Calibre Rating','Market Buzz','Fan Rating','Potential'];
+const PLAYER_TABLE_LIMIT = 25;
 
 function displayRating(rating){
   const numericRating = Number(rating);
@@ -131,23 +132,9 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
     };
   });
 
-  const additions = [...remaining.values()].map((player,index)=>({
-    rank:merged.length+index+1,
-    age:player.age || null,
-    club:player.club || player.team || 'Calibre database',
-    team:player.team || player.club || 'Calibre database',
-    pos:specificPosition(player.pos,player.position),
-    position:specificPosition(player.position,specificPosition(player.pos,'Player')),
-    rating:player.rating ?? null,
-    buzz:player.buzz ?? 0,
-    fanRating:player.fanRating ?? 0,
-    potential:player.potential ?? 0,
-    img:player.img || player.image || '/assets/players/neutral-player.svg',
-    image:player.image || player.img || '/assets/players/neutral-player.svg',
-    ...player,
-  }));
-
-  return [...merged,...additions];
+  // Important: keep the landing page editorial and compact.
+  // Supabase is the full player bank, but only curated names belong here.
+  return merged;
 }
 
 function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
@@ -245,6 +232,7 @@ export default function Players(){
   const [compareOpen,setCompareOpen] = useState(false);
   const [notice,setNotice] = useState('');
   const [supabaseRows,setSupabaseRows] = useState([]);
+  const [supabaseTotal,setSupabaseTotal] = useState(0);
   const [supabaseError,setSupabaseError] = useState('');
   const [supabaseLoading,setSupabaseLoading] = useState(true);
 
@@ -267,16 +255,23 @@ export default function Players(){
   useEffect(()=>{
     let active = true;
 
-    getSupabasePlayers()
-      .then(rows=>{
+    Promise.all([
+      getSupabasePlayers({
+        names:CURATED_PLAYERS.map(player=>player.name),
+        limit:CURATED_PLAYERS.length,
+      }),
+      getSupabasePlayerCount(),
+    ])
+      .then(([rows,total])=>{
         if(active){
           setSupabaseRows(rows);
+          setSupabaseTotal(total);
           setSupabaseError('');
         }
       })
       .catch(error=>{
         if(active){
-          setSupabaseError(error?.message || 'Supabase player read failed');
+          setSupabaseError(error?.message || 'Supabase player-bank read failed');
         }
       })
       .finally(()=>{
@@ -307,10 +302,16 @@ export default function Players(){
       setSearchError('');
 
       try{
-        const rows = await searchPlayerProfiles(query,{skipCache:true,ttl:5*60*1000});
-        if(!cancelled) setLiveRows(rows);
+        const bankRows = await searchSupabasePlayers(query,{limit:20});
+
+        if(bankRows.length){
+          if(!cancelled) setLiveRows(bankRows);
+        }else{
+          const apiRows = await searchPlayerProfiles(query,{skipCache:true,ttl:5*60*1000});
+          if(!cancelled) setLiveRows(apiRows.slice(0,20));
+        }
       }catch{
-        if(!cancelled) setSearchError('Live player search could not load. Try again.');
+        if(!cancelled) setSearchError('Player-bank search could not load. Try again.');
       }finally{
         if(!cancelled) setSearching(false);
       }
@@ -328,15 +329,23 @@ export default function Players(){
 
     try{
       if(filters.league!=='all'){
-        const rows = await getLeaguePlayers(Number(filters.league),CURRENT_SEASON,1);
-        setBrowseRows(rows);
-        setNotice(`${rows.length} live league-player profiles loaded.`);
+        const leagueId = Number(filters.league);
+        const bankRows = await getSupabasePlayers({leagueId,limit:PLAYER_TABLE_LIMIT});
+
+        if(bankRows.length){
+          setBrowseRows(bankRows);
+          setNotice(`Showing ${bankRows.length} players from the Calibre bank. Use search to find a specific player.`);
+        }else{
+          const apiRows = await getLeaguePlayers(leagueId,CURRENT_SEASON,1);
+          setBrowseRows(apiRows.slice(0,PLAYER_TABLE_LIMIT));
+          setNotice(`Showing ${Math.min(apiRows.length,PLAYER_TABLE_LIMIT)} live league profiles.`);
+        }
       }else{
         setBrowseRows([]);
-        setNotice('Choose a league to browse its live player feed, or type a player name for global search.');
+        setNotice('Choose a league to browse a limited player sample, or type a player name to search the Calibre bank.');
       }
     }catch{
-      setNotice('Live league browse could not load.');
+      setNotice('League browse could not load.');
     }finally{
       setSearching(false);
     }
@@ -353,7 +362,7 @@ export default function Players(){
       p=>ageInRange(p.age,filters.age)
         && posMatches(p.position||p.pos,filters.position)
         && (filters.nation==='all' || String(p.nationality||'').toLowerCase().includes(filters.nation))
-    ),
+    ).slice(0,PLAYER_TABLE_LIMIT),
     [sourceRows,filters]
   );
 
@@ -397,13 +406,13 @@ export default function Players(){
     <div className="page players-page">
       <div className="plp-header">
         <div className="plp-title">Players</div>
-        <div className="plp-sub">Discover, analyse and compare football talent through the live API directory and Calibre enrichment layer.</div>
+        <div className="plp-sub">Discover, analyse and compare football talent through the Calibre player bank and live enrichment layer.</div>
       </div>
 
       <div className="plp-stats-bar">
         <div className="plp-stat"><div className="plp-stat-label">Player Directory</div><div className="plp-stat-val">LIVE</div><div className="plp-stat-sub">Global profile search connected</div></div>
         <div className="plp-stat"><div className="plp-stat-label">League Browse</div><div className="plp-stat-val">9</div><div className="plp-stat-sub">Beta league feeds enabled</div></div>
-        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseRows.length}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Supabase rating profiles enriched'}</div></div>
+        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseTotal.toLocaleString()}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Supabase rating profiles enriched'}</div></div>
         <div className="plp-stat"><div className="plp-stat-label">Featured Player</div><div className="plp-stat-val">Weekly</div><div className="plp-stat-sub">Editorial rotation</div></div>
       </div>
 

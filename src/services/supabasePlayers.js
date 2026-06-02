@@ -1,105 +1,115 @@
-import { supabase } from './supabaseClient.js';
+import { supabase, supabaseConfigured } from './supabaseClient.js';
 
-function calculateAge(dateOfBirth) {
-  if (!dateOfBirth) return null;
+const DEFAULT_LIMIT = 20;
 
-  const birthDate = new Date(dateOfBirth);
+const PLAYER_SELECT = [
+  'id',
+  'api_player_id',
+  'api_team_id',
+  'league_id',
+  'season',
+  'slug',
+  'name',
+  'firstname',
+  'lastname',
+  'age',
+  'date_of_birth',
+  'nationality',
+  'club',
+  'team',
+  'pos',
+  'position',
+  'raw_position',
+  'shirt_number',
+  'rating',
+  'archetype',
+  'img',
+  'image',
+  'appearances',
+  'starts',
+  'minutes',
+  'goals',
+  'assists',
+  'api_average_rating',
+  'source',
+  'last_synced_at',
+  'profile_enriched_at',
+].join(',');
 
-  if (Number.isNaN(birthDate.getTime())) return null;
+function requireSupabase(){
+  if(!supabaseConfigured || !supabase){
+    throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel.');
+  }
 
-  const today = new Date();
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const hasNotHadBirthday =
-    today.getMonth() < birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() &&
-      today.getDate() < birthDate.getDate());
-
-  if (hasNotHadBirthday) age -= 1;
-
-  return age;
+  return supabase;
 }
 
-function latestRating(ratings) {
-  const rows = Array.isArray(ratings)
-    ? ratings
-    : ratings
-      ? [ratings]
-      : [];
-
-  return [...rows].sort((a, b) =>
-    String(b?.season || '').localeCompare(String(a?.season || '')),
-  )[0] || null;
+function normalizePlayer(row){
+  return {
+    ...row,
+    apiPlayerId:row.api_player_id ?? null,
+    apiTeamId:row.api_team_id ?? null,
+    leagueId:row.league_id ?? null,
+    club:row.club || row.team || null,
+    team:row.team || row.club || null,
+    pos:row.pos || row.position || row.raw_position || 'Player',
+    position:row.position || row.pos || row.raw_position || 'Player',
+    img:row.img || row.image || null,
+    image:row.image || row.img || null,
+  };
 }
 
-function relatedTeam(teamValue) {
-  if (Array.isArray(teamValue)) return teamValue[0] || null;
-  return teamValue || null;
-}
+export async function getSupabasePlayerCount(){
+  const client = requireSupabase();
 
-export async function getSupabasePlayers() {
-  if (!supabase) return [];
-
-  const { data, error } = await supabase
+  const { count, error } = await client
     .from('players')
-    .select(`
-      id,
-      api_player_id,
-      name,
-      slug,
-      date_of_birth,
-      nationality,
-      gender,
-      position,
-      primary_role,
-      archetype,
-      image_url,
-      teams (
-        name,
-        short_name
-      ),
-      player_ratings (
-        calibre_rating,
-        debate_index,
-        season
-      )
-    `)
-    .order('name');
+    .select('*',{count:'exact',head:true});
 
-  if (error) throw error;
+  if(error) throw error;
+  return count || 0;
+}
 
-  return (data || []).map((row) => {
-    const team = relatedTeam(row.teams);
-    const rating = latestRating(row.player_ratings);
-    const club = team?.short_name || team?.name || '';
+export async function getSupabasePlayers({
+  names=[],
+  leagueId=null,
+  limit=DEFAULT_LIMIT,
+  offset=0,
+}={}){
+  const client = requireSupabase();
 
-    return {
-      id: row.id,
-      apiPlayerId: row.api_player_id,
-      name: row.name,
-      slug: row.slug,
-      age: calculateAge(row.date_of_birth),
-      nationality: row.nationality,
-      gender: row.gender,
-      team: club,
-      club,
-      position: row.position,
-      pos: row.position,
-      primaryRole: row.primary_role,
-      archetype: row.archetype,
-      image: row.image_url || '/assets/players/neutral-player.svg',
-      img: row.image_url || '/assets/players/neutral-player.svg',
-      rating:
-        rating?.calibre_rating === null ||
-        rating?.calibre_rating === undefined
-          ? null
-          : Number(rating.calibre_rating),
-      debateIndex:
-        rating?.debate_index === null ||
-        rating?.debate_index === undefined
-          ? null
-          : Number(rating.debate_index),
-      season: rating?.season || null,
-      source: 'supabase',
-    };
-  });
+  let query = client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .range(offset,offset+limit-1);
+
+  if(Array.isArray(names) && names.length){
+    query = query.in('name',names);
+  }
+
+  if(leagueId!==null && leagueId!==undefined && leagueId!==''){
+    query = query.eq('league_id',Number(leagueId));
+  }
+
+  const { data, error } = await query.order('name',{ascending:true});
+
+  if(error) throw error;
+  return (data || []).map(normalizePlayer);
+}
+
+export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
+  const client = requireSupabase();
+  const query = String(search || '').trim();
+
+  if(query.length<3) return [];
+
+  const { data, error } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .ilike('name',`%${query}%`)
+    .order('name',{ascending:true})
+    .limit(limit);
+
+  if(error) throw error;
+  return (data || []).map(normalizePlayer);
 }

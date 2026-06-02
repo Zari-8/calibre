@@ -1,0 +1,9 @@
+{
+  "_instructions": "Optional: add API-Football player IDs or exact player names when you know a more precise role. The importer will preserve these detailed codes instead of broad API labels such as MID.",
+  "Example Player Name": {
+    "position": "CM"
+  },
+  "Example API Player ID": {
+    "position": "CAM"
+  }
+}

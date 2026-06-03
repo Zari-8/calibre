@@ -76,11 +76,30 @@ function Sidebar({ group, setGroup }) {
 function slugify(value='') { return String(value).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
 function analysisForFixture(home, away, competition) {
   return {
-    headline:`Where does ${home} vs ${away} break open?`,
+    headline: matchroomHeadline(home, away),
     pregame:`${home} and ${away} now share one fixture-specific Matchroom. The live fixture feed supplies the matchup; the Calibre layer frames the tactical argument around territory, progression and transition protection rather than recycling analysis written for another game.`,
     keyDuel:`${home} progression lanes vs ${away} transition protection`, tempo:'Model updating', xg:'Pregame feed pending', btts:'Context pending', threat:'Structure vs transition',
   };
 }
+function matchroomHeadline(home, away) {
+  const seed = `${home}-${away}`
+    .split('')
+    .reduce((total, char) => total + char.charCodeAt(0), 0);
+
+  const prompts = [
+    `Where does ${home} vs ${away} break open?`,
+    `Can ${home} control the game before ${away} turn it into a transition battle?`,
+    `What happens when ${home}'s structure meets ${away}'s first wave?`,
+    `Does ${away} have an answer when ${home} attack the second phase?`,
+    `Which side wins the territory war: ${home} or ${away}?`,
+    `Can ${home} survive ${away}'s pressure without surrendering the game state?`,
+    `Who controls the spaces that decide ${home} vs ${away}?`,
+    `Does this game belong to ${home}'s build-up or ${away}'s counterpress?`,
+  ];
+
+  return prompts[seed % prompts.length];
+}
+
 function normalizeFixture(row, fallback, competition) {
   if (!row?.teams || !row?.fixture) return fallback;
   const home = row.teams.home?.name || fallback.home;

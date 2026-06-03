@@ -165,7 +165,37 @@ export async function getCompetitionPlayers(leagueId, season = CURRENT_SEASON, p
 }
 
 export async function getTopCreators(leagueId, season = CURRENT_SEASON, limit = 5) {
-  const rows = await getCompetitionPlayers(leagueId, season, 2);
+  if (!leagueId) return [];
+
+  try {
+    const data = await apiFetch('players/topassists', {
+      league: leagueId,
+      season,
+    });
+
+    const rows = data?.response || [];
+
+    if (rows.length) {
+      return rows
+        .map(row => {
+          const stats = row.statistics?.[0] || {};
+          return {
+            player: row.player || {},
+            team: stats.team?.name || '—',
+            assists: Number(stats.goals?.assists || 0),
+            img: row.player?.photo || '',
+          };
+        })
+        .filter(row => row.player?.name && row.assists > 0)
+        .sort((a, b) => b.assists - a.assists)
+        .slice(0, limit);
+    }
+  } catch (error) {
+    console.warn('Top-assists endpoint unavailable. Falling back to competition player rows.', error);
+  }
+
+  const rows = await getCompetitionPlayers(leagueId, season, 3);
+
   return rows
     .map(row => {
       const stats = row.statistics?.[0] || {};
@@ -173,6 +203,7 @@ export async function getTopCreators(leagueId, season = CURRENT_SEASON, limit = 
         player: row.player || {},
         team: stats.team?.name || '—',
         assists: Number(stats.goals?.assists || 0),
+        img: row.player?.photo || '',
       };
     })
     .filter(row => row.player?.name && row.assists > 0)

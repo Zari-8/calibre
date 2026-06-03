@@ -7,3 +7,11 @@
 *.pre-competitions-backup
 *.before-competitionrows-fix
 *.before-competition-view
+
+# Local build and dependency artifacts
+node_modules/
+dist/
+package-lock.json
+
+# Local patch backups
+*.before-*

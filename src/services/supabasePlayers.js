@@ -78,8 +78,13 @@ export async function getSupabasePlayers({
 }={}){
   const client = requireSupabase();
 
+  const hasLeagueFilter =
+    leagueId !== null &&
+    leagueId !== undefined &&
+    leagueId !== '';
+
   let query = client
-    .from('players')
+    .from(hasLeagueFilter ? 'player_competition_profiles' : 'players')
     .select(PLAYER_SELECT)
     .range(offset,offset+limit-1);
 
@@ -87,7 +92,7 @@ export async function getSupabasePlayers({
     query = query.in('name',names);
   }
 
-  if(leagueId!==null && leagueId!==undefined && leagueId!==''){
+  if(hasLeagueFilter){
     query = query.eq('league_id',Number(leagueId));
   }
 

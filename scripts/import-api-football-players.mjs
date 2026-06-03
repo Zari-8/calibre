@@ -248,6 +248,32 @@ async function upsertPlayers({ rows, supabaseUrl, serviceRoleKey }) {
   }
 }
 
+
+async function upsertPlayerCompetitions({ rows, supabaseUrl, serviceRoleKey }) {
+  if (!rows.length) return;
+
+  const url = new URL(`${supabaseUrl.replace(/\/$/, '')}/rest/v1/player_competitions`);
+  url.searchParams.set('on_conflict', 'api_player_id,league_id,season');
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      apikey: serviceRoleKey,
+      Authorization: `Bearer ${serviceRoleKey}`,
+      'Content-Type': 'application/json',
+      Prefer: 'resolution=merge-duplicates,return=minimal',
+    },
+    body: JSON.stringify(rows),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Supabase player_competitions upsert failed: ${response.status} ${response.statusText}\n${body}`
+    );
+  }
+}
+
 async function main() {
   await loadLocalEnv();
 
@@ -265,6 +291,7 @@ async function main() {
   const teamId = teamArg ? Number(teamArg) : null;
   const delayMs = Number(getArg('delay', process.env.IMPORT_DELAY_MS || DEFAULT_DELAY_MS));
   const dryRun = hasFlag('dry-run');
+  const membershipOnly = process.env.IMPORT_MEMBERSHIP_ONLY === '1';
 
   const overrides = await loadPositionOverrides();
   const teams = await loadTeams({ leagueId, season, teamId, apiKey });
@@ -287,19 +314,41 @@ async function main() {
       const squad = await loadTeamSquad(team.id, apiKey);
       const effectiveTeam = squad.team || team;
 
-      const rows = squad.players.map((player) =>
-        buildPlayerRow({
-          player,
-          team: effectiveTeam,
-          leagueId,
-          season,
-          overrides,
-        })
-      );
+      const uniquePlayers = [
+      ...new Map(squad.players.map((player) => [player.id, player])).values(),
+    ];
+
+    const rows = uniquePlayers.map((player) =>
+      buildPlayerRow({
+        player,
+        team: effectiveTeam,
+        leagueId,
+        season,
+        overrides,
+      })
+    );
+
+    const competitionRows = rows.map((row) => ({
+      api_player_id: row.api_player_id,
+      league_id: leagueId,
+      season,
+      api_team_id: row.api_team_id,
+      team: row.team,
+      source: 'api-football',
+      updated_at: new Date().toISOString(),
+    }));
 
       if (!dryRun) {
+      if (!membershipOnly) {
         await upsertPlayers({ rows, supabaseUrl, serviceRoleKey });
       }
+
+      await upsertPlayerCompetitions({
+        rows: competitionRows,
+        supabaseUrl,
+        serviceRoleKey,
+      });
+    }
 
       imported += rows.length;
       console.log(`✓ ${effectiveTeam.name}: ${rows.length} players ${dryRun ? 'prepared' : 'imported'}`);

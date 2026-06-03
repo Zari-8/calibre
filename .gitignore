@@ -1,0 +1,9 @@
+
+# Local secrets and importer backups
+.env
+.env.*
+!.env.example
+*.backup
+*.pre-competitions-backup
+*.before-competitionrows-fix
+*.before-competition-view

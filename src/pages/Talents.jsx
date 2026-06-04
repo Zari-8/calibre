@@ -17,7 +17,40 @@ const LOCAL_TALENTS = [
   { name:'Sofía Benítez', age:20, nation:'Argentina', flag:'🇦🇷', league:'Liga Femenina', club:'River Plate Women', role:'Inside Forward', position:'LW', rating:78, potential:88, readiness:77, trend:'+11%', region:'south_america', trajectory:'rising', nextStep:'Liga F or WSL development move', pathway:['Argentina senior football','Liga F / WSL development move','Champions League-level squad'], localImage:'/assets/players/lamine-yamal.jpg' },
 ];
 
-const NORMALISED_ASIAN = asianTalents.map((p, index) => ({
+const MAX_DISCOVERY_AGE = 22;
+
+const ESTABLISHED_DISCOVERY_EXCLUSIONS = new Set([
+  'Takefusa Kubo',
+  'Lee Kang-in',
+  'Kaoru Mitoma',
+  'Ao Tanaka',
+  'Hwang Hee-chan',
+  'Gue-sung Cho',
+  'Chanathip Songkrasin',
+  'Nguyen Quang Hai',
+  'Salem Al-Dawsari',
+  'Yasser Al-Shahrani',
+  'Akram Afif',
+  'Florian Wirtz',
+]);
+
+function isDiscoveryTalent(player) {
+  const age = Number(player?.age);
+  const trajectory = String(player?.trajectory || '').toLowerCase();
+  const trend = Number(String(player?.trend || '0').replace('%', '').replace('+', ''));
+
+  return Number.isFinite(age)
+    && age >= 16
+    && age <= MAX_DISCOVERY_AGE
+    && trajectory === 'rising'
+    && Number.isFinite(trend)
+    && trend > 0
+    && !ESTABLISHED_DISCOVERY_EXCLUSIONS.has(player?.name);
+}
+
+const NORMALISED_ASIAN = asianTalents
+  .filter(isDiscoveryTalent)
+  .map((p, index) => ({
   ...p,
   position: /Forward|Striker/.test(p.role) ? 'ST' : /Fullback/.test(p.role) ? 'FB' : /Wide|Inside/.test(p.role) ? 'RW' : 'CM',
   potential: Math.min(94, p.rating + (p.trajectory === 'rising' ? 7 : 3)),
@@ -25,7 +58,7 @@ const NORMALISED_ASIAN = asianTalents.map((p, index) => ({
   localImage: ['/assets/players/lamine-yamal.jpg','/assets/players/pedri.jpg','/assets/players/florian-wirtz.jpg','/assets/players/vitinha.jpg'][index % 4],
 }));
 
-const TALENTS = [...LOCAL_TALENTS, ...NORMALISED_ASIAN];
+const TALENTS = [...LOCAL_TALENTS, ...NORMALISED_ASIAN].filter(isDiscoveryTalent);
 const VIEW_TABS = [
   { key:'discover', label:'Discovery Pool', icon:Sparkles },
   { key:'pathways', label:'Trajectory Pathways', icon:Route },
@@ -60,7 +93,7 @@ function shortPosition(position='') {
   if (/defender|back/.test(value)) return 'DF';
   if (/midfielder/.test(value)) return 'CM';
   if (/attacker|forward|striker/.test(value)) return 'ST';
-  return 'U23';
+  return 'U22';
 }
 function liveTalentFromProfile(profile) {
   const age = Number(profile.age || 0);
@@ -149,7 +182,12 @@ export default function Talents() {
       searchPlayerProfiles(search)
         .then(rows => {
           if (cancelled) return;
-          const talents = rows.filter(row => !row.age || Number(row.age) <= 23).map(liveTalentFromProfile);
+          const talents = rows
+          .filter(row => {
+            const age = Number(row.age);
+            return Number.isFinite(age) && age >= 16 && age <= MAX_DISCOVERY_AGE;
+          })
+          .map(liveTalentFromProfile);
           setLiveTalents(talents);
           setLiveSearched(true);
         })
@@ -201,7 +239,7 @@ export default function Talents() {
       <section className="talent-filter-shell">
         <label className="talent-search"><Search size={16}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search player, club, role or league" /></label>
         <div className="td-filters">
-          <select className="td-filter-select" aria-label="Age filter" value={age} onChange={event=>setAge(event.target.value)}><option value="all">All ages</option><option value="u18">U18</option><option value="u21">U21</option><option value="u23">U23</option></select>
+          <select className="td-filter-select" aria-label="Age filter" value={age} onChange={event=>setAge(event.target.value)}><option value="all">All ages</option><option value="u18">U18</option><option value="u21">U21</option><option value="u23">U22</option></select>
           <select className="td-filter-select" aria-label="Position filter" value={position} onChange={event=>setPosition(event.target.value)}>{POSITION_OPTIONS.map(item=><option key={item} value={item}>{item === 'all' ? 'All positions' : item}</option>)}</select>
           <select className="td-filter-select" aria-label="Potential filter" value={potential} onChange={event=>setPotential(event.target.value)}><option value="70">Potential 70+</option><option value="80">Potential 80+</option><option value="85">Potential 85+</option><option value="90">Potential 90+</option></select>
           <select className="td-filter-select" aria-label="Sort talents" value={sort} onChange={event=>setSort(event.target.value)}><option value="readiness">Sort: readiness</option><option value="rating">Sort: rating</option><option value="trend">Sort: trajectory</option><option value="age">Sort: youngest</option></select>
@@ -211,7 +249,7 @@ export default function Talents() {
         {moreFilters && <div className="talent-advanced-filters"><Filter size={14}/><span>Trajectory</span>{['all','rising','stable','peak'].map(item=><button className={trajectory===item?'is-active':''} type="button" key={item} onClick={()=>setTrajectory(item)}>{item}</button>)}</div>}
       </section>
 
-      <div className={`talent-api-status${liveMode ? ' is-live' : ''}`}><span className="live-dot" />{liveLoading ? 'Searching API-Football U23 profiles…' : liveMode ? `${liveTalents.length} live U23 profile matches · identity and portraits from API-Football` : 'Curated launch pool · type at least 3 letters to search the live U23 directory'}</div>
+      <div className={`talent-api-status${liveMode ? ' is-live' : ''}`}><span className="live-dot" />{liveLoading ? 'Searching API-Football U22 profiles…' : liveMode ? `${liveTalents.length} live U22 profile matches · identity and portraits from API-Football` : 'Curated launch pool · type at least 3 letters to search the live U22 directory'}</div>
 
       <div className="td-region-tabs">
         {TALENT_REGIONS.map(item => <button key={item.key} type="button" className={`td-region-tab ${region===item.key?'active':''}`} onClick={()=>setRegion(item.key)}>{item.label}<span className="td-region-count">{counts[item.key] || 0}</span></button>)}
@@ -219,7 +257,7 @@ export default function Talents() {
 
       {view === 'discover' && <>
         <Pathway player={selected}/>
-        <div className="talent-results-head" ref={resultsRef}><div><span>{liveMode ? 'API-Football U23 directory' : 'Curated discovery pool'}</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
+        <div className="talent-results-head" ref={resultsRef}><div><span>{liveMode ? 'API-Football U22 directory' : 'Curated discovery pool'}</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
         <div className="talent-results-grid">
           {filtered.length ? filtered.map(player => <TalentCard key={playerKey(player)} player={player} selected={selected.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={player=>setSelectedName(player.name)} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
         </div>

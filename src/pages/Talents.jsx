@@ -70,7 +70,13 @@ const POSITION_OPTIONS = ['all','RW','LW','CM','DM','ST','FB'];
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 function trendValue(trend='0') { return Number.parseFloat(String(trend).replace('%','').replace('+','')) || 0; }
 function imageFor(player) {
-  return player.verifiedImage || player.apiImage || '/assets/players/neutral-player.svg';
+  return player.verifiedImage || player.apiImage || player.image || player.img || '';
+}
+function playerApiId(player) {
+  return player.apiPlayerId ?? (player.source === 'api-profile' || player.source === 'supabase-registry' ? player.id : null);
+}
+function allowOfficialLookup(player) {
+  return Boolean(playerApiId(player) || player.source === 'api-profile' || player.source === 'supabase-registry');
 }
 function playerKey(player) { return player.id ? `api-${player.id}` : player.name; }
 function regionForNation(nation='') {
@@ -160,7 +166,7 @@ function numeric(value, fallback=0) { return Number.isFinite(Number(value)) ? Nu
 function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist }) {
   return (
     <article className={`talent-result-card${selected ? ' is-selected' : ''}`} onClick={() => onSelect(player)}>
-      <ApiPlayerImage name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={player.name} loading="lazy"/>
+      <ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/>
       <div className="talent-result-card__body">
         <div className="talent-result-card__topline"><span>{player.flag} {player.nation}</span><b>{player.provisional ? 'LIVE' : player.rating}</b></div>
         <h3>{player.name}</h3>
@@ -333,7 +339,7 @@ export default function Talents() {
           <div className="td-title-icon"><Zap size={20}/></div>
           <div><h1>Talent <em>Discovery</em></h1><p>Discover, compare and project the next generation of footballers.</p></div>
         </div>
-        <div className="td-header-stats"><span><b>{liveMode ? liveTalents.length : TALENTS.length}</b> {liveMode ? 'live matches' : 'indexed'}</span><span><b>{shortlist.length}</b> shortlisted</span></div>
+        <div className="td-header-stats"><span><b>{liveMode ? liveTalents.length : sourceTalents.length}</b> {liveMode ? 'live matches' : 'indexed'}</span><span><b>{shortlist.length}</b> shortlisted</span></div>
       </div>
 
       <div className="talent-mode-tabs" role="tablist" aria-label="Talent discovery views">
@@ -370,14 +376,14 @@ export default function Talents() {
       {view === 'pathways' && <div className="pathway-workspace">
         <div className="pathway-list">
           <div className="pathway-list__head"><span>Trajectory watchlist</span><strong>Select a talent to inspect the pathway model</strong></div>
-          {filtered.map(player=><button type="button" className={player.name===selected.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><ApiPlayerImage name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
+          {filtered.map(player=><button type="button" className={player.name===selected.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
         </div>
         <Pathway player={selected}/>
       </div>}
 
       {view === 'rankings' && <section className="talent-ranking-panel">
         <div className="talent-ranking-panel__head"><div><span>Trajectory-adjusted ranking</span><h2>Players moving fastest</h2></div><p>Readiness, potential and recent movement combine to surface the most actionable prospects.</p></div>
-        {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><ApiPlayerImage name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
+        {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
       </section>}
 
       <div className="founder-strip" style={{marginTop:18}}>

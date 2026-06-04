@@ -365,6 +365,8 @@ export async function getLeaguePlayers(leagueId, season = CURRENT_SEASON, page =
       id:player?.id, name:player?.name || '', age:player?.age ?? '', image:player?.photo || playerPhotoUrl(player?.id),
       nationality:player?.nationality || '', team:stat?.team?.name || '', teamId:stat?.team?.id || null, teamLogo:stat?.team?.logo || teamLogoUrl(stat?.team?.id),
       position:stat?.games?.position || player?.position || '', appearances:stat?.games?.appearences ?? stat?.games?.appearances ?? 0,
+      starts:stat?.games?.lineups ?? 0, minutes:stat?.games?.minutes ?? 0, apiAverageRating:Number.parseFloat(stat?.games?.rating || 0) || null,
+      api_average_rating:Number.parseFloat(stat?.games?.rating || 0) || null,
       goals:stat?.goals?.total ?? 0, assists:stat?.goals?.assists ?? 0, passes:stat?.passes?.total ?? 0, keyPasses:stat?.passes?.key ?? 0,
       passAccuracy:stat?.passes?.accuracy ?? null, duelsWon:stat?.duels?.won ?? 0, tackles:stat?.tackles?.total ?? 0, interceptions:stat?.tackles?.interceptions ?? 0,
       source:'api-stats', statistics:stat,

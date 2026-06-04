@@ -167,7 +167,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
       <div className="sf-search-results">
         {merged.map(item => (
           <button type="button" className="sf-search-result" key={`${kind}-${item.id}`} onClick={() => choose(item)}>
-            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />}
+            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage playerId={item.id} name={item.name} preferredSrc={item.image} fallbackSrc="/assets/players/neutral-player.svg" alt={item.name} />}
             <span><b>{item.name}</b><small>{kind === 'team' ? `${item.country} · ${item.league || 'database club'}` : `${item.team} · ${item.position}`}</small></span>
           </button>
         ))}
@@ -179,7 +179,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
           <div><b>{selectedTeam.name}</b><small>{selectedTeam.formation} · {selectedTeam.philosophy}</small></div>
         </div>
         <div className="sf-current-pair">
-          <ApiPlayerImage name={selectedPlayer.name} fallbackSrc={selectedPlayer.image} alt={selectedPlayer.name} />
+          <ApiPlayerImage playerId={selectedPlayer.id} name={selectedPlayer.name} preferredSrc={selectedPlayer.image} fallbackSrc="/assets/players/neutral-player.svg" alt={selectedPlayer.name} />
           <div><b>{selectedPlayer.name}</b><small>{selectedPlayer.position} · {selectedPlayer.archetype}</small></div>
         </div>
       </div>
@@ -203,7 +203,7 @@ function PlayerHero({ report, mode, comparison, challenger }) {
       </div>
       <div className="sf-hero-grid">
         <div className="sf-player-portrait">
-          <ApiPlayerImage name={player.name} fallbackSrc={player.image} alt={player.name} />
+          <ApiPlayerImage playerId={player.id} name={player.name} preferredSrc={player.image} fallbackSrc="/assets/players/neutral-player.svg" alt={player.name} />
           <div className="sf-player-portrait-fade" />
           <div className="sf-player-portrait-label"><small>{player.archetype}</small><strong>{player.name}</strong><span>{player.position} · {player.team}</span></div>
         </div>
@@ -236,7 +236,7 @@ function TransferSpotlight({ spotlight, onLoad }) {
       </div>
       <div className="sf-transfer-grid">
         <div className="sf-transfer-player">
-          <ApiPlayerImage name={player.name} fallbackSrc={player.image} alt={player.name} />
+          <ApiPlayerImage playerId={player.id} name={player.name} preferredSrc={player.image} fallbackSrc="/assets/players/neutral-player.svg" alt={player.name} />
           <div className="sf-transfer-player-copy">
             <small>{player.team} → {team.name}</small>
             <h2>{spotlight.headline}</h2>
@@ -303,9 +303,9 @@ function ComparePlayers({ comparison, challenger, setChallenger }) {
       <section className="sf-panel sf-panel--wide">
         <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div><select value={challenger.id} onChange={event => setChallenger(SYSTEM_PLAYERS.find(player => String(player.id) === event.target.value) || SYSTEM_PLAYERS[1])}>{SYSTEM_PLAYERS.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
         <div className="sf-compare-head">
-          <div><ApiPlayerImage name={comparison.primary.name} fallbackSrc={comparison.primary.image} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
+          <div><ApiPlayerImage playerId={comparison.primary.id} name={comparison.primary.name} preferredSrc={comparison.primary.image} fallbackSrc="/assets/players/neutral-player.svg" alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
           <em>VS</em>
-          <div><ApiPlayerImage name={comparison.challenger.name} fallbackSrc={comparison.challenger.image} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
+          <div><ApiPlayerImage playerId={comparison.challenger.id} name={comparison.challenger.name} preferredSrc={comparison.challenger.image} fallbackSrc="/assets/players/neutral-player.svg" alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
         </div>
         <div className="sf-versus-bars">{comparison.dimensions.map(item => (
           <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>

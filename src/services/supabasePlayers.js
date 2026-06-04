@@ -44,7 +44,13 @@ function requireSupabase(){
   return supabase;
 }
 
+function officialPlayerImage(row){
+  const apiPlayerId = row.api_player_id ?? null;
+  return row.image || row.img || (apiPlayerId ? `https://media.api-sports.io/football/players/${apiPlayerId}.png` : null);
+}
+
 function normalizePlayer(row){
+  const image = officialPlayerImage(row);
   return {
     ...row,
     apiPlayerId:row.api_player_id ?? null,
@@ -54,8 +60,14 @@ function normalizePlayer(row){
     team:row.team || row.club || null,
     pos:row.pos || row.position || row.raw_position || 'Player',
     position:row.position || row.pos || row.raw_position || 'Player',
-    img:row.img || row.image || null,
-    image:row.image || row.img || null,
+    img:image,
+    image,
+    apiAverageRating:row.api_average_rating ?? null,
+    appearances:Number(row.appearances || 0),
+    starts:Number(row.starts || 0),
+    minutes:Number(row.minutes || 0),
+    goals:Number(row.goals || 0),
+    assists:Number(row.assists || 0),
   };
 }
 

@@ -57,8 +57,15 @@ function specificPosition(primaryPosition,fallbackPosition='Player'){
   return primary || 'Player';
 }
 
-function fallbackFor(player){
-  return player?.img || player?.image || '/assets/players/neutral-player.svg';
+function fallbackFor(){
+  return '/assets/players/neutral-player.svg';
+}
+function portraitFor(player){
+  return player?.image || player?.img || '';
+}
+function apiIdFor(player){
+  const id = player?.apiPlayerId ?? player?.api_player_id ?? player?.id;
+  return Number.isFinite(Number(id)) ? Number(id) : null;
 }
 
 function localToProfile(player){
@@ -166,7 +173,7 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
         <button type="button" className="player-profile-modal__close" onClick={onClose}><X size={16}/></button>
 
         <div className="player-profile-modal__hero">
-          <ApiPlayerImage name={player.name} fallbackSrc={fallbackFor(player)} alt={player.name}/>
+          <ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name}/>
           <div>
             <div className="player-profile-modal__kicker"><Database size={12}/> Live player profile</div>
             <h2>{player.name}</h2>
@@ -205,7 +212,7 @@ function CompareModal({players,onClose}){
         <div className="player-compare-modal__grid">
           {players.slice(0,2).map(player=>
             <article key={player.id||player.name}>
-              <ApiPlayerImage name={player.name} fallbackSrc={fallbackFor(player)} alt={player.name}/>
+              <ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name}/>
               <strong>{player.name}</strong>
               <span>{player.team||player.club||player.position||'Live API profile'}</span>
             </article>
@@ -490,7 +497,7 @@ export default function Players(){
         <div>
           <button className="plp-featured panel--featured player-card-button" type="button" onClick={()=>openProfile(localToProfile(featured))}>
             <div className="plp-featured-img-wrap">
-              <ApiPlayerImage className="plp-featured-img" name={featured.name} fallbackSrc={featured.img} alt={featured.name}/>
+              <ApiPlayerImage className="plp-featured-img" playerId={apiIdFor(featured)} name={featured.name} preferredSrc={portraitFor(featured)} fallbackSrc={fallbackFor(featured)} alt={featured.name}/>
               <div className="plp-featured-img-overlay"/>
               <div className="plp-featured-rating-badge"><strong>{displayRating(featured.rating)}</strong><span>Calibre</span></div>
             </div>
@@ -525,7 +532,7 @@ export default function Players(){
             {ranked.map((r,index)=>
               <button key={r.name} className="plp-rank-row player-row-button" type="button" onClick={()=>openProfile(localToProfile(r))}>
                 <div className="plp-rank-num">{index+1}</div>
-                <ApiPlayerImage className="avatar avatar--28" name={r.name} fallbackSrc={r.img}/>
+                <ApiPlayerImage className="avatar avatar--28" playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)}/>
                 <div className="plp-rank-name">{r.name}</div>
                 <div className="rating-badge rating-badge--sm">{rankTab==='Market Buzz'?r.buzz:rankTab==='Fan Rating'?r.fanRating:rankTab==='Potential'?r.potential:displayRating(r.rating)}</div>
               </button>
@@ -551,7 +558,7 @@ export default function Players(){
                 {tableRows.map((p,i)=>
                   <tr key={p.id||p.name} className="player-table-row" onClick={()=>openProfile(p)}>
                     <td>{i+1}</td>
-                    <td><div className="plp-player-cell"><ApiPlayerImage name={p.name} fallbackSrc={fallbackFor(p)} loading="lazy"/><strong>{p.name}</strong></div></td>
+                    <td><div className="plp-player-cell"><ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} loading="lazy"/><strong>{p.name}</strong></div></td>
                     <td>{p.age||'—'}</td>
                     <td>{p.team||p.club||'API-Football profile'}</td>
                     <td><span className="plp-pos-badge">{p.position||p.pos||'—'}</span></td>
@@ -596,7 +603,7 @@ export default function Players(){
 
             {RISING.map(r=>
               <button key={r.name} className="plp-rising-row player-row-button rising-row--role-aware" type="button" onClick={()=>openProfile(localToProfile(r))}>
-                <ApiPlayerImage name={r.name} fallbackSrc={r.img}/>
+                <ApiPlayerImage playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)}/>
                 <div className="plp-rising-info">
                   <strong>{r.name}</strong>
                   <span>{r.sub}</span>

@@ -102,6 +102,22 @@ export async function getSupabasePlayers({
   return (data || []).map(normalizePlayer);
 }
 
+export async function getSupabaseTalentCandidates({limit=240}={}){
+  const client = requireSupabase();
+
+  const { data, error } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .not('age','is',null)
+    .gte('age',16)
+    .lte('age',22)
+    .order('minutes',{ascending:false,nullsFirst:false})
+    .limit(limit);
+
+  if(error) throw error;
+  return (data || []).map(normalizePlayer);
+}
+
 export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
   const client = requireSupabase();
   const query = String(search || '').trim();

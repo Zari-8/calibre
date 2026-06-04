@@ -7,6 +7,7 @@ import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
+import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 
 const LOCAL_TALENTS = [
   { name:'Ibrahim Musa', age:19, nation:'Nigeria', flag:'🇳🇬', league:'NPFL', club:'Remo Stars', role:'Wide Creator', position:'RW', rating:77, potential:87, readiness:82, trend:'+12%', region:'africa', trajectory:'rising', nextStep:'Belgian Pro League watchlist', pathway:['NPFL breakout','Belgian Pro League minutes','Top-five league rotation'], localImage:'/assets/players/ibrahim-musa.jpg' },
@@ -108,6 +109,52 @@ function liveTalentFromProfile(profile) {
     pathway: ['API-Football identity profile', 'Statistics and minutes ingest', 'Calibre Next Step projection'], image: profile.image, provisional: true, source: 'api-profile',
   };
 }
+function registryTalentFromProfile(profile) {
+  const minutes = numeric(profile.minutes);
+  const appearances = numeric(profile.appearances);
+  const starts = numeric(profile.starts);
+  const goals = numeric(profile.goals);
+  const assists = numeric(profile.assists);
+  const apiRating = numeric(profile.api_average_rating ?? profile.apiAverageRating);
+
+  return {
+    ...profile,
+    id: profile.apiPlayerId ?? profile.id,
+    apiPlayerId: profile.apiPlayerId ?? profile.id,
+    name: profile.name,
+    age: Number(profile.age),
+    nation: profile.nationality || 'Unknown',
+    flag: '🌐',
+    club: profile.club || profile.team || 'Club pending',
+    league: profile.league || 'Imported registry',
+    role: profile.archetype || roleForPosition(profile.position),
+    position: shortPosition(profile.position),
+    rating: numeric(profile.rating) || apiRating || '—',
+    readiness: minutes >= 900 ? 80 : minutes >= 450 ? 70 : 60,
+    potential: 'Pending',
+    trend: 'ACTIVE',
+    trajectory: 'rising',
+    region: regionForNation(profile.nationality),
+    nextStep: minutes >= 900
+      ? 'Calibre readiness review pending'
+      : 'More senior minutes needed',
+    pathway: [
+      profile.club || profile.team || 'Current club',
+      'Senior-minutes consolidation',
+      'Calibre Next Step projection pending'
+    ],
+    image: profile.image || profile.img || null,
+    provisional: true,
+    source: 'supabase-registry',
+    minutes,
+    appearances,
+    starts,
+    goals,
+    assists,
+    apiRating
+  };
+}
+
 function numeric(value, fallback=0) { return Number.isFinite(Number(value)) ? Number(value) : fallback; }
 
 function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist }) {
@@ -173,7 +220,39 @@ export default function Talents() {
   const [liveTalents, setLiveTalents] = useState([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveSearched, setLiveSearched] = useState(false);
+  const [registryTalents, setRegistryTalents] = useState([]);
+  const [registryLoading, setRegistryLoading] = useState(true);
   const resultsRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    getSupabaseTalentCandidates({ limit: 240 })
+      .then(rows => {
+        if (cancelled) return;
+
+        const candidates = rows
+          .map(registryTalentFromProfile)
+          .filter(player =>
+            Number.isFinite(Number(player.age))
+            && Number(player.age) >= 16
+            && Number(player.age) <= MAX_DISCOVERY_AGE
+            && (player.minutes >= 450 || player.appearances >= 8)
+          );
+
+        setRegistryTalents(candidates);
+      })
+      .catch(() => {
+        if (!cancelled) setRegistryTalents([]);
+      })
+      .finally(() => {
+        if (!cancelled) setRegistryLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const search = query.trim();
@@ -200,7 +279,12 @@ export default function Talents() {
   }, [query]);
 
   const liveMode = query.trim().length >= 3;
-  const sourceTalents = liveMode && liveSearched ? liveTalents : TALENTS;
+  const sourceTalents =
+    liveMode && liveSearched
+      ? liveTalents
+      : registryTalents.length
+        ? registryTalents
+        : TALENTS;
 
   const filtered = useMemo(() => sourceTalents
     .filter(p => region === 'all' || p.region === region)

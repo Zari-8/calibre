@@ -167,37 +167,15 @@ export async function getCompetitionPlayers(leagueId, season = CURRENT_SEASON, p
 export async function getTopCreators(leagueId, season = CURRENT_SEASON, limit = 5) {
   if (!leagueId) return [];
 
+  let endpointRows = [];
+
   try {
     const data = await apiFetch('players/topassists', {
       league: leagueId,
       season,
     });
 
-    const rows = data?.response || [];
-
-    if (rows.length) {
-      return rows
-        .map(row => {
-          const stats = row.statistics?.[0] || {};
-          return {
-            player: row.player || {},
-            team: stats.team?.name || '—',
-            assists: Number(stats.goals?.assists || 0),
-            img: row.player?.photo || '',
-          };
-        })
-        .filter(row => row.player?.name && row.assists > 0)
-        .sort((a, b) => b.assists - a.assists)
-        .slice(0, limit);
-    }
-  } catch (error) {
-    console.warn('Top-assists endpoint unavailable. Falling back to competition player rows.', error);
-  }
-
-  const rows = await getCompetitionPlayers(leagueId, season, 3);
-
-  return rows
-    .map(row => {
+    endpointRows = (data?.response || []).map(row => {
       const stats = row.statistics?.[0] || {};
       return {
         player: row.player || {},
@@ -205,8 +183,33 @@ export async function getTopCreators(leagueId, season = CURRENT_SEASON, limit = 
         assists: Number(stats.goals?.assists || 0),
         img: row.player?.photo || '',
       };
-    })
-    .filter(row => row.player?.name && row.assists > 0)
+    });
+  } catch (error) {
+    console.warn('Top-assists endpoint unavailable. Falling back to competition player rows.', error);
+  }
+
+  const competitionRows = endpointRows.length >= limit
+    ? []
+    : (await getCompetitionPlayers(leagueId, season, 3)).map(row => {
+        const stats = row.statistics?.[0] || {};
+        return {
+          player: row.player || {},
+          team: stats.team?.name || '—',
+          assists: Number(stats.goals?.assists || 0),
+          img: row.player?.photo || '',
+        };
+      });
+
+  const merged = new Map();
+
+  [...endpointRows, ...competitionRows].forEach(row => {
+    if (!row.player?.name || row.assists <= 0) return;
+    const key = row.player?.id || String(row.player.name).toLowerCase();
+    const existing = merged.get(key);
+    if (!existing || row.assists > existing.assists) merged.set(key, row);
+  });
+
+  return [...merged.values()]
     .sort((a, b) => b.assists - a.assists)
     .slice(0, limit);
 }
@@ -390,7 +393,7 @@ const PLAYER_PHOTO_TTL = 7 * 24 * 60 * 60 * 1000;
 const playerPhotoInflight = new Map();
 
 function photoCacheKey(name) {
-  return `calibre_player_photo_v2_${String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+  return `calibre_player_photo_v3_${String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
 }
 
 function readPhotoCache(name) {
@@ -454,10 +457,15 @@ export async function getPlayerPhotoByName(name) {
     // Use the global profile directory for portraits. The statistics endpoint
     // only covers players attached to a specific season and was the reason
     // some homepage cards remained stuck on local placeholder artwork.
-    const rows = await searchPlayerProfiles(search, { skipCache: true, ttl: 5 * 60 * 1000 });
-    const best = [...rows]
+    const profileRows = await searchPlayerProfiles(search, { skipCache: true, ttl: 5 * 60 * 1000 });
+    const statRows = profileRows.length
+      ? []
+      : await searchPlayers(search, CURRENT_SEASON, { skipCache: true, ttl: 5 * 60 * 1000 });
+
+    const best = [...profileRows, ...statRows]
       .filter(row => row.image)
       .sort((a, b) => scoreNameMatch(search, b.name) - scoreNameMatch(search, a.name))[0];
+
     const url = best?.image || '';
     if (url) writePhotoCache(search, url);
     return url;

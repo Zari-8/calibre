@@ -3,9 +3,8 @@ import { clearPlayerPhotoCache, getPlayerPhotoByName, playerPhotoUrl } from '../
 
 const NEUTRAL = '/assets/players/neutral-player.svg';
 
-function remoteImage(value='') {
-  const src = String(value || '').trim();
-  return /^https?:\/\//i.test(src) ? src : '';
+function suppliedImage(value='') {
+  return String(value || '').trim();
 }
 
 export default function ApiPlayerImage({
@@ -22,8 +21,8 @@ export default function ApiPlayerImage({
 }) {
   const safeFallback = fallbackSrc || NEUTRAL;
   const officialSrc = useMemo(() => playerPhotoUrl(playerId), [playerId]);
-  const suppliedRemoteSrc = useMemo(() => remoteImage(preferredSrc), [preferredSrc]);
-  const initialSrc = officialSrc || suppliedRemoteSrc || safeFallback;
+  const suppliedSrc = useMemo(() => suppliedImage(preferredSrc), [preferredSrc]);
+  const initialSrc = officialSrc || suppliedSrc || safeFallback;
   const [src, setSrc] = useState(initialSrc);
   const attemptedLookup = useRef(false);
 
@@ -32,7 +31,7 @@ export default function ApiPlayerImage({
     attemptedLookup.current = false;
     setSrc(initialSrc);
 
-    if (officialSrc || suppliedRemoteSrc || !allowLookup || !name) return undefined;
+    if (officialSrc || (suppliedSrc && suppliedSrc !== safeFallback) || !allowLookup || !name) return undefined;
 
     attemptedLookup.current = true;
     getPlayerPhotoByName(name)
@@ -40,11 +39,11 @@ export default function ApiPlayerImage({
       .catch(() => {});
 
     return () => { cancelled = true; };
-  }, [name, officialSrc, suppliedRemoteSrc, safeFallback, allowLookup, initialSrc]);
+  }, [name, officialSrc, suppliedSrc, safeFallback, allowLookup, initialSrc]);
 
   const handleError = () => {
-    if (src === officialSrc && suppliedRemoteSrc && suppliedRemoteSrc !== src) {
-      setSrc(suppliedRemoteSrc);
+    if (src === officialSrc && suppliedSrc && suppliedSrc !== src) {
+      setSrc(suppliedSrc);
       return;
     }
 

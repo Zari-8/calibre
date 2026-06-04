@@ -297,7 +297,15 @@ export default function Talents() {
   [sourceTalents, region, age, position, potential, trajectory, query, sort, liveMode]);
 
   const selected = sourceTalents.find(player => player.name === selectedName) || TALENTS.find(player => player.name === selectedName) || filtered[0] || TALENTS[0];
-  const ranked = [...TALENTS].sort((a,b) => (numeric(b.readiness) + numeric(b.potential) + trendValue(b.trend)) - (numeric(a.readiness) + numeric(a.potential) + trendValue(a.trend))).slice(0,10);
+  const ranked = [...sourceTalents]
+    .sort((a,b) =>
+      numeric(b.minutes) - numeric(a.minutes)
+      || numeric(b.apiRating) - numeric(a.apiRating)
+      || numeric(b.appearances) - numeric(a.appearances)
+      || (numeric(b.goals) + numeric(b.assists)) - (numeric(a.goals) + numeric(a.assists))
+      || numeric(b.readiness) - numeric(a.readiness)
+    )
+    .slice(0,10);
   const counts = Object.fromEntries(TALENT_REGIONS.map(item => [item.key, item.key === 'all' ? sourceTalents.length : sourceTalents.filter(p => p.region === item.key).length]));
 
   function toggleShortlist(name) {

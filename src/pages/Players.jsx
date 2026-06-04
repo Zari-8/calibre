@@ -228,6 +228,20 @@ export default function Players(){
   const [activePlayer,setActivePlayer] = useState(null);
   const [activeStats,setActiveStats] = useState(null);
   const [profileLoading,setProfileLoading] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const playerId = Number(params.get('playerId'));
+    const playerName = params.get('player');
+
+    if (!Number.isFinite(playerId) || !playerId || !playerName) return;
+
+    openProfile({
+      id: playerId,
+      apiPlayerId: playerId,
+      name: playerName,
+    });
+  }, []);
   const [comparePlayers,setComparePlayers] = useState([]);
   const [compareOpen,setCompareOpen] = useState(false);
   const [notice,setNotice] = useState('');

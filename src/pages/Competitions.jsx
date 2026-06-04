@@ -59,7 +59,23 @@ function PlayerPanel({ title, suffix, rows, stat, live = false, loading = false 
     <section className="comp-data-panel">
       <div className="comp-data-panel-title">{title} <span className="comp-data-panel-sub">· {suffix}</span>{live && <em>LIVE</em>}</div>
       {rows.map(row => (
-        <div className="comp-scorer-row" key={`${title}-${row.pos}-${row.name}`}>
+        <div
+          className="comp-scorer-row"
+          key={`${title}-${row.pos}-${row.name}`}
+          role={row.id ? "button" : undefined}
+          tabIndex={row.id ? 0 : -1}
+          title={row.id ? `Open ${row.name} profile` : undefined}
+          style={row.id ? { cursor: "pointer" } : undefined}
+          onClick={() => {
+            if (!row.id) return;
+            navigateTo(`/players?playerId=${encodeURIComponent(row.id)}&player=${encodeURIComponent(row.name)}`);
+          }}
+          onKeyDown={(event) => {
+            if (!row.id || (event.key !== "Enter" && event.key !== " ")) return;
+            event.preventDefault();
+            navigateTo(`/players?playerId=${encodeURIComponent(row.id)}&player=${encodeURIComponent(row.name)}`);
+          }}
+        >
           <span className="comp-standings-pos">{row.pos}</span><ApiPlayerImage name={row.name} fallbackSrc={row.img || '/assets/players/neutral-player.svg'} alt="" loading="lazy"/><span title={row.name}>{row.name}</span><small title={row.team}>{row.team}</small><strong>{row[stat]}</strong>
         </div>
       ))}
@@ -142,8 +158,8 @@ export default function Competitions() {
   useEffect(()=>{ const fallback=snapshotFor(active); const fallbackMatch=featuredMatchFor(active); const tournamentOnly=active.standingsMode==='tournament-only'; setStandings(tournamentOnly?[]:fallback.standings); setScorers(fallback.scorers); setCreators(fallback.creators); setFeaturedMatch(fallbackMatch); setStandingsUnavailable(tournamentOnly?'Competition-only standings will appear when the UWCL feed publishes a table. Domestic-league rows are deliberately not substituted.':''); setLiveState({standings:false,scorers:false,creators:false,fixture:false}); let cancelled=false; setLoading(true);
     (async()=>{ const season=active.season||CURRENT_SEASON; const leagueId=await resolveLeagueId(active,season); if(!leagueId||cancelled)return; const [standingRows,scorerRows,creatorRows,upcomingRows]=await Promise.all([active.table?getStandings(leagueId,season):Promise.resolve(null),getTopScorers(leagueId,season),getTopCreators(leagueId,season),getUpcomingFixtures(leagueId,season,1)]); if(cancelled)return;
       if(standingRows?.length){setStandings(standingRows.slice(0,6).map(team=>({pos:team.rank,team:team.team.name,P:team.all.played,GD:team.goalsDiff>=0?`+${team.goalsDiff}`:String(team.goalsDiff),pts:team.points,form:(team.form||'').split('').slice(0,5).map(result=>result==='W'?'W':result==='D'?'D':'L')}))); setStandingsUnavailable(''); setLiveState(current=>({...current,standings:true}));}
-      if(scorerRows?.length){setScorers(scorerRows.slice(0,5).map((row,index)=>({pos:index+1,name:row.player.name,team:row.statistics?.[0]?.team?.name||'—',goals:row.statistics?.[0]?.goals?.total||0,img:row.player.photo||'/assets/players/neutral-player.svg'})));setLiveState(current=>({...current,scorers:true}));}
-      if(creatorRows?.length){setCreators(creatorRows.map((row,index)=>({pos:index+1,name:row.player.name,team:row.team||'—',assists:row.assists||0,img:row.player.photo||'/assets/players/neutral-player.svg'})));setLiveState(current=>({...current,creators:true}));}
+      if(scorerRows?.length){setScorers(scorerRows.slice(0,5).map((row,index)=>({pos:index+1,id:row.player.id,apiPlayerId:row.player.id,name:row.player.name,team:row.statistics?.[0]?.team?.name||'—',goals:row.statistics?.[0]?.goals?.total||0,img:row.player.photo||'/assets/players/neutral-player.svg'})));setLiveState(current=>({...current,scorers:true}));}
+      if(creatorRows?.length){setCreators(creatorRows.map((row,index)=>({pos:index+1,id:row.player.id,apiPlayerId:row.player.id,name:row.player.name,team:row.team||'—',assists:row.assists||0,img:row.player.photo||'/assets/players/neutral-player.svg'})));setLiveState(current=>({...current,creators:true}));}
       let fixtureRows=upcomingRows; if(!fixtureRows?.length)fixtureRows=await getRecentFixtures(leagueId,season,1); if(!cancelled&&fixtureRows?.[0]){setFeaturedMatch(normalizeFixture(fixtureRows[0],fallbackMatch,active));setLiveState(current=>({...current,fixture:true}));}
     })().catch(()=>{}).finally(()=>{if(!cancelled)setLoading(false);}); return()=>{cancelled=true;}; },[active]);
   const debates=COMPETITION_DEBATES[group];

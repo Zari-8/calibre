@@ -76,7 +76,9 @@ function regionForNation(nation='') {
   const value = String(nation).toLowerCase();
   if (/nigeria|ghana|senegal|morocco|egypt|algeria|south africa|zimbabwe|cameroon|mali|ivory coast|côte d/i.test(value)) return 'africa';
   if (/brazil|argentina|uruguay|colombia|chile|ecuador|paraguay|peru|venezuela/i.test(value)) return 'south_america';
-  if (/japan|korea|china|india|indonesia|australia|thailand|vietnam|malaysia|singapore|saudi|qatar|uae/i.test(value)) return 'asia';
+  if (/saudi arabia|qatar|uae|united arab emirates|bahrain|oman|kuwait/i.test(value)) return 'saudi';
+  if (/united states|usa|canada|mexico|costa rica|honduras|jamaica|panama|guatemala|trinidad|el salvador/i.test(value)) return 'north_america';
+  if (/japan|korea|china|india|indonesia|australia|thailand|vietnam|malaysia|singapore/i.test(value)) return 'asia';
   return 'europe';
 }
 function roleForPosition(position='') {

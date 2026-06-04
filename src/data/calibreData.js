@@ -113,5 +113,6 @@ export const TALENT_REGIONS = [
   { key: 'east',   label: 'East Asia'             },
   { key: 'sea',    label: 'Southeast Asia'        },
   { key: 'saudi',  label: 'Saudi & Gulf'          },
+  { key: 'north_america', label: 'North America' },
   { key: 'academy',label: 'Academy / U21'         },
 ];

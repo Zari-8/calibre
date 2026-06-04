@@ -166,6 +166,16 @@ function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist
         <h3>{player.name}</h3>
         <p>{player.position} · {player.club}</p>{player.provisional && <small className="talent-live-profile">API DIRECTORY PROFILE · MODEL PENDING</small>}
         <div className="talent-result-card__meta"><span>{player.role}</span><span>{player.age} yrs</span><span className="trend-up">{player.trend}</span></div>
+        {player.source === 'supabase-registry' && <div className="talent-result-card__meta">
+          <span>{numeric(player.minutes)} mins</span>
+          <span>{numeric(player.appearances)} apps</span>
+          <span>{numeric(player.starts)} starts</span>
+          <span>{numeric(player.goals)}G · {numeric(player.assists)}A</span>
+          <span>{numeric(player.apiRating) ? `API ${numeric(player.apiRating).toFixed(1)}` : 'rating pending'}</span>
+        </div>}
+        {player.source === 'supabase-registry' && <div className="talent-result-card__meta">
+          <span>U22 · senior-minute screen · registry-backed</span>
+        </div>}
         <div className="talent-result-card__footer">
           <span>{player.nextStep}</span>
           <button type="button" aria-label={`${shortlisted ? 'Remove' : 'Add'} ${player.name} ${shortlisted ? 'from' : 'to'} shortlist`} onClick={(event) => { event.stopPropagation(); onToggleShortlist(player.name); }}>

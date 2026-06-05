@@ -2,7 +2,7 @@ import { Crown, Check, Clock, ArrowRight, BarChart3, ShieldCheck } from 'lucide-
 
 const PLANS = [
   { id:'free', name:'Free', price:'$0', period:'forever', tagline:'For casual fans and public debate traffic.', badge:null, cta:'Get started free', ctaStyle:'outline', paymentEnabled:false, features:['Basic Rate Battles','Current-season comparisons','Limited player pages','Public debate feed'], disabled:false },
-  { id:'pro', name:'Pro', price:'$4.99', period:'/month', tagline:'For serious fans and creators.', badge:'MOST POPULAR', cta:'Start Pro', ctaStyle:'lime', paymentEnabled:true, lemonUrl:'https://calibrefooty.lemonsqueezy.com/checkout/buy/pro', features:['Everything in Free','GOAT debate tools','Deeper player comparisons','PDF and CSV report exports','Watchlists','Extended history','Advanced filters'], disabled:false },
+  { id:'pro', name:'Pro', price:'$4.99', period:'/month', tagline:'For serious fans and creators.', badge:'MOST POPULAR', cta:'Start Pro', ctaStyle:'lime', paymentEnabled:true, lemonUrl:'https://calibrefootball.lemonsqueezy.com/checkout/buy/d781066a-5bed-4184-ae8a-87fab61856ac', features:['Everything in Free','GOAT debate tools','Deeper player comparisons','PDF and CSV report exports','Watchlists','Extended history','Advanced filters'], disabled:false },
   { id:'scout', name:'Scout', price:'$19', period:'/month', tagline:'For analysts, scouts and academy staff.', badge:'COMING SOON', cta:'Join waitlist', ctaStyle:'outline', paymentEnabled:false, features:['Everything in Pro','Youth trajectory data','Career pathway modelling','Larger watchlists','Similar-player finder','Scout notes and exports'], disabled:true },
   { id:'club', name:'Club', price:'$99', period:'/month', tagline:'For clubs, agencies and media teams.', badge:'COMING SOON', cta:'Join waitlist', ctaStyle:'outline', paymentEnabled:false, features:['Everything in Scout','Team workflows','Higher data limits','Deeper API access','Custom contracts available'], disabled:true },
 ];
@@ -24,11 +24,11 @@ function PlanCard({ plan }) {
 
 export default function Pricing() {
   return <div className="page pricing-page">
-    <div className="pricing-header"><Crown size={32} className="pricing-crown"/><h1>Get World Cup Founder Pass</h1><p>Lock in Pro access for 90 days — one payment, no subscription. Launches with the World Cup. Limited availability.</p></div>
+    <div className="pricing-header"><Crown size={32} className="pricing-crown"/><h1>Get World Cup Founder Pass</h1><p>Lock in Pro access for the full World Cup period — one payment, no subscription. Launches with the World Cup. Limited availability.</p></div>
     <div className="founder-pass-hero">
       <div className="founder-pass-inner">
-        <div className="founder-pass-left"><Crown size={40}/><div><strong>World Cup Founder Pass</strong><span>90 days of Pro access · One-time payment · Never charged again</span></div></div>
-        <div className="founder-pass-right"><div className="founder-price">$8.99</div><button type="button" className="founder-pass-cta" onClick={()=>window.open('https://calibrefooty.lemonsqueezy.com/checkout/buy/founder-pass','_blank','noopener')}>Get World Cup Founder Pass <ArrowRight size={16}/></button></div>
+        <div className="founder-pass-left"><Crown size={40}/><div><strong>World Cup Founder Pass</strong><span>2 months of Pro access · One-time payment · Never charged again</span></div></div>
+        <div className="founder-pass-right"><div className="founder-price">$8.99</div><button type="button" className="founder-pass-cta" onClick={()=>window.open('https://calibrefootball.lemonsqueezy.com/checkout/buy/f39bb8bd-f196-42f2-b73b-a505e701521d','_blank','noopener')}>Get World Cup Founder Pass <ArrowRight size={16}/></button></div>
       </div>
       <p className="founder-pass-note">Includes all Pro features · Supporter pricing · Helps us build Calibre · No auto-renewal</p>
     </div>

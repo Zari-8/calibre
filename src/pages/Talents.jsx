@@ -122,35 +122,53 @@ function registryTalentFromProfile(profile) {
   const goals = numeric(profile.goals);
   const assists = numeric(profile.assists);
   const apiRating = numeric(profile.api_average_rating ?? profile.apiAverageRating);
+  const rating = numeric(profile.rating) || apiRating || '—';
+  const hasEvidence = minutes > 0 || appearances > 0 || apiRating > 0;
+  const age = Number(profile.age);
+  const readiness =
+    minutes >= 1800 ? 88
+      : minutes >= 1200 ? 83
+        : minutes >= 900 ? 79
+          : minutes >= 450 ? 73
+            : appearances >= 8 ? 68
+              : 60;
+  const potential =
+    Number.isFinite(Number(rating))
+      ? clamp(Math.round(Number(rating) + (age <= 19 ? 7 : age <= 21 ? 5 : 3)), 0, 99)
+      : 'Review';
+  const nextStep =
+    minutes >= 1800
+      ? 'Ready for a higher-level role-fit review'
+      : minutes >= 900
+        ? 'Senior-minutes consolidation with step-up monitoring'
+        : 'Build a larger senior-minutes sample';
 
   return {
     ...profile,
     id: profile.apiPlayerId ?? profile.id,
     apiPlayerId: profile.apiPlayerId ?? profile.id,
     name: profile.name,
-    age: Number(profile.age),
+    age,
     nation: profile.nationality || 'Unknown',
     flag: '🌐',
     club: profile.club || profile.team || 'Club pending',
     league: profile.league || 'Imported registry',
     role: profile.archetype || roleForPosition(profile.position),
     position: shortPosition(profile.position),
-    rating: numeric(profile.rating) || apiRating || '—',
-    readiness: minutes >= 900 ? 80 : minutes >= 450 ? 70 : 60,
-    potential: 'Pending',
-    trend: 'ACTIVE',
-    trajectory: 'rising',
+    rating,
+    readiness,
+    potential,
+    trend: hasEvidence ? 'EVIDENCE READY' : 'PENDING',
+    trajectory: hasEvidence ? 'rising' : 'profile',
     region: regionForNation(profile.nationality),
-    nextStep: minutes >= 900
-      ? 'Calibre readiness review pending'
-      : 'More senior minutes needed',
+    nextStep,
     pathway: [
       profile.club || profile.team || 'Current club',
-      'Senior-minutes consolidation',
-      'Calibre Next Step projection pending'
+      nextStep,
+      'Calibre Next Step projection review'
     ],
     image: profile.image || profile.img || null,
-    provisional: true,
+    provisional: !hasEvidence,
     source: 'supabase-registry',
     minutes,
     appearances,
@@ -257,6 +275,13 @@ export default function Talents() {
           );
 
         setRegistryTalents(candidates);
+        if (candidates[0]) {
+          setSelectedName(current =>
+            current === 'Ibrahim Musa' || !candidates.some(player => player.name === current)
+              ? candidates[0].name
+              : current
+          );
+        }
       })
       .catch(() => {
         if (!cancelled) setRegistryTalents([]);

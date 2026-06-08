@@ -6,16 +6,16 @@ import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles 
 import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
 
 const CURATED_PLAYERS = [
-  { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
-  { rank:2, name:'Erling Haaland', apiPlayerId:1100, age:25, club:'Manchester City', pos:'ST', rating:90, buzz:95, fanRating:4.7, potential:93, img:'/assets/players/neutral-player.svg', archetype:'Poacher' },
-  { rank:3, name:'Jude Bellingham', apiPlayerId:129718, age:22, club:'Real Madrid', pos:'CM', rating:86, buzz:92, fanRating:4.7, potential:93, img:'/assets/players/jude-bellingham.jpg', archetype:'Box Crasher' },
-  { rank:4, name:'Vinícius Júnior', apiPlayerId:762, age:25, club:'Real Madrid', pos:'LW', rating:85, buzz:90, fanRating:4.6, potential:91, img:'/assets/players/vinicius-junior.jpg', archetype:'Inside Forward' },
-  { rank:5, name:'Phil Foden', apiPlayerId:631, age:26, club:'Manchester City', pos:'CAM', rating:85, buzz:88, fanRating:4.5, potential:90, img:'/assets/players/neutral-player.svg', archetype:'Advanced Playmaker' },
-  { rank:6, name:'Bukayo Saka', apiPlayerId:1460, age:24, club:'Arsenal', pos:'RW', rating:84, buzz:87, fanRating:4.6, potential:90, img:'/assets/players/neutral-player.svg', archetype:'Wide Creator' },
-  { rank:7, name:'Rodri', apiPlayerId:44, age:29, club:'Manchester City', pos:'CDM', rating:84, buzz:85, fanRating:4.6, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Controller' },
-  { rank:8, name:'Federico Valverde', apiPlayerId:756, age:27, club:'Real Madrid', pos:'CM', rating:83, buzz:83, fanRating:4.4, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Pressing Engine' },
-  { rank:9, name:'Martin Ødegaard', apiPlayerId:37127, age:27, club:'Arsenal', pos:'CAM', rating:83, buzz:82, fanRating:4.4, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Advanced Playmaker' },
-  { rank:10, name:'Mohamed Salah', apiPlayerId:306, age:33, club:'Liverpool', pos:'RW', rating:82, buzz:80, fanRating:4.6, potential:84, img:'/assets/players/neutral-player.svg', archetype:'Inside Forward' },
+  { rank:1, name:'Kylian Mbappé', age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
+  { rank:2, name:'Erling Haaland', age:25, club:'Manchester City', pos:'ST', rating:90, buzz:95, fanRating:4.7, potential:93, img:'/assets/players/neutral-player.svg', archetype:'Poacher' },
+  { rank:3, name:'Jude Bellingham', age:22, club:'Real Madrid', pos:'CM', rating:86, buzz:92, fanRating:4.7, potential:93, img:'/assets/players/jude-bellingham.jpg', archetype:'Box Crasher' },
+  { rank:4, name:'Vinícius Júnior', age:25, club:'Real Madrid', pos:'LW', rating:85, buzz:90, fanRating:4.6, potential:91, img:'/assets/players/vinicius-junior.jpg', archetype:'Inside Forward' },
+  { rank:5, name:'Phil Foden', age:26, club:'Manchester City', pos:'CAM', rating:85, buzz:88, fanRating:4.5, potential:90, img:'/assets/players/neutral-player.svg', archetype:'Advanced Playmaker' },
+  { rank:6, name:'Bukayo Saka', age:24, club:'Arsenal', pos:'RW', rating:84, buzz:87, fanRating:4.6, potential:90, img:'/assets/players/neutral-player.svg', archetype:'Wide Creator' },
+  { rank:7, name:'Rodri', age:29, club:'Manchester City', pos:'CDM', rating:84, buzz:85, fanRating:4.6, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Controller' },
+  { rank:8, name:'Federico Valverde', age:27, club:'Real Madrid', pos:'CM', rating:83, buzz:83, fanRating:4.4, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Pressing Engine' },
+  { rank:9, name:'Martin Ødegaard', age:27, club:'Arsenal', pos:'CAM', rating:83, buzz:82, fanRating:4.4, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Advanced Playmaker' },
+  { rank:10, name:'Mohamed Salah', age:33, club:'Liverpool', pos:'RW', rating:82, buzz:80, fanRating:4.6, potential:84, img:'/assets/players/neutral-player.svg', archetype:'Inside Forward' },
 ];
 
 const RISING = [
@@ -64,20 +64,8 @@ function portraitFor(player){
   return player?.image || player?.img || '';
 }
 function apiIdFor(player){
-  // Explicit API-Football id from the Calibre (Supabase) player bank wins.
-  const explicit = player?.apiPlayerId ?? player?.api_player_id;
-  const explicitNum = Number(explicit);
-  if(Number.isInteger(explicitNum) && explicitNum>0) return explicitNum;
-
-  // A bank row carries apiPlayerId/api_player_id, so its numeric `id` is a
-  // DATABASE ROW ID — never an API id. Don't borrow it (that hung the wrong
-  // face on people who had no API match).
-  const isBankRow = !!player && ('apiPlayerId' in player || 'api_player_id' in player);
-  if(isBankRow) return null;
-
-  // Otherwise this is an API-Football profile, where `id` IS the API id.
-  const idNum = Number(player?.id);
-  return Number.isInteger(idNum) && idNum>0 ? idNum : null;
+  const id = player?.apiPlayerId ?? player?.api_player_id ?? player?.id;
+  return Number.isFinite(Number(id)) ? Number(id) : null;
 }
 
 function localToProfile(player){
@@ -121,37 +109,22 @@ function sortCurated(rows,tab){
 
 
 function mergeCuratedWithSupabase(curatedRows,dbRows){
-  const rows = dbRows || [];
-
-  // Index the bank rows two ways: by exact API id (unambiguous) and by name
-  // (first occurrence wins, so the result is deterministic even when two
-  // different players share a name — e.g. two separate "Mohamed Salah" rows).
-  const byId = new Map();
-  const byName = new Map();
-  for(const player of rows){
-    const apiId = Number(player.api_player_id);
-    if(Number.isInteger(apiId) && apiId>0 && !byId.has(apiId)) byId.set(apiId,player);
-    const key = String(player.name || '').toLowerCase();
-    if(!byName.has(key)) byName.set(key,player);
-  }
+  const remaining = new Map(
+    (dbRows || []).map(player=>[String(player.name || '').toLowerCase(),player])
+  );
 
   const merged = curatedRows.map(curated=>{
-    // Prefer an explicit API id on the curated entry. This is what makes a
-    // famous player with a common name resolve to the RIGHT person instead of
-    // whichever duplicate row happened to come back first. Fall back to name
-    // only when no curated id is provided.
-    const curatedId = Number(curated.apiPlayerId ?? curated.api_player_id);
-    const databasePlayer = (Number.isInteger(curatedId) && byId.has(curatedId))
-      ? byId.get(curatedId)
-      : byName.get(String(curated.name || '').toLowerCase());
+    const key = String(curated.name || '').toLowerCase();
+    const databasePlayer = remaining.get(key);
 
     if(!databasePlayer) return curated;
+
+    remaining.delete(key);
 
     return {
       ...curated,
       ...databasePlayer,
       rank:curated.rank,
-      apiPlayerId:databasePlayer.api_player_id ?? curated.apiPlayerId ?? null,
       age:databasePlayer.age || curated.age,
       club:databasePlayer.club || curated.club,
       team:databasePlayer.team || databasePlayer.club || curated.club,
@@ -306,7 +279,7 @@ export default function Players(){
     Promise.all([
       getSupabasePlayers({
         names:CURATED_PLAYERS.map(player=>player.name),
-        limit:60,
+        limit:CURATED_PLAYERS.length,
       }),
       getSupabasePlayerCount(),
     ])
@@ -423,7 +396,7 @@ export default function Players(){
     setActivePlayer(player);
     setActiveStats(null);
 
-    const apiId = apiIdFor(player);
+    const apiId = player?.apiPlayerId ?? (typeof player?.id === 'number' ? player.id : null);
 
     if(!apiId) return;
 
@@ -611,7 +584,7 @@ export default function Players(){
 
                 return p
                   ? <div className="plp-compare-slot" key={p.id||p.name}>
-                      <ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)}/>
+                      <ApiPlayerImage name={p.name} fallbackSrc={fallbackFor(p)}/>
                       <strong>{p.name}</strong>
                       <span>{p.team||p.club||'Live profile'}</span>
                       <button className="plp-compare-remove" type="button" onClick={()=>setComparePlayers(current=>current.filter((_,i)=>i!==index))}>×</button>

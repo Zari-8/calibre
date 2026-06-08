@@ -2,6 +2,7 @@ import { ArrowRight, BarChart3, ChevronRight, Compass, Flame, Gauge, Search, Shi
 import BattleHero from '../components/BattleHero.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import { playerIdFor } from '../data/playerIds.js';
 
 const activeBattles = [
   { category: 'Impact', left: 'Haaland', right: 'Mbappé', votes: '52.8K', split: '54–46', imageA: '/assets/players/kylian-mbappe.jpg', imageB: '/assets/players/jude-bellingham.jpg' },
@@ -90,9 +91,9 @@ export default function Home() {
                 <span>{battle.category}</span>
               </div>
               <div className="battle-preview__players">
-                <div><ApiPlayerImage name={battle.left} fallbackSrc={battle.imageA} alt={battle.left} /><strong>{battle.left}</strong></div>
+                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.left)} name={battle.left} fallbackSrc={battle.imageA} alt={battle.left} /><strong>{battle.left}</strong></div>
                 <span>vs</span>
-                <div><ApiPlayerImage name={battle.right} fallbackSrc={battle.imageB} alt={battle.right} /><strong>{battle.right}</strong></div>
+                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.right)} name={battle.right} fallbackSrc={battle.imageB} alt={battle.right} /><strong>{battle.right}</strong></div>
               </div>
               <div className="battle-preview__bar"><span style={{ width: battle.split.split('–')[0] + '%' }} /></div>
               <div className="battle-preview__footer"><span>{battle.votes} votes</span><strong>{battle.split}</strong></div>
@@ -135,7 +136,7 @@ export default function Home() {
             {rankings.map(player => (
               <button className="ranking-row" type="button" key={player.rank} onClick={() => navigateTo('/players')}>
                 <span className="ranking-row__rank">0{player.rank}</span>
-                <ApiPlayerImage name={player.name} fallbackSrc={player.image} alt={player.name} />
+                <ApiPlayerImage apiPlayerId={playerIdFor(player.name)} name={player.name} fallbackSrc={player.image} alt={player.name} />
                 <span className="ranking-row__name"><strong>{player.name}</strong><small>{player.role}</small></span>
                 <span className="ranking-row__rating">{player.rating}</span>
               </button>
@@ -166,7 +167,7 @@ export default function Home() {
         <div className="talent-grid">
           {talents.map(talent => (
             <button className="talent-card" type="button" key={talent.name} onClick={() => navigateTo('/talents')}>
-              <ApiPlayerImage name={talent.name === 'Ibrahim Musa' ? '' : talent.name} fallbackSrc={talent.image} alt={talent.name} />
+              <ApiPlayerImage apiPlayerId={playerIdFor(talent.name)} name={talent.name === 'Ibrahim Musa' ? '' : talent.name} fallbackSrc={talent.image} alt={talent.name} />
               <div className="talent-card__body">
                 <div className="talent-card__top"><span>{talent.origin}</span><strong>{talent.trend}</strong></div>
                 <h3>{talent.name}</h3>

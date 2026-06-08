@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Star, Zap, Trophy, ArrowRight } from 'lucide-react';
+import { Star, Zap, Trophy, ArrowRight, Sparkles } from 'lucide-react';
 import Panel from '../components/Panel.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
+import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import { playerIdFor } from '../data/playerIds.js';
 import {
   WC_CONFIG,
   liveMoments,
@@ -11,6 +13,24 @@ import {
   tournamentPlayers,
   wcFacts,
 } from '../data/worldCupData.js';
+
+// Per-edition faint backdrop. Drop your own licensed images at these paths and
+// they appear behind the selected edition automatically. Missing files simply
+// don't render (CSS background URLs fail silently), so the card stays clean.
+const EDITION_BACKDROPS = {
+  1958: '/assets/wc/1958.jpg',
+  1970: '/assets/wc/1970.jpg',
+  1986: '/assets/wc/1986.jpg',
+  1990: '/assets/wc/1990.jpg',
+  1994: '/assets/wc/1994.jpg',
+  1998: '/assets/wc/1998.jpg',
+  2002: '/assets/wc/2002.jpg',
+  2006: '/assets/wc/2006.jpg',
+  2010: '/assets/wc/2010.jpg',
+  2014: '/assets/wc/2014.jpg',
+  2018: '/assets/wc/2018.jpg',
+  2022: '/assets/wc/2022.jpg',
+};
 
 // ── Countdown ────────────────────────────────────────────────────
 function useDaysToWC() {
@@ -53,7 +73,7 @@ function BreakoutCard({ star }) {
     <div className={`wc-breakout-card ${star.featured ? 'wc-breakout-card--featured' : ''}`}>
       {star.featured && <div className="wc-featured-tag">Featured</div>}
       <div className="wc-bc-top">
-        <img src={star.image} alt={star.name} className="wc-bc-img" />
+        <ApiPlayerImage apiPlayerId={playerIdFor(star.name)} name={star.name} fallbackSrc={star.image} alt={star.name} className="wc-bc-img" loading="lazy" />
         <div className="wc-bc-meta">
           <div className="wc-bc-flag">{star.flag} {star.nation}</div>
           <strong className="wc-bc-name">{star.name}</strong>
@@ -81,21 +101,15 @@ export default function WorldCup() {
 
   const [activeEdition,  setActiveEdition]  = useState(iconicEditions[iconicEditions.length - 1]);
   const [momentFilter,   setMomentFilter]   = useState('all');
-  const [factCategory,   setFactCategory]   = useState('all');
-  const [factSearch,     setFactSearch]     = useState('');
+
+  // One deterministic fact per calendar day — same for everyone, rotates daily.
+  const factOfDay = wcFacts.length
+    ? wcFacts[Math.floor(Date.now() / 86400000) % wcFacts.length]
+    : null;
 
   const filteredMoments = momentFilter === 'all'
     ? liveMoments
     : liveMoments.filter(m => m.type === momentFilter);
-
-  const FACT_CATS = ['all', 'tournament', 'goals', 'players', 'hosts', 'records', 'curiosities'];
-
-  const filteredFacts = wcFacts.filter(f => {
-    const matchCat    = factCategory === 'all' || f.category === factCategory;
-    const matchSearch = !factSearch || f.fact.toLowerCase().includes(factSearch.toLowerCase()) ||
-                        f.tags.some(t => t.toLowerCase().includes(factSearch.toLowerCase()));
-    return matchCat && matchSearch;
-  });
 
   return (
     <div className="page wc-page">
@@ -113,14 +127,26 @@ export default function WorldCup() {
           }
         </p>
         <div className="wc-host-flags">🇺🇸 USA &nbsp;·&nbsp; 🇨🇦 Canada &nbsp;·&nbsp; 🇲🇽 Mexico</div>
-        {!isLive && (
-          <div className="wc-countdown-strip">
-            <div className="wc-cd-cell"><strong>{daysLeft}</strong><span>Days</span></div>
+        <div style={{ display: 'flex', gap: '18px', flexWrap: 'wrap', alignItems: 'stretch', justifyContent: 'flex-start', marginTop: '22px' }}>
+          <div className="wc-countdown-strip" style={{ marginTop: 0 }}>
             <div className="wc-cd-cell"><strong>48</strong><span>Teams</span></div>
             <div className="wc-cd-cell"><strong>104</strong><span>Matches</span></div>
             <div className="wc-cd-cell"><strong>16</strong><span>Stadiums</span></div>
+            <div className="wc-cd-cell"><strong>1</strong><span>Winner</span></div>
           </div>
-        )}
+          {factOfDay && (
+            <div style={{ flex: '1 1 300px', maxWidth: 440, minWidth: 260, textAlign: 'left', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(170,255,40,0.28)', borderRadius: 14, padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--lime)', fontSize: 12, letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 700 }}>
+                <Sparkles size={14} /> WC Fact of the Day
+              </div>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <span style={{ fontSize: 26, lineHeight: 1, flexShrink: 0 }}>{factOfDay.emoji}</span>
+                <p style={{ margin: 0, color: '#e8ecf0', fontSize: 15, lineHeight: 1.45 }}>{factOfDay.fact}</p>
+              </div>
+              <span style={{ fontSize: 11, color: '#8a93a0', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{factOfDay.category}</span>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── LIVE MOMENTS ── */}
@@ -170,55 +196,6 @@ export default function WorldCup() {
         </div>
       </section>
 
-      {/* ── WORLD CUP FACTS ── */}
-      <section className="wc-section">
-        <SectionHead eyebrow="Did You Know" title="World Cup Facts" />
-        <div className="wc-facts-controls">
-          <div className="wc-fact-cats">
-            {FACT_CATS.map(c => (
-              <button key={c} type="button"
-                className={factCategory === c ? 'wc-fact-cat active' : 'wc-fact-cat'}
-                onClick={() => setFactCategory(c)}
-              >
-                {c === 'all' ? 'All' : c.charAt(0).toUpperCase() + c.slice(1)}
-                {c !== 'all' && (
-                  <span className="wc-fact-count">
-                    {wcFacts.filter(f => f.category === c).length}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-          <input
-            className="wc-fact-search"
-            type="text"
-            placeholder="Search facts, players, nations..."
-            value={factSearch}
-            onChange={e => setFactSearch(e.target.value)}
-          />
-        </div>
-        <div className="wc-facts-grid">
-          {filteredFacts.map(f => (
-            <div key={f.id} className={`wc-fact-card wc-fact-cat--${f.category}`}>
-              <div className="wc-fact-emoji">{f.emoji}</div>
-              <p className="wc-fact-text">{f.fact}</p>
-              <div className="wc-fact-tags">
-                <span className="wc-fact-cat-label">{f.category}</span>
-                {f.tags.slice(0, 2).map(t => (
-                  <span key={t} className="wc-fact-tag"
-                    onClick={() => setFactSearch(t)}
-                    style={{ cursor: 'pointer' }}
-                  >{t}</span>
-                ))}
-              </div>
-            </div>
-          ))}
-          {filteredFacts.length === 0 && (
-            <div className="wc-facts-empty">No facts match that search.</div>
-          )}
-        </div>
-      </section>
-
       {/* ── ICONIC EDITIONS ── */}
       <section className="wc-section">
         <SectionHead eyebrow="History" title="Iconic Editions" />
@@ -235,28 +212,33 @@ export default function WorldCup() {
               </button>
             ))}
           </div>
-          <div className="wc-edition-detail">
-            <div className="wc-ed-detail-top">
-              <div>
-                <div className="wc-ed-detail-flag">{activeEdition.flag}</div>
-                <h3>{activeEdition.year} · {activeEdition.host}</h3>
-                <div className="wc-ed-winner">Winners: <strong>{activeEdition.winner}</strong></div>
+          <div className="wc-edition-detail" style={{ position: 'relative', overflow: 'hidden' }}>
+            {EDITION_BACKDROPS[activeEdition.year] && (
+              <div aria-hidden="true" style={{ position: 'absolute', inset: 0, backgroundImage: `url(${EDITION_BACKDROPS[activeEdition.year]})`, backgroundSize: 'cover', backgroundPosition: 'center top', opacity: 0.14, pointerEvents: 'none' }} />
+            )}
+            <div style={{ position: 'relative', zIndex: 1 }}>
+              <div className="wc-ed-detail-top">
+                <div>
+                  <div className="wc-ed-detail-flag">{activeEdition.flag}</div>
+                  <h3>{activeEdition.year} · {activeEdition.host}</h3>
+                  <div className="wc-ed-winner">Winners: <strong>{activeEdition.winner}</strong></div>
+                </div>
+                <div className="wc-calibre-score">
+                  <strong>{activeEdition.calibreScore}</strong>
+                  <span>Calibre Score</span>
+                </div>
               </div>
-              <div className="wc-calibre-score">
-                <strong>{activeEdition.calibreScore}</strong>
-                <span>Calibre Score</span>
+              <p className="wc-ed-theme">"{activeEdition.theme}"</p>
+              <p className="wc-ed-summary">{activeEdition.summary}</p>
+              <div className="wc-ed-moment">
+                <Zap size={13} style={{ color: 'var(--lime)', flexShrink: 0 }} />
+                <span>{activeEdition.moment}</span>
               </div>
-            </div>
-            <p className="wc-ed-theme">"{activeEdition.theme}"</p>
-            <p className="wc-ed-summary">{activeEdition.summary}</p>
-            <div className="wc-ed-moment">
-              <Zap size={13} style={{ color: 'var(--lime)', flexShrink: 0 }} />
-              <span>{activeEdition.moment}</span>
-            </div>
-            <div className="wc-ed-players">
-              {activeEdition.players.map(p => (
-                <span key={p} className="wc-player-chip">{p}</span>
-              ))}
+              <div className="wc-ed-players">
+                {activeEdition.players.map(p => (
+                  <span key={p} className="wc-player-chip">{p}</span>
+                ))}
+              </div>
             </div>
           </div>
         </div>

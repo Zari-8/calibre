@@ -64,17 +64,8 @@ function toApiPlayerId(value) {
   return Number.isInteger(n) && n > 0 ? n : null;
 }
 
-// A usable image source is any non-empty string EXCEPT the neutral
-// placeholder. We accept relative app asset paths (e.g. /assets/players/x.jpg)
-// as well as absolute URLs — the <img> loads both, and onError catches misses.
-// The neutral placeholder is treated as "no image" so it never shadows a
-// better source, such as a direct API portrait built from an id.
 function isUsableSrc(src) {
-  if (typeof src !== 'string') return false;
-  const s = src.trim();
-  if (!s) return false;
-  if (/neutral-player\.svg(\?|#|$)/i.test(s)) return false;
-  return true;
+  return typeof src === 'string' && /^https?:\/\//i.test(src.trim());
 }
 
 function directPortraitUrl(apiId) {
@@ -96,7 +87,6 @@ export default function ApiPlayerImage({
   className,
   alt,
   loading = 'lazy',
-  allowLookup = true,
   ...rest
 }) {
   const resolvedApiId = useMemo(
@@ -130,7 +120,7 @@ export default function ApiPlayerImage({
   // Final fallback: fuzzy name search, fired once, only after every
   // higher-confidence source has failed (or none existed).
   useEffect(() => {
-    if (!exhaustedBase || fuzzyTried || !name || allowLookup === false) return;
+    if (!exhaustedBase || fuzzyTried || !name) return;
     let active = true;
     setFuzzyTried(true);
     Promise.resolve(getPlayerPhotoByName(name))
@@ -143,7 +133,7 @@ export default function ApiPlayerImage({
     return () => {
       active = false;
     };
-  }, [exhaustedBase, fuzzyTried, name, allowLookup]);
+  }, [exhaustedBase, fuzzyTried, name]);
 
   const currentSrc = !exhaustedBase
     ? baseCandidates[srcIndex]

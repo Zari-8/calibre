@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import { playerIdFor } from '../data/playerIds.js';
 import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
 import ApiLeagueLogo from '../components/ApiLeagueLogo.jsx';
 import useAuth from '../hooks/useAuth.js';
@@ -76,7 +77,7 @@ function PlayerPanel({ title, suffix, rows, stat, live = false, loading = false 
             navigateTo(`/players?playerId=${encodeURIComponent(row.id)}&player=${encodeURIComponent(row.name)}`);
           }}
         >
-          <span className="comp-standings-pos">{row.pos}</span><ApiPlayerImage playerId={row.apiPlayerId || row.id} name={row.name} preferredSrc={row.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" loading="lazy"/><span title={row.name}>{row.name}</span><small title={row.team}>{row.team}</small><strong>{row[stat]}</strong>
+          <span className="comp-standings-pos">{row.pos}</span><ApiPlayerImage playerId={row.apiPlayerId || row.id || playerIdFor(row.name)} name={row.name} preferredSrc={row.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" loading="lazy"/><span title={row.name}>{row.name}</span><small title={row.team}>{row.team}</small><strong>{row[stat]}</strong>
         </div>
       ))}
       {!rows.length && <div className="comp-empty-state">Player statistics are not available for this competition feed yet.</div>}

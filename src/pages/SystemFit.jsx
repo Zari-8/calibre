@@ -6,6 +6,10 @@ import {
 import { navigateTo } from '../components/NavLink.jsx';
 import { searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import { searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { playerIdFor } from '../data/playerIds.js';
+import { calibreRating } from '../services/calibreRating.js';
+import { playerTraits } from '../services/playerTraits.js';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams,
@@ -33,6 +37,7 @@ function normalizeApiTeam(team) {
 }
 
 function normalizeApiPlayer(player) {
+  const { traits, roleMetrics, basis } = playerTraits(player);
   return {
     ...SYSTEM_PLAYERS[0],
     id: player.id,
@@ -41,8 +46,31 @@ function normalizeApiPlayer(player) {
     age: player.age || '—',
     image: player.image || '/assets/players/neutral-player.svg',
     position: player.position || 'Profile pending',
-    archetype: 'Profile pending enrichment',
+    archetype: basis === 'event' ? 'Stat-backed profile' : 'Provisional · position model',
+    traits,
+    roleMetrics,
     source: 'api',
+  };
+}
+
+function normalizeDbPlayer(player) {
+  const id = player.api_player_id ?? player.apiPlayerId ?? player.id;
+  const { traits, roleMetrics, basis } = playerTraits(player);
+  const scored = calibreRating(player);
+  return {
+    ...SYSTEM_PLAYERS[0],
+    id,
+    name: player.name,
+    team: player.team || player.club || 'Registry profile',
+    age: player.age || '—',
+    image: player.image || player.img
+      || (id ? `https://media.api-sports.io/football/players/${id}.png` : '/assets/players/neutral-player.svg'),
+    position: player.position || 'Profile pending',
+    archetype: basis === 'event' ? 'Stat-backed profile' : 'Registry profile · provisional',
+    rating: scored.rating ?? SYSTEM_PLAYERS[0].rating,
+    traits,
+    roleMetrics,
+    source: 'db',
   };
 }
 
@@ -60,7 +88,17 @@ function useDatabaseSearch(kind, query) {
     const timer = setTimeout(async () => {
       setLoading(true);
       try {
-        const rows = kind === 'team' ? await searchApiTeams(query) : await searchApiPlayers(query);
+        let rows;
+        if (kind === 'team') {
+          rows = (await searchApiTeams(query) || []).map(item => ({ ...item, source: 'api' }));
+        } else {
+          const dbRows = await searchSupabasePlayers(query, { limit: 8 });
+          if (dbRows && dbRows.length) {
+            rows = dbRows.map(item => ({ ...item, source: 'db' }));
+          } else {
+            rows = (await searchApiPlayers(query) || []).map(item => ({ ...item, source: 'api' }));
+          }
+        }
         if (!cancelled) setRemote(rows || []);
       } catch {
         if (!cancelled) setRemote([]);
@@ -149,8 +187,9 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
   const merged = [...local, ...remote.filter(item => !localIds.has(String(item.id)))].slice(0, 8);
 
   const choose = (item) => {
-    if (kind === 'team') setSelectedTeam(String(item.source || '').startsWith('api') ? normalizeApiTeam(item) : item);
-    else setSelectedPlayer(String(item.source || '').startsWith('api') ? normalizeApiPlayer(item) : item);
+    if (kind === 'team') { setSelectedTeam(String(item.source || '').startsWith('api') ? normalizeApiTeam(item) : item); return; }
+    const src = String(item.source || '');
+    setSelectedPlayer(src === 'db' ? normalizeDbPlayer(item) : src.startsWith('api') ? normalizeApiPlayer(item) : item);
   };
 
   return (
@@ -163,11 +202,11 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
         <Search size={14} />
         <input value={query} onChange={event => setQuery(event.target.value)} placeholder={kind === 'team' ? 'Search clubs...' : 'Search players...'} />
       </label>
-      <div className="sf-database-note"><Database size={13} /> Local index + API-Football database {loading && <span>SEARCHING…</span>}</div>
+      <div className="sf-database-note"><Database size={13} /> Calibre registry + API-Football database {loading && <span>SEARCHING…</span>}</div>
       <div className="sf-search-results">
         {merged.map(item => (
           <button type="button" className="sf-search-result" key={`${kind}-${item.id}`} onClick={() => choose(item)}>
-            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage playerId={item.id} name={item.name} preferredSrc={item.image} fallbackSrc="/assets/players/neutral-player.svg" alt={item.name} />}
+            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage playerId={playerIdFor(item.name) || item.id} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />}
             <span><b>{item.name}</b><small>{kind === 'team' ? `${item.country} · ${item.league || 'database club'}` : `${item.team} · ${item.position}`}</small></span>
           </button>
         ))}
@@ -179,7 +218,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
           <div><b>{selectedTeam.name}</b><small>{selectedTeam.formation} · {selectedTeam.philosophy}</small></div>
         </div>
         <div className="sf-current-pair">
-          <ApiPlayerImage playerId={selectedPlayer.id} name={selectedPlayer.name} preferredSrc={selectedPlayer.image} fallbackSrc="/assets/players/neutral-player.svg" alt={selectedPlayer.name} />
+          <ApiPlayerImage playerId={playerIdFor(selectedPlayer.name) || selectedPlayer.id} name={selectedPlayer.name} fallbackSrc={selectedPlayer.image || '/assets/players/neutral-player.svg'} alt={selectedPlayer.name} />
           <div><b>{selectedPlayer.name}</b><small>{selectedPlayer.position} · {selectedPlayer.archetype}</small></div>
         </div>
       </div>
@@ -203,7 +242,7 @@ function PlayerHero({ report, mode, comparison, challenger }) {
       </div>
       <div className="sf-hero-grid">
         <div className="sf-player-portrait">
-          <ApiPlayerImage playerId={player.id} name={player.name} preferredSrc={player.image} fallbackSrc="/assets/players/neutral-player.svg" alt={player.name} />
+          <ApiPlayerImage playerId={playerIdFor(player.name) || player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
           <div className="sf-player-portrait-fade" />
           <div className="sf-player-portrait-label"><small>{player.archetype}</small><strong>{player.name}</strong><span>{player.position} · {player.team}</span></div>
         </div>
@@ -236,7 +275,7 @@ function TransferSpotlight({ spotlight, onLoad }) {
       </div>
       <div className="sf-transfer-grid">
         <div className="sf-transfer-player">
-          <ApiPlayerImage playerId={player.id} name={player.name} preferredSrc={player.image} fallbackSrc="/assets/players/neutral-player.svg" alt={player.name} />
+          <ApiPlayerImage playerId={playerIdFor(player.name) || player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
           <div className="sf-transfer-player-copy">
             <small>{player.team} → {team.name}</small>
             <h2>{spotlight.headline}</h2>
@@ -303,9 +342,9 @@ function ComparePlayers({ comparison, challenger, setChallenger }) {
       <section className="sf-panel sf-panel--wide">
         <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div><select value={challenger.id} onChange={event => setChallenger(SYSTEM_PLAYERS.find(player => String(player.id) === event.target.value) || SYSTEM_PLAYERS[1])}>{SYSTEM_PLAYERS.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
         <div className="sf-compare-head">
-          <div><ApiPlayerImage playerId={comparison.primary.id} name={comparison.primary.name} preferredSrc={comparison.primary.image} fallbackSrc="/assets/players/neutral-player.svg" alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
+          <div><ApiPlayerImage playerId={playerIdFor(comparison.primary.name) || comparison.primary.id} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
           <em>VS</em>
-          <div><ApiPlayerImage playerId={comparison.challenger.id} name={comparison.challenger.name} preferredSrc={comparison.challenger.image} fallbackSrc="/assets/players/neutral-player.svg" alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
+          <div><ApiPlayerImage playerId={playerIdFor(comparison.challenger.name) || comparison.challenger.id} name={comparison.challenger.name} fallbackSrc={comparison.challenger.image || '/assets/players/neutral-player.svg'} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
         </div>
         <div className="sf-versus-bars">{comparison.dimensions.map(item => (
           <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>
@@ -348,9 +387,14 @@ export default function SystemFit() {
   useEffect(() => {
     const playerQuery = new URLSearchParams(window.location.search).get('player');
     if (!playerQuery) return;
-    searchApiPlayers(playerQuery).then(rows => {
-      if (rows?.[0]) setSelectedPlayer(normalizeApiPlayer(rows[0]));
-    }).catch(() => {});
+    (async () => {
+      try {
+        const dbRows = await searchSupabasePlayers(playerQuery, { limit: 1 });
+        if (dbRows && dbRows.length) { setSelectedPlayer(normalizeDbPlayer(dbRows[0])); return; }
+        const apiRows = await searchApiPlayers(playerQuery);
+        if (apiRows?.[0]) setSelectedPlayer(normalizeApiPlayer(apiRows[0]));
+      } catch { /* keep default selection */ }
+    })();
   }, []);
 
   const report = useMemo(() => buildSystemFitReport(selectedPlayer, selectedTeam), [selectedPlayer, selectedTeam]);

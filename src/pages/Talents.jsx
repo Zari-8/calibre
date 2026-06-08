@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, Bookmark, BookmarkCheck, ChevronRight, Crown, Filter,
-  Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, Zap
+  Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
 } from 'lucide-react';
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
+import { calibreRating } from '../services/calibreRating.js';
+import { deriveArchetype } from '../services/playerTraits.js';
 
 const LOCAL_TALENTS = [
   { name:'Ibrahim Musa', age:19, nation:'Nigeria', flag:'🇳🇬', league:'NPFL', club:'Remo Stars', role:'Wide Creator', position:'RW', rating:77, potential:87, readiness:82, trend:'+12%', region:'africa', trajectory:'rising', nextStep:'Belgian Pro League watchlist', pathway:['NPFL breakout','Belgian Pro League minutes','Top-five league rotation'], localImage:'/assets/players/ibrahim-musa.jpg' },
@@ -70,7 +72,7 @@ const POSITION_OPTIONS = ['all','RW','LW','CM','DM','ST','FB'];
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 function trendValue(trend='0') { return Number.parseFloat(String(trend).replace('%','').replace('+','')) || 0; }
 function imageFor(player) {
-  return player.verifiedImage || player.apiImage || player.image || player.img || '';
+  return player.verifiedImage || player.apiImage || player.image || player.img || player.localImage || '';
 }
 function playerApiId(player) {
   return player.apiPlayerId ?? (player.source === 'api-profile' || player.source === 'supabase-registry' ? player.id : null);
@@ -122,16 +124,25 @@ function registryTalentFromProfile(profile) {
   const goals = numeric(profile.goals);
   const assists = numeric(profile.assists);
   const apiRating = numeric(profile.api_average_rating ?? profile.apiAverageRating);
-  const rating = numeric(profile.rating) || apiRating || '—';
+  // Calibre rating from the shared engine (one number, every page). Honors a
+  // stored 0-99 rating if the model has written one; otherwise computes from
+  // minutes, output, role, league and age. Form & Impact are proxied for now.
+  const scored = calibreRating(profile);
+  const rating = scored.rating != null ? scored.rating : '—';
+  const ratingProvisional = scored.provisional === true && scored.rating != null;
+  const breakdown = scored.breakdown;
   const hasEvidence = minutes > 0 || appearances > 0 || apiRating > 0;
   const age = Number(profile.age);
-  const readiness =
-    minutes >= 1800 ? 88
-      : minutes >= 1200 ? 83
-        : minutes >= 900 ? 79
-          : minutes >= 450 ? 73
-            : appearances >= 8 ? 68
-              : 60;
+  const startRate = appearances > 0 ? starts / appearances : 0;
+  const experience = clamp(minutes / 4500, 0, 1) * 100; // senior-minutes evidence, saturating
+  const ratingValue = Number.isFinite(Number(rating)) ? Number(rating) : 60;
+  // Readiness = how proven the player is right now: current Calibre level
+  // reinforced by accumulated senior minutes and regular-starter reliability.
+  // Career-minute totals saturate (÷4500) so they sharpen the score instead of
+  // pegging everyone at the top bucket the way the old minutes-only ladder did.
+  const readiness = hasEvidence
+    ? clamp(Math.round(ratingValue * 0.6 + experience * 0.2 + clamp(startRate * 100, 0, 100) * 0.2), 40, 99)
+    : 60;
   const potential =
     Number.isFinite(Number(rating))
       ? clamp(Math.round(Number(rating) + (age <= 19 ? 7 : age <= 21 ? 5 : 3)), 0, 99)
@@ -153,9 +164,11 @@ function registryTalentFromProfile(profile) {
     flag: '🌐',
     club: profile.club || profile.team || 'Club pending',
     league: profile.league || 'Imported registry',
-    role: profile.archetype || roleForPosition(profile.position),
+    role: profile.archetype || deriveArchetype(profile),
     position: shortPosition(profile.position),
     rating,
+    ratingProvisional,
+    breakdown,
     readiness,
     potential,
     trend: hasEvidence ? 'EVIDENCE READY' : 'PENDING',
@@ -239,6 +252,50 @@ function Pathway({ player }) {
   );
 }
 
+function TalentDetailModal({ player, onClose }) {
+  useEffect(() => {
+    function onKey(event) { if (event.key === 'Escape') onClose(); }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  if (!player) return null;
+  const lime = '#c6ff3a';
+  const muted = '#9aa4b2';
+  const isReg = player.source === 'supabase-registry';
+  return (
+    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:1200,background:'rgba(3,5,7,0.82)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'24px',overflowY:'auto'}}>
+      <div onClick={event=>event.stopPropagation()} role="dialog" aria-modal="true" aria-label={`${player.name} talent detail`} style={{position:'relative',width:'min(720px,100%)',margin:'4vh 0 40px',background:'#0b0d0f',border:'1px solid #1d242d',borderRadius:18,boxShadow:'0 30px 80px rgba(0,0,0,0.6)',overflow:'hidden'}}>
+        <button type="button" onClick={onClose} aria-label="Close" style={{position:'absolute',top:14,right:14,zIndex:2,width:36,height:36,display:'grid',placeItems:'center',borderRadius:10,background:'rgba(255,255,255,0.06)',border:'1px solid #283039',color:muted,cursor:'pointer'}}><X size={18}/></button>
+        <div style={{display:'flex',gap:20,alignItems:'center',padding:'26px 26px 18px'}}>
+          <div style={{width:110,height:110,borderRadius:14,overflow:'hidden',flex:'0 0 auto',background:'#14181c',border:'1px solid #232b34'}}>
+            <ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
+          </div>
+          <div style={{minWidth:0}}>
+            <div style={{color:lime,fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:6}}>{player.flag} {player.nation}</div>
+            <h2 style={{margin:0,fontSize:30,lineHeight:1.05,color:'#f4f6f8'}}>{player.name}</h2>
+            <div style={{color:muted,marginTop:8,fontSize:15}}>{player.position} · {player.club} · {player.age} yrs</div>
+            <div style={{color:muted,marginTop:4,fontSize:13}}>{player.role}</div>
+          </div>
+          <div style={{marginLeft:'auto',textAlign:'right',flex:'0 0 auto'}}>
+            <div style={{fontSize:40,fontWeight:800,color:lime,lineHeight:1}}>{player.provisional ? 'LIVE' : player.rating}</div>
+            <div style={{fontSize:11,color:muted,letterSpacing:'0.08em',marginTop:4}}>{player.ratingProvisional ? 'INTERIM RATING' : player.provisional ? 'API PROFILE' : 'CALIBRE RATING'}</div>
+          </div>
+        </div>
+        {isReg && <div style={{display:'flex',flexWrap:'wrap',gap:'8px 18px',padding:'0 26px 20px',color:muted,fontSize:13}}>
+          <span>{numeric(player.minutes)} mins</span>
+          <span>{numeric(player.appearances)} apps</span>
+          <span>{numeric(player.starts)} starts</span>
+          <span>{numeric(player.goals)}G · {numeric(player.assists)}A</span>
+          <span>{numeric(player.apiRating) ? `API ${numeric(player.apiRating).toFixed(1)}` : 'rating pending'}</span>
+        </div>}
+        <div style={{padding:'0 18px 22px'}}>
+          <Pathway player={player}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Talents() {
   const [view, setView] = useState('discover');
   const [region, setRegion] = useState('all');
@@ -250,6 +307,8 @@ export default function Talents() {
   const [query, setQuery] = useState('');
   const [moreFilters, setMoreFilters] = useState(false);
   const [selectedName, setSelectedName] = useState('Ibrahim Musa');
+  const [detailPlayer, setDetailPlayer] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(48);
   const [shortlist, setShortlist] = useState(['Ibrahim Musa','Mateo Silva']);
   const [liveTalents, setLiveTalents] = useState([]);
   const [liveLoading, setLiveLoading] = useState(false);
@@ -337,6 +396,8 @@ export default function Talents() {
     .sort((a,b) => sort === 'rating' ? numeric(b.rating) - numeric(a.rating) : sort === 'trend' ? trendValue(b.trend) - trendValue(a.trend) : sort === 'age' ? numeric(a.age,99) - numeric(b.age,99) : numeric(b.readiness) - numeric(a.readiness)),
   [sourceTalents, region, age, position, potential, trajectory, query, sort, liveMode]);
 
+  useEffect(() => { setVisibleCount(48); }, [region, age, position, potential, trajectory, query, sort, liveMode]);
+
   const selected = sourceTalents.find(player => player.name === selectedName) || TALENTS.find(player => player.name === selectedName) || filtered[0] || TALENTS[0];
   const ranked = [...sourceTalents]
     .sort((a,b) =>
@@ -394,8 +455,11 @@ export default function Talents() {
         <Pathway player={selected}/>
         <div className="talent-results-head" ref={resultsRef}><div><span>{liveMode ? 'API-Football U22 directory' : 'Curated discovery pool'}</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
         <div className="talent-results-grid">
-          {filtered.length ? filtered.map(player => <TalentCard key={playerKey(player)} player={player} selected={selected.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={player=>setSelectedName(player.name)} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
+          {filtered.length ? filtered.slice(0, visibleCount).map(player => <TalentCard key={playerKey(player)} player={player} selected={selected.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={chosen=>{setSelectedName(chosen.name);setDetailPlayer(chosen);}} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
         </div>
+        {filtered.length > visibleCount && <div style={{display:'flex',justifyContent:'center',marginTop:18}}>
+          <button type="button" className="btn btn--lime" onClick={()=>setVisibleCount(count=>count+48)}>Load more ({filtered.length - visibleCount} remaining)</button>
+        </div>}
       </>}
 
       {view === 'pathways' && <div className="pathway-workspace">
@@ -417,6 +481,8 @@ export default function Talents() {
         <span>Unlock premium insights, advanced filters &amp; exclusive World Cup content.</span>
         <button type="button" className="btn btn--lime" onClick={()=>navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14}/></button>
       </div>
+
+      <TalentDetailModal player={detailPlayer} onClose={()=>setDetailPlayer(null)}/>
     </div>
   );
 }

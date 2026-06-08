@@ -1,80 +1,65 @@
-const API_BASE = 'https://v3.football.api-sports.io';
+// Vercel serverless function — deploy at:  api/football.js
+//
+// The browser calls /api/football?endpoint=<endpoint>&<params>. This forwards
+// the request to API-Football with the secret key attached server-side, so the
+// key is never exposed to the client. apiFootball.js reads the x-calibre-*
+// response headers this sets.
+//
+// Required Vercel env var (Project → Settings → Environment Variables):
+//   API_FOOTBALL_KEY = your api-sports.io key
+//
+// Local testing: run `vercel dev` (not `npm run dev`) so this function is served
+// alongside the app on the same origin, or set VITE_API_FOOTBALL_KEY in
+// .env.local for the direct-call path.
 
-const ENDPOINTS = {
-  fixtures: ['id', 'date', 'live', 'team', 'league', 'last', 'season', 'next', 'from', 'to', 'timezone'],
-  'fixtures/lineups': ['fixture', 'team', 'player', 'type'],
-  standings: ['league', 'season', 'team'],
-  teams: ['id', 'name', 'league', 'season', 'country', 'code', 'search'],
-  players: ['id', 'team', 'league', 'season', 'search', 'page'],
-  'players/profiles': ['player', 'search', 'page'],
-  'players/topscorers': ['league', 'season'],
-  leagues: ['id', 'name', 'country', 'season', 'search', 'type', 'current'],
-  transfers: ['player', 'team'],
-  status: [],
-};
+const BASE = 'https://v3.football.api-sports.io';
 
-function getCachePolicy(endpoint) {
-  if (endpoint === 'fixtures') return 's-maxage=90, stale-while-revalidate=180';
-  if (endpoint === 'status') return 'no-store';
-  if (endpoint === 'teams' || endpoint === 'players' || endpoint === 'players/profiles' || endpoint === 'leagues') return 's-maxage=3600, stale-while-revalidate=86400';
-  return 's-maxage=21600, stale-while-revalidate=86400';
-}
-
-function valueOf(input) {
-  return Array.isArray(input) ? input[0] : input;
-}
+// Only these endpoints may be proxied (prevents the endpoint param from being
+// abused to reach arbitrary upstream paths).
+const ALLOWED = new Set([
+  'status',
+  'fixtures',
+  'fixtures/lineups',
+  'standings',
+  'leagues',
+  'teams',
+  'players',
+  'players/profiles',
+  'players/topscorers',
+  'players/topassists',
+  'transfers',
+]);
 
 export default async function handler(req, res) {
-  if (req.method !== 'GET') {
-    res.setHeader('Allow', 'GET');
-    return res.status(405).json({ error: 'Method not allowed' });
+  const { endpoint, ...params } = req.query || {};
+
+  if (!endpoint || !ALLOWED.has(String(endpoint))) {
+    res.status(400).json({ error: 'Unknown or missing endpoint' });
+    return;
   }
 
   const key = process.env.API_FOOTBALL_KEY;
   if (!key) {
-    return res.status(503).json({
-      error: 'API bridge not configured',
-      hint: 'Add API_FOOTBALL_KEY in Vercel Environment Variables and redeploy.',
-    });
+    res.status(500).json({ error: 'API_FOOTBALL_KEY is not configured on the server' });
+    return;
   }
 
-  const endpoint = valueOf(req.query.endpoint);
-  if (!endpoint || !Object.prototype.hasOwnProperty.call(ENDPOINTS, endpoint)) {
-    return res.status(400).json({ error: 'Unsupported API-Football endpoint' });
-  }
-
-  const params = new URLSearchParams();
-  for (const name of ENDPOINTS[endpoint]) {
-    const value = valueOf(req.query[name]);
-    if (value !== undefined && value !== null && String(value).trim() !== '') {
-      params.set(name, String(value));
-    }
-  }
-
-  const url = `${API_BASE}/${endpoint}${params.toString() ? `?${params.toString()}` : ''}`;
+  const qs = new URLSearchParams(params).toString();
+  const url = `${BASE}/${endpoint}${qs ? `?${qs}` : ''}`;
 
   try {
-    const upstream = await fetch(url, {
-      headers: { 'x-apisports-key': key },
-    });
-    const body = await upstream.json();
+    const upstream = await fetch(url, { headers: { 'x-apisports-key': key } });
+    const json = await upstream.json();
 
-    const remaining = upstream.headers.get('x-ratelimit-requests-remaining')
-      || upstream.headers.get('x-ratelimit-remaining');
-    const limit = upstream.headers.get('x-ratelimit-requests-limit')
-      || upstream.headers.get('x-ratelimit-limit');
+    // Surface provider quota + source to the client (apiFootball.js reads these).
+    res.setHeader('x-calibre-source', 'vercel-bridge');
+    res.setHeader('x-calibre-requests-remaining', upstream.headers.get('x-ratelimit-requests-remaining') || '');
+    res.setHeader('x-calibre-requests-limit', upstream.headers.get('x-ratelimit-requests-limit') || '');
+    // Let Vercel's edge cache identical calls briefly to spare the daily quota.
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300');
 
-    res.setHeader('Cache-Control', getCachePolicy(endpoint));
-    res.setHeader('X-Calibre-Source', 'api-football');
-    res.setHeader('X-Calibre-Endpoint', endpoint);
-    if (remaining) res.setHeader('X-Calibre-Requests-Remaining', remaining);
-    if (limit) res.setHeader('X-Calibre-Requests-Limit', limit);
-
-    return res.status(upstream.status).json(body);
+    res.status(upstream.status).json(json);
   } catch (error) {
-    return res.status(502).json({
-      error: 'API-Football upstream request failed',
-      message: error instanceof Error ? error.message : String(error),
-    });
+    res.status(502).json({ error: 'Upstream request failed', detail: String(error?.message || error) });
   }
 }

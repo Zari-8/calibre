@@ -164,7 +164,10 @@ function registryTalentFromProfile(profile) {
     flag: '🌐',
     club: profile.club || profile.team || 'Club pending',
     league: profile.league || 'Imported registry',
-    role: profile.archetype || deriveArchetype(profile),
+    // Always compute the archetype from the player's actual traits. The
+    // registry's stored `archetype` column holds stale position-cloned labels
+    // ("Ball-Winning Defender" for every defender), so we deliberately ignore it.
+    role: deriveArchetype(profile),
     position: shortPosition(profile.position),
     rating,
     ratingProvisional,

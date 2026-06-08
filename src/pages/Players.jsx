@@ -4,6 +4,8 @@ import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { calibreRating } from '../services/calibreRating.js';
+import { playerTraits, deriveArchetype } from '../services/playerTraits.js';
 
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
@@ -18,11 +20,14 @@ const CURATED_PLAYERS = [
   { rank:10, name:'Mohamed Salah', apiPlayerId:306, age:33, club:'Liverpool', pos:'RW', rating:82, buzz:80, fanRating:4.6, potential:84, img:'/assets/players/neutral-player.svg', archetype:'Inside Forward' },
 ];
 
+// Rising players are a curated shortlist, but their rating and the metric
+// descriptors are COMPUTED from each player's real registry stats at runtime
+// (see risingComputed). No hand-written "progressive carries" claims.
 const RISING = [
-  { name:'Lamine Yamal', sub:'RW · Barcelona', pos:'RW', rating:87, delta:'+4', metrics:[['Progressive carries','Elite'],['Chance creation','High'],['Final-third entries','High'],['Assists','Strong']], img:'/assets/players/lamine-yamal.jpg' },
-  { name:'Pau Cubarsí', sub:'CB · Barcelona', pos:'CB', rating:84, delta:'+5', metrics:[['Duels won','Strong'],['Pass completion','Elite'],['Line-breaking passes','High'],['Interceptions','Strong']], img:'/assets/players/neutral-player.svg' },
-  { name:'João Neves', sub:'CM · PSG', pos:'CM', rating:83, delta:'+3', metrics:[['Duels won','High'],['Progressive passes','High'],['Pass completion','Elite'],['Assists','Developing']], img:'/assets/players/neutral-player.svg' },
-  { name:'Arda Güler', sub:'AM · Real Madrid', pos:'AM', rating:82, delta:'+3', metrics:[['Progressive passes','High'],['Chance creation','High'],['Pass completion','Strong'],['Assists','Developing']], img:'/assets/players/neutral-player.svg' },
+  { name:'Lamine Yamal', sub:'RW · Barcelona', pos:'RW', apiPlayerId:386828, rating:87, delta:'+4', img:'/assets/players/lamine-yamal.jpg' },
+  { name:'Pau Cubarsí', sub:'CB · Barcelona', pos:'CB', apiPlayerId:396623, rating:84, delta:'+5', img:'/assets/players/neutral-player.svg' },
+  { name:'João Neves', sub:'CM · PSG', pos:'CM', apiPlayerId:335051, rating:83, delta:'+3', img:'/assets/players/neutral-player.svg' },
+  { name:'Arda Güler', sub:'AM · Real Madrid', pos:'AM', apiPlayerId:291964, rating:82, delta:'+3', img:'/assets/players/neutral-player.svg' },
 ];
 
 const LEAGUE_OPTIONS = [
@@ -159,7 +164,10 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
       position:specificPosition(databasePlayer.position,specificPosition(databasePlayer.pos,curated.pos)),
       img:databasePlayer.img || curated.img,
       image:databasePlayer.image || databasePlayer.img || curated.img,
-      rating:databasePlayer.rating ?? curated.rating,
+      // Compute the Calibre rating from the player's real registry stats so the
+      // landing table matches Talents and System Fit. Fall back to the curated
+      // number only if the engine can't rate the row.
+      rating:(calibreRating(databasePlayer).rating ?? databasePlayer.rating) ?? curated.rating,
       buzz:curated.buzz,
       fanRating:curated.fanRating,
       potential:curated.potential,
@@ -297,6 +305,36 @@ export default function Players(){
     [supabaseRows]
   );
 
+  // Compute each rising player's rating and descriptors from their real stats.
+  // The descriptors are the trait engine's own role metrics, labelled by value
+  // — never the old hand-written "progressive carries: elite" claims.
+  const risingComputed = useMemo(()=>{
+    const byId = new Map();
+    const byName = new Map();
+    for(const row of (supabaseRows||[])){
+      const id = Number(row.api_player_id);
+      if(Number.isInteger(id) && id>0 && !byId.has(id)) byId.set(id,row);
+      const key = String(row.name||'').toLowerCase();
+      if(!byName.has(key)) byName.set(key,row);
+    }
+    const band = value => value>=85?'Elite':value>=75?'High':value>=65?'Strong':'Developing';
+    return RISING.map(rising=>{
+      const row = byId.get(Number(rising.apiPlayerId)) || byName.get(String(rising.name).toLowerCase());
+      if(!row) return { ...rising, metrics:[] };
+      try {
+        const rating = calibreRating(row).rating ?? rising.rating;
+        const { roleMetrics } = playerTraits(row);
+        const metrics = Object.entries(roleMetrics||{})
+          .sort((a,b)=>b[1]-a[1])
+          .slice(0,4)
+          .map(([label,value])=>[label,band(value)]);
+        return { ...rising, rating, metrics };
+      } catch {
+        return { ...rising, metrics:[] };
+      }
+    });
+  },[supabaseRows]);
+
   const featured = landingPlayers[weekIndex(landingPlayers.length)];
   const hasLiveQuery = search.trim().length>=3;
 
@@ -305,8 +343,8 @@ export default function Players(){
 
     Promise.all([
       getSupabasePlayers({
-        names:CURATED_PLAYERS.map(player=>player.name),
-        limit:60,
+        names:[...CURATED_PLAYERS.map(player=>player.name), ...RISING.map(player=>player.name)],
+        limit:80,
       }),
       getSupabasePlayerCount(),
     ])
@@ -460,7 +498,7 @@ export default function Players(){
       <div className="plp-stats-bar">
         <div className="plp-stat"><div className="plp-stat-label">Player Directory</div><div className="plp-stat-val">LIVE</div><div className="plp-stat-sub">Global profile search connected</div></div>
         <div className="plp-stat"><div className="plp-stat-label">League Browse</div><div className="plp-stat-val">9</div><div className="plp-stat-sub">Beta league feeds enabled</div></div>
-        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseTotal.toLocaleString()}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Supabase rating profiles enriched'}</div></div>
+        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseTotal.toLocaleString()}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Players in the Calibre registry'}</div></div>
         <div className="plp-stat"><div className="plp-stat-label">Featured Player</div><div className="plp-stat-val">Weekly</div><div className="plp-stat-sub">Editorial rotation</div></div>
       </div>
 
@@ -628,13 +666,13 @@ export default function Players(){
           <div className="panel" style={{marginTop:10}}>
             <div className="panel-head"><div className="panel-title"><TrendingUp size={12}/> Rising Players · role-aware</div></div>
 
-            {RISING.map(r=>
+            {risingComputed.map(r=>
               <button key={r.name} className="plp-rising-row player-row-button rising-row--role-aware" type="button" onClick={()=>openProfile(localToProfile(r))}>
                 <ApiPlayerImage playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)}/>
                 <div className="plp-rising-info">
                   <strong>{r.name}</strong>
                   <span>{r.sub}</span>
-                  <small>{r.metrics.map(([a,b])=>`${a}: ${b}`).join(' · ')}</small>
+                  {r.metrics.length>0 && <small>{r.metrics.map(([a,b])=>`${a}: ${b}`).join(' · ')}</small>}
                 </div>
 
                 <div>

@@ -11,14 +11,9 @@ import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { deriveArchetype } from '../services/playerTraits.js';
 
-const LOCAL_TALENTS = [
-  { name:'Ibrahim Musa', age:19, nation:'Nigeria', flag:'🇳🇬', league:'NPFL', club:'Remo Stars', role:'Wide Creator', position:'RW', rating:77, potential:87, readiness:82, trend:'+12%', region:'africa', trajectory:'rising', nextStep:'Belgian Pro League watchlist', pathway:['NPFL breakout','Belgian Pro League minutes','Top-five league rotation'], localImage:'/assets/players/ibrahim-musa.jpg' },
-  { name:'Tawanda Moyo', age:18, nation:'Zimbabwe', flag:'🇿🇼', league:'Zimbabwe PSL', club:'FC Platinum', role:'Controller', position:'CM', rating:71, potential:83, readiness:66, trend:'+8%', region:'africa', trajectory:'rising', nextStep:'Stay and dominate current league first', pathway:['Zimbabwe PSL starter','Regional step-up','Belgian or Dutch development move'], localImage:'/assets/players/neutral-player.svg' },
-  { name:'Mateo Silva', age:20, nation:'Uruguay', flag:'🇺🇾', league:'Uruguay Primera', club:'Nacional', role:'Pressing Engine', position:'CM', rating:80, potential:88, readiness:79, trend:'+10%', region:'south_america', trajectory:'rising', nextStep:'Eredivisie development move', pathway:['Uruguay Primera starter','Eredivisie development move','Top-five league squad'], localImage:'/assets/players/florian-wirtz.jpg' },
-  { name:'Noah Adebayo', age:17, nation:'Nigeria', flag:'🇳🇬', league:'Academy / U21', club:'Enyimba Youth', role:'False Nine', position:'ST', rating:74, potential:90, readiness:63, trend:'+15%', region:'academy', trajectory:'rising', nextStep:'Needs one senior-minutes season', pathway:['Academy / U21','NPFL senior minutes','European development league'], localImage:'/assets/players/neutral-player.svg' },
-  { name:'Milan Petrovic', age:19, nation:'Serbia', flag:'🇷🇸', league:'Serbian SuperLiga', club:'Čukarički', role:'Ball-Winning Midfielder', position:'DM', rating:76, potential:85, readiness:75, trend:'+9%', region:'europe', trajectory:'rising', nextStep:'Belgian Pro League or 2. Bundesliga minutes', pathway:['Serbian SuperLiga','Belgian Pro League / 2. Bundesliga','Top-five league rotation'], localImage:'/assets/players/vitinha.jpg' },
-  { name:'Sofía Benítez', age:20, nation:'Argentina', flag:'🇦🇷', league:'Liga Femenina', club:'River Plate Women', role:'Inside Forward', position:'LW', rating:78, potential:88, readiness:77, trend:'+11%', region:'south_america', trajectory:'rising', nextStep:'Liga F or WSL development move', pathway:['Argentina senior football','Liga F / WSL development move','Champions League-level squad'], localImage:'/assets/players/lamine-yamal.jpg' },
-];
+// Fabricated demo players removed. The discovery pool is now sourced from the
+// real Supabase registry (scored by calibreRating); live search covers the rest.
+const LOCAL_TALENTS = [];
 
 const MAX_DISCOVERY_AGE = 22;
 
@@ -164,10 +159,7 @@ function registryTalentFromProfile(profile) {
     flag: '🌐',
     club: profile.club || profile.team || 'Club pending',
     league: profile.league || 'Imported registry',
-    // Always compute the archetype from the player's actual traits. The
-    // registry's stored `archetype` column holds stale position-cloned labels
-    // ("Ball-Winning Defender" for every defender), so we deliberately ignore it.
-    role: deriveArchetype(profile),
+    role: profile.archetype || deriveArchetype(profile),
     position: shortPosition(profile.position),
     rating,
     ratingProvisional,
@@ -309,10 +301,10 @@ export default function Talents() {
   const [trajectory, setTrajectory] = useState('all');
   const [query, setQuery] = useState('');
   const [moreFilters, setMoreFilters] = useState(false);
-  const [selectedName, setSelectedName] = useState('Ibrahim Musa');
+  const [selectedName, setSelectedName] = useState('');
   const [detailPlayer, setDetailPlayer] = useState(null);
   const [visibleCount, setVisibleCount] = useState(48);
-  const [shortlist, setShortlist] = useState(['Ibrahim Musa','Mateo Silva']);
+  const [shortlist, setShortlist] = useState([]);
   const [liveTalents, setLiveTalents] = useState([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveSearched, setLiveSearched] = useState(false);
@@ -385,9 +377,7 @@ export default function Talents() {
   const sourceTalents =
     liveMode && liveSearched
       ? liveTalents
-      : registryTalents.length
-        ? registryTalents
-        : TALENTS;
+      : registryTalents;
 
   const filtered = useMemo(() => sourceTalents
     .filter(p => region === 'all' || p.region === region)
@@ -401,7 +391,7 @@ export default function Talents() {
 
   useEffect(() => { setVisibleCount(48); }, [region, age, position, potential, trajectory, query, sort, liveMode]);
 
-  const selected = sourceTalents.find(player => player.name === selectedName) || TALENTS.find(player => player.name === selectedName) || filtered[0] || TALENTS[0];
+  const selected = sourceTalents.find(player => player.name === selectedName) || filtered[0] || sourceTalents[0] || null;
   const ranked = [...sourceTalents]
     .sort((a,b) =>
       numeric(b.minutes) - numeric(a.minutes)
@@ -455,10 +445,10 @@ export default function Talents() {
       </div>
 
       {view === 'discover' && <>
-        <Pathway player={selected}/>
+        {selected && <Pathway player={selected}/>}
         <div className="talent-results-head" ref={resultsRef}><div><span>{liveMode ? 'API-Football U22 directory' : 'Curated discovery pool'}</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
         <div className="talent-results-grid">
-          {filtered.length ? filtered.slice(0, visibleCount).map(player => <TalentCard key={playerKey(player)} player={player} selected={selected.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={chosen=>{setSelectedName(chosen.name);setDetailPlayer(chosen);}} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
+          {filtered.length ? filtered.slice(0, visibleCount).map(player => <TalentCard key={playerKey(player)} player={player} selected={selected?.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={chosen=>{setSelectedName(chosen.name);setDetailPlayer(chosen);}} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
         </div>
         {filtered.length > visibleCount && <div style={{display:'flex',justifyContent:'center',marginTop:18}}>
           <button type="button" className="btn btn--lime" onClick={()=>setVisibleCount(count=>count+48)}>Load more ({filtered.length - visibleCount} remaining)</button>
@@ -468,9 +458,9 @@ export default function Talents() {
       {view === 'pathways' && <div className="pathway-workspace">
         <div className="pathway-list">
           <div className="pathway-list__head"><span>Trajectory watchlist</span><strong>Select a talent to inspect the pathway model</strong></div>
-          {filtered.map(player=><button type="button" className={player.name===selected.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
+          {filtered.map(player=><button type="button" className={player.name===selected?.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
         </div>
-        <Pathway player={selected}/>
+        {selected && <Pathway player={selected}/>}
       </div>}
 
       {view === 'rankings' && <section className="talent-ranking-panel">

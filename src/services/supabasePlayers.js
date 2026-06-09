@@ -2,9 +2,7 @@ import { supabase, supabaseConfigured } from './supabaseClient.js';
 
 const DEFAULT_LIMIT = 20;
 
-// Columns present on BOTH the players table and the player_competition_profiles
-// view/table. Safe to select from either source.
-const BASE_SELECT_COLS = [
+const PLAYER_SELECT = [
   'id',
   'api_player_id',
   'api_team_id',
@@ -22,6 +20,7 @@ const BASE_SELECT_COLS = [
   'pos',
   'position',
   'raw_position',
+  'primary_role',
   'shirt_number',
   'rating',
   'archetype',
@@ -33,16 +32,8 @@ const BASE_SELECT_COLS = [
   'goals',
   'assists',
   'api_average_rating',
-  'source',
-  'last_synced_at',
-  'profile_enriched_at',
-];
-
-// Event-stat enrichment columns. These live ONLY on the players table (added by
-// the backfill), NOT on player_competition_profiles — so they must only be
-// selected from `players`, or the league-filtered query throws.
-// Read by services/playerTraits.js to flip a player to the stat-backed basis.
-const EVENT_STAT_COLS = [
+  // ── event stats (required by the v6 rating engine) ──
+  'stats_minutes',
   'passes',
   'pass_accuracy',
   'key_passes',
@@ -52,15 +43,10 @@ const EVENT_STAT_COLS = [
   'interceptions',
   'duels_won',
   'shots',
-  'stats_minutes',
-  'stats_season',
-  'stats_updated_at',
-];
-
-// Full select for the players table (base + event stats).
-const PLAYER_SELECT = [...BASE_SELECT_COLS, ...EVENT_STAT_COLS].join(',');
-// Trimmed select for player_competition_profiles (base only — no event stats).
-const PROFILE_SELECT = BASE_SELECT_COLS.join(',');
+  'source',
+  'last_synced_at',
+  'profile_enriched_at',
+].join(',');
 
 function requireSupabase(){
   if(!supabaseConfigured || !supabase){
@@ -94,6 +80,17 @@ function normalizePlayer(row){
     minutes:Number(row.minutes || 0),
     goals:Number(row.goals || 0),
     assists:Number(row.assists || 0),
+    // event stats pass through (numbers kept as-is; rating engine coerces safely)
+    stats_minutes:row.stats_minutes ?? null,
+    passes:row.passes ?? null,
+    pass_accuracy:row.pass_accuracy ?? null,
+    key_passes:row.key_passes ?? null,
+    dribbles_success:row.dribbles_success ?? null,
+    dribbles_attempts:row.dribbles_attempts ?? null,
+    tackles:row.tackles ?? null,
+    interceptions:row.interceptions ?? null,
+    duels_won:row.duels_won ?? null,
+    shots:row.shots ?? null,
   };
 }
 
@@ -123,7 +120,7 @@ export async function getSupabasePlayers({
 
   let query = client
     .from(hasLeagueFilter ? 'player_competition_profiles' : 'players')
-    .select(hasLeagueFilter ? PROFILE_SELECT : PLAYER_SELECT)
+    .select(PLAYER_SELECT)
     .range(offset,offset+limit-1);
 
   if(Array.isArray(names) && names.length){
@@ -162,31 +159,11 @@ export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
 
   if(query.length<3) return [];
 
-  // API-Football stores abbreviated names ("V. van Dijk"), so a full-name search
-  // ("virgil van dijk") won't match the `name` column. Match across name,
-  // firstname, lastname and slug, and also against the last token (the surname,
-  // the reliable part). Commas would break PostgREST's .or() syntax, so strip them.
-  const safe = query.replace(/,/g,' ').replace(/\s+/g,' ').trim();
-  const tokens = safe.split(' ');
-  const lastToken = tokens[tokens.length-1];
-  const slugForm = safe.toLowerCase().replace(/ /g,'-');
-  const filters = [
-    `name.ilike.%${safe}%`,
-    `firstname.ilike.%${safe}%`,
-    `lastname.ilike.%${safe}%`,
-    `slug.ilike.%${slugForm}%`,
-    `lastname.ilike.%${lastToken}%`,
-  ];
-  if(tokens.length>1){
-    // also try first-initial form to match "V. van Dijk" against "virgil ... dijk"
-    filters.push(`name.ilike.%${tokens[0][0]}. ${tokens.slice(1).join(' ')}%`);
-  }
-
   const { data, error } = await client
     .from('players')
     .select(PLAYER_SELECT)
-    .or(filters.join(','))
-    .order('minutes',{ascending:false,nullsFirst:false})
+    .ilike('name',`%${query}%`)
+    .order('name',{ascending:true})
     .limit(limit);
 
   if(error) throw error;

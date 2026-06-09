@@ -1,9 +1,9 @@
 // Calibre Rating Engine v6 — production-led, event-stat aware, API demoted.
-const WEIGHTS = { Performance: 0.35, Consistency: 0.18, Form: 0.20, Impact: 0.17, Trajectory: 0.10 };
+const WEIGHTS = { Performance: 0.35, Consistency: 0.20, Form: 0.20, Impact: 0.15, Trajectory: 0.10 };
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 function per(value, mins) { return mins > 0 ? num(value) / (mins / 90) : 0; }
-const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,135:0.96,61:0.93,94:0.86,88:0.85,71:0.84,144:0.82,197:0.80,253:0.74,98:0.74,307:0.80,40:0.82 };
+const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,135:0.96,61:0.93,94:0.86,88:0.85,71:0.84,144:0.82,40:0.82,203:0.80,128:0.80,13:0.80,307:0.80,253:0.78,98:0.74,281:0.72,12:0.70,399:0.62,525:0.96,44:0.95,254:0.95,142:0.93,82:0.93,64:0.92,139:0.90,949:0.82 };
 const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.86,'eredivisie':0.85,'championship':0.82,'pro league':0.82,'super lig':0.80,'saudi pro league':0.80,'brasileiro':0.84,'mls':0.74,'j1 league':0.74,'npfl':0.62,'zimbabwe psl':0.55 };
 const DEFAULT_LEAGUE = 0.75;
 function leagueStrength(player) {

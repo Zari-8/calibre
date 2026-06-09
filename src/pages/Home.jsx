@@ -1,26 +1,75 @@
+import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, BarChart3, ChevronRight, Compass, Flame, Gauge, Search, ShieldCheck, Sparkles, Target, TrendingUp, Users, Zap } from 'lucide-react';
 import BattleHero from '../components/BattleHero.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { playerIdFor } from '../data/playerIds.js';
+import { calibreRating } from '../services/calibreRating.js';
+import { getSupabasePlayers } from '../services/supabasePlayers.js';
 
-const activeBattles = [
-  { category: 'Impact', left: 'Haaland', right: 'Mbappé', votes: '52.8K', split: '54–46', imageA: '/assets/players/kylian-mbappe.jpg', imageB: '/assets/players/jude-bellingham.jpg' },
-  { category: 'Control', left: 'Rice', right: 'Vitinha', votes: '36.5K', split: '51–49', imageA: '/assets/players/florian-wirtz.jpg', imageB: '/assets/players/vitinha.jpg' },
-  { category: 'Creativity', left: 'Vini Jr.', right: 'Yamal', votes: '30.4K', split: '57–43', imageA: '/assets/players/vinicius-junior.jpg', imageB: '/assets/players/lamine-yamal.jpg' },
+// ─────────────────────────────────────────────────────────────────────────
+// Real anchor players for the landing showcase. Each row carries its actual
+// season stat line, so the Calibre rating is COMPUTED (never hardcoded) and is
+// correct on first paint. When the live Supabase row matches, it overrides
+// these values so an enriched player updates automatically. No fabricated
+// players, no invented ratings.
+// ─────────────────────────────────────────────────────────────────────────
+const ANCHORS = [
+  { name:'Lamine Yamal', apiPlayerId:152981, club:'Barcelona', role:'Wide creator', origin:'La Liga · Spain', img:'/assets/players/lamine-yamal.jpg',
+    position:'FWD', league_id:140, age:18, minutes:3828, appearances:50, starts:46, goals:26, assists:17, api_average_rating:7.91,
+    stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
+
+  { name:'Harry Kane', apiPlayerId:184, club:'Bayern München', role:'Complete forward', origin:'Bundesliga · England', img:'/assets/players/neutral-player.svg',
+    position:'FWD', league_id:78, age:32, minutes:4407, appearances:58, starts:51, goals:64, assists:8, api_average_rating:7.64,
+    stats_minutes:4466, passes:1331, pass_accuracy:78.9, key_passes:74, dribbles_success:34, tackles:34, interceptions:14, duels_won:240, shots:165 },
+
+  { name:'Kylian Mbappé', apiPlayerId:278, club:'Real Madrid', role:'Pure striker', origin:'La Liga · France', img:'/assets/players/kylian-mbappe.jpg',
+    position:'FWD', league_id:140, age:27, minutes:3755, appearances:43, starts:42, goals:43, assists:6, api_average_rating:7.59,
+    stats_minutes:3755, passes:1410, pass_accuracy:85.6, key_passes:102, dribbles_success:102, tackles:6, interceptions:4, duels_won:164, shots:163 },
+
+  { name:'Michael Olise', apiPlayerId:21548, club:'Bayern München', role:'Wide creator', origin:'Bundesliga · France', img:'/assets/players/neutral-player.svg',
+    position:'MID', league_id:78, age:24, minutes:4387, appearances:59, starts:48, goals:25, assists:26, api_average_rating:7.66,
+    stats_minutes:4387, passes:2808, pass_accuracy:80.6, key_passes:133, dribbles_success:139, tackles:42, interceptions:23, duels_won:308, shots:127 },
+
+  { name:'Vitinha', apiPlayerId:61932, club:'Paris Saint-Germain', role:'Deep controller', origin:'Ligue 1 · Portugal', img:'/assets/players/vitinha.jpg',
+    position:'MID', league_id:61, age:25, minutes:4512, appearances:55, starts:50, goals:7, assists:10, api_average_rating:7.59,
+    stats_minutes:4512, passes:5380, pass_accuracy:93.1, key_passes:78, dribbles_success:24, tackles:54, interceptions:55, duels_won:124, shots:58 },
+
+  { name:'Ousmane Dembélé', apiPlayerId:18766, club:'Paris Saint-Germain', role:'Inside forward', origin:'Ligue 1 · France', img:'/assets/players/neutral-player.svg',
+    position:'FWD', league_id:61, age:28, minutes:2520, appearances:47, starts:30, goals:25, assists:12, api_average_rating:7.64,
+    stats_minutes:2520, passes:1538, pass_accuracy:79.7, key_passes:82, dribbles_success:42, tackles:10, interceptions:4, duels_won:69, shots:92 },
+
+  { name:'Erling Haaland', apiPlayerId:1100, club:'Manchester City', role:'Poacher', origin:'Premier League · Norway', img:'/assets/players/neutral-player.svg',
+    position:'FWD', league_id:39, age:25, minutes:4473, appearances:51, starts:50, goals:42, assists:9, api_average_rating:7.09,
+    stats_minutes:4518, passes:588, pass_accuracy:65.2, key_passes:41, dribbles_success:19, tackles:17, interceptions:8, duels_won:164, shots:160 },
+
+  { name:'Raphinha', apiPlayerId:1467, club:'Barcelona', role:'Inside forward', origin:'La Liga · Brazil', img:'/assets/players/neutral-player.svg',
+    position:'FWD', league_id:140, age:29, minutes:2290, appearances:34, starts:28, goals:21, assists:7, api_average_rating:7.8,
+    stats_minutes:2290, passes:1002, pass_accuracy:79.7, key_passes:74, dribbles_success:37, tackles:32, interceptions:10, duels_won:91, shots:82 },
+
+  { name:'Pau Cubarsí', apiPlayerId:407419, club:'Barcelona', role:'Ball-playing defender', origin:'La Liga · Spain', img:'/assets/players/neutral-player.svg',
+    position:'DEF', league_id:140, age:18, minutes:4054, appearances:46, starts:44, goals:1, assists:0, api_average_rating:7.06,
+    stats_minutes:4234, passes:4083, pass_accuracy:90.9, key_passes:7, dribbles_success:1, tackles:61, interceptions:44, duels_won:171, shots:9 },
+
+  { name:'João Neves', apiPlayerId:367975, club:'Paris Saint-Germain', role:'Box-to-box', origin:'Ligue 1 · Portugal', img:'/assets/players/neutral-player.svg',
+    position:'MID', league_id:61, age:21, minutes:3128, appearances:43, starts:36, goals:9, assists:5, api_average_rating:7.21,
+    stats_minutes:3244, passes:2164, pass_accuracy:82.1, key_passes:35, dribbles_success:20, tackles:85, interceptions:34, duels_won:204, shots:44 },
+
+  { name:'Rodri', apiPlayerId:44, club:'Manchester City', role:'Controller', origin:'Premier League · Spain', img:'/assets/players/neutral-player.svg',
+    position:'MID', league_id:39, age:29, minutes:2327, appearances:28, starts:25, goals:2, assists:0, api_average_rating:7.19,
+    stats_minutes:2327, passes:2595, pass_accuracy:88.2, key_passes:38, dribbles_success:18, tackles:53, interceptions:23, duels_won:158, shots:21 },
+
+  { name:'Jude Bellingham', apiPlayerId:129718, club:'Real Madrid', role:'Box crasher', origin:'La Liga · England', img:'/assets/players/jude-bellingham.jpg',
+    position:'MID', league_id:140, age:22, minutes:3164, appearances:39, starts:36, goals:9, assists:6, api_average_rating:6.99,
+    stats_minutes:3183, passes:1806, pass_accuracy:89, key_passes:59, dribbles_success:60, tackles:89, interceptions:26, duels_won:276, shots:47 },
 ];
 
-const rankings = [
-  { rank: 1, name: 'Kylian Mbappé', role: 'Pure striker', rating: 94, image: '/assets/players/kylian-mbappe.jpg' },
-  { rank: 2, name: 'Vinícius Júnior', role: 'Inside forward', rating: 93, image: '/assets/players/vinicius-junior.jpg' },
-  { rank: 3, name: 'Jude Bellingham', role: 'Box crasher', rating: 92, image: '/assets/players/jude-bellingham.jpg' },
-  { rank: 4, name: 'Pedri', role: 'Controller', rating: 91, image: '/assets/players/pedri.jpg' },
-];
-
-const talents = [
-  { name: 'Ibrahim Musa', origin: 'NPFL · Nigeria', role: 'Wide creator', rating: 77, trend: '+12%', image: '/assets/players/ibrahim-musa.jpg', next: 'Belgian Pro League watchlist' },
-  { name: 'Lamine Yamal', origin: 'La Liga · Spain', role: 'Wide creator', rating: 88, trend: '+9.7%', image: '/assets/players/lamine-yamal.jpg', next: 'Elite starter trajectory' },
-  { name: 'Florian Wirtz', origin: 'Bundesliga · Germany', role: 'Advanced playmaker', rating: 90, trend: '+5.8%', image: '/assets/players/florian-wirtz.jpg', next: 'Top-five league title contender' },
+// Curated head-to-heads (real players). The split is derived from the two
+// Calibre ratings — not invented vote counts. Swap to live debate_votes later.
+const BATTLES = [
+  { category:'Impact',     left:'Erling Haaland', right:'Kylian Mbappé' },
+  { category:'Control',    left:'Rodri',          right:'Vitinha' },
+  { category:'Creativity', left:'Michael Olise',  right:'Lamine Yamal' },
 ];
 
 const lanes = [
@@ -29,11 +78,92 @@ const lanes = [
   { icon: Compass, title: 'Talent pathway', text: 'Surface players before the market catches up, then project the next competitive level for their development.', href: '/talents', cta: 'Scout talent' },
 ];
 
+function withComputed(row){
+  const r = calibreRating(row);
+  return { ...row, rating: r.rating, bucket: r.bucket, provisional: r.provisional };
+}
+function displayRating(rating){
+  const n = Number(rating);
+  return Number.isFinite(n) ? Math.round(n) : '—';
+}
+function talentTier(rating){
+  if(rating >= 88) return 'Elite trajectory';
+  if(rating >= 82) return 'Breakout profile';
+  return 'Emerging talent';
+}
+function shortName(name){
+  const parts = String(name).split(' ');
+  return parts.length > 1 ? parts[parts.length - 1] : name;
+}
+
 function Metric({ value, label }) {
   return <div className="home-metric"><strong>{value}</strong><span>{label}</span></div>;
 }
 
 export default function Home() {
+  // Start with the embedded real stats so the first paint already shows
+  // correct, computed numbers; refine from Supabase when it answers.
+  const [rows, setRows] = useState(() => ANCHORS.map(withComputed));
+
+  useEffect(() => {
+    let alive = true;
+    getSupabasePlayers({ names: ANCHORS.map(a => a.name), limit: 80 })
+      .then(db => {
+        if(!alive || !Array.isArray(db) || !db.length) return;
+        const byId = new Map();
+        const byName = new Map();
+        for(const p of db){
+          const id = Number(p.api_player_id);
+          if(Number.isInteger(id) && id > 0 && !byId.has(id)) byId.set(id, p);
+          const key = String(p.name || '').toLowerCase();
+          if(!byName.has(key)) byName.set(key, p);
+        }
+        const merged = ANCHORS.map(a => {
+          const id = Number(a.apiPlayerId);
+          const hit = (Number.isInteger(id) && byId.has(id))
+            ? byId.get(id)
+            : byName.get(String(a.name).toLowerCase());
+          if(!hit) return withComputed(a);
+          // Let live, non-null DB values win; keep embedded stats as the floor
+          // (so a matched-but-unenriched row never wipes real numbers).
+          const clean = Object.fromEntries(Object.entries(hit).filter(([, v]) => v != null && v !== ''));
+          return withComputed({ ...a, ...clean });
+        });
+        setRows(merged);
+      })
+      .catch(() => { /* keep embedded real stats on any failure */ });
+    return () => { alive = false; };
+  }, []);
+
+  const byName = useMemo(() => {
+    const m = new Map();
+    rows.forEach(r => m.set(r.name, r));
+    return m;
+  }, [rows]);
+
+  const rankings = useMemo(
+    () => rows.filter(r => !r.provisional && r.bucket !== 'GK')
+              .sort((a, b) => b.rating - a.rating)
+              .slice(0, 4),
+    [rows]);
+
+  const talents = useMemo(
+    () => rows.filter(r => !r.provisional && Number(r.age) > 0 && Number(r.age) <= 21)
+              .sort((a, b) => b.rating - a.rating)
+              .slice(0, 3),
+    [rows]);
+
+  const battles = useMemo(() => BATTLES.map(b => {
+    const l = byName.get(b.left);
+    const r = byName.get(b.right);
+    const lR = l ? l.rating : null;
+    const rR = r ? r.rating : null;
+    const leftPct = (lR != null && rR != null && lR + rR > 0)
+      ? Math.round((lR / (lR + rR)) * 100)
+      : 50;
+    return { ...b, lImg: l?.img, rImg: r?.img, lR, rR, leftPct };
+  }), [byName]);
+
   return (
     <div className="home-page">
       <section className="home-hero">
@@ -84,19 +214,19 @@ export default function Home() {
         </div>
 
         <div className="battle-grid">
-          {activeBattles.map(battle => (
+          {battles.map(battle => (
             <button className="battle-preview" type="button" key={`${battle.left}-${battle.right}`} onClick={() => navigateTo('/debates')}>
               <div className="battle-preview__header">
                 <span className="battle-preview__live"><i />Live</span>
                 <span>{battle.category}</span>
               </div>
               <div className="battle-preview__players">
-                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.left)} name={battle.left} fallbackSrc={battle.imageA} alt={battle.left} /><strong>{battle.left}</strong></div>
+                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.left)} name={battle.left} fallbackSrc={battle.lImg} alt={battle.left} /><strong>{shortName(battle.left)}</strong></div>
                 <span>vs</span>
-                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.right)} name={battle.right} fallbackSrc={battle.imageB} alt={battle.right} /><strong>{battle.right}</strong></div>
+                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.right)} name={battle.right} fallbackSrc={battle.rImg} alt={battle.right} /><strong>{shortName(battle.right)}</strong></div>
               </div>
-              <div className="battle-preview__bar"><span style={{ width: battle.split.split('–')[0] + '%' }} /></div>
-              <div className="battle-preview__footer"><span>{battle.votes} votes</span><strong>{battle.split}</strong></div>
+              <div className="battle-preview__bar"><span style={{ width: battle.leftPct + '%' }} /></div>
+              <div className="battle-preview__footer"><span>Calibre verdict</span><strong>{displayRating(battle.lR)} – {displayRating(battle.rR)}</strong></div>
             </button>
           ))}
         </div>
@@ -133,12 +263,12 @@ export default function Home() {
             <button className="section-link" type="button" onClick={() => navigateTo('/players')}>Full rankings <ArrowRight size={15} /></button>
           </div>
           <div className="ranking-list">
-            {rankings.map(player => (
-              <button className="ranking-row" type="button" key={player.rank} onClick={() => navigateTo('/players')}>
-                <span className="ranking-row__rank">0{player.rank}</span>
-                <ApiPlayerImage apiPlayerId={playerIdFor(player.name)} name={player.name} fallbackSrc={player.image} alt={player.name} />
+            {rankings.map((player, index) => (
+              <button className="ranking-row" type="button" key={player.name} onClick={() => navigateTo('/players')}>
+                <span className="ranking-row__rank">0{index + 1}</span>
+                <ApiPlayerImage apiPlayerId={playerIdFor(player.name)} name={player.name} fallbackSrc={player.img} alt={player.name} />
                 <span className="ranking-row__name"><strong>{player.name}</strong><small>{player.role}</small></span>
-                <span className="ranking-row__rating">{player.rating}</span>
+                <span className="ranking-row__rating">{displayRating(player.rating)}</span>
               </button>
             ))}
           </div>
@@ -149,8 +279,8 @@ export default function Home() {
           <h2>Would Arsenal be better with control or chaos?</h2>
           <p>One player protects the shape. The other makes the game harder to control. The numbers say one thing. The profile says another.</p>
           <div className="home-panel--debate__meta">
-            <span><Users size={15} />8,421 votes</span>
-            <span><BarChart3 size={15} />52–48 split</span>
+            <span><Users size={15} />Community vote</span>
+            <span><BarChart3 size={15} />Live split</span>
           </div>
           <button className="button button--primary" type="button" onClick={() => navigateTo('/debates?forum=arsenal-control-vs-chaos')}>Enter the debate <ArrowRight size={15} /></button>
         </article>
@@ -167,14 +297,14 @@ export default function Home() {
         <div className="talent-grid">
           {talents.map(talent => (
             <button className="talent-card" type="button" key={talent.name} onClick={() => navigateTo('/talents')}>
-              <ApiPlayerImage apiPlayerId={playerIdFor(talent.name)} name={talent.name === 'Ibrahim Musa' ? '' : talent.name} fallbackSrc={talent.image} alt={talent.name} />
+              <ApiPlayerImage apiPlayerId={playerIdFor(talent.name)} name={talent.name} fallbackSrc={talent.img} alt={talent.name} />
               <div className="talent-card__body">
-                <div className="talent-card__top"><span>{talent.origin}</span><strong>{talent.trend}</strong></div>
+                <div className="talent-card__top"><span>{talent.origin}</span><strong>{talent.age}y</strong></div>
                 <h3>{talent.name}</h3>
                 <p>{talent.role}</p>
                 <div className="talent-card__bottom">
-                  <span><ShieldCheck size={14} />{talent.next}</span>
-                  <b>{talent.rating}</b>
+                  <span><ShieldCheck size={14} />{talentTier(talent.rating)}</span>
+                  <b>{displayRating(talent.rating)}</b>
                 </div>
               </div>
             </button>

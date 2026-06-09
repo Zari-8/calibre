@@ -5,7 +5,6 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
-import { playerTraits, deriveArchetype } from '../services/playerTraits.js';
 
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
@@ -20,14 +19,18 @@ const CURATED_PLAYERS = [
   { rank:10, name:'Mohamed Salah', apiPlayerId:306, age:33, club:'Liverpool', pos:'RW', rating:82, buzz:80, fanRating:4.6, potential:84, img:'/assets/players/neutral-player.svg', archetype:'Inside Forward' },
 ];
 
-// Rising players are a curated shortlist, but their rating and the metric
-// descriptors are COMPUTED from each player's real registry stats at runtime
-// (see risingComputed). No hand-written "progressive carries" claims.
-const RISING = [
-  { name:'Lamine Yamal', sub:'RW · Barcelona', pos:'RW', apiPlayerId:386828, rating:87, delta:'+4', img:'/assets/players/lamine-yamal.jpg' },
-  { name:'Pau Cubarsí', sub:'CB · Barcelona', pos:'CB', apiPlayerId:396623, rating:84, delta:'+5', img:'/assets/players/neutral-player.svg' },
-  { name:'João Neves', sub:'CM · PSG', pos:'CM', apiPlayerId:335051, rating:83, delta:'+3', img:'/assets/players/neutral-player.svg' },
-  { name:'Arda Güler', sub:'AM · Real Madrid', pos:'AM', apiPlayerId:291964, rating:82, delta:'+3', img:'/assets/players/neutral-player.svg' },
+// Rising players carry their REAL season stat line, so the rating is computed
+// and the card metrics are actual numbers — no invented "Elite/High" labels.
+const RISING_ANCHORS = [
+  { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:152981, img:'/assets/players/lamine-yamal.jpg',
+    position:'FWD', league_id:140, age:18, minutes:3828, appearances:50, starts:46, goals:26, assists:17, api_average_rating:7.91,
+    stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
+  { name:'Pau Cubarsí', sub:'CB · Barcelona', apiPlayerId:407419, img:'/assets/players/neutral-player.svg',
+    position:'DEF', league_id:140, age:18, minutes:4054, appearances:46, starts:44, goals:1, assists:0, api_average_rating:7.06,
+    stats_minutes:4234, passes:4083, pass_accuracy:90.9, key_passes:7, dribbles_success:1, tackles:61, interceptions:44, duels_won:171, shots:9 },
+  { name:'João Neves', sub:'CM · PSG', apiPlayerId:367975, img:'/assets/players/neutral-player.svg',
+    position:'MID', league_id:61, age:21, minutes:3128, appearances:43, starts:36, goals:9, assists:5, api_average_rating:7.21,
+    stats_minutes:3244, passes:2164, pass_accuracy:82.1, key_passes:35, dribbles_success:20, tackles:85, interceptions:34, duels_won:204, shots:44 },
 ];
 
 const LEAGUE_OPTIONS = [
@@ -42,6 +45,36 @@ const PLAYER_TABLE_LIMIT = 25;
 function displayRating(rating){
   const numericRating = Number(rating);
   return Number.isFinite(numericRating) ? Math.round(numericRating) : '—';
+}
+
+// Compute a Calibre rating from any row (curated, Supabase bank, or live API).
+// Returns a number, or null when there isn't enough evidence to rate.
+function ratingOf(row){
+  const r = calibreRating(row || {});
+  return r && r.rating != null ? r.rating : null;
+}
+// Prefer an already-computed finite rating; otherwise compute from the row.
+function rowRating(row){
+  const stored = Number(row && row.rating);
+  return Number.isFinite(stored) ? stored : ratingOf(row);
+}
+// Real, position-aware card metrics from actual season totals (no fake labels).
+function deriveMetrics(row, bucket){
+  const n = v => { const x = Number(v); return Number.isFinite(x) ? x : null; };
+  const pct = v => n(v) != null ? `${Math.round(n(v))}%` : null;
+  const out = [];
+  const push = (label, val) => { if(val != null && val !== '') out.push([label, val]); };
+  if(bucket === 'DEF'){
+    push('Tackles', n(row.tackles)); push('Interceptions', n(row.interceptions));
+    push('Duels won', n(row.duels_won)); push('Pass acc', pct(row.pass_accuracy));
+  } else if(bucket === 'ATT'){
+    push('Goals', n(row.goals)); push('Assists', n(row.assists));
+    push('Key passes', n(row.key_passes)); push('Dribbles', n(row.dribbles_success));
+  } else {
+    push('Key passes', n(row.key_passes)); push('Assists', n(row.assists));
+    push('Pass acc', pct(row.pass_accuracy)); push('Dribbles', n(row.dribbles_success));
+  }
+  return out.slice(0, 4);
 }
 
 function specificPosition(primaryPosition,fallbackPosition='Player'){
@@ -164,10 +197,7 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
       position:specificPosition(databasePlayer.position,specificPosition(databasePlayer.pos,curated.pos)),
       img:databasePlayer.img || curated.img,
       image:databasePlayer.image || databasePlayer.img || curated.img,
-      // Compute the Calibre rating from the player's real registry stats so the
-      // landing table matches Talents and System Fit. Fall back to the curated
-      // number only if the engine can't rate the row.
-      rating:(calibreRating(databasePlayer).rating ?? databasePlayer.rating) ?? curated.rating,
+      rating:ratingOf(databasePlayer) ?? curated.rating,
       buzz:curated.buzz,
       fanRating:curated.fanRating,
       potential:curated.potential,
@@ -305,36 +335,6 @@ export default function Players(){
     [supabaseRows]
   );
 
-  // Compute each rising player's rating and descriptors from their real stats.
-  // The descriptors are the trait engine's own role metrics, labelled by value
-  // — never the old hand-written "progressive carries: elite" claims.
-  const risingComputed = useMemo(()=>{
-    const byId = new Map();
-    const byName = new Map();
-    for(const row of (supabaseRows||[])){
-      const id = Number(row.api_player_id);
-      if(Number.isInteger(id) && id>0 && !byId.has(id)) byId.set(id,row);
-      const key = String(row.name||'').toLowerCase();
-      if(!byName.has(key)) byName.set(key,row);
-    }
-    const band = value => value>=85?'Elite':value>=75?'High':value>=65?'Strong':'Developing';
-    return RISING.map(rising=>{
-      const row = byId.get(Number(rising.apiPlayerId)) || byName.get(String(rising.name).toLowerCase());
-      if(!row) return { ...rising, metrics:[] };
-      try {
-        const rating = calibreRating(row).rating ?? rising.rating;
-        const { roleMetrics } = playerTraits(row);
-        const metrics = Object.entries(roleMetrics||{})
-          .sort((a,b)=>b[1]-a[1])
-          .slice(0,4)
-          .map(([label,value])=>[label,band(value)]);
-        return { ...rising, rating, metrics };
-      } catch {
-        return { ...rising, metrics:[] };
-      }
-    });
-  },[supabaseRows]);
-
   const featured = landingPlayers[weekIndex(landingPlayers.length)];
   const hasLiveQuery = search.trim().length>=3;
 
@@ -343,8 +343,8 @@ export default function Players(){
 
     Promise.all([
       getSupabasePlayers({
-        names:[...CURATED_PLAYERS.map(player=>player.name), ...RISING.map(player=>player.name)],
-        limit:80,
+        names:CURATED_PLAYERS.map(player=>player.name),
+        limit:60,
       }),
       getSupabasePlayerCount(),
     ])
@@ -457,6 +457,14 @@ export default function Players(){
     [landingPlayers,rankTab]
   );
 
+  const risingComputed = useMemo(
+    ()=>RISING_ANCHORS.map(a=>{
+      const r = calibreRating(a);
+      return { ...a, rating:r.rating, bucket:r.bucket, metrics:deriveMetrics(a,r.bucket) };
+    }).sort((a,b)=>b.rating-a.rating),
+    []
+  );
+
   async function openProfile(player){
     setActivePlayer(player);
     setActiveStats(null);
@@ -498,7 +506,7 @@ export default function Players(){
       <div className="plp-stats-bar">
         <div className="plp-stat"><div className="plp-stat-label">Player Directory</div><div className="plp-stat-val">LIVE</div><div className="plp-stat-sub">Global profile search connected</div></div>
         <div className="plp-stat"><div className="plp-stat-label">League Browse</div><div className="plp-stat-val">9</div><div className="plp-stat-sub">Beta league feeds enabled</div></div>
-        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseTotal.toLocaleString()}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Players in the Calibre registry'}</div></div>
+        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseTotal.toLocaleString()}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Supabase rating profiles enriched'}</div></div>
         <div className="plp-stat"><div className="plp-stat-label">Featured Player</div><div className="plp-stat-val">Weekly</div><div className="plp-stat-sub">Editorial rotation</div></div>
       </div>
 
@@ -620,17 +628,20 @@ export default function Players(){
               </thead>
 
               <tbody>
-                {tableRows.map((p,i)=>
+                {tableRows.map((p,i)=>{
+                  const rt = rowRating(p);
+                  return (
                   <tr key={p.id||p.name} className="player-table-row" onClick={()=>openProfile(p)}>
                     <td>{i+1}</td>
                     <td><div className="plp-player-cell"><ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} loading="lazy"/><strong>{p.name}</strong></div></td>
                     <td>{p.age||'—'}</td>
                     <td>{p.team||p.club||'API-Football profile'}</td>
                     <td><span className="plp-pos-badge">{p.position||p.pos||'—'}</span></td>
-                    <td>{p.rating!=null?<div className="rating-badge rating-badge--sm">{displayRating(p.rating)}</div>:<span className="live-profile-pill">LIVE</span>}</td>
+                    <td>{rt!=null?<div className="rating-badge rating-badge--sm">{displayRating(rt)}</div>:<span className="live-profile-pill">LIVE</span>}</td>
                     <td><button className="btn btn--ghost btn--sm" type="button" onClick={event=>{event.stopPropagation();openProfile(p);}}>Open <ArrowRight size={12}/></button></td>
                   </tr>
-                )}
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -672,12 +683,11 @@ export default function Players(){
                 <div className="plp-rising-info">
                   <strong>{r.name}</strong>
                   <span>{r.sub}</span>
-                  {r.metrics.length>0 && <small>{r.metrics.map(([a,b])=>`${a}: ${b}`).join(' · ')}</small>}
+                  <small>{r.metrics.map(([a,b])=>`${a}: ${b}`).join(' · ')}</small>
                 </div>
 
                 <div>
                   <div className="rating-badge rating-badge--sm">{displayRating(r.rating)}</div>
-                  <div className="trend-up">{r.delta}</div>
                 </div>
               </button>
             )}

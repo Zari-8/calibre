@@ -81,17 +81,20 @@ function normalizeApiPlayer(player) {
 }
 
 function normalizeDbPlayer(player) {
-  const id = player.api_player_id ?? player.apiPlayerId ?? player.id;
+  const rawId = player.api_player_id ?? player.apiPlayerId ?? player.id;
+  const numId = Number(rawId);
+  const apiPlayerId = Number.isInteger(numId) && numId > 0 ? numId : null;
   const traits = deriveTraitsFromPosition(player.position);
   const scored = calibreRating(player);
   return {
     ...SYSTEM_PLAYERS[0],
-    id,
+    id: apiPlayerId ?? player.id,
+    apiPlayerId,
     name: player.name,
     team: player.team || player.club || 'Registry profile',
     age: player.age || '—',
     image: player.image || player.img
-      || (id ? `https://media.api-sports.io/football/players/${id}.png` : '/assets/players/neutral-player.svg'),
+      || (apiPlayerId ? `https://media.api-sports.io/football/players/${apiPlayerId}.png` : '/assets/players/neutral-player.svg'),
     position: player.position || 'Profile pending',
     archetype: 'Registry profile · traits provisional',
     rating: scored.rating ?? SYSTEM_PLAYERS[0].rating,
@@ -305,7 +308,7 @@ function TransferSpotlight({ spotlight, player, team, onLoad }) {
       </div>
       <div className="sf-transfer-grid">
         <div className="sf-transfer-player">
-          <ApiPlayerImage playerId={player.apiPlayerId || player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
+          <ApiPlayerImage playerId={player.apiPlayerId || playerIdFor(player.name)} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
           <div className="sf-transfer-player-copy">
             <small>{player.team} → {team.name}</small>
             <h2>{spotlight.headline}</h2>
@@ -357,7 +360,14 @@ function TransferSpotlightLoader({ onLoad }) {
       .then(rows => {
         if (!alive) return;
         const q = String(storyline.query).toLowerCase();
-        const hit = (rows || []).find(r => String(r.name || '').toLowerCase().includes(q)) || (rows || [])[0];
+        const matches = (rows || []).filter(r => String(r.name || '').toLowerCase().includes(q));
+        // Prefer a row that actually carries a numeric API id (i.e. an enriched
+        // profile, so the portrait resolves) and, among those, the one with the
+        // most minutes — that's the real first-team player, not a namesake.
+        const enriched = matches
+          .filter(r => Number(r.api_player_id ?? r.apiPlayerId) > 0)
+          .sort((a, b) => (Number(b.minutes) || 0) - (Number(a.minutes) || 0));
+        const hit = enriched[0] || matches[0] || (rows || [])[0];
         if (!hit) return;
         const player = normalizeDbPlayer(hit);
         const spotlight = buildTransferSpotlight(player, team, storyline);

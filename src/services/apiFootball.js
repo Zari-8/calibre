@@ -25,10 +25,10 @@ export const LEAGUE_IDS = {
   'CAF Champions League': 12,
   'Primeira Liga': 94,
   'Brasileirão Série A': 71,
-  "Women's Champions League": null,
-  "Women's Super League": null,
-  'Liga F': null,
-  'NWSL': null,
+  "Women's Champions League": 525,
+  "Women's Super League": 44,
+  'Liga F': 142,
+  'NWSL': 254,
 };
 
 const now = new Date();

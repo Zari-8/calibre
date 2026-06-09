@@ -26,10 +26,10 @@ const RISING_ANCHORS = [
   { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:152981, img:'/assets/players/lamine-yamal.jpg',
     position:'FWD', league_id:140, age:18, minutes:3828, appearances:50, starts:46, goals:26, assists:17, api_average_rating:7.91,
     stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
-  { name:'Pau Cubarsí', sub:'CB · Barcelona', apiPlayerId:407419, img:'/assets/players/neutral-player.svg',
+  { name:'Pau Cubarsí', sub:'CB · Barcelona', apiPlayerId:396623, img:'/assets/players/neutral-player.svg',
     position:'DEF', league_id:140, age:18, minutes:4054, appearances:46, starts:44, goals:1, assists:0, api_average_rating:7.06,
     stats_minutes:4234, passes:4083, pass_accuracy:90.9, key_passes:7, dribbles_success:1, tackles:61, interceptions:44, duels_won:171, shots:9 },
-  { name:'João Neves', sub:'CM · PSG', apiPlayerId:367975, img:'/assets/players/neutral-player.svg',
+  { name:'João Neves', sub:'CM · PSG', apiPlayerId:335051, img:'/assets/players/neutral-player.svg',
     position:'MID', league_id:61, age:21, minutes:3128, appearances:43, starts:36, goals:9, assists:5, api_average_rating:7.21,
     stats_minutes:3244, passes:2164, pass_accuracy:82.1, key_passes:35, dribbles_success:20, tackles:85, interceptions:34, duels_won:204, shots:44 },
 ];
@@ -266,8 +266,65 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
   );
 }
 
+// Normalise a compared player into a flat stat object, preferring live
+// API-Football statistics when available and falling back to row fields.
+function mergeCompareStats(player, fetched){
+  const st = fetched?.statistics?.[0];
+  const num = v => { const x = Number(v); return Number.isFinite(x) ? x : null; };
+  const pass = st?.passes?.accuracy != null ? num(String(st.passes.accuracy).replace('%','')) : num(player.pass_accuracy);
+  return {
+    rating: rowRating(player),
+    age: num(player.age),
+    appearances: num(st?.games?.appearences ?? st?.games?.appearances ?? player.appearances),
+    minutes: num(st?.games?.minutes ?? player.stats_minutes ?? player.minutes),
+    goals: num(st?.goals?.total ?? player.goals),
+    assists: num(st?.goals?.assists ?? player.assists),
+    key_passes: num(st?.passes?.key ?? player.key_passes),
+    pass_accuracy: pass,
+    dribbles: num(st?.dribbles?.success ?? player.dribbles_success),
+    tackles: num(st?.tackles?.total ?? player.tackles),
+    interceptions: num(st?.tackles?.interceptions ?? player.interceptions),
+    duels_won: num(st?.duels?.won ?? player.duels_won),
+    shots: num(st?.shots?.total ?? player.shots),
+  };
+}
+
+const COMPARE_ROWS = [
+  ['Calibre rating', 'rating', v => displayRating(v)],
+  ['Age', 'age', v => v ?? '—'],
+  ['Appearances', 'appearances', v => v ?? '—'],
+  ['Minutes', 'minutes', v => v != null ? v.toLocaleString() : '—'],
+  ['Goals', 'goals', v => v ?? '—'],
+  ['Assists', 'assists', v => v ?? '—'],
+  ['Key passes', 'key_passes', v => v ?? '—'],
+  ['Pass accuracy', 'pass_accuracy', v => v != null ? `${Math.round(v)}%` : '—'],
+  ['Successful dribbles', 'dribbles', v => v ?? '—'],
+  ['Tackles', 'tackles', v => v ?? '—'],
+  ['Interceptions', 'interceptions', v => v ?? '—'],
+  ['Duels won', 'duels_won', v => v ?? '—'],
+  ['Shots', 'shots', v => v ?? '—'],
+];
+
 function CompareModal({players,onClose}){
+  const [fetched,setFetched] = useState([null,null]);
+  const [loading,setLoading] = useState(true);
+
+  useEffect(()=>{
+    let alive = true;
+    setLoading(true);
+    Promise.all(players.slice(0,2).map(player=>{
+      const apiId = apiIdFor(player);
+      return apiId ? getPlayerStats(apiId).catch(()=>null) : Promise.resolve(null);
+    })).then(results=>{
+      if(alive){ setFetched(results); setLoading(false); }
+    });
+    return ()=>{ alive = false; };
+  },[players]);
+
   if(players.length<2) return null;
+
+  const a = mergeCompareStats(players[0],fetched[0]);
+  const b = mergeCompareStats(players[1],fetched[1]);
 
   return (
     <div className="player-profile-modal" role="presentation" onMouseDown={onClose}>
@@ -286,7 +343,27 @@ function CompareModal({players,onClose}){
           )}
         </div>
 
-        <p className="player-profile-modal__note">This beta workspace now receives real player profiles. The full comparison report will apply Calibre’s performance, consistency, form, impact and trajectory weights after the statistics pipeline is complete.</p>
+        {loading
+          ? <div className="player-profile-modal__loading"><LoaderCircle size={16}/> Pulling current-season statistics for both players…</div>
+          : <table className="player-compare-table">
+              <tbody>
+                {COMPARE_ROWS.map(([label,key,fmt])=>{
+                  const va = a[key], vb = b[key];
+                  const aWins = va!=null && vb!=null && va>vb;
+                  const bWins = va!=null && vb!=null && vb>va;
+                  return (
+                    <tr key={key}>
+                      <td className={aWins?'compare-cell compare-cell--win':'compare-cell'}>{fmt(va)}</td>
+                      <th>{label}</th>
+                      <td className={bWins?'compare-cell compare-cell--win':'compare-cell'}>{fmt(vb)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+        }
+
+        <p className="player-profile-modal__note">Highlighted cells mark the higher value per metric. Statistics are pulled live from API-Football where a profile id resolves; otherwise the stored Calibre bank values are used. Pass accuracy and per-90 context still depend on the provider exposing event data for each player.</p>
       </section>
     </div>
   );
@@ -484,7 +561,7 @@ export default function Players(){
     }
   }
 
-  function addToCompare(player){
+  function addToCompare(player,opts={}){
     setComparePlayers(current=>{
       const filtered = current.filter(item=>
         (item.id && player.id)
@@ -495,7 +572,7 @@ export default function Players(){
       return [...filtered,player].slice(-2);
     });
 
-    setActivePlayer(null);
+    if(!opts.keepOpen) setActivePlayer(null);
   }
 
   return (
@@ -640,7 +717,14 @@ export default function Players(){
                     <td>{p.team||p.club||'API-Football profile'}</td>
                     <td><span className="plp-pos-badge">{p.position||p.pos||'—'}</span></td>
                     <td>{rt!=null?<div className="rating-badge rating-badge--sm">{displayRating(rt)}</div>:<span className="live-profile-pill">LIVE</span>}</td>
-                    <td><button className="btn btn--ghost btn--sm" type="button" onClick={event=>{event.stopPropagation();openProfile(p);}}>Open <ArrowRight size={12}/></button></td>
+                    <td>
+                      <div className="plp-row-actions">
+                        <button className="btn btn--ghost btn--sm" type="button" onClick={event=>{event.stopPropagation();openProfile(p);}}>Open <ArrowRight size={12}/></button>
+                        <button className="btn btn--outline btn--sm" type="button" title="Add to compare" onClick={event=>{event.stopPropagation();addToCompare(p,{keepOpen:true});}} disabled={comparePlayers.some(cp=>(cp.id&&p.id)?cp.id===p.id:cp.name===p.name)}>
+                          {comparePlayers.some(cp=>(cp.id&&p.id)?cp.id===p.id:cp.name===p.name)?'Added':<><Plus size={12}/> Compare</>}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                   );
                 })}
@@ -667,7 +751,9 @@ export default function Players(){
                       <span>{p.team||p.club||'Live profile'}</span>
                       <button className="plp-compare-remove" type="button" onClick={()=>setComparePlayers(current=>current.filter((_,i)=>i!==index))}>×</button>
                     </div>
-                  : <div className="plp-compare-slot plp-compare-slot--empty" key={index}>Select a player</div>;
+                  : <button className="plp-compare-slot plp-compare-slot--empty" type="button" key={index} onClick={()=>document.querySelector('.plp-db-table')?.scrollIntoView({behavior:'smooth',block:'center'})}>
+                      <Plus size={14}/> Add a player
+                    </button>;
               })}
             </div>
 

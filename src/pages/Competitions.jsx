@@ -59,27 +59,31 @@ function PlayerPanel({ title, suffix, rows, stat, live = false, loading = false 
   return (
     <section className="comp-data-panel">
       <div className="comp-data-panel-title">{title} <span className="comp-data-panel-sub">· {suffix}</span>{live && <em>LIVE</em>}</div>
-      {rows.map(row => (
+      {rows.map(row => {
+        const resolvedId = row.apiPlayerId || row.id || playerIdFor(row.name);
+        const open = () => {
+          if (!resolvedId) return;
+          navigateTo(`/players?playerId=${encodeURIComponent(resolvedId)}&player=${encodeURIComponent(row.name)}`);
+        };
+        return (
         <div
           className="comp-scorer-row"
           key={`${title}-${row.pos}-${row.name}`}
-          role={row.id ? "button" : undefined}
-          tabIndex={row.id ? 0 : -1}
-          title={row.id ? `Open ${row.name} profile` : undefined}
-          style={row.id ? { cursor: "pointer" } : undefined}
-          onClick={() => {
-            if (!row.id) return;
-            navigateTo(`/players?playerId=${encodeURIComponent(row.id)}&player=${encodeURIComponent(row.name)}`);
-          }}
+          role={resolvedId ? "button" : undefined}
+          tabIndex={resolvedId ? 0 : -1}
+          title={resolvedId ? `Open ${row.name} profile` : undefined}
+          style={resolvedId ? { cursor: "pointer" } : undefined}
+          onClick={open}
           onKeyDown={(event) => {
-            if (!row.id || (event.key !== "Enter" && event.key !== " ")) return;
+            if (!resolvedId || (event.key !== "Enter" && event.key !== " ")) return;
             event.preventDefault();
-            navigateTo(`/players?playerId=${encodeURIComponent(row.id)}&player=${encodeURIComponent(row.name)}`);
+            open();
           }}
         >
-          <span className="comp-standings-pos">{row.pos}</span><ApiPlayerImage playerId={row.apiPlayerId || row.id || playerIdFor(row.name)} name={row.name} preferredSrc={row.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" loading="lazy"/><span title={row.name}>{row.name}</span><small title={row.team}>{row.team}</small><strong>{row[stat]}</strong>
+          <span className="comp-standings-pos">{row.pos}</span><ApiPlayerImage playerId={resolvedId} name={row.name} preferredSrc={row.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" loading="lazy"/><span title={row.name}>{row.name}</span><small title={row.team}>{row.team}</small><strong>{row[stat]}</strong>
         </div>
-      ))}
+        );
+      })}
       {!rows.length && <div className="comp-empty-state">Player statistics are not available for this competition feed yet.</div>}
       <div className="comp-panel-note">{loading ? 'Refreshing competition data…' : live ? 'Live API-Football player data loaded.' : 'Snapshot fallback shown where the provider has not returned player statistics.'}</div>
     </section>

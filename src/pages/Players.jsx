@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, ArrowRight, Crown, Star, TrendingUp, X, LoaderCircle, Plus, Database, GitCompareArrows, SlidersHorizontal, Info } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
@@ -258,6 +259,7 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
         <div className="player-profile-modal__actions">
           <button type="button" className="btn btn--lime btn--sm" onClick={()=>onCompare(player)}><Plus size={13}/> Add to compare</button>
           <button type="button" className="btn btn--outline btn--sm" onClick={()=>navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}>Run system fit <ArrowRight size={13}/></button>
+          <ShareBar text={`${player.name} — Calibre rating ${displayRating(player.rating)}${player.archetype ? `, ${player.archetype}` : ''}.`} url={shareUrl('/players')} label={false}/>
         </div>
       </section>
     </div>

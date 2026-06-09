@@ -6,13 +6,13 @@ import {
 import { navigateTo } from '../components/NavLink.jsx';
 import { searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { playerIdFor } from '../data/playerIds.js';
 import { calibreRating } from '../services/calibreRating.js';
-import { playerTraits } from '../services/playerTraits.js';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
-  searchLocalPlayers, searchLocalTeams,
+  searchLocalPlayers, searchLocalTeams, TRANSFER_STORYLINES, pickTransferStoryline, buildTransferSpotlight,
 } from '../data/systemFitData.js';
 import {
   exportComparisonCsv, exportComparisonPdf, exportFitCsv, exportFitPdf,
@@ -36,8 +36,35 @@ function normalizeApiTeam(team) {
   };
 }
 
+// Derive a provisional tactical profile from a player's position so registry/API
+// players produce a fit that reflects their role instead of inheriting a fixed
+// placeholder. Replaced by real trait data once the model writes it.
+function deriveTraitsFromPosition(position = '') {
+  const p = String(position).toLowerCase();
+  if (/(goalkeeper|keeper|\bgk\b)/.test(p)) return { control: 70, transition: 40, pressing: 40, width: 30, tempo: 50, defensiveLoad: 88 };
+  if (/(wing.?back|full.?back|\brb\b|\blb\b|\brwb\b|\blwb\b)/.test(p)) return { control: 74, transition: 82, pressing: 80, width: 88, tempo: 78, defensiveLoad: 82 };
+  if (/(back|defender|centre.?back|center.?back|\bcb\b|\bdef\b)/.test(p)) return { control: 76, transition: 64, pressing: 72, width: 48, tempo: 66, defensiveLoad: 92 };
+  if (/(wing|\brw\b|\blw\b|winger)/.test(p)) return { control: 80, transition: 90, pressing: 74, width: 92, tempo: 88, defensiveLoad: 56 };
+  if (/(forward|striker|\bcf\b|\bst\b|attacker)/.test(p)) return { control: 72, transition: 92, pressing: 70, width: 70, tempo: 90, defensiveLoad: 50 };
+  if (/(attacking mid|\bam\b|\bcam\b|playmaker)/.test(p)) return { control: 90, transition: 82, pressing: 78, width: 74, tempo: 88, defensiveLoad: 64 };
+  if (/(defensive mid|\bdm\b|\bcdm\b|anchor|holding)/.test(p)) return { control: 88, transition: 70, pressing: 84, width: 60, tempo: 80, defensiveLoad: 88 };
+  if (/(midfield|\bcm\b|\bmid\b)/.test(p)) return { control: 86, transition: 80, pressing: 82, width: 70, tempo: 84, defensiveLoad: 78 };
+  return { control: 80, transition: 80, pressing: 78, width: 72, tempo: 82, defensiveLoad: 72 };
+}
+
+function deriveRoleMetrics(t) {
+  return {
+    Positioning: Math.round((t.control + t.defensiveLoad) / 2),
+    'Decision making': Math.round((t.control + t.tempo) / 2),
+    'Link-up play': Math.round((t.control + t.width) / 2),
+    'Final-third impact': Math.round((t.transition + t.width) / 2),
+    'Press resistance': Math.round((t.control + t.pressing) / 2),
+    'Transition contribution': t.transition,
+  };
+}
+
 function normalizeApiPlayer(player) {
-  const { traits, roleMetrics, basis } = playerTraits(player);
+  const traits = deriveTraitsFromPosition(player.position);
   return {
     ...SYSTEM_PLAYERS[0],
     id: player.id,
@@ -46,16 +73,16 @@ function normalizeApiPlayer(player) {
     age: player.age || '—',
     image: player.image || '/assets/players/neutral-player.svg',
     position: player.position || 'Profile pending',
-    archetype: basis === 'event' ? 'Stat-backed profile' : 'Provisional · position model',
+    archetype: 'Profile pending enrichment',
     traits,
-    roleMetrics,
+    roleMetrics: deriveRoleMetrics(traits),
     source: 'api',
   };
 }
 
 function normalizeDbPlayer(player) {
   const id = player.api_player_id ?? player.apiPlayerId ?? player.id;
-  const { traits, roleMetrics, basis } = playerTraits(player);
+  const traits = deriveTraitsFromPosition(player.position);
   const scored = calibreRating(player);
   return {
     ...SYSTEM_PLAYERS[0],
@@ -66,10 +93,10 @@ function normalizeDbPlayer(player) {
     image: player.image || player.img
       || (id ? `https://media.api-sports.io/football/players/${id}.png` : '/assets/players/neutral-player.svg'),
     position: player.position || 'Profile pending',
-    archetype: basis === 'event' ? 'Stat-backed profile' : 'Registry profile · provisional',
+    archetype: 'Registry profile · traits provisional',
     rating: scored.rating ?? SYSTEM_PLAYERS[0].rating,
     traits,
-    roleMetrics,
+    roleMetrics: deriveRoleMetrics(traits),
     source: 'db',
   };
 }
@@ -250,6 +277,11 @@ function PlayerHero({ report, mode, comparison, challenger }) {
           <div className="sf-kicker">DOES HE FIT?</div>
           <div className="sf-score-main"><ScoreRing score={report.score} /><div><h2>{report.verdict}</h2><p>{report.conclusion}</p></div></div>
           <div className="sf-score-chips"><span>{report.team.formation}</span><span>{report.team.philosophy}</span><span>{player.archetype}</span></div>
+          <ShareBar
+            text={`${player.name} → ${report.team.name}: ${report.score}% system fit on Calibre — “${report.verdict}”.`}
+            url={shareUrl('/system-fit')}
+            title="Calibre System Fit"
+          />
         </div>
         <div className="sf-breakdown-card">
           <div className="sf-kicker">FIT BREAKDOWN</div>
@@ -264,9 +296,7 @@ function PlayerHero({ report, mode, comparison, challenger }) {
 }
 
 
-function TransferSpotlight({ spotlight, onLoad }) {
-  const player = SYSTEM_PLAYERS.find(item => item.id === spotlight.playerId) || SYSTEM_PLAYERS[0];
-  const team = SYSTEM_TEAMS.find(item => item.id === spotlight.teamId) || SYSTEM_TEAMS[0];
+function TransferSpotlight({ spotlight, player, team, onLoad }) {
   return (
     <section className="sf-transfer-spotlight">
       <div className="sf-transfer-topline">
@@ -275,7 +305,7 @@ function TransferSpotlight({ spotlight, onLoad }) {
       </div>
       <div className="sf-transfer-grid">
         <div className="sf-transfer-player">
-          <ApiPlayerImage playerId={playerIdFor(player.name) || player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
+          <ApiPlayerImage playerId={player.apiPlayerId || player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
           <div className="sf-transfer-player-copy">
             <small>{player.team} → {team.name}</small>
             <h2>{spotlight.headline}</h2>
@@ -302,10 +332,42 @@ function TransferSpotlight({ spotlight, onLoad }) {
           <p>{spotlight.verdict}</p>
           <div className="sf-transfer-points">{spotlight.talkingPoints.map(text => <span key={text}><i />{text}</span>)}</div>
           <small>{spotlight.sourceNote}</small>
+          <ShareBar
+            text={`${spotlight.headline} — ${spotlight.score}% fit on Calibre.`}
+            url={shareUrl('/system-fit')}
+            title="Calibre Transfer Spotlight"
+          />
         </div>
       </div>
     </section>
   );
+}
+
+// Picks the week's storyline, fetches the real player from the registry, runs
+// System Fit, and renders an auto-generated spotlight. The photo comes from the
+// registry row's real api id, so it always matches the player.
+function TransferSpotlightLoader({ onLoad }) {
+  const [state, setState] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    const storyline = pickTransferStoryline();
+    if (!storyline) return;
+    const team = SYSTEM_TEAMS.find(t => t.id === storyline.toTeamId) || SYSTEM_TEAMS[0];
+    searchSupabasePlayers(storyline.query, { limit: 6 })
+      .then(rows => {
+        if (!alive) return;
+        const q = String(storyline.query).toLowerCase();
+        const hit = (rows || []).find(r => String(r.name || '').toLowerCase().includes(q)) || (rows || [])[0];
+        if (!hit) return;
+        const player = normalizeDbPlayer(hit);
+        const spotlight = buildTransferSpotlight(player, team, storyline);
+        if (spotlight) setState({ spotlight, player, team });
+      })
+      .catch(() => { /* no spotlight if the registry can't resolve the player */ });
+    return () => { alive = false; };
+  }, []);
+  if (!state || !state.spotlight) return null;
+  return <TransferSpotlight spotlight={state.spotlight} player={state.player} team={state.team} onLoad={onLoad} />;
 }
 
 function FitOverview({ report }) {
@@ -413,7 +475,7 @@ export default function SystemFit() {
           <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER</button>
           <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS</button>
         </div>
-        <TransferSpotlight spotlight={TRANSFER_SPOTLIGHTS[0]} onLoad={(player, team) => { setSelectedPlayer(player); setSelectedTeam(team); setMode('fit'); }} />
+        <TransferSpotlightLoader onLoad={(player, team) => { setSelectedPlayer(player); setSelectedTeam(team); setMode('fit'); }} />
         <PlayerHero report={report} mode={mode} comparison={comparison} challenger={challenger} />
         {mode === 'fit' && <FitOverview report={report} />}
         {mode === 'compare' && <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} />}

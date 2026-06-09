@@ -4,6 +4,7 @@ import BattleHero from '../components/BattleHero.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { playerIdFor } from '../data/playerIds.js';
+import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { calibreRating } from '../services/calibreRating.js';
 import { getSupabasePlayers } from '../services/supabasePlayers.js';
 
@@ -185,6 +186,7 @@ export default function Home() {
               <Metric value="63" label="leagues indexed" />
               <Metric value="Live" label="community signal" />
             </div>
+            <ShareBar text="Rate every player, settle every argument — Calibre football intelligence." url={shareUrl('/')} title="Calibre" />
           </div>
           <BattleHero />
         </div>
@@ -221,9 +223,9 @@ export default function Home() {
                 <span>{battle.category}</span>
               </div>
               <div className="battle-preview__players">
-                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.left)} name={battle.left} fallbackSrc={battle.lImg} alt={battle.left} /><strong>{shortName(battle.left)}</strong></div>
+                <div><ApiPlayerImage playerId={playerIdFor(battle.left)} name={battle.left} fallbackSrc={battle.lImg} alt={battle.left} /><strong>{shortName(battle.left)}</strong></div>
                 <span>vs</span>
-                <div><ApiPlayerImage apiPlayerId={playerIdFor(battle.right)} name={battle.right} fallbackSrc={battle.rImg} alt={battle.right} /><strong>{shortName(battle.right)}</strong></div>
+                <div><ApiPlayerImage playerId={playerIdFor(battle.right)} name={battle.right} fallbackSrc={battle.rImg} alt={battle.right} /><strong>{shortName(battle.right)}</strong></div>
               </div>
               <div className="battle-preview__bar"><span style={{ width: battle.leftPct + '%' }} /></div>
               <div className="battle-preview__footer"><span>Calibre verdict</span><strong>{displayRating(battle.lR)} – {displayRating(battle.rR)}</strong></div>
@@ -266,7 +268,7 @@ export default function Home() {
             {rankings.map((player, index) => (
               <button className="ranking-row" type="button" key={player.name} onClick={() => navigateTo('/players')}>
                 <span className="ranking-row__rank">0{index + 1}</span>
-                <ApiPlayerImage apiPlayerId={playerIdFor(player.name)} name={player.name} fallbackSrc={player.img} alt={player.name} />
+                <ApiPlayerImage playerId={playerIdFor(player.name)} name={player.name} fallbackSrc={player.img} alt={player.name} />
                 <span className="ranking-row__name"><strong>{player.name}</strong><small>{player.role}</small></span>
                 <span className="ranking-row__rating">{displayRating(player.rating)}</span>
               </button>
@@ -297,7 +299,7 @@ export default function Home() {
         <div className="talent-grid">
           {talents.map(talent => (
             <button className="talent-card" type="button" key={talent.name} onClick={() => navigateTo('/talents')}>
-              <ApiPlayerImage apiPlayerId={playerIdFor(talent.name)} name={talent.name} fallbackSrc={talent.img} alt={talent.name} />
+              <ApiPlayerImage playerId={playerIdFor(talent.name)} name={talent.name} fallbackSrc={talent.img} alt={talent.name} />
               <div className="talent-card__body">
                 <div className="talent-card__top"><span>{talent.origin}</span><strong>{talent.age}y</strong></div>
                 <h3>{talent.name}</h3>

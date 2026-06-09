@@ -6,6 +6,7 @@ import {
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
@@ -446,6 +447,7 @@ export default function Talents() {
 
       {view === 'discover' && <>
         {selected && <Pathway player={selected}/>}
+        {selected && <div className="talent-share"><ShareBar text={`${selected.name} — Calibre rating ${Math.round(selected.rating)}, ${selected.role || 'rising talent'}. Scouted on Calibre.`} url={shareUrl('/talents')} label={false}/></div>}
         <div className="talent-results-head" ref={resultsRef}><div><span>{liveMode ? 'API-Football U22 directory' : 'Curated discovery pool'}</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
         <div className="talent-results-grid">
           {filtered.length ? filtered.slice(0, visibleCount).map(player => <TalentCard key={playerKey(player)} player={player} selected={selected?.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={chosen=>{setSelectedName(chosen.name);setDetailPlayer(chosen);}} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}

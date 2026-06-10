@@ -40,6 +40,7 @@ export const PLAYER_IDS = {
   'arda güler': 291964, 'arda guler': 291964, 'güler': 291964, 'guler': 291964,
   'pau cubarsí': 396623, 'pau cubarsi': 396623, 'cubarsí': 396623, 'cubarsi': 396623,
   'joão neves': 335051, 'joao neves': 335051,
+  'michael olise': 19617, 'olise': 19617,
 };
 
 // Resolve a name (full, abbreviated like "K. Mbappé", or surname) to an id.

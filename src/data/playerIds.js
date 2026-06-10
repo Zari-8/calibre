@@ -20,7 +20,7 @@ export const PLAYER_IDS = {
   'federico valverde': 756, 'valverde': 756,
   'martin ødegaard': 37127, 'ødegaard': 37127, 'odegaard': 37127,
   'mohamed salah': 306, 'salah': 306,
-  'lamine yamal': 152981, 'yamal': 152981,
+  'lamine yamal': 386828, 'yamal': 386828,
   'pedri': 133609,
   'declan rice': 2937, 'rice': 2937,
   'vitinha': 128384,

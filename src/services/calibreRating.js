@@ -48,9 +48,9 @@ function productionComponents(player, bucket) {
     return { vals:[goalScore,create,carry], w:[0.80,0.13,0.07], ev };
   }
   if (bucket==='DEF') {
-    const defend=clamp(tk90/1.9*42+in90/1.5*40+du90/4.6*42,0,122);
-    const build=ev?clamp((acc-74)/(93-74)*58+pass90/66*52,0,116):60;
-    const prog=clamp(key90/0.8*45+dr90/0.6*30,0,100);
+    const defend=clamp(tk90/2.1*40+in90/1.7*38+du90/5.2*40,0,110);
+    const build=ev?clamp((acc-76)/(93-76)*52+pass90/78*48,0,108):56;
+    const prog=clamp(key90/1.0*42+dr90/0.9*28,0,88);
     const att=clamp(g90/0.14*55+a90/0.18*45,0,90);
     return { vals:[defend,build,prog,att], w:[0.66,0.20,0.09,0.05], ev };
   }
@@ -81,7 +81,7 @@ export function calibreRating(player = {}) {
     const c=productionComponents(player,bucket);
     production=clamp(spine(c.vals,c.w),0,116); ev=c.ev;
   }
-  const core=clamp(production*0.74+q*0.26,0,108);
+  const core=clamp(production*0.76+q*0.24,0,108);
 
   // ── League now carries through the headline components ──────────────
   // Performance & Impact take full league strength; Form takes a softened
@@ -103,7 +103,7 @@ export function calibreRating(player = {}) {
 
   // Lower floor + steeper slope: developmental players spread into the 60s-70s.
   let raw=27+weighted*0.72;
-  if (raw>88) raw=88+(raw-88)*0.55;               // gentle compression at the very top
+  if (raw>88) raw=88+(raw-88)*0.42;               // gentle compression at the very top
   // Small final league trim above a floor — leaves elite leagues (sRaw 1.0)
   // untouched, gives weaker leagues one more honest nudge down.
   const TRIM_FLOOR=34;

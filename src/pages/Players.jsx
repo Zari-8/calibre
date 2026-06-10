@@ -23,7 +23,7 @@ const CURATED_PLAYERS = [
 // Rising players carry their REAL season stat line, so the rating is computed
 // and the card metrics are actual numbers — no invented "Elite/High" labels.
 const RISING_ANCHORS = [
-  { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:152981, img:'/assets/players/neutral-player.svg',
+  { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:386828, img:'/assets/players/neutral-player.svg',
     position:'FWD', league_id:140, age:18, minutes:3828, appearances:50, starts:46, goals:26, assists:17, api_average_rating:7.91,
     stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
   { name:'Pau Cubarsí', sub:'CB · Barcelona', apiPlayerId:396623, img:'/assets/players/neutral-player.svg',

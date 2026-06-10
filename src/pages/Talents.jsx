@@ -11,6 +11,7 @@ import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { deriveArchetype } from '../services/playerTraits.js';
+import { leagueContext } from '../data/leagues.js';
 
 // Fabricated demo players removed. The discovery pool is now sourced from the
 // real Supabase registry (scored by calibreRating); live search covers the rest.
@@ -159,7 +160,7 @@ function registryTalentFromProfile(profile) {
     nation: profile.nationality || 'Unknown',
     flag: '🌐',
     club: profile.club || profile.team || 'Club pending',
-    league: profile.league || 'Imported registry',
+    league: profile.league || leagueContext(profile.league_id ?? profile.leagueId) || 'Imported registry',
     role: profile.archetype || deriveArchetype(profile),
     position: shortPosition(profile.position),
     rating,

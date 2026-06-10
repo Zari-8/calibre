@@ -108,9 +108,10 @@ export default function WorldCup() {
       const entries = await Promise.all(breakoutStars.map(async (star) => {
         try {
           const rows = await searchSupabasePlayers(star.name, { limit: 5 });
-          const surname = String(star.name).toLowerCase().split(' ').pop();
+          const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+          const surname = norm(star.name).split(' ').pop();
           const match = (rows || [])
-            .filter(r => String(r.name || '').toLowerCase().includes(surname) && Number(r.api_player_id ?? r.apiPlayerId) > 0)
+            .filter(r => norm(r.name).includes(surname) && Number(r.api_player_id ?? r.apiPlayerId) > 0)
             .sort((a, b) => (Number(b.minutes) || 0) - (Number(a.minutes) || 0))[0] || null;
           if (!match) return [star.name, null];
           const scored = calibreRating(match);

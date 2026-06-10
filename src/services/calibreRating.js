@@ -54,10 +54,10 @@ function productionComponents(player, bucket) {
     const att=clamp(g90/0.14*55+a90/0.18*45,0,90);
     return { vals:[defend,build,prog,att], w:[0.66,0.20,0.09,0.05], ev };
   }
-  const progress=ev?clamp(pass90/64*64+(acc-74)/(93-74)*58,0,128):clamp(48+a90/0.35*25,0,86);
-  const create=clamp(key90/1.7*58+a90/0.40*55,0,122);
+  const progress=ev?clamp(pass90/68*60+(acc-75)/(93-75)*56,0,124):clamp(48+a90/0.35*25,0,86);
+  const create=clamp(key90/1.9*56+a90/0.46*52,0,116);
   const goal=clamp(g90/0.42*85,0,120);
-  const carry=clamp(dr90/1.3*68,0,108);
+  const carry=clamp(dr90/1.5*64,0,104);
   const defend=clamp(tk90/2.1*48+in90/1.4*42,0,100);
   return { vals:[progress,create,goal,carry,defend], w:[0.62,0.23,0.09,0.04,0.02], ev };
 }

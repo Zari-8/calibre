@@ -23,7 +23,7 @@ const CURATED_PLAYERS = [
 // Rising players carry their REAL season stat line, so the rating is computed
 // and the card metrics are actual numbers — no invented "Elite/High" labels.
 const RISING_ANCHORS = [
-  { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:152981, img:'/assets/players/lamine-yamal.jpg',
+  { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:152981, img:'/assets/players/neutral-player.svg',
     position:'FWD', league_id:140, age:18, minutes:3828, appearances:50, starts:46, goals:26, assists:17, api_average_rating:7.91,
     stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
   { name:'Pau Cubarsí', sub:'CB · Barcelona', apiPlayerId:396623, img:'/assets/players/neutral-player.svg',
@@ -369,6 +369,61 @@ function CompareModal({players,onClose}){
   );
 }
 
+// Inline player picker for the compare slots. Searches the SAME sources as the
+// main directory (Supabase player bank first, API-Football profiles as a top-up)
+// so a slot can be filled from the whole registry, not just the curated table.
+function CompareSlotPicker({ onPick, onClose }){
+  const [q,setQ] = useState('');
+  const [rows,setRows] = useState([]);
+  const [loading,setLoading] = useState(false);
+
+  useEffect(()=>{
+    const query = q.trim();
+    if(query.length < 2){ setRows([]); setLoading(false); return; }
+    let cancelled = false;
+    setLoading(true);
+    const timer = setTimeout(async()=>{
+      try{
+        const bank = await searchSupabasePlayers(query,{limit:8});
+        let list = Array.isArray(bank) ? bank : [];
+        if(list.length < 4){
+          const api = await searchPlayerProfiles(query,{ttl:5*60*1000}).catch(()=>[]);
+          const seen = new Set(list.map(r=>String(r.name||'').toLowerCase()));
+          for(const a of api){ if(!seen.has(String(a.name||'').toLowerCase())) list.push(a); }
+        }
+        if(!cancelled) setRows(list.slice(0,8));
+      }catch{
+        if(!cancelled) setRows([]);
+      }finally{
+        if(!cancelled) setLoading(false);
+      }
+    },250);
+    return ()=>{ cancelled = true; clearTimeout(timer); };
+  },[q]);
+
+  return (
+    <div className="plp-compare-picker">
+      <div className="plp-compare-picker__head">
+        <Search size={13}/>
+        <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Search the player database…"/>
+        <button type="button" onClick={onClose} aria-label="Close"><X size={14}/></button>
+      </div>
+      <div className="plp-compare-picker__results">
+        {loading && <div className="plp-compare-picker__note"><LoaderCircle size={13}/> Searching the registry…</div>}
+        {!loading && q.trim().length>=2 && !rows.length && <div className="plp-compare-picker__note">No players matched “{q.trim()}”.</div>}
+        {!loading && q.trim().length<2 && <div className="plp-compare-picker__note">Type a name to pull players from the database.</div>}
+        {rows.map(r=>(
+          <button type="button" key={r.id||r.api_player_id||r.name} className="plp-compare-picker__row" onClick={()=>onPick(r)}>
+            <ApiPlayerImage playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)} loading="lazy"/>
+            <span><b>{r.name}</b><small>{r.team||r.club||r.position||r.pos||'Profile'}</small></span>
+            <Plus size={13}/>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Players(){
   const [rankTab,setRankTab] = useState('Calibre Rating');
   const [search,setSearch] = useState('');
@@ -394,6 +449,7 @@ export default function Players(){
     });
   }, []);
   const [comparePlayers,setComparePlayers] = useState([]);
+  const [comparePicker,setComparePicker] = useState(false);
   const [compareOpen,setCompareOpen] = useState(false);
   const [notice,setNotice] = useState('');
   const [supabaseRows,setSupabaseRows] = useState([]);
@@ -751,11 +807,18 @@ export default function Players(){
                       <span>{p.team||p.club||'Live profile'}</span>
                       <button className="plp-compare-remove" type="button" onClick={()=>setComparePlayers(current=>current.filter((_,i)=>i!==index))}>×</button>
                     </div>
-                  : <button className="plp-compare-slot plp-compare-slot--empty" type="button" key={index} onClick={()=>document.querySelector('.plp-db-table')?.scrollIntoView({behavior:'smooth',block:'center'})}>
+                  : <button className="plp-compare-slot plp-compare-slot--empty" type="button" key={index} onClick={()=>setComparePicker(true)}>
                       <Plus size={14}/> Add a player
                     </button>;
               })}
             </div>
+
+            {comparePicker && comparePlayers.length<2 && (
+              <CompareSlotPicker
+                onPick={(player)=>{ addToCompare(player,{keepOpen:true}); setComparePicker(false); }}
+                onClose={()=>setComparePicker(false)}
+              />
+            )}
 
             <button className="btn btn--lime btn--sm" style={{width:'100%'}} type="button" disabled={comparePlayers.length<2} onClick={()=>setCompareOpen(true)}>
               COMPARE PLAYERS <ArrowRight size={13}/>

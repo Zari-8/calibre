@@ -3619,3 +3619,20 @@ html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
 .player-compare-table th{padding:7px 6px;text-align:center;color:var(--text3);font:800 9px/1.2 "IBM Plex Mono";letter-spacing:.06em;text-transform:uppercase;border-bottom:1px solid var(--thin)}
 .player-compare-table td.compare-cell{padding:7px 6px;text-align:center;width:34%;color:var(--text);font:800 16px/1 "Barlow Condensed";border-bottom:1px solid var(--thin)}
 .player-compare-table td.compare-cell--win{color:var(--lime);background:rgba(166,255,0,.08)}
+
+/* ── Compare slot picker (DB-connected) ── */
+.plp-compare-picker{margin-top:10px;border:1px solid var(--thin);border-radius:10px;background:rgba(255,255,255,.02);overflow:hidden}
+.plp-compare-picker__head{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:1px solid var(--thin);color:var(--text3)}
+.plp-compare-picker__head input{flex:1;background:none;border:none;outline:none;color:var(--text);font:600 13px/1 "Barlow"}
+.plp-compare-picker__head button{background:none;border:none;color:var(--text3);cursor:pointer;display:flex}
+.plp-compare-picker__head button:hover{color:var(--lime)}
+.plp-compare-picker__results{max-height:280px;overflow-y:auto}
+.plp-compare-picker__note{padding:12px 10px;color:var(--text3);font:600 12px/1.3 "Barlow";display:flex;align-items:center;gap:6px}
+.plp-compare-picker__row{width:100%;display:flex;align-items:center;gap:10px;padding:8px 10px;background:none;border:none;border-bottom:1px solid var(--thin);cursor:pointer;text-align:left}
+.plp-compare-picker__row:last-child{border-bottom:none}
+.plp-compare-picker__row:hover{background:rgba(166,255,0,.06)}
+.plp-compare-picker__row img{width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0}
+.plp-compare-picker__row span{flex:1;display:flex;flex-direction:column;min-width:0}
+.plp-compare-picker__row b{color:var(--text);font:700 13px/1.2 "Barlow";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.plp-compare-picker__row small{color:var(--text3);font:600 11px/1.2 "Barlow"}
+.plp-compare-picker__row svg{color:var(--lime);flex-shrink:0}

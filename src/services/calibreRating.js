@@ -1,11 +1,20 @@
-// Calibre Rating Engine v6 — production-led, event-stat aware, API demoted.
+// Calibre Rating Engine v7 — production-led, event-stat aware, league-honest.
+//
+// v7 change vs v6: league strength now carries through the WHOLE rating instead
+// of being halved and applied to only ~50% of the weighted score. A genuinely
+// dominant season in a developmental league (e.g. Brasileirão, NPFL) can no
+// longer reach the same 85-90 band as the same profile in La Liga or the
+// Premier League. The intent: 88 should mean "elite, in an elite league," not
+// "great stats, somewhere." The additive floor was also lowered and the slope
+// steepened so mid-tier and developmental players spread into the 60s-70s
+// instead of bunching in the high 80s.
 const WEIGHTS = { Performance: 0.35, Consistency: 0.20, Form: 0.20, Impact: 0.15, Trajectory: 0.10 };
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 function per(value, mins) { return mins > 0 ? num(value) / (mins / 90) : 0; }
-const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,135:0.96,61:0.93,94:0.86,88:0.85,71:0.84,144:0.82,40:0.82,203:0.80,128:0.80,13:0.80,307:0.80,253:0.78,98:0.74,281:0.72,12:0.70,399:0.62,525:0.96,44:0.95,254:0.95,142:0.93,82:0.93,64:0.92,139:0.90,949:0.82 };
-const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.86,'eredivisie':0.85,'championship':0.82,'pro league':0.82,'super lig':0.80,'saudi pro league':0.80,'brasileiro':0.84,'mls':0.74,'j1 league':0.74,'npfl':0.62,'zimbabwe psl':0.55 };
-const DEFAULT_LEAGUE = 0.75;
+const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,135:0.96,61:0.92,94:0.84,88:0.83,71:0.78,144:0.80,40:0.80,203:0.78,128:0.74,13:0.74,307:0.76,253:0.72,98:0.70,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
+const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.84,'eredivisie':0.83,'championship':0.80,'pro league':0.80,'super lig':0.78,'saudi pro league':0.76,'brasileiro':0.78,'brasileirão':0.78,'mls':0.70,'j1 league':0.70,'npfl':0.55,'zimbabwe psl':0.50 };
+const DEFAULT_LEAGUE = 0.70;
 function leagueStrength(player) {
   const id = num(player.league_id ?? player.leagueId);
   if (id && LEAGUE_ID_STRENGTH[id] != null) return LEAGUE_ID_STRENGTH[id];
@@ -14,7 +23,6 @@ function leagueStrength(player) {
     for (const name in LEAGUE_STRENGTH) if (key.includes(name)) return LEAGUE_STRENGTH[name]; }
   return DEFAULT_LEAGUE;
 }
-function effectiveLeague(s) { return 1 - (1 - s) * 0.50; }
 function positionBucket(player) {
   const text = `${player.role||''} ${player.position||''} ${player.archetype||''} ${player.pos||''} ${player.primary_role||''}`.toLowerCase();
   if (/(goalkeeper|keeper|\bgk\b)/.test(text)) return 'GK';
@@ -59,7 +67,7 @@ export function calibreRating(player = {}) {
   const apiR=num(player.api_average_rating ?? player.apiAverageRating ?? player.apiRating);
   const age=num(player.age,0);
   const bucket=positionBucket(player);
-  const lg=effectiveLeague(leagueStrength(player));
+  const sRaw=leagueStrength(player);              // raw league strength 0.50–1.00
   const hasEvidence = minutes>0 || apps>0 || apiR>0;
   if (!hasEvidence) return { rating:null, computed:null, breakdown:null, bucket, confidence:'none', provisional:true };
   if (apps<=0 && minutes>0) { apps=minutes/85; starts=apps*0.9; }
@@ -74,19 +82,34 @@ export function calibreRating(player = {}) {
     production=clamp(spine(c.vals,c.w),0,116); ev=c.ev;
   }
   const core=clamp(production*0.74+q*0.26,0,108);
-  const Performance=clamp(core*lg,0,100);
+
+  // ── League now carries through the headline components ──────────────
+  // Performance & Impact take full league strength; Form takes a softened
+  // share (so raw output still matters, but not league-blind). Consistency &
+  // Trajectory stay league-neutral — they measure availability and age, which
+  // are league-independent. This keeps the breakdown radar coherent with the
+  // headline number instead of showing a league-blind 90 next to a 74 rating.
+  const lgFormFactor = sRaw;                       // Form now also carries full league strength
+  const Performance=clamp(core*sRaw,0,100);
   const startRate=apps>0?starts/apps:0.7, minsPerApp=apps>0?minutes/apps:0;
   const Consistency=clamp(clamp(startRate*100,0,100)*0.40+clamp((minsPerApp/90)*100,0,100)*0.30+clamp((minutes/3800)*100,0,100)*0.30,0,100);
-  const Form=clamp(core,0,100);
+  const Form=clamp(core*lgFormFactor,0,100);
   const avail=clamp(0.88+(minutes/3600)*0.12,0.88,1.0);
-  const Impact=clamp(core*lg*avail,0,100);
+  const Impact=clamp(core*sRaw*avail,0,100);
   const youth=clamp((24-age)/(24-17),0,1);
-  const Trajectory=age>0?clamp(50+youth*34+(core-60)*0.10,0,100):58;
+  const Trajectory=age>0?clamp(50+youth*30+(core-60)*0.10,0,100):58;
   const breakdown={ Performance:Math.round(Performance),Consistency:Math.round(Consistency),Form:Math.round(Form),Impact:Math.round(Impact),Trajectory:Math.round(Trajectory) };
   const weighted=Performance*WEIGHTS.Performance+Consistency*WEIGHTS.Consistency+Form*WEIGHTS.Form+Impact*WEIGHTS.Impact+Trajectory*WEIGHTS.Trajectory;
-  let raw=38+weighted*0.585; if (raw>90) raw=90+(raw-90)*0.7;
+
+  // Lower floor + steeper slope: developmental players spread into the 60s-70s.
+  let raw=27+weighted*0.72;
+  if (raw>88) raw=88+(raw-88)*0.55;               // gentle compression at the very top
+  // Small final league trim above a floor — leaves elite leagues (sRaw 1.0)
+  // untouched, gives weaker leagues one more honest nudge down.
+  const TRIM_FLOOR=34;
+  raw=TRIM_FLOOR+(raw-TRIM_FLOOR)*(0.72+0.28*sRaw);
   const computed=clamp(Math.round(raw),1,99);
   const confidence=ev&&apiR>0?'high':minutes>0||apps>0?'medium':'low';
-  return { rating:computed, computed, breakdown, bucket, production:Math.round(production), core:Math.round(core), confidence, provisional:!ev&&bucket!=='GK' };
+  return { rating:computed, computed, breakdown, bucket, production:Math.round(production), core:Math.round(core), leagueStrength:sRaw, confidence, provisional:!ev&&bucket!=='GK' };
 }
 export default calibreRating;

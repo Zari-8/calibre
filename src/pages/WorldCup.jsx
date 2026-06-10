@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Star, Zap, Trophy, ArrowRight } from 'lucide-react';
 import Panel from '../components/Panel.jsx';
+import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
+import { playerIdFor } from '../data/playerIds.js';
+import { searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { calibreRating } from '../services/calibreRating.js';
 import {
   WC_CONFIG,
   liveMoments,
@@ -49,19 +53,31 @@ function MomentBadge({ type }) {
   return <span className={`moment-badge ${b.cls}`}>{b.label}</span>;
 }
 
-function BreakoutCard({ star }) {
+function BreakoutCard({ star, live }) {
+  // Rating comes from the shared Calibre engine off the registry row when the
+  // player resolves there, so the World Cup card is consistent with Players,
+  // Talents and System Fit. Falls back to the editorial wcRating otherwise.
+  const rating = live?.rating ?? star.wcRating;
+  const resolvedId = live?.apiPlayerId || playerIdFor(star.name);
   return (
     <div className={`wc-breakout-card ${star.featured ? 'wc-breakout-card--featured' : ''}`}>
       {star.featured && <div className="wc-featured-tag">Featured</div>}
       <div className="wc-bc-top">
-        <img src={star.image} alt={star.name} className="wc-bc-img" />
+        <ApiPlayerImage
+          className="wc-bc-img"
+          playerId={resolvedId}
+          name={star.name}
+          preferredSrc={resolvedId ? undefined : star.image}
+          fallbackSrc="/assets/players/neutral-player.svg"
+          alt={star.name}
+        />
         <div className="wc-bc-meta">
           <div className="wc-bc-flag">{star.flag} {star.nation}</div>
           <strong className="wc-bc-name">{star.name}</strong>
           <span className="wc-bc-role">{star.role} · {star.club}</span>
           <div className="wc-bc-rating">
-            <span className="wc-bc-score">{star.wcRating}</span>
-            <span className="wc-bc-trend">{star.trend}</span>
+            <span className="wc-bc-score">{rating}</span>
+            <span className="wc-bc-trend">{live?.rating != null ? 'Calibre' : star.trend}</span>
           </div>
         </div>
       </div>
@@ -71,7 +87,7 @@ function BreakoutCard({ star }) {
         <div className="wc-bc-stat"><b>{star.assists}</b><span>Assists</span></div>
       </div>
       <p className="wc-bc-note">"{star.note}"</p>
-      <div className="wc-bc-share"><ShareBar text={`${star.name} — ${star.wcRating} World Cup rating on Calibre.`} url={shareUrl('/world-cup')} label={false}/></div>
+      <div className="wc-bc-share"><ShareBar text={`${star.name} — ${rating} Calibre rating on Calibre.`} url={shareUrl('/world-cup')} label={false}/></div>
     </div>
   );
 }
@@ -80,6 +96,32 @@ function BreakoutCard({ star }) {
 export default function WorldCup() {
   const daysLeft = useDaysToWC();
   const isLive   = daysLeft === 0;
+
+  // Resolve each breakout star against the Supabase registry once, then score
+  // with the shared Calibre engine so the World Cup rating matches every other
+  // surface. Editorial wcRating remains the fallback for players not yet in the
+  // registry (e.g. emerging-league names).
+  const [liveRatings, setLiveRatings] = useState({});
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const entries = await Promise.all(breakoutStars.map(async (star) => {
+        try {
+          const rows = await searchSupabasePlayers(star.name, { limit: 5 });
+          const surname = String(star.name).toLowerCase().split(' ').pop();
+          const match = (rows || [])
+            .filter(r => String(r.name || '').toLowerCase().includes(surname) && Number(r.api_player_id ?? r.apiPlayerId) > 0)
+            .sort((a, b) => (Number(b.minutes) || 0) - (Number(a.minutes) || 0))[0] || null;
+          if (!match) return [star.name, null];
+          const scored = calibreRating(match);
+          if (scored.rating == null) return [star.name, null];
+          return [star.name, { rating: scored.rating, apiPlayerId: Number(match.api_player_id ?? match.apiPlayerId) || null }];
+        } catch { return [star.name, null]; }
+      }));
+      if (alive) setLiveRatings(Object.fromEntries(entries.filter(e => e[1])));
+    })();
+    return () => { alive = false; };
+  }, []);
 
   const [activeEdition,  setActiveEdition]  = useState(iconicEditions[iconicEditions.length - 1]);
   const [momentFilter,   setMomentFilter]   = useState('all');
@@ -168,7 +210,7 @@ export default function WorldCup() {
       <section className="wc-section">
         <SectionHead eyebrow="Scout Pulse" title="Tournament Breakout Stars" />
         <div className="wc-breakout-grid">
-          {breakoutStars.map(s => <BreakoutCard key={s.id} star={s} />)}
+          {breakoutStars.map(s => <BreakoutCard key={s.id} star={s} live={liveRatings[s.name]} />)}
         </div>
       </section>
 

@@ -7,36 +7,6 @@ import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles 
 import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 
-// Decode HTML entities that survive in stored/imported names ("O&apos;Reilly" → "O'Reilly").
-function cleanName(value){
-  return String(value ?? '')
-    .replace(/&apos;|&#0?39;/g, "'")
-    .replace(/&quot;|&#0?34;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .trim();
-}
-
-// Pick the player's PRIMARY domestic-league statistics line from the
-// API-Football statistics array instead of blindly taking [0]. During summer
-// (Club World Cup window) and for multi-competition players, [0] is often a
-// tiny cup sample — that is why live profiles showed e.g. "1 app, 7 goals".
-// Prefer the line matching the player's known league_id, else most minutes.
-function leagueStatLine(stats, player){
-  const arr = stats?.statistics;
-  if(!Array.isArray(arr) || arr.length === 0) return null;
-  const want = Number(player?.league_id ?? player?.leagueId);
-  if(Number.isFinite(want)){
-    const byLeague = arr.find(s => Number(s?.league?.id) === want);
-    if(byLeague) return byLeague;
-  }
-  return arr.reduce((best, s) => {
-    const m = Number(s?.games?.minutes || 0);
-    return (!best || m > Number(best?.games?.minutes || 0)) ? s : best;
-  }, null) || arr[0];
-}
-
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
   { rank:2, name:'Erling Haaland', apiPlayerId:1100, age:25, club:'Manchester City', pos:'ST', rating:90, buzz:95, fanRating:4.7, potential:93, img:'/assets/players/neutral-player.svg', archetype:'Poacher' },
@@ -53,13 +23,13 @@ const CURATED_PLAYERS = [
 // Rising players carry their REAL season stat line, so the rating is computed
 // and the card metrics are actual numbers — no invented "Elite/High" labels.
 const RISING_ANCHORS = [
-  { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:386828, img:'/assets/players/neutral-player.svg',
+  { name:'Lamine Yamal', sub:'RW · Barcelona', apiPlayerId:152981, img:'/assets/players/lamine-yamal.jpg',
     position:'FWD', league_id:140, age:18, minutes:3828, appearances:50, starts:46, goals:26, assists:17, api_average_rating:7.91,
     stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
-  { name:'Pau Cubarsí', sub:'CB · Barcelona', apiPlayerId:396623, img:'/assets/players/neutral-player.svg',
+  { name:'Pau Cubarsí', sub:'CB · Barcelona', apiPlayerId:407419, img:'/assets/players/neutral-player.svg',
     position:'DEF', league_id:140, age:18, minutes:4054, appearances:46, starts:44, goals:1, assists:0, api_average_rating:7.06,
     stats_minutes:4234, passes:4083, pass_accuracy:90.9, key_passes:7, dribbles_success:1, tackles:61, interceptions:44, duels_won:171, shots:9 },
-  { name:'João Neves', sub:'CM · PSG', apiPlayerId:335051, img:'/assets/players/neutral-player.svg',
+  { name:'João Neves', sub:'CM · PSG', apiPlayerId:367975, img:'/assets/players/neutral-player.svg',
     position:'MID', league_id:61, age:21, minutes:3128, appearances:43, starts:36, goals:9, assists:5, api_average_rating:7.21,
     stats_minutes:3244, passes:2164, pass_accuracy:82.1, key_passes:35, dribbles_success:20, tackles:85, interceptions:34, duels_won:204, shots:44 },
 ];
@@ -152,7 +122,6 @@ function apiIdFor(player){
 function localToProfile(player){
   return {
     ...player,
-    name: cleanName(player.name),
     source:'calibre-index',
     image:player.img,
     position:specificPosition(player.pos,player.position),
@@ -241,10 +210,54 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
   return merged;
 }
 
+// Pick the player's PRIMARY league line from the API statistics array instead of
+// statistics[0] (often a cup, super cup, or whatever competition the API lists
+// first — the source of the "1 app / 7 goals" nonsense). Prefer real league
+// competitions, then the most-played entry: the same rule the enrichment backend
+// uses, so the live modal agrees with the database.
+function pickLeagueLine(statistics){
+  const rows = Array.isArray(statistics) ? statistics.filter(s => s && s.games) : [];
+  if(!rows.length) return null;
+  const mins = s => Number(s.games?.minutes) || 0;
+  const isLeague = s => String(s.league?.type || '').toLowerCase() === 'league';
+  const leagues = rows.filter(isLeague);
+  const pool = leagues.length ? leagues : rows;
+  return pool.reduce((best, s) => (mins(s) > mins(best) ? s : best), pool[0]);
+}
+
+// Map an API statistics line onto the shape calibreRating expects, so the live
+// modal shows the same weighted rating the rest of the app does.
+function lineToRatingInput(player, stat){
+  const g = stat?.games || {};
+  return {
+    name: player.name,
+    position: g.position || player.position || player.pos || '',
+    league_id: stat?.league?.id ?? player.league_id ?? null,
+    age: player.age ?? null,
+    minutes: Number(g.minutes) || 0,
+    stats_minutes: Number(g.minutes) || 0,
+    appearances: Number(g.appearences ?? g.appearances) || 0,
+    goals: Number(stat?.goals?.total) || 0,
+    assists: Number(stat?.goals?.assists) || 0,
+    api_average_rating: Number(g.rating) || 0,
+    passes: Number(stat?.passes?.total) || 0,
+    pass_accuracy: Number(stat?.passes?.accuracy) || 0,
+    key_passes: Number(stat?.passes?.key) || 0,
+    dribbles_success: Number(stat?.dribbles?.success) || 0,
+    tackles: Number(stat?.tackles?.total) || 0,
+    interceptions: Number(stat?.tackles?.interceptions) || 0,
+    duels_won: Number(stat?.duels?.won) || 0,
+    shots: Number(stat?.shots?.total) || 0,
+  };
+}
+
 function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
   if(!player) return null;
 
-  const stat = leagueStatLine(stats, player);
+  const stat = pickLeagueLine(stats?.statistics);
+  const liveInput = stat ? lineToRatingInput(player, stat) : null;
+  const liveCalc = liveInput && liveInput.minutes > 0 ? calibreRating(liveInput) : null;
+  const liveRating = liveCalc ? liveCalc.rating : (player.rating ?? null);
   const club = stat?.team?.name || player.club || player.team || 'Club data loading';
   const position = specificPosition(stat?.games?.position,specificPosition(player.position,player.pos));
 
@@ -276,6 +289,9 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
             <h2>{player.name}</h2>
             <p>{club} · {position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
           </div>
+          {liveRating != null && (
+            <div className="player-profile-modal__rating"><strong>{displayRating(liveRating)}</strong><span>Calibre</span></div>
+          )}
         </div>
 
         {loading
@@ -290,72 +306,15 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
         <div className="player-profile-modal__actions">
           <button type="button" className="btn btn--lime btn--sm" onClick={()=>onCompare(player)}><Plus size={13}/> Add to compare</button>
           <button type="button" className="btn btn--outline btn--sm" onClick={()=>navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}>Run system fit <ArrowRight size={13}/></button>
-          <ShareBar text={`${player.name} — Calibre rating ${displayRating(player.rating)}${player.archetype ? `, ${player.archetype}` : ''}.`} url={shareUrl('/players')} label={false}/>
+          <ShareBar text={`${player.name} — Calibre rating ${displayRating(liveRating)}${player.archetype ? `, ${player.archetype}` : ''}.`} url={shareUrl('/players')} label={false}/>
         </div>
       </section>
     </div>
   );
 }
 
-// Normalise a compared player into a flat stat object, preferring live
-// API-Football statistics when available and falling back to row fields.
-function mergeCompareStats(player, fetched){
-  const st = leagueStatLine(fetched, player);
-  const num = v => { const x = Number(v); return Number.isFinite(x) ? x : null; };
-  const pass = st?.passes?.accuracy != null ? num(String(st.passes.accuracy).replace('%','')) : num(player.pass_accuracy);
-  return {
-    rating: rowRating(player),
-    age: num(player.age),
-    appearances: num(st?.games?.appearences ?? st?.games?.appearances ?? player.appearances),
-    minutes: num(st?.games?.minutes ?? player.stats_minutes ?? player.minutes),
-    goals: num(st?.goals?.total ?? player.goals),
-    assists: num(st?.goals?.assists ?? player.assists),
-    key_passes: num(st?.passes?.key ?? player.key_passes),
-    pass_accuracy: pass,
-    dribbles: num(st?.dribbles?.success ?? player.dribbles_success),
-    tackles: num(st?.tackles?.total ?? player.tackles),
-    interceptions: num(st?.tackles?.interceptions ?? player.interceptions),
-    duels_won: num(st?.duels?.won ?? player.duels_won),
-    shots: num(st?.shots?.total ?? player.shots),
-  };
-}
-
-const COMPARE_ROWS = [
-  ['Calibre rating', 'rating', v => displayRating(v)],
-  ['Age', 'age', v => v ?? '—'],
-  ['Appearances', 'appearances', v => v ?? '—'],
-  ['Minutes', 'minutes', v => v != null ? v.toLocaleString() : '—'],
-  ['Goals', 'goals', v => v ?? '—'],
-  ['Assists', 'assists', v => v ?? '—'],
-  ['Key passes', 'key_passes', v => v ?? '—'],
-  ['Pass accuracy', 'pass_accuracy', v => v != null ? `${Math.round(v)}%` : '—'],
-  ['Successful dribbles', 'dribbles', v => v ?? '—'],
-  ['Tackles', 'tackles', v => v ?? '—'],
-  ['Interceptions', 'interceptions', v => v ?? '—'],
-  ['Duels won', 'duels_won', v => v ?? '—'],
-  ['Shots', 'shots', v => v ?? '—'],
-];
-
 function CompareModal({players,onClose}){
-  const [fetched,setFetched] = useState([null,null]);
-  const [loading,setLoading] = useState(true);
-
-  useEffect(()=>{
-    let alive = true;
-    setLoading(true);
-    Promise.all(players.slice(0,2).map(player=>{
-      const apiId = apiIdFor(player);
-      return apiId ? getPlayerStats(apiId).catch(()=>null) : Promise.resolve(null);
-    })).then(results=>{
-      if(alive){ setFetched(results); setLoading(false); }
-    });
-    return ()=>{ alive = false; };
-  },[players]);
-
   if(players.length<2) return null;
-
-  const a = mergeCompareStats(players[0],fetched[0]);
-  const b = mergeCompareStats(players[1],fetched[1]);
 
   return (
     <div className="player-profile-modal" role="presentation" onMouseDown={onClose}>
@@ -374,83 +333,8 @@ function CompareModal({players,onClose}){
           )}
         </div>
 
-        {loading
-          ? <div className="player-profile-modal__loading"><LoaderCircle size={16}/> Pulling current-season statistics for both players…</div>
-          : <table className="player-compare-table">
-              <tbody>
-                {COMPARE_ROWS.map(([label,key,fmt])=>{
-                  const va = a[key], vb = b[key];
-                  const aWins = va!=null && vb!=null && va>vb;
-                  const bWins = va!=null && vb!=null && vb>va;
-                  return (
-                    <tr key={key}>
-                      <td className={aWins?'compare-cell compare-cell--win':'compare-cell'}>{fmt(va)}</td>
-                      <th>{label}</th>
-                      <td className={bWins?'compare-cell compare-cell--win':'compare-cell'}>{fmt(vb)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-        }
-
-        <p className="player-profile-modal__note">Highlighted cells mark the higher value per metric. Statistics are pulled live from API-Football where a profile id resolves; otherwise the stored Calibre bank values are used. Pass accuracy and per-90 context still depend on the provider exposing event data for each player.</p>
+        <p className="player-profile-modal__note">This beta workspace now receives real player profiles. The full comparison report will apply Calibre’s performance, consistency, form, impact and trajectory weights after the statistics pipeline is complete.</p>
       </section>
-    </div>
-  );
-}
-
-// Inline player picker for the compare slots. Searches the SAME sources as the
-// main directory (Supabase player bank first, API-Football profiles as a top-up)
-// so a slot can be filled from the whole registry, not just the curated table.
-function CompareSlotPicker({ onPick, onClose }){
-  const [q,setQ] = useState('');
-  const [rows,setRows] = useState([]);
-  const [loading,setLoading] = useState(false);
-
-  useEffect(()=>{
-    const query = q.trim();
-    if(query.length < 2){ setRows([]); setLoading(false); return; }
-    let cancelled = false;
-    setLoading(true);
-    const timer = setTimeout(async()=>{
-      try{
-        const bank = await searchSupabasePlayers(query,{limit:8});
-        let list = Array.isArray(bank) ? bank : [];
-        if(list.length < 4){
-          const api = await searchPlayerProfiles(query,{ttl:5*60*1000}).catch(()=>[]);
-          const seen = new Set(list.map(r=>String(r.name||'').toLowerCase()));
-          for(const a of api){ if(!seen.has(String(a.name||'').toLowerCase())) list.push(a); }
-        }
-        if(!cancelled) setRows(list.slice(0,8));
-      }catch{
-        if(!cancelled) setRows([]);
-      }finally{
-        if(!cancelled) setLoading(false);
-      }
-    },250);
-    return ()=>{ cancelled = true; clearTimeout(timer); };
-  },[q]);
-
-  return (
-    <div className="plp-compare-picker">
-      <div className="plp-compare-picker__head">
-        <Search size={13}/>
-        <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Search the player database…"/>
-        <button type="button" onClick={onClose} aria-label="Close"><X size={14}/></button>
-      </div>
-      <div className="plp-compare-picker__results">
-        {loading && <div className="plp-compare-picker__note"><LoaderCircle size={13}/> Searching the registry…</div>}
-        {!loading && q.trim().length>=2 && !rows.length && <div className="plp-compare-picker__note">No players matched “{q.trim()}”.</div>}
-        {!loading && q.trim().length<2 && <div className="plp-compare-picker__note">Type a name to pull players from the database.</div>}
-        {rows.map(r=>(
-          <button type="button" key={r.id||r.api_player_id||r.name} className="plp-compare-picker__row" onClick={()=>onPick(r)}>
-            <ApiPlayerImage playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)} loading="lazy"/>
-            <span><b>{r.name}</b><small>{r.team||r.club||r.position||r.pos||'Profile'}</small></span>
-            <Plus size={13}/>
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
@@ -480,7 +364,6 @@ export default function Players(){
     });
   }, []);
   const [comparePlayers,setComparePlayers] = useState([]);
-  const [comparePicker,setComparePicker] = useState(false);
   const [compareOpen,setCompareOpen] = useState(false);
   const [notice,setNotice] = useState('');
   const [supabaseRows,setSupabaseRows] = useState([]);
@@ -648,7 +531,7 @@ export default function Players(){
     }
   }
 
-  function addToCompare(player,opts={}){
+  function addToCompare(player){
     setComparePlayers(current=>{
       const filtered = current.filter(item=>
         (item.id && player.id)
@@ -659,7 +542,7 @@ export default function Players(){
       return [...filtered,player].slice(-2);
     });
 
-    if(!opts.keepOpen) setActivePlayer(null);
+    setActivePlayer(null);
   }
 
   return (
@@ -743,7 +626,7 @@ export default function Players(){
 
             <div className="plp-featured-body">
               <div className="plp-featured-tag"><Star size={12}/><span>Featured player · weekly editorial spotlight</span></div>
-              <div className="plp-featured-name">{cleanName(featured.name)}</div>
+              <div className="plp-featured-name">{featured.name}</div>
               <div className="plp-featured-club">⚽ {featured.club}</div>
               <div className="plp-featured-meta">{featured.pos} · {featured.archetype}</div>
               <p className="featured-selection-note"><Info size={12}/> Chosen from the current debate and transfer-window rotation, not solely by goals.</p>
@@ -756,14 +639,6 @@ export default function Players(){
               </div>
             </div>
           </button>
-
-          <div className="plp-featured-share" onClick={e=>e.stopPropagation()}>
-            <ShareBar
-              text={`${cleanName(featured.name)} — Calibre ${displayRating(featured.rating)} · Market Buzz ${featured.buzz}. Where do you have him? ⚽`}
-              url={shareUrl('/players')}
-              title="Calibre featured player"
-            />
-          </div>
 
           <div className="plp-rankings panel" style={{marginTop:12}}>
             <div className="panel-head"><div className="panel-title">Player Rankings</div></div>
@@ -812,14 +687,7 @@ export default function Players(){
                     <td>{p.team||p.club||'API-Football profile'}</td>
                     <td><span className="plp-pos-badge">{p.position||p.pos||'—'}</span></td>
                     <td>{rt!=null?<div className="rating-badge rating-badge--sm">{displayRating(rt)}</div>:<span className="live-profile-pill">LIVE</span>}</td>
-                    <td>
-                      <div className="plp-row-actions">
-                        <button className="btn btn--ghost btn--sm" type="button" onClick={event=>{event.stopPropagation();openProfile(p);}}>Open <ArrowRight size={12}/></button>
-                        <button className="btn btn--outline btn--sm" type="button" title="Add to compare" onClick={event=>{event.stopPropagation();addToCompare(p,{keepOpen:true});}} disabled={comparePlayers.some(cp=>(cp.id&&p.id)?cp.id===p.id:cp.name===p.name)}>
-                          {comparePlayers.some(cp=>(cp.id&&p.id)?cp.id===p.id:cp.name===p.name)?'Added':<><Plus size={12}/> Compare</>}
-                        </button>
-                      </div>
-                    </td>
+                    <td><button className="btn btn--ghost btn--sm" type="button" onClick={event=>{event.stopPropagation();openProfile(p);}}>Open <ArrowRight size={12}/></button></td>
                   </tr>
                   );
                 })}
@@ -846,18 +714,9 @@ export default function Players(){
                       <span>{p.team||p.club||'Live profile'}</span>
                       <button className="plp-compare-remove" type="button" onClick={()=>setComparePlayers(current=>current.filter((_,i)=>i!==index))}>×</button>
                     </div>
-                  : <button className="plp-compare-slot plp-compare-slot--empty" type="button" key={index} onClick={()=>setComparePicker(true)}>
-                      <Plus size={14}/> Add a player
-                    </button>;
+                  : <div className="plp-compare-slot plp-compare-slot--empty" key={index}>Select a player</div>;
               })}
             </div>
-
-            {comparePicker && comparePlayers.length<2 && (
-              <CompareSlotPicker
-                onPick={(player)=>{ addToCompare(player,{keepOpen:true}); setComparePicker(false); }}
-                onClose={()=>setComparePicker(false)}
-              />
-            )}
 
             <button className="btn btn--lime btn--sm" style={{width:'100%'}} type="button" disabled={comparePlayers.length<2} onClick={()=>setCompareOpen(true)}>
               COMPARE PLAYERS <ArrowRight size={13}/>

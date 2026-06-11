@@ -3,6 +3,7 @@ import { ArrowRight, BarChart3, Clock3, LockKeyhole, MessageCircle, Sparkles, Ta
 import { useBattle } from '../hooks/useBattle.js';
 import { navigateTo } from './NavLink.jsx';
 import ApiPlayerImage from './ApiPlayerImage.jsx';
+import ShareBar, { shareUrl } from './Share.jsx';
 import useAuth from '../hooks/useAuth.js';
 
 function useCountdown() {
@@ -274,6 +275,15 @@ export default function BattleHero() {
           <span><BarChart3 size={14} />Aggregate verdict</span>
           <span><Zap size={14} />One vote per criterion</span>
           <span><Target size={14} />System-fit context</span>
+        </div>
+
+        <div className="featured-battle__share">
+          <span className="featured-battle__share-label">Settle it on X</span>
+          <ShareBar
+            text={`${left.name} vs ${right.name} — ${question} My Calibre verdict: ${aggregate.left}–${aggregate.right}. What's yours?`}
+            url={shareUrl(`/debates?forum=${battleSlug}`)}
+            title="Calibre rate battle"
+          />
         </div>
       </section>
 

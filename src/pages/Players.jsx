@@ -7,6 +7,36 @@ import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles 
 import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 
+// Decode HTML entities that survive in stored/imported names ("O&apos;Reilly" → "O'Reilly").
+function cleanName(value){
+  return String(value ?? '')
+    .replace(/&apos;|&#0?39;/g, "'")
+    .replace(/&quot;|&#0?34;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+}
+
+// Pick the player's PRIMARY domestic-league statistics line from the
+// API-Football statistics array instead of blindly taking [0]. During summer
+// (Club World Cup window) and for multi-competition players, [0] is often a
+// tiny cup sample — that is why live profiles showed e.g. "1 app, 7 goals".
+// Prefer the line matching the player's known league_id, else most minutes.
+function leagueStatLine(stats, player){
+  const arr = stats?.statistics;
+  if(!Array.isArray(arr) || arr.length === 0) return null;
+  const want = Number(player?.league_id ?? player?.leagueId);
+  if(Number.isFinite(want)){
+    const byLeague = arr.find(s => Number(s?.league?.id) === want);
+    if(byLeague) return byLeague;
+  }
+  return arr.reduce((best, s) => {
+    const m = Number(s?.games?.minutes || 0);
+    return (!best || m > Number(best?.games?.minutes || 0)) ? s : best;
+  }, null) || arr[0];
+}
+
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
   { rank:2, name:'Erling Haaland', apiPlayerId:1100, age:25, club:'Manchester City', pos:'ST', rating:90, buzz:95, fanRating:4.7, potential:93, img:'/assets/players/neutral-player.svg', archetype:'Poacher' },
@@ -122,6 +152,7 @@ function apiIdFor(player){
 function localToProfile(player){
   return {
     ...player,
+    name: cleanName(player.name),
     source:'calibre-index',
     image:player.img,
     position:specificPosition(player.pos,player.position),
@@ -213,7 +244,7 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
 function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
   if(!player) return null;
 
-  const stat = stats?.statistics?.[0];
+  const stat = leagueStatLine(stats, player);
   const club = stat?.team?.name || player.club || player.team || 'Club data loading';
   const position = specificPosition(stat?.games?.position,specificPosition(player.position,player.pos));
 
@@ -269,7 +300,7 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
 // Normalise a compared player into a flat stat object, preferring live
 // API-Football statistics when available and falling back to row fields.
 function mergeCompareStats(player, fetched){
-  const st = fetched?.statistics?.[0];
+  const st = leagueStatLine(fetched, player);
   const num = v => { const x = Number(v); return Number.isFinite(x) ? x : null; };
   const pass = st?.passes?.accuracy != null ? num(String(st.passes.accuracy).replace('%','')) : num(player.pass_accuracy);
   return {
@@ -712,7 +743,7 @@ export default function Players(){
 
             <div className="plp-featured-body">
               <div className="plp-featured-tag"><Star size={12}/><span>Featured player · weekly editorial spotlight</span></div>
-              <div className="plp-featured-name">{featured.name}</div>
+              <div className="plp-featured-name">{cleanName(featured.name)}</div>
               <div className="plp-featured-club">⚽ {featured.club}</div>
               <div className="plp-featured-meta">{featured.pos} · {featured.archetype}</div>
               <p className="featured-selection-note"><Info size={12}/> Chosen from the current debate and transfer-window rotation, not solely by goals.</p>
@@ -725,6 +756,14 @@ export default function Players(){
               </div>
             </div>
           </button>
+
+          <div className="plp-featured-share" onClick={e=>e.stopPropagation()}>
+            <ShareBar
+              text={`${cleanName(featured.name)} — Calibre ${displayRating(featured.rating)} · Market Buzz ${featured.buzz}. Where do you have him? ⚽`}
+              url={shareUrl('/players')}
+              title="Calibre featured player"
+            />
+          </div>
 
           <div className="plp-rankings panel" style={{marginTop:12}}>
             <div className="panel-head"><div className="panel-title">Player Rankings</div></div>

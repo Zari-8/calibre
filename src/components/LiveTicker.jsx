@@ -2,7 +2,11 @@
 import { useEffect, useState } from 'react';
 import { getFixturesByDate } from '../services/apiFootball.js';
 
-const WATCH_LEAGUES = [39, 140, 135, 78, 61, 88, 144, 2];
+// 1 = FIFA World Cup, 15 = Club World Cup, 10 = international friendlies, 2/3/848 = UEFA cups.
+// The domestic leagues sit in their summer break, so in June the live games are
+// almost entirely World Cup fixtures — they must be in this list or the ticker
+// finds nothing today and falls back to the demo feed.
+const WATCH_LEAGUES = [1, 15, 10, 39, 140, 135, 78, 61, 88, 144, 2, 3, 848];
 const STATUS_LIVE = ['1H','HT','2H','ET','BT','P','SUSP','INT','LIVE'];
 const STATUS_FIN = ['FT','AET','PEN'];
 
@@ -30,8 +34,19 @@ export default function LiveTicker() {
     const today = new Date().toISOString().slice(0, 10);
     getFixturesByDate(today).then(fixtures => {
       if (!fixtures?.length) return;
+      const isLive = match => STATUS_LIVE.includes(match?.fixture?.status?.short);
       const selected = fixtures
-        .filter(match => WATCH_LEAGUES.includes(match.league.id))
+        .filter(match => match?.teams?.home?.name && match?.league?.id)
+        // keep anything currently live (any competition) plus our watched leagues
+        .filter(match => isLive(match) || WATCH_LEAGUES.includes(match.league.id))
+        // live games first, then by our league priority order
+        .sort((a, b) => {
+          const liveDiff = (isLive(b) ? 1 : 0) - (isLive(a) ? 1 : 0);
+          if (liveDiff !== 0) return liveDiff;
+          const ai = WATCH_LEAGUES.indexOf(a.league.id);
+          const bi = WATCH_LEAGUES.indexOf(b.league.id);
+          return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
+        })
         .slice(0, 24)
         .map(match => ({
           home: match.teams.home.name,

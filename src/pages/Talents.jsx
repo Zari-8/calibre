@@ -13,6 +13,17 @@ import { calibreRating } from '../services/calibreRating.js';
 import { deriveArchetype } from '../services/playerTraits.js';
 import { leagueContext } from '../data/leagues.js';
 
+// Decode HTML entities that survive in stored/imported names ("O&apos;Reilly" → "O'Reilly").
+function cleanName(value){
+  return String(value ?? '')
+    .replace(/&apos;|&#0?39;/g, "'")
+    .replace(/&quot;|&#0?34;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .trim();
+}
+
 // Fabricated demo players removed. The discovery pool is now sourced from the
 // real Supabase registry (scored by calibreRating); live search covers the rest.
 const LOCAL_TALENTS = [];
@@ -108,7 +119,7 @@ function liveTalentFromProfile(profile) {
   const position = shortPosition(profile.position);
   const nation = profile.nationality || 'International';
   return {
-    id: profile.id, name: profile.name, age: age || '—', nation, flag: '🌍', league: 'Live API profile', club: 'Club loads with stats feed',
+    id: profile.id, name: cleanName(profile.name), age: age || '—', nation, flag: '🌍', league: 'Live API profile', club: 'Club loads with stats feed',
     role: roleForPosition(profile.position), position, rating: 'API', potential: 'Pending', readiness: 'LIVE', trend: 'Profile found',
     region: regionForNation(nation), trajectory: 'profile', nextStep: 'Run Calibre trajectory analysis',
     pathway: ['API-Football identity profile', 'Statistics and minutes ingest', 'Calibre Next Step projection'], image: profile.image, provisional: true, source: 'api-profile',
@@ -155,7 +166,7 @@ function registryTalentFromProfile(profile) {
     ...profile,
     id: profile.apiPlayerId ?? profile.id,
     apiPlayerId: profile.apiPlayerId ?? profile.id,
-    name: profile.name,
+    name: cleanName(profile.name),
     age,
     nation: profile.nationality || 'Unknown',
     flag: '🌐',

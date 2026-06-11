@@ -55,6 +55,11 @@ const DELAY_MS        = Number(process.env.DELAY_MS || 250);
 const FORCE           = process.env.FORCE === '1';
 const NATIONALITY     = process.env.NATIONALITY || null;
 const PLAYER_NAMES    = process.env.PLAYER_NAMES || null; // comma-separated names to target, e.g. "Vitinha,Pedri,Raphinha"
+// Deterministic targeting by API id — bypasses name-guessing and the
+// "never-enriched first" ordering entirely. Use this for the marquee names
+// whose registry rows are stored under inconsistent legal names.
+const PLAYER_IDS      = (process.env.PLAYER_IDS || '')
+  .split(',').map(s => Number(s.trim())).filter(n => Number.isInteger(n) && n > 0);
 const RESOLVE_IDS     = process.env.RESOLVE_IDS === '1';   // re-resolve mis-mapped ids by name
 const DRY_RUN         = process.env.DRY_RUN === '1';       // preview only, no writes
 const API_HOST        = 'https://v3.football.api-sports.io';
@@ -201,7 +206,11 @@ async function main() {
     .gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
 
   if (NATIONALITY) select = select.ilike('nationality', `%${NATIONALITY}%`);
-  if (PLAYER_NAMES) {
+  if (PLAYER_IDS.length) {
+    // Exact-id targeting wins: grab precisely these rows, no name guessing.
+    select = select.in('api_player_id', PLAYER_IDS);
+    console.log(`Targeting ${PLAYER_IDS.length} player(s) by api_player_id: ${PLAYER_IDS.join(', ')}`);
+  } else if (PLAYER_NAMES) {
     const orClause = PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(',');
     select = select.or(orClause);
   }

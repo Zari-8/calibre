@@ -3636,3 +3636,14 @@ html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
 .plp-compare-picker__row b{color:var(--text);font:700 13px/1.2 "Barlow";white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .plp-compare-picker__row small{color:var(--text3);font:600 11px/1.2 "Barlow"}
 .plp-compare-picker__row svg{color:var(--lime);flex-shrink:0}
+
+/* Battle hero share row (X-shareable matchup) */
+.featured-battle__share{
+  display:flex; align-items:center; justify-content:center; gap:14px;
+  margin-top:16px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.06);
+  flex-wrap:wrap;
+}
+.featured-battle__share-label{
+  font-family:'Barlow Condensed',sans-serif; text-transform:uppercase;
+  letter-spacing:0.08em; font-size:0.78rem; color:var(--text-muted,#8a8f98);
+}

@@ -210,19 +210,43 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
   return merged;
 }
 
-// Pick the player's PRIMARY league line from the API statistics array instead of
-// statistics[0] (often a cup, super cup, or whatever competition the API lists
-// first — the source of the "1 app / 7 goals" nonsense). Prefer real league
-// competitions, then the most-played entry: the same rule the enrichment backend
-// uses, so the live modal agrees with the database.
+// Aggregate the player's FULL competitive season (league + cups + continental,
+// friendlies excluded) into one synthetic line — matching the enrichment backend,
+// so the modal shows the same all-competitions totals and rating as the rest of
+// the app instead of an arbitrary single competition.
 function pickLeagueLine(statistics){
   const rows = Array.isArray(statistics) ? statistics.filter(s => s && s.games) : [];
   if(!rows.length) return null;
   const mins = s => Number(s.games?.minutes) || 0;
-  const isLeague = s => String(s.league?.type || '').toLowerCase() === 'league';
-  const leagues = rows.filter(isLeague);
-  const pool = leagues.length ? leagues : rows;
-  return pool.reduce((best, s) => (mins(s) > mins(best) ? s : best), pool[0]);
+  const friendly = s => {
+    const n = String(s?.league?.name || '').toLowerCase();
+    return [10,667,666].includes(Number(s?.league?.id)) || n.includes('friendl') || n.includes('exhibition') || n.includes('testimonial');
+  };
+  const pool = (rows.filter(s => !friendly(s))).length ? rows.filter(s => !friendly(s)) : rows;
+  const leagueType = pool.filter(s => String(s?.league?.type || '').toLowerCase() === 'league');
+  const primaryPool = leagueType.length ? leagueType : pool;
+  const primary = primaryPool.reduce((b,s) => (mins(s) > mins(b) ? s : b), primaryPool[0]);
+  const sum = sel => pool.reduce((t,s) => t + (Number(sel(s)) || 0), 0);
+  let accW=0, accSum=0, rW=0, rSum=0, pos=null, posMin=-1;
+  for(const s of pool){
+    const m = mins(s);
+    const acc = Number(s?.passes?.accuracy);
+    if(Number.isFinite(acc) && m>0){ accSum += acc*m; accW += m; }
+    const r = parseFloat(s?.games?.rating);
+    if(Number.isFinite(r) && m>0){ rSum += r*m; rW += m; }
+    if(m > posMin){ posMin = m; pos = s?.games?.position || pos; }
+  }
+  return {
+    league: { id: primary?.league?.id, name: primary?.league?.name, type: 'League' },
+    team: primary?.team,
+    games: { minutes: sum(s=>s.games?.minutes), appearences: sum(s=>s.games?.appearences), lineups: sum(s=>s.games?.lineups), position: pos, rating: rW>0 ? (rSum/rW) : null },
+    goals: { total: sum(s=>s.goals?.total), assists: sum(s=>s.goals?.assists) },
+    passes: { total: sum(s=>s.passes?.total), key: sum(s=>s.passes?.key), accuracy: accW>0 ? Math.round(accSum/accW) : null },
+    dribbles: { success: sum(s=>s.dribbles?.success) },
+    tackles: { total: sum(s=>s.tackles?.total), interceptions: sum(s=>s.tackles?.interceptions) },
+    duels: { won: sum(s=>s.duels?.won) },
+    shots: { total: sum(s=>s.shots?.total) },
+  };
 }
 
 // Map an API statistics line onto the shape calibreRating expects, so the live

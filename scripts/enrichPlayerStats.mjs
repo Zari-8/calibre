@@ -108,26 +108,42 @@ async function searchProfiles(name) {
 }
 
 // ── league-true extraction ──────────────────────────────────────────────
-// Pick the player's primary domestic-league line and aggregate ONLY entries
-// that share that league id (so a same-league mid-season move still totals up,
-// but cups / continental comps never inflate the league numbers).
+// Competitions that are NOT competitive football — excluded from totals so a
+// pre-season runout doesn't pollute a player's season line.
+const FRIENDLY_LEAGUE_IDS = new Set([10, 667, 666]);
+function isCompetitive(s) {
+  const id = num(s?.league?.id);
+  const name = String(s?.league?.name || '').toLowerCase();
+  if (FRIENDLY_LEAGUE_IDS.has(id)) return false;
+  return !(name.includes('friendl') || name.includes('exhibition') || name.includes('testimonial'));
+}
+
+// Aggregate a player's FULL competitive season — domestic league + domestic cups
+// + continental (UCL/UEL) — instead of league-only. The API call is already
+// season-scoped, so summing the entries gives the true season total without the
+// multi-season inflation the v1 code had. The primary domestic league still sets
+// league strength downstream.
 function leagueLine(stats, preferredLeagueId) {
   if (!stats.length) return null;
 
   const withMins = stats.filter((s) => num(s?.games?.minutes) > 0);
   const pool = withMins.length ? withMins : stats;
 
-  // primary = stored league_id if it has minutes, else the most-minutes entry
+  // primary = the domestic-league entry that sets league strength (stored
+  // league_id if it has minutes, else the most-played LEAGUE-type entry).
   let primary = null;
   if (preferredLeagueId) {
     primary = pool.find((s) => num(s?.league?.id) === num(preferredLeagueId)) || null;
   }
   if (!primary) {
-    primary = pool.reduce((best, s) => (num(s?.games?.minutes) > num(best?.games?.minutes) ? s : best), pool[0]);
+    const leagueType = pool.filter((s) => String(s?.league?.type || '').toLowerCase() === 'league');
+    const fromPool = leagueType.length ? leagueType : pool;
+    primary = fromPool.reduce((best, s) => (num(s?.games?.minutes) > num(best?.games?.minutes) ? s : best), fromPool[0]);
   }
 
   const lid = num(primary?.league?.id);
-  const lines = pool.filter((s) => num(s?.league?.id) === lid);
+  // Sum ALL competitive competitions this season, not just the primary league.
+  const lines = pool.filter(isCompetitive);
 
   let minutes = 0, apps = 0, starts = 0, passes = 0, key = 0, dribS = 0, dribA = 0;
   let tackles = 0, inter = 0, duelsWon = 0, shots = 0, goals = 0, assists = 0;

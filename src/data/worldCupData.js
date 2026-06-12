@@ -35,6 +35,7 @@ export const breakoutStars = [
   {
     id:       'bs-001',
     name:     'Lamine Yamal',
+    apiPlayerId: 386828,
     age:      18,
     nation:   'Spain',
     flag:     '🇪🇸',
@@ -52,6 +53,7 @@ export const breakoutStars = [
   {
     id:       'bs-003',
     name:     'Arda Güler',
+    apiPlayerId: 291964,
     age:      20,
     nation:   'Turkey',
     flag:     '🇹🇷',

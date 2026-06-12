@@ -153,6 +153,24 @@ export async function getSupabaseTalentCandidates({limit=240}={}){
   return (data || []).map(normalizePlayer);
 }
 
+// Resolve players by their api_player_id — the stable key the enrichment writes.
+// Name lookups miss players stored under accented/legal names (Güler, Neves),
+// so any surface that knows the id should resolve by id and never fall back to a
+// stale hardcoded anchor.
+export async function getSupabasePlayersByApiIds(apiIds=[]){
+  const client = requireSupabase();
+  const ids = (Array.isArray(apiIds)?apiIds:[apiIds]).map(Number).filter(n=>Number.isInteger(n)&&n>0);
+  if(!ids.length) return [];
+
+  const { data, error } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .in('api_player_id',ids);
+
+  if(error) throw error;
+  return (data || []).map(normalizePlayer);
+}
+
 export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
   const client = requireSupabase();
   const query = String(search || '').trim();

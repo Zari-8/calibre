@@ -41,7 +41,12 @@ function productionComponents(player, bucket) {
   const key90=per(player.key_passes,sm), dr90=per(player.dribbles_success ?? player.dribbles,sm);
   const tk90=per(player.tackles,sm), in90=per(player.interceptions,sm), du90=per(player.duels_won,sm), sh90=per(player.shots,sm);
   const ratePts=clamp(g90/0.92*100,0,140), volPts=clamp(num(player.goals)/34*100,0,140);
-  const goalScore=ratePts*0.5+volPts*0.5;
+  // Per-90 efficiency leads. rateTrust scales with minutes actually played: an
+  // established season is judged ~85% on rate (not raw totals), while a small
+  // sample leans on volume — which is naturally low, so a 3-goals-in-200-minutes
+  // cameo can't fake an elite per-90.
+  const rateTrust=clamp(0.50+0.35*(m/2000),0.50,0.85);
+  const goalScore=ratePts*rateTrust+volPts*(1-rateTrust);
   if (bucket==='ATT') {
     const create=clamp(a90/0.30*80+key90/2.5*30,0,116);
     const carry=clamp(dr90/2.1*40+sh90/4.0*28,0,92);

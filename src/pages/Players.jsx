@@ -4,7 +4,7 @@ import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
-import { getSupabasePlayerCount, getSupabasePlayers, searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { getSupabasePlayerCount, getSupabasePlayers, getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 
 const CURATED_PLAYERS = [
@@ -536,19 +536,17 @@ export default function Players(){
   const [risingRows, setRisingRows] = useState(RISING_ANCHORS);
   useEffect(()=>{
     let alive = true;
-    getSupabasePlayers({ names: RISING_ANCHORS.map(a=>a.name), limit: 40 })
+    const ids = RISING_ANCHORS.map(a=>Number(a.apiPlayerId)).filter(Boolean);
+    getSupabasePlayersByApiIds(ids)
       .then(db=>{
         if(!alive || !Array.isArray(db) || !db.length) return;
-        const byId = new Map(), byName = new Map();
+        const byId = new Map();
         for(const p of db){
           const id = Number(p.api_player_id);
           if(Number.isInteger(id) && id>0 && !byId.has(id)) byId.set(id,p);
-          const key = String(p.name||'').toLowerCase();
-          if(!byName.has(key)) byName.set(key,p);
         }
         const merged = RISING_ANCHORS.map(a=>{
-          const id = Number(a.apiPlayerId);
-          const hit = (Number.isInteger(id) && byId.has(id)) ? byId.get(id) : byName.get(String(a.name).toLowerCase());
+          const hit = byId.get(Number(a.apiPlayerId));
           if(!hit) return a;
           const clean = Object.fromEntries(Object.entries(hit).filter(([,v])=>v!=null && v!==''));
           return { ...a, ...clean };

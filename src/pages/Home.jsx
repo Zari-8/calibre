@@ -6,7 +6,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { playerIdFor } from '../data/playerIds.js';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { calibreRating } from '../services/calibreRating.js';
-import { getSupabasePlayers } from '../services/supabasePlayers.js';
+import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 
 // ─────────────────────────────────────────────────────────────────────────
 // Real anchor players for the landing showcase. Each row carries its actual
@@ -16,7 +16,7 @@ import { getSupabasePlayers } from '../services/supabasePlayers.js';
 // players, no invented ratings.
 // ─────────────────────────────────────────────────────────────────────────
 const ANCHORS = [
-  { name:'Lamine Yamal', apiPlayerId:152981, club:'Barcelona', role:'Wide creator', origin:'La Liga · Spain', img:'/assets/players/lamine-yamal.jpg',
+  { name:'Lamine Yamal', apiPlayerId:386828, club:'Barcelona', role:'Wide creator', origin:'La Liga · Spain', img:'/assets/players/lamine-yamal.jpg',
     position:'FWD', league_id:140, age:18, minutes:3828, appearances:50, starts:46, goals:26, assists:17, api_average_rating:7.91,
     stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
 
@@ -28,11 +28,11 @@ const ANCHORS = [
     position:'FWD', league_id:140, age:27, minutes:3755, appearances:43, starts:42, goals:43, assists:6, api_average_rating:7.59,
     stats_minutes:3755, passes:1410, pass_accuracy:85.6, key_passes:102, dribbles_success:102, tackles:6, interceptions:4, duels_won:164, shots:163 },
 
-  { name:'Michael Olise', apiPlayerId:21548, club:'Bayern München', role:'Wide creator', origin:'Bundesliga · France', img:'/assets/players/neutral-player.svg',
+  { name:'Michael Olise', apiPlayerId:19617, club:'Bayern München', role:'Wide creator', origin:'Bundesliga · France', img:'/assets/players/neutral-player.svg',
     position:'MID', league_id:78, age:24, minutes:4387, appearances:59, starts:48, goals:25, assists:26, api_average_rating:7.66,
     stats_minutes:4387, passes:2808, pass_accuracy:80.6, key_passes:133, dribbles_success:139, tackles:42, interceptions:23, duels_won:308, shots:127 },
 
-  { name:'Vitinha', apiPlayerId:61932, club:'Paris Saint-Germain', role:'Deep controller', origin:'Ligue 1 · Portugal', img:'/assets/players/vitinha.jpg',
+  { name:'Vitinha', apiPlayerId:128384, club:'Paris Saint-Germain', role:'Deep controller', origin:'Ligue 1 · Portugal', img:'/assets/players/vitinha.jpg',
     position:'MID', league_id:61, age:25, minutes:4512, appearances:55, starts:50, goals:7, assists:10, api_average_rating:7.59,
     stats_minutes:4512, passes:5380, pass_accuracy:93.1, key_passes:78, dribbles_success:24, tackles:54, interceptions:55, duels_won:124, shots:58 },
 
@@ -44,15 +44,15 @@ const ANCHORS = [
     position:'FWD', league_id:39, age:25, minutes:4473, appearances:51, starts:50, goals:42, assists:9, api_average_rating:7.09,
     stats_minutes:4518, passes:588, pass_accuracy:65.2, key_passes:41, dribbles_success:19, tackles:17, interceptions:8, duels_won:164, shots:160 },
 
-  { name:'Raphinha', apiPlayerId:1467, club:'Barcelona', role:'Inside forward', origin:'La Liga · Brazil', img:'/assets/players/neutral-player.svg',
+  { name:'Raphinha', apiPlayerId:1496, club:'Barcelona', role:'Inside forward', origin:'La Liga · Brazil', img:'/assets/players/neutral-player.svg',
     position:'FWD', league_id:140, age:29, minutes:2290, appearances:34, starts:28, goals:21, assists:7, api_average_rating:7.8,
     stats_minutes:2290, passes:1002, pass_accuracy:79.7, key_passes:74, dribbles_success:37, tackles:32, interceptions:10, duels_won:91, shots:82 },
 
-  { name:'Pau Cubarsí', apiPlayerId:407419, club:'Barcelona', role:'Ball-playing defender', origin:'La Liga · Spain', img:'/assets/players/neutral-player.svg',
+  { name:'Pau Cubarsí', apiPlayerId:396623, club:'Barcelona', role:'Ball-playing defender', origin:'La Liga · Spain', img:'/assets/players/neutral-player.svg',
     position:'DEF', league_id:140, age:18, minutes:4054, appearances:46, starts:44, goals:1, assists:0, api_average_rating:7.06,
     stats_minutes:4234, passes:4083, pass_accuracy:90.9, key_passes:7, dribbles_success:1, tackles:61, interceptions:44, duels_won:171, shots:9 },
 
-  { name:'João Neves', apiPlayerId:367975, club:'Paris Saint-Germain', role:'Box-to-box', origin:'Ligue 1 · Portugal', img:'/assets/players/neutral-player.svg',
+  { name:'João Neves', apiPlayerId:335051, club:'Paris Saint-Germain', role:'Box-to-box', origin:'Ligue 1 · Portugal', img:'/assets/players/neutral-player.svg',
     position:'MID', league_id:61, age:21, minutes:3128, appearances:43, starts:36, goals:9, assists:5, api_average_rating:7.21,
     stats_minutes:3244, passes:2164, pass_accuracy:82.1, key_passes:35, dribbles_success:20, tackles:85, interceptions:34, duels_won:204, shots:44 },
 
@@ -108,25 +108,20 @@ export default function Home() {
 
   useEffect(() => {
     let alive = true;
-    getSupabasePlayers({ names: ANCHORS.map(a => a.name), limit: 80 })
+    const ids = ANCHORS.map(a => Number(a.apiPlayerId)).filter(Boolean);
+    getSupabasePlayersByApiIds(ids)
       .then(db => {
         if(!alive || !Array.isArray(db) || !db.length) return;
         const byId = new Map();
-        const byName = new Map();
         for(const p of db){
           const id = Number(p.api_player_id);
           if(Number.isInteger(id) && id > 0 && !byId.has(id)) byId.set(id, p);
-          const key = String(p.name || '').toLowerCase();
-          if(!byName.has(key)) byName.set(key, p);
         }
         const merged = ANCHORS.map(a => {
-          const id = Number(a.apiPlayerId);
-          const hit = (Number.isInteger(id) && byId.has(id))
-            ? byId.get(id)
-            : byName.get(String(a.name).toLowerCase());
+          const hit = byId.get(Number(a.apiPlayerId));
           if(!hit) return withComputed(a);
-          // Let live, non-null DB values win; keep embedded stats as the floor
-          // (so a matched-but-unenriched row never wipes real numbers).
+          // Live, non-null DB values win; embedded stats stay as the floor so a
+          // matched-but-unenriched row never wipes real numbers.
           const clean = Object.fromEntries(Object.entries(hit).filter(([, v]) => v != null && v !== ''));
           return withComputed({ ...a, ...clean });
         });

@@ -142,7 +142,12 @@ function leagueLine(stats, preferredLeagueId) {
   }
 
   const lid = num(primary?.league?.id);
-  // Sum ALL competitive competitions this season, not just the primary league.
+
+  // Sum ALL OFFICIAL competitions this season — domestic league + domestic cups
+  // + continental + competitive national-team matches — and exclude only
+  // friendlies/exhibitions (isCompetitive). We do NOT restrict to the club:
+  // per-90 normalisation (downstream) handles the extra minutes honestly, so a
+  // World Cup or Nations League run counts as the real official football it is.
   const lines = pool.filter(isCompetitive);
 
   let minutes = 0, apps = 0, starts = 0, passes = 0, key = 0, dribS = 0, dribA = 0;

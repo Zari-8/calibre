@@ -6,7 +6,7 @@ import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { playerIdFor } from '../data/playerIds.js';
-import { searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { getFixturesByDate, getFixtureEvents } from '../services/apiFootball.js';
 import useAuth from '../hooks/useAuth.js';
@@ -221,21 +221,23 @@ export default function WorldCup() {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const entries = await Promise.all(breakoutStars.map(async (star) => {
-        try {
-          const rows = await searchSupabasePlayers(star.name, { limit: 5 });
-          const norm = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-          const surname = norm(star.name).split(' ').pop();
-          const match = (rows || [])
-            .filter(r => norm(r.name).includes(surname) && Number(r.api_player_id ?? r.apiPlayerId) > 0)
-            .sort((a, b) => (Number(b.minutes) || 0) - (Number(a.minutes) || 0))[0] || null;
+      try {
+        const ids = breakoutStars.map(s => Number(s.apiPlayerId)).filter(Boolean);
+        const rows = await getSupabasePlayersByApiIds(ids);
+        const byId = new Map();
+        for (const r of rows) {
+          const id = Number(r.api_player_id ?? r.apiPlayerId);
+          if (Number.isInteger(id) && id > 0) byId.set(id, r);
+        }
+        const entries = breakoutStars.map((star) => {
+          const match = byId.get(Number(star.apiPlayerId));
           if (!match) return [star.name, null];
           const scored = calibreRating(match);
           if (scored.rating == null) return [star.name, null];
-          return [star.name, { rating: scored.rating, apiPlayerId: Number(match.api_player_id ?? match.apiPlayerId) || null }];
-        } catch { return [star.name, null]; }
-      }));
-      if (alive) setLiveRatings(Object.fromEntries(entries.filter(e => e[1])));
+          return [star.name, { rating: scored.rating, apiPlayerId: Number(star.apiPlayerId) || null }];
+        });
+        if (alive) setLiveRatings(Object.fromEntries(entries.filter(e => e[1])));
+      } catch { /* keep editorial wcRating fallback on failure */ }
     })();
     return () => { alive = false; };
   }, []);

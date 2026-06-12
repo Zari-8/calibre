@@ -21,8 +21,8 @@ const ANCHORS = [
     stats_minutes:3828, passes:2231, pass_accuracy:80.9, key_passes:119, dribbles_success:232, tackles:57, interceptions:22, duels_won:394, shots:124 },
 
   { name:'Harry Kane', apiPlayerId:184, club:'Bayern München', role:'Complete forward', origin:'Bundesliga · England', img:'/assets/players/neutral-player.svg',
-    position:'FWD', league_id:78, age:32, minutes:4407, appearances:58, starts:51, goals:64, assists:8, api_average_rating:7.64,
-    stats_minutes:4466, passes:1331, pass_accuracy:78.9, key_passes:74, dribbles_success:34, tackles:34, interceptions:14, duels_won:240, shots:165 },
+    position:'FWD', league_id:78, age:32, minutes:4100, appearances:50, starts:47, goals:61, assists:7, api_average_rating:7.8,
+    stats_minutes:4100, passes:1331, pass_accuracy:78.9, key_passes:74, dribbles_success:34, tackles:34, interceptions:14, duels_won:240, shots:165 },
 
   { name:'Kylian Mbappé', apiPlayerId:278, club:'Real Madrid', role:'Pure striker', origin:'La Liga · France', img:'/assets/players/kylian-mbappe.jpg',
     position:'FWD', league_id:140, age:27, minutes:3755, appearances:43, starts:42, goals:43, assists:6, api_average_rating:7.59,

@@ -151,10 +151,33 @@ function registryTalentFromProfile(profile) {
   const readiness = hasEvidence
     ? clamp(Math.round(ratingValue * 0.6 + experience * 0.2 + clamp(startRate * 100, 0, 100) * 0.2), 40, 99)
     : 60;
-  const potential =
-    Number.isFinite(Number(rating))
-      ? clamp(Math.round(Number(rating) + (age <= 19 ? 7 : age <= 21 ? 5 : 3)), 0, 99)
-      : 'Review';
+  const ratingNum = Number.isFinite(Number(rating)) ? Number(rating) : null;
+  // Real projection: current level + development headroom. Younger players and
+  // those with room below the elite ceiling get more upside; a player already
+  // near the top, or older, gets a smaller, honest bump. Trajectory (the engine's
+  // age/form component) nudges it. Not a fixed prediction — a development band.
+  const potential = ratingNum == null
+    ? 'Review'
+    : (() => {
+        const youth    = clamp((23 - age) / (23 - 16), 0, 1);              // 1.0 ≤16 → 0 ≥23
+        const headroom = clamp((92 - ratingNum) / 30, 0, 1);              // less ceiling near elite
+        const traj     = breakdown?.Trajectory != null
+          ? clamp((breakdown.Trajectory - 55) / 30, 0, 1)
+          : youth;
+        const upside   = Math.round(2 + youth * 7 + headroom * 3 + traj * 2); // ~2..14
+        return clamp(ratingNum + upside, ratingNum, 96);
+      })();
+  // Card momentum signal — the real ceiling headroom, replacing the old
+  // "EVIDENCE READY" placeholder. Shows how much projected room is left.
+  const headroomDelta = (ratingNum != null && typeof potential === 'number')
+    ? potential - ratingNum
+    : null;
+  const momentum = headroomDelta == null
+    ? 'Awaiting stats'
+    : headroomDelta >= 6 ? `High ceiling +${headroomDelta}`
+    : headroomDelta >= 3 ? `Rising +${headroomDelta}`
+    : headroomDelta >= 1 ? `Near ceiling +${headroomDelta}`
+    : 'At projected ceiling';
   const nextStep =
     minutes >= 1800
       ? 'Ready for a higher-level role-fit review'
@@ -179,14 +202,14 @@ function registryTalentFromProfile(profile) {
     breakdown,
     readiness,
     potential,
-    trend: hasEvidence ? 'EVIDENCE READY' : 'PENDING',
+    trend: momentum,
     trajectory: hasEvidence ? 'rising' : 'profile',
     region: regionForNation(profile.nationality),
     nextStep,
     pathway: [
       profile.club || profile.team || 'Current club',
       nextStep,
-      'Calibre Next Step projection review'
+      (typeof potential === 'number' ? `Projected ceiling · ${potential}` : 'Projection pending')
     ],
     image: profile.image || profile.img || null,
     provisional: !hasEvidence,
@@ -253,7 +276,7 @@ function Pathway({ player }) {
       <div className="trajectory-panel__metrics">
         <div><span>Current rating</span><strong>{player.provisional ? 'Pending ingest' : player.rating}</strong></div>
         <div><span>Potential band</span><strong>{player.provisional ? 'Model pending' : player.potential}</strong></div>
-        <div><span>30-day movement</span><strong>{player.provisional ? 'Awaiting stats' : player.trend}</strong></div>
+        <div><span>Projected trajectory</span><strong>{player.provisional ? 'Awaiting stats' : player.trend}</strong></div>
         <div><span>League context</span><strong>{player.league}</strong></div>
       </div>
     </section>

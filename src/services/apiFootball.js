@@ -383,6 +383,12 @@ export async function getFixtureLineups(fixtureId) {
   return data?.response ?? [];
 }
 
+export async function getFixtureEvents(fixtureId) {
+  if (!fixtureId) return [];
+  const data = await apiFetch('fixtures/events', { fixture:fixtureId }, { ttl:TTL.fixtures });
+  return data?.response ?? [];
+}
+
 export async function getTransfersForPlayer(playerId) {
   if (!playerId) return [];
   const data = await apiFetch('transfers', { player:playerId }, { ttl:TTL.transfers });

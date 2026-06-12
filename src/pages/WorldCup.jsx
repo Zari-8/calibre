@@ -1,12 +1,16 @@
 import { useEffect, useState } from 'react';
-import { Star, Zap, Trophy, ArrowRight } from 'lucide-react';
+import { Star, Zap, Trophy, ArrowRight, Clock3, Swords, ShieldCheck, BarChart3, MessageSquare, Send, LockKeyhole, X } from 'lucide-react';
 import Panel from '../components/Panel.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { playerIdFor } from '../data/playerIds.js';
 import { searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
+import { getFixturesByDate, getFixtureEvents } from '../services/apiFootball.js';
+import useAuth from '../hooks/useAuth.js';
+import { loadForumPosts, submitForumPost } from '../services/community.js';
 import {
   WC_CONFIG,
   liveMoments,
@@ -93,6 +97,118 @@ function BreakoutCard({ star, live }) {
 }
 
 // ── Main page ────────────────────────────────────────────────────
+// ── World Cup Matchroom (self-contained; mirrors the Competitions room so it can
+// be deleted wholesale with the page once the tournament ends, touching nothing
+// else). Fed by API-Football World Cup fixtures (league 1) + fixtures/events.
+const WC_LEAGUE_ID = 1;
+const WC_LIVE = ['1H','HT','2H','ET','BT','P','SUSP','INT','LIVE'];
+const WC_DONE = ['FT','AET','PEN'];
+
+function wcSlugify(v=''){ return String(v).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+function wcHeadline(home, away){
+  const seed = `${home}-${away}`.split('').reduce((t,c)=>t+c.charCodeAt(0),0);
+  const prompts = [
+    `Where does ${home} vs ${away} break open?`,
+    `Can ${home} control the game before ${away} turn it into a transition battle?`,
+    `Which side wins the territory war: ${home} or ${away}?`,
+    `Does this game belong to ${home}'s build-up or ${away}'s counterpress?`,
+    `Who controls the spaces that decide ${home} vs ${away}?`,
+  ];
+  return prompts[seed % prompts.length];
+}
+function buildMatchroom(fx, events){
+  if(!fx?.teams || !fx?.fixture) return null;
+  const home = fx.teams.home?.name || 'Home';
+  const away = fx.teams.away?.name || 'Away';
+  const status = fx.fixture.status?.short || 'NS';
+  const live = WC_LIVE.includes(status);
+  const done = WC_DONE.includes(status);
+  const gh = fx.goals?.home, ga = fx.goals?.away;
+  const timeline = (events||[])
+    .filter(e => e?.type === 'Goal' || e?.type === 'Card')
+    .map(e => ({
+      minute: e.time?.elapsed!=null ? `${e.time.elapsed}'${e.time.extra?`+${e.time.extra}`:''}` : '',
+      type: e.type, detail: e.detail || '', player: e.player?.name || '', team: e.team?.name || '',
+      red: e.type === 'Card' && /red/i.test(e.detail || ''),
+    }));
+  const reds = timeline.filter(t => t.red);
+  return {
+    home, away, status, live, done,
+    homeLogo: fx.teams.home?.logo || '', awayLogo: fx.teams.away?.logo || '',
+    score: (gh!=null && ga!=null) ? `${gh} – ${ga}` : 'vs',
+    elapsed: fx.fixture.status?.elapsed,
+    kickoff: fx.fixture.date ? new Date(fx.fixture.date).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : '',
+    venue: fx.fixture.venue?.name || '',
+    headline: wcHeadline(home, away),
+    pregame: `${home} and ${away} meet in the World Cup Matchroom. The Calibre layer frames the argument around territory, progression and how each side protects transition — not analysis recycled from another game.`,
+    keyDuel: `${home} progression lanes vs ${away} transition protection`,
+    postgame: done
+      ? `Full time: ${home} ${gh}–${ga} ${away}.${reds.length ? ` ${reds.length} red card${reds.length>1?'s':''} shaped it — ${reds.map(r=>`${r.player} (${r.team})`).join(', ')}.` : ''} The verdict thread stays open below.`
+      : null,
+    timeline, reds: reds.length, fixtureId: fx.fixture.id,
+    slug: wcSlugify(`world-cup-${fx.fixture.id || `${home}-${away}`}`),
+  };
+}
+
+function WCMatchRoom({ room, openForum }){
+  if(!room) return null;
+  return (
+    <section className="matchroom-card wc-matchroom">
+      <div className="matchroom-topline">
+        <span><i/> World Cup Matchroom</span>
+        <em>{room.live ? `LIVE ${room.elapsed?`${room.elapsed}'`:''}` : room.done ? 'FULL TIME' : 'UPCOMING'}</em>
+      </div>
+      <div className="matchroom-grid">
+        <div className="matchroom-scoreboard">
+          <div className="matchroom-kickoff"><Clock3 size={13}/> {room.kickoff}{room.venue?` · ${room.venue}`:''}</div>
+          <div className="matchroom-teams">
+            <div><ApiTeamLogo src={room.homeLogo} name={room.home}/><b>{room.home}</b></div>
+            <strong>{room.score}</strong>
+            <div><ApiTeamLogo src={room.awayLogo} name={room.away}/><b>{room.away}</b></div>
+          </div>
+          <button type="button" className="btn btn--lime btn--sm" onClick={openForum}>OPEN MATCH FORUM <MessageSquare size={13}/></button>
+          <p>Pregame analysis, live events and the post-match verdict stay attached to this fixture.</p>
+        </div>
+        <div className="matchroom-analysis">
+          <span className="matchroom-label"><Swords size={13}/> {room.done ? 'Postgame verdict' : 'Pregame analysis'}</span>
+          <h2>{room.headline}</h2>
+          <p>{room.done && room.postgame ? room.postgame : room.pregame}</p>
+          <div className="matchroom-key"><ShieldCheck size={14}/><span><b>KEY DUEL</b>{room.keyDuel}</span></div>
+        </div>
+        <div className="matchroom-signals">
+          <span className="matchroom-label"><BarChart3 size={13}/> Match events</span>
+          {room.timeline.length ? (
+            <div className="wc-events">
+              {room.timeline.map((e,i)=>(
+                <div key={i} className={`wc-event ${e.red?'wc-event--red':''}`}>
+                  <span className="wc-event-min">{e.minute}</span>
+                  <span className="wc-event-icon">{e.type==='Goal'?'⚽':(e.red?'🟥':'🟨')}</span>
+                  <span className="wc-event-txt"><b>{e.player}</b>{e.team?` · ${e.team}`:''}{e.type==='Card'?` · ${e.detail}`:''}</span>
+                </div>
+              ))}
+            </div>
+          ) : <small>Goals and cards appear here once the fixture feed publishes them.</small>}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function WCForumModal({ room, onClose }){
+  const { user } = useAuth();
+  const [draft, setDraft] = useState('');
+  const [posts, setPosts] = useState([]);
+  const [notice, setNotice] = useState('');
+  useEffect(()=>{ loadForumPosts(room.slug).then(setPosts).catch(()=>setPosts([])); },[room.slug]);
+  const post = async () => {
+    const clean = draft.trim(); if(!clean || !user) return;
+    try { const saved = await submitForumPost({threadSlug:room.slug, body:clean, user}); setPosts(c=>[saved,...c]); setDraft(''); setNotice('Post added to this match thread.'); }
+    catch(e){ setNotice(e?.message || 'Post could not be saved.'); }
+  };
+  const requestAccess = ()=>{ onClose(); window.dispatchEvent(new CustomEvent('calibre:open-auth',{detail:{returnTo:'/world-cup'}})); };
+  return <div className="match-forum-modal" role="presentation" onMouseDown={onClose}><section className="match-forum-modal__dialog" role="dialog" aria-modal="true" onMouseDown={e=>e.stopPropagation()}><button className="match-forum-modal__close" type="button" aria-label="Close match forum" onClick={onClose}><X size={18}/></button><div className="match-forum-modal__kicker"><MessageSquare size={14}/> World Cup matchroom · pregame to postgame</div><h3>{room.home} <em>vs</em> {room.away}</h3><p>The thread travels with the fixture. Pregame arguments, live reactions and post-match verdicts stay in one place.</p>{user?<><div className="match-forum-composer"><textarea rows="3" value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Add your tactical argument…"/><button type="button" className="btn btn--lime btn--sm" onClick={post}><Send size={13}/> POST</button></div>{notice&&<small>{notice}</small>}<div className="match-forum-posts">{posts.length?posts.map((item,i)=><article key={`${item.created_at}-${i}`}><b>{item.author_email || '@CalibreUser'}</b><p>{item.body}</p><small>{item.created_at?new Date(item.created_at).toLocaleString():'now'}</small></article>):<div className="comp-empty-state">Start the tactical discussion.</div>}</div></>:<div className="match-forum-locked"><LockKeyhole size={20}/><div><b>Verified account required</b><span>Create an account or log in before posting in a match thread.</span></div><button type="button" className="btn btn--lime btn--sm" onClick={requestAccess}>LOG IN OR CREATE ACCOUNT</button></div>}</section></div>;
+}
+
 export default function WorldCup() {
   const daysLeft = useDaysToWC();
   const isLive   = daysLeft === 0;
@@ -125,6 +241,29 @@ export default function WorldCup() {
   }, []);
 
   const [activeEdition,  setActiveEdition]  = useState(iconicEditions[iconicEditions.length - 1]);
+
+  // Featured World Cup match: today's live game, else the most recent finished,
+  // else the next upcoming — with goals/cards from the events feed.
+  const [room, setRoom] = useState(null);
+  const [forumOpen, setForumOpen] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const today = new Date().toISOString().slice(0,10);
+        const all = await getFixturesByDate(today);
+        const wc = (all || []).filter(f => f?.league?.id === WC_LEAGUE_ID);
+        const pick = wc.find(f => WC_LIVE.includes(f.fixture?.status?.short))
+          || wc.filter(f => WC_DONE.includes(f.fixture?.status?.short)).pop()
+          || wc[0];
+        if(!pick || !alive) return;
+        let events = [];
+        try { events = await getFixtureEvents(pick.fixture.id); } catch { /* no events yet */ }
+        if(alive) setRoom(buildMatchroom(pick, events));
+      } catch { /* leave room hidden if the WC feed is quiet */ }
+    })();
+    return () => { alive = false; };
+  }, []);
   const [momentFilter,   setMomentFilter]   = useState('all');
   const [factCategory,   setFactCategory]   = useState('all');
   const [factSearch,     setFactSearch]     = useState('');
@@ -167,6 +306,13 @@ export default function WorldCup() {
           </div>
         )}
       </div>
+
+      {room && (
+        <section className="wc-section">
+          <SectionHead eyebrow="Featured Fixture" title="World Cup Matchroom" />
+          <WCMatchRoom room={room} openForum={() => setForumOpen(true)} />
+        </section>
+      )}
 
       {/* ── LIVE MOMENTS ── */}
       <section className="wc-section">
@@ -354,6 +500,8 @@ export default function WorldCup() {
           Get Founder Pass <ArrowRight size={14} />
         </button>
       </div>
+
+      {forumOpen && room && <WCForumModal room={room} onClose={() => setForumOpen(false)} />}
 
     </div>
   );

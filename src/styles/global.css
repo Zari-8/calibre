@@ -3664,3 +3664,14 @@ html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
   font-size:0.62rem; letter-spacing:0.12em; text-transform:uppercase;
   color:var(--text-muted,#8a8f98); margin-top:3px;
 }
+
+/* World Cup matchroom — events timeline (reuses .matchroom-* from Competitions) */
+.wc-matchroom{ margin-top:8px; }
+.wc-events{ display:flex; flex-direction:column; gap:4px; max-height:230px; overflow:auto; padding-right:4px; }
+.wc-event{ display:grid; grid-template-columns:42px 20px 1fr; align-items:center; gap:8px;
+  font-size:0.82rem; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.wc-event:last-child{ border-bottom:none; }
+.wc-event-min{ color:var(--text-muted,#8a8f98); font-variant-numeric:tabular-nums; text-align:right; }
+.wc-event-icon{ text-align:center; }
+.wc-event-txt b{ font-weight:600; }
+.wc-event--red{ background:rgba(229,57,53,0.10); border-radius:6px; padding:5px 6px; border-bottom:none; }

@@ -139,6 +139,119 @@ function isCompetitive(s) {
   return !(name.includes('friendl') || name.includes('exhibition') || name.includes('testimonial'));
 }
 
+// ── competition classification + strength (for the 70/30 base+overlay blend) ─
+// CLUB continental competitions → overlay. Strength = how strong the arena is.
+const CONTINENTAL_STRENGTH = {
+  2:1.00,    // UEFA Champions League
+  531:0.95,  // UEFA Super Cup
+  15:0.90,   // FIFA Club World Cup
+  3:0.85,    // UEFA Europa League
+  13:0.85,   // CONMEBOL Libertadores
+  541:0.78,  // CONMEBOL Recopa
+  11:0.72,   // CONMEBOL Sudamericana
+  848:0.70,  // UEFA Europa Conference League
+  12:0.68,   // CAF Champions League
+  16:0.68,   // CONCACAF Champions
+  17:0.68,   // AFC Champions League
+};
+// COMPETITIVE national-team competitions → overlay. Friendlies (club OR country)
+// are caught by isCompetitive and fall to the friendly bucket instead.
+const NATIONAL_STRENGTH = {
+  1:1.00,    // World Cup (finals)
+  4:0.95,    // UEFA Euro (finals)
+  9:0.90,    // Copa América
+  6:0.80,    // Africa Cup of Nations
+  5:0.78,    // UEFA Nations League
+  7:0.68,    // AFC Asian Cup
+  22:0.68,   // CONCACAF Gold Cup
+  34:0.74,29:0.70,32:0.70,30:0.68,31:0.68,33:0.62,  // World Cup qualifiers (S.America/Africa/Europe/Asia/Concacaf/Oceania)
+  960:0.70,  // Euro qualifiers
+};
+const NATIONAL_DEFAULT = 0.70;   // an unenumerated 'World' competitive comp (e.g. a qualifier we didn't list)
+
+// 'friendly' | 'continental' | 'national' | 'base'  (base = domestic league or domestic cup)
+export function classifyComp(s) {
+  const id = num(s?.league?.id);
+  if (!isCompetitive(s)) return 'friendly';
+  if (CONTINENTAL_STRENGTH[id] != null) return 'continental';
+  if (NATIONAL_STRENGTH[id] != null) return 'national';
+  const country = String(s?.league?.country || '').toLowerCase();
+  const type = String(s?.league?.type || '').toLowerCase();
+  if (country === 'world' && type === 'cup') return 'national';   // unlisted NT/qualifier
+  return 'base';
+}
+function compStrength(s) {
+  const id = num(s?.league?.id);
+  if (CONTINENTAL_STRENGTH[id] != null) return CONTINENTAL_STRENGTH[id];
+  if (NATIONAL_STRENGTH[id] != null) return NATIONAL_STRENGTH[id];
+  return NATIONAL_DEFAULT;
+}
+
+// Sum a set of statistics entries into one stat line (identical maths to leagueLine).
+function accumulate(entries) {
+  let minutes=0,apps=0,starts=0,passes=0,key=0,dribS=0,dribA=0;
+  let tackles=0,inter=0,duelsWon=0,shots=0,goals=0,assists=0;
+  let accSum=0,accW=0,ratingSum=0,ratingW=0,pos=null,posMin=-1;
+  for (const s of entries) {
+    const m=num(s?.games?.minutes);
+    minutes+=m; apps+=num(s?.games?.appearences); starts+=num(s?.games?.lineups);
+    passes+=num(s?.passes?.total); key+=num(s?.passes?.key);
+    dribS+=num(s?.dribbles?.success); dribA+=num(s?.dribbles?.attempts);
+    tackles+=num(s?.tackles?.total); inter+=num(s?.tackles?.interceptions);
+    duelsWon+=num(s?.duels?.won); shots+=num(s?.shots?.total);
+    goals+=num(s?.goals?.total); assists+=num(s?.goals?.assists);
+    const accRaw=s?.passes?.accuracy;
+    if (accRaw!=null && m>0){ const total=num(s?.passes?.total);
+      const pct=Number(accRaw)<=100?Number(accRaw):(total>0?(Number(accRaw)/total)*100:null);
+      if (pct!=null){ accSum+=pct*m; accW+=m; } }
+    const r=parseFloat(s?.games?.rating);
+    if (Number.isFinite(r)&&m>0){ ratingSum+=r*m; ratingW+=m; }
+    if (m>posMin){ posMin=m; pos=s?.games?.position||pos; }
+  }
+  return { minutes, stats_minutes:minutes, appearances:apps, starts, goals, assists,
+    passes, key_passes:key, dribbles_success:dribS, dribbles_attempts:dribA,
+    tackles, interceptions:inter, duels_won:duelsWon, shots,
+    pass_accuracy: accW>0?Math.round((accSum/accW)*10)/10:null,
+    api_average_rating: ratingW>0?Math.round((ratingSum/ratingW)*100)/100:null,
+    position: pos };
+}
+
+// Build the base / friendly / overlay splits the rating engine blends.
+// base = domestic league + domestic cups (strength from the primary league)
+// friendly = club + international friendlies (engine credits availability only)
+// overlay = continental + competitive national-team, with a minutes-weighted strength
+export function competitionSplits(stats, preferredLeagueId) {
+  if (!stats || !stats.length) return null;
+  const withMins = stats.filter((s)=>num(s?.games?.minutes)>0);
+  const pool = withMins.length ? withMins : stats;
+
+  let primary=null;
+  if (preferredLeagueId) primary = pool.find((s)=>num(s?.league?.id)===num(preferredLeagueId)) || null;
+  if (!primary){
+    const lg=pool.filter((s)=>String(s?.league?.type||'').toLowerCase()==='league');
+    const from=lg.length?lg:pool;
+    primary=from.reduce((b,s)=>(num(s?.games?.minutes)>num(b?.games?.minutes)?s:b),from[0]);
+  }
+  const baseLid=num(primary?.league?.id)||null;
+
+  const groups={ base:[], friendly:[], continental:[], national:[] };
+  for (const s of pool) groups[classifyComp(s)].push(s);
+
+  const base = accumulate(groups.base);
+  base.league_id = baseLid;
+  base.league_name = primary?.league?.name || null;
+
+  const friendly = accumulate(groups.friendly);
+
+  const overlayEntries = [...groups.continental, ...groups.national];
+  const overlay = accumulate(overlayEntries);
+  let sW=0, sWt=0;
+  for (const s of overlayEntries){ const m=num(s?.games?.minutes); if (m>0){ sW+=compStrength(s)*m; sWt+=m; } }
+  overlay.strength = sWt>0 ? Math.round((sW/sWt)*1000)/1000 : 0.95;
+
+  return { base, friendly, overlay };
+}
+
 // Aggregate a player's FULL competitive season — domestic league + domestic cups
 // + continental (UCL/UEL) — instead of league-only. The API call is already
 // season-scoped, so summing the entries gives the true season total without the
@@ -233,10 +346,10 @@ async function enrichById(apiId, preferredLeagueId) {
     calls++;
     const stats = await fetchPlayerStats(apiId, season);
     const line = leagueLine(stats, preferredLeagueId);
-    if (line && line.stats_minutes > 0) return { season, line, calls };
+    if (line && line.stats_minutes > 0) return { season, line, stats, calls };
     await sleep(DELAY_MS);
   }
-  return { season: null, line: null, calls };
+  return { season: null, line: null, stats: null, calls };
 }
 
 // ── main ──────────────────────────────────────────────────────────────────
@@ -280,7 +393,7 @@ async function main() {
     }
 
     try {
-      let { season, line, calls: c } = await enrichById(row.api_player_id, row.league_id);
+      let { season, line, stats, calls: c } = await enrichById(row.api_player_id, row.league_id);
       calls += c;
       let usedId = row.api_player_id;
       let didRemap = false;
@@ -319,7 +432,7 @@ async function main() {
           for (const cand of ranked.slice(0, 2)) {
             const res = await enrichById(cand.id, row.league_id); calls += res.calls;
             if (res.line && res.line.stats_minutes > 0) {
-              season = res.season; line = res.line; usedId = cand.id; didRemap = true;
+              season = res.season; line = res.line; stats = res.stats; usedId = cand.id; didRemap = true;
               break;
             }
             await sleep(DELAY_MS);
@@ -341,6 +454,13 @@ async function main() {
       }
 
       const accFixed = PASS_ACCURACY_OVERRIDE[Number(row.api_player_id)] ?? line.pass_accuracy;
+
+      // Competition splits for the 70/30 base+overlay blend (additive — the flat
+      // fields above still drive the competitive-only card display).
+      const splits = competitionSplits(stats, row.league_id);
+      const ovrAcc = PASS_ACCURACY_OVERRIDE[Number(usedId)] ?? PASS_ACCURACY_OVERRIDE[Number(row.api_player_id)];
+      if (splits && splits.base && ovrAcc != null) splits.base.pass_accuracy = ovrAcc;
+
       const update = {
         passes: line.passes,
         pass_accuracy: accFixed,
@@ -361,6 +481,7 @@ async function main() {
         stats_updated_at: new Date().toISOString(),
       };
       if (line.api_average_rating != null) update.api_average_rating = line.api_average_rating;
+      if (splits) update.competition_splits = splits;
       if (didRemap) update.api_player_id = usedId;
 
       if (!DRY_RUN) {
@@ -372,7 +493,9 @@ async function main() {
       if (didRemap) remapped++;
       const tag = didRemap ? ` ⟳ remapped→${usedId}` : '';
       const accTag = (PASS_ACCURACY_OVERRIDE[Number(row.api_player_id)] != null) ? ' ✎acc' : '';
-      console.log(`✓ ${row.name}${tag} · ${season} · ${line.league_name || 'league'} · ${line.stats_minutes}' · ${line.appearances}app · ${line.goals}g ${line.assists}a · ${accFixed}%${accTag}`);
+      const sb = (splits && splits.base) || {}, sf = (splits && splits.friendly) || {}, so = (splits && splits.overlay) || {};
+      const splitTag = splits ? ` | base ${sb.minutes||0}'/${sb.goals||0}g/${sb.pass_accuracy ?? '–'}% · fr ${sf.minutes||0}' · ov ${so.minutes||0}'/${so.goals||0}g@${so.strength ?? '–'}` : '';
+      console.log(`✓ ${row.name}${tag} · ${season} · ${line.league_name || 'league'} · ${line.stats_minutes}' · ${line.appearances}app · ${line.goals}g ${line.assists}a · ${accFixed}%${accTag}${splitTag}`);
     } catch (e) {
       failed++;
       console.warn(`✗ ${row.name} (${row.api_player_id}): ${e.message}`);
@@ -384,4 +507,6 @@ async function main() {
   console.log(`\nDone${DRY_RUN ? ' (DRY RUN)' : ''}. enriched=${enriched} remapped=${remapped} skipped=${skipped} no-minutes=${empty} failed=${failed} · api calls=${calls}`);
 }
 
-main().catch((e) => { console.error(e); process.exit(1); });
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main().catch((e) => { console.error(e); process.exit(1); });
+}

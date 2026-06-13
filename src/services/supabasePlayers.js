@@ -43,6 +43,7 @@ const PLAYER_SELECT = [
   'interceptions',
   'duels_won',
   'shots',
+  'competition_splits',
   'source',
   'last_synced_at',
   'profile_enriched_at',
@@ -91,6 +92,8 @@ function normalizePlayer(row){
     interceptions:row.interceptions ?? null,
     duels_won:row.duels_won ?? null,
     shots:row.shots ?? null,
+    // competition splits drive the 70/30 base+overlay blend (jsonb → object)
+    competition_splits:row.competition_splits ?? null,
   };
 }
 

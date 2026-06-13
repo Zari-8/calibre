@@ -8,12 +8,11 @@ import { navigateTo } from '../components/NavLink.jsx';
 import { playerIdFor } from '../data/playerIds.js';
 import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
-import { getFixturesByDate, getFixtureEvents } from '../services/apiFootball.js';
+import { getFixturesByDate, getFixtureEvents, getTeamForm } from '../services/apiFootball.js';
 import useAuth from '../hooks/useAuth.js';
 import { loadForumPosts, submitForumPost } from '../services/community.js';
 import {
   WC_CONFIG,
-  liveMoments,
   breakoutStars,
   iconicEditions,
   iconicGoals,
@@ -116,7 +115,49 @@ function wcHeadline(home, away){
   ];
   return prompts[seed % prompts.length];
 }
-function buildMatchroom(fx, events){
+// Recent W/D/L from a team's last fixtures (most recent first).
+function formFromFixtures(fixtures, teamId){
+  if(!Array.isArray(fixtures)) return '';
+  return fixtures
+    .filter(f => ['FT','AET','PEN'].includes(f?.fixture?.status?.short))
+    .slice(0,5)
+    .map(f => {
+      const hg = f.goals?.home ?? 0, ag = f.goals?.away ?? 0;
+      const isHome = f.teams?.home?.id === teamId;
+      const gf = isHome ? hg : ag, ga = isHome ? ag : hg;
+      return gf > ga ? 'W' : gf < ga ? 'L' : 'D';
+    })
+    .join('');
+}
+
+// Build a real moments feed (goals + red cards) from live/finished fixtures.
+function buildLiveMoments(fixtures, eventsById){
+  const out = [];
+  for(const f of (fixtures||[])){
+    const home = f.teams?.home?.name || 'Home';
+    const away = f.teams?.away?.name || 'Away';
+    const match = `${home} vs ${away}`;
+    const kickoff = f.fixture?.date ? new Date(f.fixture.date).getTime() : Date.now();
+    for(const e of (eventsById[f.fixture?.id] || [])){
+      const elapsed = Number(e.time?.elapsed) || 0;
+      const extra = Number(e.time?.extra) || 0;
+      const min = `${elapsed}${extra?`+${extra}`:''}'`;
+      const player = e.player?.name || '';
+      const team = e.team?.name || '';
+      const when = new Date(kickoff + (elapsed + extra) * 60000).toISOString();
+      if(e.type === 'Goal' && !/missed|cancelled/i.test(e.detail||'')){
+        out.push({ id:`${f.fixture.id}-g-${elapsed}-${player}`, type:'goal', match, time:when,
+          text:`${player || 'Goal'} scores for ${team} — ${min}.` });
+      } else if(e.type === 'Card' && /red/i.test(e.detail||'')){
+        out.push({ id:`${f.fixture.id}-r-${elapsed}-${player}`, type:'red_card', match, time:when,
+          text:`${player} (${team}) sent off — ${min}.` });
+      }
+    }
+  }
+  return out.sort((a,b)=> new Date(b.time) - new Date(a.time));
+}
+
+function buildMatchroom(fx, events, forms = {}){
   if(!fx?.teams || !fx?.fixture) return null;
   const home = fx.teams.home?.name || 'Home';
   const away = fx.teams.away?.name || 'Away';
@@ -132,6 +173,10 @@ function buildMatchroom(fx, events){
       red: e.type === 'Card' && /red/i.test(e.detail || ''),
     }));
   const reds = timeline.filter(t => t.red);
+  const goals = timeline.filter(t => t.type === 'Goal');
+  const scorersFor = (teamName) => goals.filter(g => g.team === teamName && g.player).map(g => g.player);
+  const homeScorers = scorersFor(home), awayScorers = scorersFor(away);
+  const homeForm = forms.home || '', awayForm = forms.away || '';
   return {
     home, away, status, live, done,
     homeLogo: fx.teams.home?.logo || '', awayLogo: fx.teams.away?.logo || '',
@@ -140,10 +185,16 @@ function buildMatchroom(fx, events){
     kickoff: fx.fixture.date ? new Date(fx.fixture.date).toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : '',
     venue: fx.fixture.venue?.name || '',
     headline: wcHeadline(home, away),
-    pregame: `${home} and ${away} meet in the World Cup Matchroom. The Calibre layer frames the argument around territory, progression and how each side protects transition — not analysis recycled from another game.`,
+    homeForm, awayForm,
+    pregame: `${home} and ${away} meet in the Matchroom${fx.fixture.venue?.name ? ` at ${fx.fixture.venue.name}` : ''}.`
+      + ((homeForm || awayForm) ? ` Recent form — ${home}: ${homeForm || 'n/a'}, ${away}: ${awayForm || 'n/a'}.` : '')
+      + ` Calibre frames the argument around territory, progression and how each side protects transition.`,
     keyDuel: `${home} progression lanes vs ${away} transition protection`,
     postgame: done
-      ? `Full time: ${home} ${gh}–${ga} ${away}.${reds.length ? ` ${reds.length} red card${reds.length>1?'s':''} shaped it — ${reds.map(r=>`${r.player} (${r.team})`).join(', ')}.` : ''} The verdict thread stays open below.`
+      ? `Full time: ${home} ${gh}–${ga} ${away}.`
+        + (homeScorers.length ? ` ${home}: ${homeScorers.join(', ')}.` : '')
+        + (awayScorers.length ? ` ${away}: ${awayScorers.join(', ')}.` : '')
+        + (reds.length ? ` ${reds.length} red card${reds.length>1?'s':''}: ${reds.map(r=>`${r.player} (${r.team})`).join(', ')}.` : '')
       : null,
     timeline, reds: reds.length, fixtureId: fx.fixture.id,
     slug: wcSlugify(`world-cup-${fx.fixture.id || `${home}-${away}`}`),
@@ -174,6 +225,9 @@ function WCMatchRoom({ room, openForum }){
           <h2>{room.headline}</h2>
           <p>{room.done && room.postgame ? room.postgame : room.pregame}</p>
           <div className="matchroom-key"><ShieldCheck size={14}/><span><b>KEY DUEL</b>{room.keyDuel}</span></div>
+          {!room.done && (room.homeForm || room.awayForm) && (
+            <div className="matchroom-key"><BarChart3 size={14}/><span><b>FORM</b>{room.home} {room.homeForm||'—'} · {room.away} {room.awayForm||'—'}</span></div>
+          )}
         </div>
         <div className="matchroom-signals">
           <span className="matchroom-label"><BarChart3 size={13}/> Match events</span>
@@ -247,6 +301,7 @@ export default function WorldCup() {
   // Featured World Cup match: today's live game, else the most recent finished,
   // else the next upcoming — with goals/cards from the events feed.
   const [room, setRoom] = useState(null);
+  const [liveFeed, setLiveFeed] = useState([]);
   const [forumOpen, setForumOpen] = useState(false);
   useEffect(() => {
     let alive = true;
@@ -258,10 +313,33 @@ export default function WorldCup() {
         const pick = wc.find(f => WC_LIVE.includes(f.fixture?.status?.short))
           || wc.filter(f => WC_DONE.includes(f.fixture?.status?.short)).pop()
           || wc[0];
-        if(!pick || !alive) return;
-        let events = [];
-        try { events = await getFixtureEvents(pick.fixture.id); } catch { /* no events yet */ }
-        if(alive) setRoom(buildMatchroom(pick, events));
+
+        // Pull events for every live/finished fixture (bounded) to drive the
+        // real Live Moments feed — not the static editorial entry.
+        const eventful = wc
+          .filter(f => WC_LIVE.includes(f.fixture?.status?.short) || WC_DONE.includes(f.fixture?.status?.short))
+          .slice(0, 8);
+        const eventsById = {};
+        for (const f of eventful) {
+          try { eventsById[f.fixture.id] = await getFixtureEvents(f.fixture.id); }
+          catch { eventsById[f.fixture.id] = []; }
+        }
+        if (alive) setLiveFeed(buildLiveMoments(eventful, eventsById));
+
+        if (pick) {
+          // Recent form for the featured two teams = real pre-match signal.
+          let forms = {};
+          try {
+            const [hf, af] = await Promise.all([
+              getTeamForm(pick.teams?.home?.id, 5),
+              getTeamForm(pick.teams?.away?.id, 5),
+            ]);
+            forms = { home: formFromFixtures(hf, pick.teams?.home?.id), away: formFromFixtures(af, pick.teams?.away?.id) };
+          } catch { /* form optional */ }
+          const events = eventsById[pick.fixture.id]
+            || await getFixtureEvents(pick.fixture.id).catch(() => []);
+          if (alive) setRoom(buildMatchroom(pick, events, forms));
+        }
       } catch { /* leave room hidden if the WC feed is quiet */ }
     })();
     return () => { alive = false; };
@@ -271,8 +349,8 @@ export default function WorldCup() {
   const [factSearch,     setFactSearch]     = useState('');
 
   const filteredMoments = momentFilter === 'all'
-    ? liveMoments
-    : liveMoments.filter(m => m.type === momentFilter);
+    ? liveFeed
+    : liveFeed.filter(m => m.type === momentFilter);
 
   const FACT_CATS = ['all', 'tournament', 'goals', 'players', 'hosts', 'records', 'curiosities'];
 
@@ -331,8 +409,8 @@ export default function WorldCup() {
         </div>
         {filteredMoments.length === 0 ? (
           <div className="wc-moments-empty">
-            {liveMoments.length === 0
-              ? "The tournament hasn't started yet. Moments will appear here as the games are played."
+            {liveFeed.length === 0
+              ? 'No goals or red cards in the feed yet — moments appear here live as the games are played.'
               : 'No moments of this type yet.'
             }
           </div>

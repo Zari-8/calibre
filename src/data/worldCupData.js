@@ -18,17 +18,9 @@ export const WC_CONFIG = {
 
 // ── LIVE MOMENTS ─────────────────────────────────────────────────
 // Admin: add objects here to populate the live feed.
-export const liveMoments = [
-  {
-    id:       'moment-001',
-    time:     '2026-06-11T20:14:00Z',
-    match:    'Mexico vs Ecuador',
-    label:    'GOAL',
-    text:     'Raul Jimenez opens the tournament with a towering header. 1-0.',
-    type:     'goal',
-    featured: true,
-  },
-];
+// Live Moments are now built from the real fixture-events feed in WorldCup.jsx.
+// This stays empty so no stale editorial entry can leak into the feed.
+export const liveMoments = [];
 
 // ── BREAKOUT STARS ────────────────────────────────────────────────
 export const breakoutStars = [

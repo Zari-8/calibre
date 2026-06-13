@@ -3675,3 +3675,10 @@ html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
 .wc-event-icon{ text-align:center; }
 .wc-event-txt b{ font-weight:600; }
 .wc-event--red{ background:rgba(229,57,53,0.10); border-radius:6px; padding:5px 6px; border-bottom:none; }
+
+/* WC: Fact of the Day + facts pager */
+.wc-fact-card--daily { border: 1px solid var(--lime); box-shadow: inset 0 0 0 1px var(--lime); margin-bottom: 1.25rem; }
+.wc-fact-daily-label { display:inline-block; font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--lime); margin-bottom:.4rem; }
+.wc-facts-pager { display:flex; align-items:center; justify-content:center; gap:1rem; margin-top:1.5rem; }
+.wc-facts-pager .wc-mf-btn[disabled] { opacity:.4; cursor:not-allowed; }
+.wc-facts-pageinfo { font-family:'Barlow',sans-serif; font-size:.85rem; color:var(--text-muted); min-width:10ch; text-align:center; }

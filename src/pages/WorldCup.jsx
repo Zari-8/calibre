@@ -347,6 +347,7 @@ export default function WorldCup() {
   const [momentFilter,   setMomentFilter]   = useState('all');
   const [factCategory,   setFactCategory]   = useState('all');
   const [factSearch,     setFactSearch]     = useState('');
+  const [factPage,       setFactPage]       = useState(0);
 
   const filteredMoments = momentFilter === 'all'
     ? liveFeed
@@ -354,12 +355,24 @@ export default function WorldCup() {
 
   const FACT_CATS = ['all', 'tournament', 'goals', 'players', 'hosts', 'records', 'curiosities'];
 
+  // Fact of the Day — one fact, rotates daily, same for everyone on a given date.
+  const dayIndex = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+  const factOfDay = wcFacts.length ? wcFacts[dayIndex % wcFacts.length] : null;
+
   const filteredFacts = wcFacts.filter(f => {
     const matchCat    = factCategory === 'all' || f.category === factCategory;
     const matchSearch = !factSearch || f.fact.toLowerCase().includes(factSearch.toLowerCase()) ||
                         f.tags.some(t => t.toLowerCase().includes(factSearch.toLowerCase()));
-    return matchCat && matchSearch;
+    return matchCat && matchSearch && f.id !== factOfDay?.id; // bank excludes the daily fact
   });
+
+  // The bank shows 6 at a time; the rest live on the next pages.
+  const FACTS_PER_PAGE = 6;
+  const factPageCount  = Math.max(1, Math.ceil(filteredFacts.length / FACTS_PER_PAGE));
+  const factSafePage   = Math.min(factPage, factPageCount - 1);
+  const pagedFacts     = filteredFacts.slice(factSafePage * FACTS_PER_PAGE, factSafePage * FACTS_PER_PAGE + FACTS_PER_PAGE);
+  const setFactCat     = (c) => { setFactCategory(c); setFactPage(0); };
+  const setFactQuery   = (q) => { setFactSearch(q); setFactPage(0); };
 
   return (
     <div className="page wc-page">
@@ -444,12 +457,27 @@ export default function WorldCup() {
       {/* ── WORLD CUP FACTS ── */}
       <section className="wc-section">
         <SectionHead eyebrow="Did You Know" title="World Cup Facts" />
+
+        {factOfDay && (
+          <div className={`wc-fact-card wc-fact-card--daily wc-fact-cat--${factOfDay.category}`}>
+            <span className="wc-fact-daily-label">Fact of the day</span>
+            <div className="wc-fact-emoji">{factOfDay.emoji}</div>
+            <p className="wc-fact-text">{factOfDay.fact}</p>
+            <div className="wc-fact-tags">
+              <span className="wc-fact-cat-label">{factOfDay.category}</span>
+              {factOfDay.tags.slice(0, 2).map(t => (
+                <span key={t} className="wc-fact-tag" onClick={() => setFactQuery(t)} style={{ cursor: 'pointer' }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="wc-facts-controls">
           <div className="wc-fact-cats">
             {FACT_CATS.map(c => (
               <button key={c} type="button"
                 className={factCategory === c ? 'wc-fact-cat active' : 'wc-fact-cat'}
-                onClick={() => setFactCategory(c)}
+                onClick={() => setFactCat(c)}
               >
                 {c === 'all' ? 'All' : c.charAt(0).toUpperCase() + c.slice(1)}
                 {c !== 'all' && (
@@ -465,29 +493,42 @@ export default function WorldCup() {
             type="text"
             placeholder="Search facts, players, nations..."
             value={factSearch}
-            onChange={e => setFactSearch(e.target.value)}
+            onChange={e => setFactQuery(e.target.value)}
           />
         </div>
-        <div className="wc-facts-grid">
-          {filteredFacts.map(f => (
-            <div key={f.id} className={`wc-fact-card wc-fact-cat--${f.category}`}>
-              <div className="wc-fact-emoji">{f.emoji}</div>
-              <p className="wc-fact-text">{f.fact}</p>
-              <div className="wc-fact-tags">
-                <span className="wc-fact-cat-label">{f.category}</span>
-                {f.tags.slice(0, 2).map(t => (
-                  <span key={t} className="wc-fact-tag"
-                    onClick={() => setFactSearch(t)}
-                    style={{ cursor: 'pointer' }}
-                  >{t}</span>
-                ))}
-              </div>
+
+        {pagedFacts.length === 0 ? (
+          <div className="wc-facts-empty">No facts match that search.</div>
+        ) : (
+          <>
+            <div className="wc-facts-grid">
+              {pagedFacts.map(f => (
+                <div key={f.id} className={`wc-fact-card wc-fact-cat--${f.category}`}>
+                  <div className="wc-fact-emoji">{f.emoji}</div>
+                  <p className="wc-fact-text">{f.fact}</p>
+                  <div className="wc-fact-tags">
+                    <span className="wc-fact-cat-label">{f.category}</span>
+                    {f.tags.slice(0, 2).map(t => (
+                      <span key={t} className="wc-fact-tag"
+                        onClick={() => setFactQuery(t)}
+                        style={{ cursor: 'pointer' }}
+                      >{t}</span>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          {filteredFacts.length === 0 && (
-            <div className="wc-facts-empty">No facts match that search.</div>
-          )}
-        </div>
+            {factPageCount > 1 && (
+              <div className="wc-facts-pager">
+                <button type="button" className="wc-mf-btn" disabled={factSafePage === 0}
+                  onClick={() => setFactPage(p => Math.max(0, p - 1))}>← Prev</button>
+                <span className="wc-facts-pageinfo">Page {factSafePage + 1} of {factPageCount}</span>
+                <button type="button" className="wc-mf-btn" disabled={factSafePage >= factPageCount - 1}
+                  onClick={() => setFactPage(p => Math.min(factPageCount - 1, p + 1))}>Next →</button>
+              </div>
+            )}
+          </>
+        )}
       </section>
 
       {/* ── ICONIC EDITIONS ── */}

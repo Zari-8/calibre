@@ -389,6 +389,22 @@ export async function getFixtureEvents(fixtureId) {
   return data?.response ?? [];
 }
 
+// Model win/draw/win probabilities, advice and side-by-side comparison metrics
+// for a single fixture (API-Football /predictions). Returns the first entry or
+// null. The matchroom turns this into the on-page "Match signals".
+export async function getMatchPredictions(fixtureId) {
+  if (!fixtureId) return null;
+  const data = await apiFetch('predictions', { fixture:fixtureId }, { ttl: 15 * 60 * 1000 });
+  return data?.response?.[0] ?? null;
+}
+
+// Bookmaker odds for a fixture (API-Football /odds). Optional secondary signal.
+export async function getMatchOdds(fixtureId) {
+  if (!fixtureId) return null;
+  const data = await apiFetch('odds', { fixture:fixtureId }, { ttl: 15 * 60 * 1000 });
+  return data?.response?.[0] ?? null;
+}
+
 export async function getTransfersForPlayer(playerId) {
   if (!playerId) return [];
   const data = await apiFetch('transfers', { player:playerId }, { ttl:TTL.transfers });

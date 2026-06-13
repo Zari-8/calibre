@@ -8,7 +8,7 @@ import { navigateTo } from '../components/NavLink.jsx';
 import { playerIdFor } from '../data/playerIds.js';
 import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
-import { getFixturesByDate, getFixtureEvents, getTeamForm } from '../services/apiFootball.js';
+import { getFixturesByDate, getFixtureEvents, getTeamForm, getMatchPredictions } from '../services/apiFootball.js';
 import useAuth from '../hooks/useAuth.js';
 import { loadForumPosts, submitForumPost } from '../services/community.js';
 import {
@@ -167,7 +167,15 @@ function buildLiveMoments(fixtures, eventsById){
   return out.sort((a,b)=> new Date(b.time) - new Date(a.time));
 }
 
-function buildMatchroom(fx, events, forms = {}){
+// Affiliate betting link for the "View live odds" CTA in the matchroom.
+// REPLACE this with your real affiliate URL before go-live. Keep the 18+ /
+// responsible-gambling note that renders beside it.
+const BETTING_URL = 'https://example.com/odds';
+
+// "45%" / 45 / "45.0%" → 45 (number) | null
+function parsePct(v){ const n = parseFloat(String(v ?? '').replace('%','')); return Number.isFinite(n) ? n : null; }
+
+function buildMatchroom(fx, events, forms = {}, predictions = null){
   if(!fx?.teams || !fx?.fixture) return null;
   const home = fx.teams.home?.name || 'Home';
   const away = fx.teams.away?.name || 'Away';
@@ -187,6 +195,26 @@ function buildMatchroom(fx, events, forms = {}){
   const scorersFor = (teamName) => goals.filter(g => g.team === teamName && g.player).map(g => g.player);
   const homeScorers = scorersFor(home), awayScorers = scorersFor(away);
   const homeForm = forms.home || '', awayForm = forms.away || '';
+
+  // Real model signals from API-Football /predictions: win/draw/win %, advice,
+  // and side-by-side comparison metrics. Stays null when the feed has none, so
+  // the panel shows a clean empty state rather than fabricated numbers.
+  let signals = null;
+  if (predictions) {
+    const pct = predictions.predictions?.percent || {};
+    const h = parsePct(pct.home), d = parsePct(pct.draw), a = parsePct(pct.away);
+    const cmp = predictions.comparison || {};
+    const metric = (key, label) => {
+      const mh = parsePct(cmp[key]?.home), ma = parsePct(cmp[key]?.away);
+      return (mh!=null && ma!=null) ? { label, home: mh, away: ma } : null;
+    };
+    const metrics = [metric('form','Form'), metric('att','Attack'), metric('def','Defense')].filter(Boolean);
+    if (h!=null || a!=null) {
+      signals = { home: h ?? 0, draw: d ?? 0, away: a ?? 0,
+        advice: predictions.predictions?.advice || '', winner: predictions.predictions?.winner?.name || '', metrics };
+    }
+  }
+
   return {
     home, away, status, live, done,
     homeLogo: fx.teams.home?.logo || '', awayLogo: fx.teams.away?.logo || '',
@@ -206,7 +234,7 @@ function buildMatchroom(fx, events, forms = {}){
         + (awayScorers.length ? ` ${away}: ${awayScorers.join(', ')}.` : '')
         + (reds.length ? ` ${reds.length} red card${reds.length>1?'s':''}: ${reds.map(r=>`${r.player} (${r.team})`).join(', ')}.` : '')
       : null,
-    timeline, reds: reds.length, fixtureId: fx.fixture.id,
+    timeline, reds: reds.length, fixtureId: fx.fixture.id, signals,
     slug: wcSlugify(`world-cup-${fx.fixture.id || `${home}-${away}`}`),
   };
 }
@@ -240,18 +268,38 @@ function WCMatchRoom({ room, openForum }){
           )}
         </div>
         <div className="matchroom-signals">
-          <span className="matchroom-label"><BarChart3 size={13}/> Match events</span>
-          {room.timeline.length ? (
-            <div className="wc-events">
-              {room.timeline.map((e,i)=>(
-                <div key={i} className={`wc-event ${e.red?'wc-event--red':''}`}>
-                  <span className="wc-event-min">{e.minute}</span>
-                  <span className="wc-event-icon">{e.type==='Goal'?'⚽':(e.red?'🟥':'🟨')}</span>
-                  <span className="wc-event-txt"><b>{e.player}</b>{e.team?` · ${e.team}`:''}{e.type==='Card'?` · ${e.detail}`:''}</span>
+          <span className="matchroom-label"><BarChart3 size={13}/> Match signals</span>
+          {room.signals ? (
+            <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
+              <div style={{ display:'flex', height:30, borderRadius:6, overflow:'hidden', fontSize:11, fontWeight:800 }}>
+                <div style={{ width:`${room.signals.home}%`, background:'var(--lime)', color:'#0b0b0b', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.home}%</div>
+                <div style={{ width:`${room.signals.draw}%`, background:'rgba(255,255,255,0.18)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.draw}%</div>
+                <div style={{ width:`${room.signals.away}%`, background:'rgba(255,255,255,0.40)', color:'#0b0b0b', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.away}%</div>
+              </div>
+              <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, letterSpacing:'.06em', textTransform:'uppercase', opacity:.6 }}>
+                <span>{room.home}</span><span>Draw</span><span>{room.away}</span>
+              </div>
+              {room.signals.metrics.length > 0 && (
+                <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                  {room.signals.metrics.map((m,i)=>(
+                    <div key={i}>
+                      <div style={{ display:'flex', justifyContent:'space-between', fontSize:9.5, letterSpacing:'.05em', textTransform:'uppercase', opacity:.6, marginBottom:3 }}>
+                        <span>{m.label}</span><span>{m.home}% · {m.away}%</span>
+                      </div>
+                      <div style={{ height:4, borderRadius:3, background:'rgba(255,255,255,0.12)', overflow:'hidden' }}>
+                        <div style={{ width:`${m.home}%`, height:'100%', background:'var(--lime)' }}/>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
+              {room.signals.advice && (
+                <div className="matchroom-key"><BarChart3 size={14}/><span><b>MODEL LEAN</b>{room.signals.advice}</span></div>
+              )}
+              <a href={BETTING_URL} target="_blank" rel="noopener noreferrer nofollow sponsored" className="btn btn--lime btn--sm" style={{ textDecoration:'none', textAlign:'center', justifyContent:'center' }}>VIEW LIVE ODDS</a>
+              <small style={{ opacity:.5, fontSize:9.5, lineHeight:1.45 }}>Model probabilities, shown for information only — not betting advice. 18+. Please gamble responsibly.</small>
             </div>
-          ) : <small>Goals and cards appear here once the fixture feed publishes them.</small>}
+          ) : <small>Win probabilities and model signals appear here once the fixture feed publishes them.</small>}
         </div>
       </div>
     </section>
@@ -356,7 +404,8 @@ export default function WorldCup() {
           } catch { /* form optional */ }
           const events = eventsById[pick.fixture.id]
             || await getFixtureEvents(pick.fixture.id).catch(() => []);
-          if (alive) setRoom(buildMatchroom(pick, events, forms));
+          const predictions = await getMatchPredictions(pick.fixture.id).catch(() => null);
+          if (alive) setRoom(buildMatchroom(pick, events, forms, predictions));
         }
       } catch { /* leave room hidden if the WC feed is quiet */ }
     })();

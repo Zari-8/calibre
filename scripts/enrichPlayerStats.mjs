@@ -49,6 +49,13 @@ const FALLBACK_SEASON = String(process.env.FALLBACK_SEASON || (Number(SEASON) - 
 const FALLBACK_SEASON2= String(process.env.FALLBACK_SEASON2 || (Number(FALLBACK_SEASON) - 1));
 const SEASON_LADDER   = [...new Set([SEASON, FALLBACK_SEASON, FALLBACK_SEASON2])];
 
+// API-Football under-reports pass completion for some players vs Opta/FBref.
+// Curated corrections (keyed by api_player_id), sourced from FBref/FotMob/UEFA,
+// applied after aggregation. Add players here as the gap is found.
+const PASS_ACCURACY_OVERRIDE = {
+  335051: 89.3,   // João Neves — API-Football ~82%; FBref/FotMob ~89%, UEFA CL ~93%
+};
+
 const MAX_PLAYERS     = Number(process.env.MAX_PLAYERS || 250);
 const REFRESH_DAYS    = Number(process.env.REFRESH_DAYS || 7);
 const DELAY_MS        = Number(process.env.DELAY_MS || 250);
@@ -83,12 +90,26 @@ function normName(s) {
 }
 
 // ── API-Football ──────────────────────────────────────────────────────────
-async function apiGet(path) {
-  const res = await fetch(`${API_HOST}/${path}`, { headers: { 'x-apisports-key': API_KEY } });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(`API HTTP ${res.status}: ${JSON.stringify(json)}`);
-  if (json?.errors && Object.keys(json.errors).length) throw new Error('API: ' + JSON.stringify(json.errors));
-  return json;
+async function apiGet(path, attempt = 1) {
+  const MAX = 4;
+  try {
+    const res = await fetch(`${API_HOST}/${path}`, { headers: { 'x-apisports-key': API_KEY } });
+    if (res.status === 429 || (res.status >= 500 && res.status < 600)) throw new Error(`API HTTP ${res.status}`);
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(`API HTTP ${res.status}: ${JSON.stringify(json)}`);
+    if (json?.errors && Object.keys(json.errors).length) throw new Error('API: ' + JSON.stringify(json.errors));
+    return json;
+  } catch (e) {
+    const msg = String(e?.message || e);
+    const transient = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|HTTP 5|HTTP 429/i.test(msg);
+    if (transient && attempt < MAX) {
+      const wait = 800 * attempt;            // 0.8s → 1.6s → 2.4s
+      console.warn(`  ↻ ${path}: ${msg} — retry ${attempt}/${MAX - 1} in ${wait}ms`);
+      await sleep(wait);
+      return apiGet(path, attempt + 1);
+    }
+    throw e;
+  }
 }
 
 async function fetchPlayerStats(apiId, season) {
@@ -220,27 +241,32 @@ async function enrichById(apiId, preferredLeagueId) {
 
 // ── main ──────────────────────────────────────────────────────────────────
 async function main() {
-  let select = supabase
-    .from('players')
-    .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at')
-    .not('api_player_id', 'is', null)
-    .gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
-
-  if (NATIONALITY) select = select.ilike('nationality', `%${NATIONALITY}%`);
-  if (PLAYER_IDS.length) {
-    // Exact-id targeting wins: grab precisely these rows, no name guessing.
-    select = select.in('api_player_id', PLAYER_IDS);
-    console.log(`Targeting ${PLAYER_IDS.length} player(s) by api_player_id: ${PLAYER_IDS.join(', ')}`);
-  } else if (PLAYER_NAMES) {
-    const orClause = PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(',');
-    select = select.or(orClause);
+  function buildRead() {
+    let q = supabase
+      .from('players')
+      .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at')
+      .not('api_player_id', 'is', null)
+      .gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
+    if (NATIONALITY) q = q.ilike('nationality', `%${NATIONALITY}%`);
+    if (PLAYER_IDS.length) q = q.in('api_player_id', PLAYER_IDS);
+    else if (PLAYER_NAMES) q = q.or(PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(','));
+    return q.order('stats_updated_at', { ascending: true, nullsFirst: true }).limit(MAX_PLAYERS);
   }
 
-  const { data: rows, error } = await select
-    .order('stats_updated_at', { ascending: true, nullsFirst: true })
-    .limit(MAX_PLAYERS);
+  if (PLAYER_IDS.length) console.log(`Targeting ${PLAYER_IDS.length} player(s) by api_player_id: ${PLAYER_IDS.join(', ')}`);
 
-  if (error) { console.error('Supabase read failed:', error.message); process.exit(1); }
+  // Retry the read on transient connection drops (fetch failed) before giving up.
+  let rows = null, readErr = null;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const { data, error } = await buildRead();
+    if (!error) { rows = data; break; }
+    readErr = error;
+    const transient = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket/i.test(String(error.message));
+    if (!transient || attempt === 4) break;
+    console.warn(`  ↻ Supabase read: ${error.message} — retry ${attempt}/3`);
+    await sleep(800 * attempt);
+  }
+  if (!rows) { console.error('Supabase read failed:', readErr?.message || 'unknown'); process.exit(1); }
 
   const cutoff = Date.now() - REFRESH_DAYS * 86400000;
   let enriched = 0, remapped = 0, skipped = 0, empty = 0, failed = 0, calls = 0;
@@ -314,9 +340,10 @@ async function main() {
         continue;
       }
 
+      const accFixed = PASS_ACCURACY_OVERRIDE[Number(row.api_player_id)] ?? line.pass_accuracy;
       const update = {
         passes: line.passes,
-        pass_accuracy: line.pass_accuracy,
+        pass_accuracy: accFixed,
         key_passes: line.key_passes,
         dribbles_success: line.dribbles_success,
         dribbles_attempts: line.dribbles_attempts,
@@ -344,7 +371,8 @@ async function main() {
       enriched++;
       if (didRemap) remapped++;
       const tag = didRemap ? ` ⟳ remapped→${usedId}` : '';
-      console.log(`✓ ${row.name}${tag} · ${season} · ${line.league_name || 'league'} · ${line.stats_minutes}' · ${line.appearances}app · ${line.goals}g ${line.assists}a · ${line.pass_accuracy}%`);
+      const accTag = (PASS_ACCURACY_OVERRIDE[Number(row.api_player_id)] != null) ? ' ✎acc' : '';
+      console.log(`✓ ${row.name}${tag} · ${season} · ${line.league_name || 'league'} · ${line.stats_minutes}' · ${line.appearances}app · ${line.goals}g ${line.assists}a · ${accFixed}%${accTag}`);
     } catch (e) {
       failed++;
       console.warn(`✗ ${row.name} (${row.api_player_id}): ${e.message}`);

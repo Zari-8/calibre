@@ -57,14 +57,21 @@ function MomentBadge({ type }) {
 }
 
 function BreakoutCard({ star, live }) {
-  // Rating comes from the shared Calibre engine off the registry row when the
-  // player resolves there, so the World Cup card is consistent with Players,
-  // Talents and System Fit. Falls back to the editorial wcRating otherwise.
-  const rating = live?.rating ?? star.wcRating;
+  // Everything quantitative is live: the rating comes from the shared Calibre
+  // engine off the registry row, and the form boxes show the player's real club
+  // season (apps/goals/assists) — never hand-authored World Cup numbers. Before
+  // a player resolves (or pre-tournament), the card shows a clean "awaiting
+  // data" state rather than inventing a stat line.
+  const rating = live?.rating ?? '—';
   const resolvedId = live?.apiPlayerId || playerIdFor(star.name);
+  const club = live?.club || star.club;
+  const hasForm = !!(live && (live.appearances || live.goals || live.assists));
+  const seasonLabel = live?.season
+    ? `${String(live.season).slice(2)}–${String(Number(live.season) + 1).slice(2)} club season`
+    : 'Club season';
   return (
     <div className={`wc-breakout-card ${star.featured ? 'wc-breakout-card--featured' : ''}`}>
-      {star.featured && <div className="wc-featured-tag">Featured</div>}
+      {star.featured && <div className="wc-featured-tag">One to watch</div>}
       <div className="wc-bc-top">
         <ApiPlayerImage
           className="wc-bc-img"
@@ -77,19 +84,22 @@ function BreakoutCard({ star, live }) {
         <div className="wc-bc-meta">
           <div className="wc-bc-flag">{star.flag} {star.nation}</div>
           <strong className="wc-bc-name">{star.name}</strong>
-          <span className="wc-bc-role">{star.role} · {star.club}</span>
+          <span className="wc-bc-role">{star.role} · {club}</span>
           <div className="wc-bc-rating">
             <span className="wc-bc-score">{rating}</span>
-            <span className="wc-bc-trend">{live?.rating != null ? 'Calibre' : star.trend}</span>
+            <span className="wc-bc-trend">{live?.rating != null ? 'Calibre' : 'Awaiting data'}</span>
           </div>
         </div>
       </div>
       <div className="wc-bc-stats">
-        <div className="wc-bc-stat"><b>{star.matches}</b><span>Matches</span></div>
-        <div className="wc-bc-stat"><b>{star.goals}</b><span>Goals</span></div>
-        <div className="wc-bc-stat"><b>{star.assists}</b><span>Assists</span></div>
+        <div className="wc-bc-stat"><b>{hasForm ? live.appearances : '—'}</b><span>Apps</span></div>
+        <div className="wc-bc-stat"><b>{hasForm ? live.goals : '—'}</b><span>Goals</span></div>
+        <div className="wc-bc-stat"><b>{hasForm ? live.assists : '—'}</b><span>Assists</span></div>
       </div>
-      <p className="wc-bc-note">"{star.note}"</p>
+      <div style={{ fontSize: '9.5px', letterSpacing: '.09em', textTransform: 'uppercase', opacity: .45, marginTop: '7px' }}>
+        {hasForm ? seasonLabel : 'Pre-tournament — form loads at kickoff'}
+      </div>
+      <p className="wc-bc-note">{star.note}</p>
       <div className="wc-bc-share"><ShareBar text={`${star.name} — ${rating} Calibre rating on Calibre.`} url={shareUrl('/world-cup')} label={false}/></div>
     </div>
   );
@@ -288,7 +298,15 @@ export default function WorldCup() {
           if (!match) return [star.name, null];
           const scored = calibreRating(match);
           if (scored.rating == null) return [star.name, null];
-          return [star.name, { rating: scored.rating, apiPlayerId: Number(star.apiPlayerId) || null }];
+          return [star.name, {
+            rating: scored.rating,
+            apiPlayerId: Number(star.apiPlayerId) || null,
+            appearances: Number(match.appearances || 0),
+            goals: Number(match.goals || 0),
+            assists: Number(match.assists || 0),
+            club: match.club || match.team || null,
+            season: match.stats_season || null,
+          }];
         });
         if (alive) setLiveRatings(Object.fromEntries(entries.filter(e => e[1])));
       } catch { /* keep editorial wcRating fallback on failure */ }
@@ -385,7 +403,7 @@ export default function WorldCup() {
         </h1>
         <p className="wc-hero-sub">
           {isLive
-            ? 'Live moments, breakout stars, and the data behind the tournament.'
+            ? 'Live moments, the watchlist, and the data behind the tournament.'
             : `${WC_CONFIG.hosts.join(' · ')} · Kickoff ${new Date(WC_CONFIG.kickoff).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}`
           }
         </p>
@@ -448,7 +466,7 @@ export default function WorldCup() {
 
       {/* ── BREAKOUT STARS ── */}
       <section className="wc-section">
-        <SectionHead eyebrow="Scout Pulse" title="Tournament Breakout Stars" />
+        <SectionHead eyebrow="Scout Pulse" title="Pre-Tournament Watchlist" />
         <div className="wc-breakout-grid">
           {breakoutStars.map(s => <BreakoutCard key={s.id} star={s} live={liveRatings[s.name]} />)}
         </div>

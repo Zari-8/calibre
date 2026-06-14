@@ -175,6 +175,29 @@ const BETTING_URL = 'https://example.com/odds';
 // "45%" / 45 / "45.0%" → 45 (number) | null
 function parsePct(v){ const n = parseFloat(String(v ?? '').replace('%','')); return Number.isFinite(n) ? n : null; }
 
+// Design-led background for an Iconic Edition card: the winner nation's colours
+// as a darkened gradient — intentional, on-brand, zero licensing risk. Any
+// edition can override with an `image` field once a properly-licensed photo is
+// in hand; the dark overlay keeps the lime score and white text legible either
+// way. No other markup changes when a photo is dropped in.
+const NATION_GRADIENT = {
+  Brazil:      ['#1b7a3e', '#d4ad1f'],
+  Argentina:   ['#5aa1de', '#16345f'],
+  France:      ['#21478f', '#9a1f2e'],
+  Spain:       ['#b51c2a', '#d4ad1f'],
+  Germany:     ['#2f2f2f', '#c8a11a'],
+  Italy:       ['#1c4fa0', '#0d2a57'],
+  England:     ['#9a1f2e', '#16245f'],
+  Uruguay:     ['#4aa3e0', '#142a4a'],
+  Netherlands: ['#e07a1f', '#16345f'],
+};
+function editionBackground(ed){
+  const overlay = 'linear-gradient(158deg, rgba(10,10,11,.6), rgba(10,10,11,.9))';
+  if(ed?.image) return { background: `${overlay}, url(${ed.image})`, backgroundSize: 'cover', backgroundPosition: 'center' };
+  const c = NATION_GRADIENT[ed?.winner] || ['#1f2a44', '#0a0a0b'];
+  return { background: `${overlay}, linear-gradient(150deg, ${c[0]}, ${c[1]})` };
+}
+
 function buildMatchroom(fx, events, forms = {}, predictions = null){
   if(!fx?.teams || !fx?.fixture) return null;
   const home = fx.teams.home?.name || 'Home';
@@ -614,7 +637,7 @@ export default function WorldCup() {
               </button>
             ))}
           </div>
-          <div className="wc-edition-detail">
+          <div className="wc-edition-detail" style={editionBackground(activeEdition)}>
             <div className="wc-ed-detail-top">
               <div>
                 <div className="wc-ed-detail-flag">{activeEdition.flag}</div>

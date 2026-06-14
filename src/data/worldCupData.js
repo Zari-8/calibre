@@ -50,6 +50,19 @@ export const breakoutStars = [
     note:     "Real Madrid's creative heir apparent. A strong tournament would put him among the elite playmakers of his generation.",
     featured: false,
   },
+  {
+    id:       'bs-004',
+    name:     'Igor Thiago',
+    apiPlayerId: 196156, // Igor Thiago — stored in the bank as "Thiago" (Brentford, PL)
+    age:      24,
+    nation:   'Brazil',
+    flag:     '🇧🇷',
+    role:     'Penalty-Box Striker',
+    club:     'Brentford',
+    image:    '/assets/players/neutral-player.svg',
+    note:     "Brentford's record-breaking No.9 — 25 goals in 2025/26 and a debut-season Brazil call-up that became a World Cup squad place. If Ancelotti needs a pure penalty-box finisher, Thiago is the wildcard who could force his way into the story.",
+    featured: false,
+  },
 ];
 
 // ── ICONIC EDITIONS ───────────────────────────────────────────────

@@ -1,0 +1,101 @@
+[
+  {
+    "name": "Euro 2024",
+    "competition_id": 55,
+    "season_id": 282,
+    "gender": "male",
+    "has360": true,
+    "file": "sb_55_282.json",
+    "total_matches": 51,
+    "total_players": 495,
+    "generated_at": "2026-06-14T10:19:53.666Z"
+  },
+  {
+    "name": "AFCON 2023",
+    "competition_id": 1267,
+    "season_id": 107,
+    "gender": "male",
+    "has360": true,
+    "file": "sb_1267_107.json",
+    "total_matches": 52,
+    "total_players": 511,
+    "generated_at": "2026-06-14T10:20:36.897Z"
+  },
+  {
+    "name": "World Cup 2022",
+    "competition_id": 43,
+    "season_id": 106,
+    "gender": "male",
+    "has360": true,
+    "file": "sb_43_106.json",
+    "total_matches": 64,
+    "total_players": 680,
+    "generated_at": "2026-06-14T10:20:47.574Z"
+  },
+  {
+    "name": "Women's World Cup 2023",
+    "competition_id": 72,
+    "season_id": 107,
+    "gender": "female",
+    "has360": true,
+    "file": "sb_72_107.json",
+    "total_matches": 64,
+    "total_players": 617,
+    "generated_at": "2026-06-14T10:21:15.303Z"
+  },
+  {
+    "name": "Women's Euro 2025",
+    "competition_id": 53,
+    "season_id": 315,
+    "gender": "female",
+    "has360": true,
+    "file": "sb_53_315.json",
+    "total_matches": 31,
+    "total_players": 313,
+    "generated_at": "2026-06-14T10:21:27.631Z"
+  },
+  {
+    "name": "Copa America 2024",
+    "competition_id": 223,
+    "season_id": 282,
+    "gender": "male",
+    "has360": false,
+    "file": "sb_223_282.json",
+    "total_matches": 32,
+    "total_players": 339,
+    "generated_at": "2026-06-14T10:21:38.692Z"
+  },
+  {
+    "name": "Bundesliga 2023/24",
+    "competition_id": 9,
+    "season_id": 281,
+    "gender": "male",
+    "has360": true,
+    "file": "sb_9_281.json",
+    "total_matches": 34,
+    "total_players": 372,
+    "generated_at": "2026-06-14T10:22:17.444Z"
+  },
+  {
+    "name": "Ligue 1 2022/23",
+    "competition_id": 7,
+    "season_id": 235,
+    "gender": "male",
+    "has360": true,
+    "file": "sb_7_235.json",
+    "total_matches": 32,
+    "total_players": 387,
+    "generated_at": "2026-06-14T10:22:30.591Z"
+  },
+  {
+    "name": "MLS 2023",
+    "competition_id": 44,
+    "season_id": 107,
+    "gender": "male",
+    "has360": true,
+    "file": "sb_44_107.json",
+    "total_matches": 6,
+    "total_players": 118,
+    "generated_at": "2026-06-14T10:22:33.378Z"
+  }
+]

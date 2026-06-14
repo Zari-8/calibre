@@ -72,8 +72,27 @@ function BreakoutCard({ star, live }) {
   const seasonLabel = live?.season
     ? `${String(live.season).slice(2)}–${String(Number(live.season) + 1).slice(2)} club season`
     : 'Club season';
+
+  // Navigate to the full player profile in the Players bank.
+  // resolvedId is the API-Football id; Players.jsx's URL-param handler picks it up.
+  function openProfile() {
+    if (resolvedId) {
+      navigateTo(`/players?playerId=${resolvedId}&player=${encodeURIComponent(star.name)}`);
+    } else {
+      navigateTo(`/players?player=${encodeURIComponent(star.name)}`);
+    }
+  }
+
   return (
-    <div className={`wc-breakout-card ${star.featured ? 'wc-breakout-card--featured' : ''}`}>
+    <div
+      className={`wc-breakout-card ${star.featured ? 'wc-breakout-card--featured' : ''}`}
+      onClick={openProfile}
+      style={{ cursor: 'pointer' }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={e => (e.key === 'Enter' || e.key === ' ') && openProfile()}
+      aria-label={`Open ${star.name} player profile`}
+    >
       {star.featured && <div className="wc-featured-tag">One to watch</div>}
       <div className="wc-bc-top">
         <ApiPlayerImage
@@ -103,7 +122,9 @@ function BreakoutCard({ star, live }) {
         {hasForm ? seasonLabel : 'Pre-tournament — form loads at kickoff'}
       </div>
       <p className="wc-bc-note">{star.note}</p>
-      <div className="wc-bc-share"><ShareBar text={`${star.name} — ${rating} Calibre rating on Calibre.`} url={shareUrl('/world-cup')} label={false}/></div>
+      <div className="wc-bc-share" onClick={e => e.stopPropagation()}>
+        <ShareBar text={`${star.name} — ${rating} Calibre rating on Calibre.`} url={shareUrl('/world-cup')} label={false}/>
+      </div>
     </div>
   );
 }

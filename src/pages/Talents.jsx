@@ -272,9 +272,27 @@ function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist
         </div>}
         <div className="talent-result-card__footer">
           <span>{player.nextStep}</span>
-          <button type="button" aria-label={`${shortlisted ? 'Remove' : 'Add'} ${player.name} ${shortlisted ? 'from' : 'to'} shortlist`} onClick={(event) => { event.stopPropagation(); onToggleShortlist(player.name); }}>
-            {shortlisted ? <BookmarkCheck size={15}/> : <Bookmark size={15}/>}
-          </button>
+          <div style={{display:'flex',gap:6,alignItems:'center'}}>
+            <button
+              type="button"
+              style={{background:'none',border:'none',color:'rgba(166,255,0,0.7)',cursor:'pointer',fontSize:10,letterSpacing:'.06em',padding:0,display:'flex',alignItems:'center',gap:3}}
+              onClick={(event) => {
+                event.stopPropagation();
+                const apiId = playerApiId(player);
+                if (apiId) {
+                  navigateTo(`/players?playerId=${apiId}&player=${encodeURIComponent(player.name)}`);
+                } else {
+                  navigateTo(`/players?player=${encodeURIComponent(player.name)}`);
+                }
+              }}
+              aria-label={`Open ${player.name} full profile`}
+            >
+              PROFILE <ArrowRight size={10}/>
+            </button>
+            <button type="button" aria-label={`${shortlisted ? 'Remove' : 'Add'} ${player.name} ${shortlisted ? 'from' : 'to'} shortlist`} onClick={(event) => { event.stopPropagation(); onToggleShortlist(player.name); }}>
+              {shortlisted ? <BookmarkCheck size={15}/> : <Bookmark size={15}/>}
+            </button>
+          </div>
         </div>
       </div>
     </article>
@@ -347,6 +365,35 @@ function TalentDetailModal({ player, onClose }) {
         </div>}
         <div style={{padding:'0 18px 22px'}}>
           <Pathway player={player}/>
+        </div>
+
+        {/* ── Link to full player bank profile ── */}
+        <div style={{padding:'0 26px 26px',display:'flex',gap:10}}>
+          <button
+            type="button"
+            className="btn btn--lime btn--sm"
+            style={{flex:1}}
+            onClick={() => {
+              const apiId = playerApiId(player);
+              if (apiId) {
+                navigateTo(`/players?playerId=${apiId}&player=${encodeURIComponent(player.name)}`);
+              } else {
+                navigateTo(`/players?player=${encodeURIComponent(player.name)}`);
+              }
+            }}
+          >
+            VIEW FULL PROFILE <ArrowRight size={13}/>
+          </button>
+          <button
+            type="button"
+            className="btn btn--outline btn--sm"
+            onClick={() => {
+              const name = encodeURIComponent(player.name);
+              navigateTo(`/system-fit?player=${name}`);
+            }}
+          >
+            RUN SYSTEM FIT <ArrowRight size={13}/>
+          </button>
         </div>
       </div>
     </div>

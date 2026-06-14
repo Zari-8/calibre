@@ -284,7 +284,18 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
   const stat = pickLeagueLine(stats?.statistics);
   const liveInput = stat ? lineToRatingInput(player, stat) : null;
   const liveCalc = liveInput && liveInput.minutes > 0 ? calibreRating(liveInput) : null;
-  const liveRating = liveCalc ? liveCalc.rating : (player.rating ?? null);
+
+  // Reconciliation rule: the player list and the modal must show the SAME number.
+  // The list computes calibreRating from the enriched Supabase row and stores it
+  // on player.rating. The modal fetches fresh API-Football stats and recomputes —
+  // which produces a different result whenever the stat sets differ.
+  // Fix: always prefer the stored row rating so the badge is consistent with
+  // the table. Fall back to the live re-computation only for raw API search hits
+  // that have no pre-computed rating at all (player.rating is null/undefined).
+  const storedRating = (player.rating != null && Number.isFinite(Number(player.rating)))
+    ? Number(player.rating)
+    : null;
+  const liveRating = storedRating ?? (liveCalc ? liveCalc.rating : null);
   const club = stat?.team?.name || player.club || player.team || 'Club data loading';
   const position = specificPosition(stat?.games?.position,specificPosition(player.position,player.pos));
 

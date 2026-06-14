@@ -517,11 +517,15 @@ export default function Players(){
       : landingPlayers.map(localToProfile);
 
   const tableRows = useMemo(
-    ()=>sourceRows.filter(
-      p=>ageInRange(p.age,filters.age)
-        && posMatches(p.position||p.pos,filters.position)
-        && (filters.nation==='all' || String(p.nationality||'').toLowerCase().includes(filters.nation))
-    ).slice(0,PLAYER_TABLE_LIMIT),
+    ()=>sourceRows.filter(p=>{
+      // Global search profiles often arrive without position/nationality. Match
+      // the lenient age behaviour: only exclude on a field the row actually has,
+      // so a name search surfaces its hits instead of being filtered to zero.
+      const posVal = p.position || p.pos || '';
+      const posOk = !posVal || posMatches(posVal,filters.position);
+      const natOk = filters.nation==='all' || !p.nationality || String(p.nationality).toLowerCase().includes(filters.nation);
+      return ageInRange(p.age,filters.age) && posOk && natOk;
+    }).slice(0,PLAYER_TABLE_LIMIT),
     [sourceRows,filters]
   );
 

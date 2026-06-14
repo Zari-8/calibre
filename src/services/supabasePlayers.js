@@ -121,9 +121,17 @@ export async function getSupabasePlayers({
     leagueId !== undefined &&
     leagueId !== '';
 
+  // The league-browse path reads the player_competition_profiles VIEW, which
+  // does not carry the players-table-only competition_splits column. Requesting
+  // it there makes Supabase throw ("League browse could not load"). Drop it for
+  // the view; the rating engine simply falls back to its no-splits path.
+  const selectCols = hasLeagueFilter
+    ? PLAYER_SELECT.filter(col => col !== 'competition_splits')
+    : PLAYER_SELECT;
+
   let query = client
     .from(hasLeagueFilter ? 'player_competition_profiles' : 'players')
-    .select(PLAYER_SELECT)
+    .select(selectCols)
     .range(offset,offset+limit-1);
 
   if(Array.isArray(names) && names.length){

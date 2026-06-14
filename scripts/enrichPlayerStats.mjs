@@ -61,6 +61,7 @@ const REFRESH_DAYS    = Number(process.env.REFRESH_DAYS || 7);
 const DELAY_MS        = Number(process.env.DELAY_MS || 250);
 const FORCE           = process.env.FORCE === '1';
 const NATIONALITY     = process.env.NATIONALITY || null;
+const LEAGUE_ID       = process.env.LEAGUE_ID ? Number(process.env.LEAGUE_ID) : null; // enrich one league at a time, e.g. 39 = Premier League
 const PLAYER_NAMES    = process.env.PLAYER_NAMES || null; // comma-separated names to target, e.g. "Vitinha,Pedri,Raphinha"
 // Deterministic targeting by API id — bypasses name-guessing and the
 // "never-enriched first" ordering entirely. Use this for the marquee names
@@ -360,6 +361,7 @@ async function main() {
       .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at')
       .not('api_player_id', 'is', null)
       .gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
+    if (LEAGUE_ID) q = q.eq('league_id', LEAGUE_ID);
     if (NATIONALITY) q = q.ilike('nationality', `%${NATIONALITY}%`);
     if (PLAYER_IDS.length) q = q.in('api_player_id', PLAYER_IDS);
     else if (PLAYER_NAMES) q = q.or(PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(','));

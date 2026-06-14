@@ -45,6 +45,9 @@ function SectionHead({ eyebrow, title }) {
 
 function MomentBadge({ type }) {
   const MAP = {
+    live:      { label: 'LIVE',      cls: 'mb-goal'  },
+    result:    { label: 'RESULT',    cls: 'mb-stat'  },
+    upcoming:  { label: 'UPCOMING',  cls: 'mb-var'   },
     goal:      { label: 'GOAL',      cls: 'mb-goal'  },
     red_card:  { label: 'RED CARD',  cls: 'mb-red'   },
     var:       { label: 'VAR',       cls: 'mb-var'   },
@@ -140,31 +143,76 @@ function formFromFixtures(fixtures, teamId){
     .join('');
 }
 
-// Build a real moments feed (goals + red cards) from live/finished fixtures.
+// Same last-5 window as numbers: W/D/L string, points, goals for / against,
+// and how many finished games it's based on. Powers the matchroom comparison
+// when the model-prediction feed is quiet.
+function formStats(fixtures, teamId){
+  const done = (Array.isArray(fixtures) ? fixtures : [])
+    .filter(f => ['FT','AET','PEN'].includes(f?.fixture?.status?.short)).slice(0,5);
+  let pts = 0, gf = 0, ga = 0;
+  const wdl = done.map(f => {
+    const hg = f.goals?.home ?? 0, ag = f.goals?.away ?? 0;
+    const isHome = f.teams?.home?.id === teamId;
+    const f1 = isHome ? hg : ag, a1 = isHome ? ag : hg;
+    gf += f1; ga += a1;
+    if(f1 > a1){ pts += 3; return 'W'; }
+    if(f1 < a1) return 'L';
+    pts += 1; return 'D';
+  }).join('');
+  return { wdl, pts, gf, ga, n: done.length };
+}
+
+// Tournament feed built from the fixtures themselves — reliable even when the
+// live-events endpoint is quiet: finished scorelines, in-play scores, and
+// upcoming kickoffs. Goal / red-card moments fold in on top when events deliver.
 function buildLiveMoments(fixtures, eventsById){
   const out = [];
   for(const f of (fixtures||[])){
     const home = f.teams?.home?.name || 'Home';
     const away = f.teams?.away?.name || 'Away';
     const match = `${home} vs ${away}`;
-    const kickoff = f.fixture?.date ? new Date(f.fixture.date).getTime() : Date.now();
-    for(const e of (eventsById[f.fixture?.id] || [])){
+    const id = f.fixture?.id;
+    const status = f.fixture?.status?.short || 'NS';
+    const date = f.fixture?.date ? new Date(f.fixture.date) : null;
+    const when = date ? date.toISOString() : new Date().toISOString();
+    const gh = f.goals?.home, ga = f.goals?.away;
+    const score = (gh!=null && ga!=null) ? `${gh}–${ga}` : '';
+
+    if(WC_DONE.includes(status)){
+      out.push({ id:`${id}-res`, type:'result', match, time:when, text:`Full time — ${home} ${score} ${away}.` });
+    } else if(WC_LIVE.includes(status)){
+      const el = f.fixture?.status?.elapsed;
+      out.push({ id:`${id}-live`, type:'live', match, time:new Date().toISOString(),
+        text:`Live${el?` ${el}'`:''} — ${home} ${score||'0–0'} ${away}.` });
+    } else {
+      out.push({ id:`${id}-up`, type:'upcoming', match, time:when,
+        text:`Kicks off ${date ? date.toLocaleString([], {dateStyle:'medium', timeStyle:'short'}) : 'soon'} — ${home} vs ${away}.` });
+    }
+
+    for(const e of (eventsById[id] || [])){
       const elapsed = Number(e.time?.elapsed) || 0;
       const extra = Number(e.time?.extra) || 0;
       const min = `${elapsed}${extra?`+${extra}`:''}'`;
       const player = e.player?.name || '';
       const team = e.team?.name || '';
-      const when = new Date(kickoff + (elapsed + extra) * 60000).toISOString();
+      const evWhen = date ? new Date(date.getTime() + (elapsed+extra)*60000).toISOString() : when;
       if(e.type === 'Goal' && !/missed|cancelled/i.test(e.detail||'')){
-        out.push({ id:`${f.fixture.id}-g-${elapsed}-${player}`, type:'goal', match, time:when,
+        out.push({ id:`${id}-g-${elapsed}-${player}`, type:'goal', match, time:evWhen,
           text:`${player || 'Goal'} scores for ${team} — ${min}.` });
       } else if(e.type === 'Card' && /red/i.test(e.detail||'')){
-        out.push({ id:`${f.fixture.id}-r-${elapsed}-${player}`, type:'red_card', match, time:when,
+        out.push({ id:`${id}-r-${elapsed}-${player}`, type:'red_card', match, time:evWhen,
           text:`${player} (${team}) sent off — ${min}.` });
       }
     }
   }
-  return out.sort((a,b)=> new Date(b.time) - new Date(a.time));
+  // Live and goals first, then most-recent results, then the soonest kickoffs.
+  const rank = { live:0, goal:1, red_card:1, result:2, upcoming:3 };
+  return out.sort((a,b)=>{
+    const r = (rank[a.type]??9) - (rank[b.type]??9);
+    if(r !== 0) return r;
+    const dir = a.type === 'upcoming' ? 1 : -1;
+    return dir * (new Date(a.time) - new Date(b.time));
+  });
 }
 
 // Affiliate betting link for the "View live odds" CTA in the matchroom.
@@ -217,11 +265,11 @@ function buildMatchroom(fx, events, forms = {}, predictions = null){
   const goals = timeline.filter(t => t.type === 'Goal');
   const scorersFor = (teamName) => goals.filter(g => g.team === teamName && g.player).map(g => g.player);
   const homeScorers = scorersFor(home), awayScorers = scorersFor(away);
-  const homeForm = forms.home || '', awayForm = forms.away || '';
+  const hs = forms.home || {}, as = forms.away || {};
+  const homeForm = hs.wdl || '', awayForm = as.wdl || '';
 
-  // Real model signals from API-Football /predictions: win/draw/win %, advice,
-  // and side-by-side comparison metrics. Stays null when the feed has none, so
-  // the panel shows a clean empty state rather than fabricated numbers.
+  // Model signals from API-Football /predictions: win/draw/win %, advice, and
+  // comparison metrics. Used when present.
   let signals = null;
   if (predictions) {
     const pct = predictions.predictions?.percent || {};
@@ -233,9 +281,30 @@ function buildMatchroom(fx, events, forms = {}, predictions = null){
     };
     const metrics = [metric('form','Form'), metric('att','Attack'), metric('def','Defense')].filter(Boolean);
     if (h!=null || a!=null) {
-      signals = { home: h ?? 0, draw: d ?? 0, away: a ?? 0,
-        advice: predictions.predictions?.advice || '', winner: predictions.predictions?.winner?.name || '', metrics };
+      signals = { source:'model', hasPercent:true, home: h ?? 0, draw: d ?? 0, away: a ?? 0,
+        lean: predictions.predictions?.advice || '', winner: predictions.predictions?.winner?.name || '', metrics };
     }
+  }
+
+  // Fallback when /predictions is quiet: a real side-by-side from last-5 form
+  // (points, goals for / against) so the panel is never empty and never faked.
+  if (!signals && (hs.n || as.n)) {
+    const split = (h, a) => { const t = (h||0)+(a||0); return t ? Math.round((h||0)/t*100) : 50; };
+    const fHome = split(hs.pts, as.pts);
+    const aHome = split(hs.gf, as.gf);
+    const dHome = split(as.ga, hs.ga); // fewer conceded ⇒ stronger defensive share
+    const leader = (hs.pts||0) > (as.pts||0) ? home : (as.pts||0) > (hs.pts||0) ? away : null;
+    signals = {
+      source:'form', hasPercent:false,
+      metrics: [
+        { label:'Form (pts)',  home:fHome, away:100-fHome },
+        { label:'Attack (GF)', home:aHome, away:100-aHome },
+        { label:'Defense',     home:dHome, away:100-dHome },
+      ],
+      lean: leader
+        ? `${leader} carry the better recent form (${leader===home?homeForm:awayForm}).`
+        : 'Form is level across the last five.',
+    };
   }
 
   return {
@@ -247,10 +316,12 @@ function buildMatchroom(fx, events, forms = {}, predictions = null){
     venue: fx.fixture.venue?.name || '',
     headline: wcHeadline(home, away),
     homeForm, awayForm,
-    pregame: `${home} and ${away} meet in the Matchroom${fx.fixture.venue?.name ? ` at ${fx.fixture.venue.name}` : ''}.`
-      + ((homeForm || awayForm) ? ` Recent form — ${home}: ${homeForm || 'n/a'}, ${away}: ${awayForm || 'n/a'}.` : '')
-      + ` Calibre frames the argument around territory, progression and how each side protects transition.`,
-    keyDuel: `${home} progression lanes vs ${away} transition protection`,
+    pregame: `${home} and ${away} meet${fx.fixture.venue?.name ? ` at ${fx.fixture.venue.name}` : ''}.`
+      + ((homeForm || awayForm) ? ` Last five — ${home}: ${homeForm || 'n/a'}, ${away}: ${awayForm || 'n/a'}.` : '')
+      + (signals?.lean ? ` ${signals.lean}` : ''),
+    keyDuel: (hs.n || as.n)
+      ? `${(hs.gf||0) >= (as.gf||0) ? home : away}'s attack (${Math.max(hs.gf||0, as.gf||0)} in last 5) vs ${(hs.gf||0) >= (as.gf||0) ? away : home}'s defence`
+      : `${home} vs ${away}`,
     postgame: done
       ? `Full time: ${home} ${gh}–${ga} ${away}.`
         + (homeScorers.length ? ` ${home}: ${homeScorers.join(', ')}.` : '')
@@ -294,16 +365,23 @@ function WCMatchRoom({ room, openForum }){
           <span className="matchroom-label"><BarChart3 size={13}/> Match signals</span>
           {room.signals ? (
             <div style={{ display:'flex', flexDirection:'column', gap:11 }}>
-              <div style={{ display:'flex', height:30, borderRadius:6, overflow:'hidden', fontSize:11, fontWeight:800 }}>
-                <div style={{ width:`${room.signals.home}%`, background:'var(--lime)', color:'#0b0b0b', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.home}%</div>
-                <div style={{ width:`${room.signals.draw}%`, background:'rgba(255,255,255,0.18)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.draw}%</div>
-                <div style={{ width:`${room.signals.away}%`, background:'rgba(255,255,255,0.40)', color:'#0b0b0b', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.away}%</div>
-              </div>
-              <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, letterSpacing:'.06em', textTransform:'uppercase', opacity:.6 }}>
-                <span>{room.home}</span><span>Draw</span><span>{room.away}</span>
-              </div>
+              {room.signals.hasPercent && (
+                <>
+                  <div style={{ display:'flex', height:30, borderRadius:6, overflow:'hidden', fontSize:11, fontWeight:800 }}>
+                    <div style={{ width:`${room.signals.home}%`, background:'var(--lime)', color:'#0b0b0b', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.home}%</div>
+                    <div style={{ width:`${room.signals.draw}%`, background:'rgba(255,255,255,0.18)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.draw}%</div>
+                    <div style={{ width:`${room.signals.away}%`, background:'rgba(255,255,255,0.40)', color:'#0b0b0b', display:'flex', alignItems:'center', justifyContent:'center' }}>{room.signals.away}%</div>
+                  </div>
+                  <div style={{ display:'flex', justifyContent:'space-between', fontSize:10, letterSpacing:'.06em', textTransform:'uppercase', opacity:.6 }}>
+                    <span>{room.home}</span><span>Draw</span><span>{room.away}</span>
+                  </div>
+                </>
+              )}
               {room.signals.metrics.length > 0 && (
                 <div style={{ display:'flex', flexDirection:'column', gap:7 }}>
+                  {room.signals.source==='form' && (
+                    <span style={{ fontSize:9, letterSpacing:'.08em', textTransform:'uppercase', opacity:.4 }}>Recent form · last 5 · {room.home} vs {room.away}</span>
+                  )}
                   {room.signals.metrics.map((m,i)=>(
                     <div key={i}>
                       <div style={{ display:'flex', justifyContent:'space-between', fontSize:9.5, letterSpacing:'.05em', textTransform:'uppercase', opacity:.6, marginBottom:3 }}>
@@ -316,13 +394,13 @@ function WCMatchRoom({ room, openForum }){
                   ))}
                 </div>
               )}
-              {room.signals.advice && (
-                <div className="matchroom-key"><BarChart3 size={14}/><span><b>MODEL LEAN</b>{room.signals.advice}</span></div>
+              {room.signals.lean && (
+                <div className="matchroom-key"><BarChart3 size={14}/><span><b>{room.signals.source==='model'?'MODEL LEAN':'FORM READ'}</b>{room.signals.lean}</span></div>
               )}
               <a href={BETTING_URL} target="_blank" rel="noopener noreferrer nofollow sponsored" className="btn btn--lime btn--sm" style={{ textDecoration:'none', textAlign:'center', justifyContent:'center' }}>VIEW LIVE ODDS</a>
-              <small style={{ opacity:.5, fontSize:9.5, lineHeight:1.45 }}>Model probabilities, shown for information only — not betting advice. 18+. Please gamble responsibly.</small>
+              <small style={{ opacity:.5, fontSize:9.5, lineHeight:1.45 }}>For information only — not betting advice. 18+. Please gamble responsibly.</small>
             </div>
-          ) : <small>Win probabilities and model signals appear here once the fixture feed publishes them.</small>}
+          ) : <small>Form and model signals appear here once the fixture feed loads.</small>}
         </div>
       </div>
     </section>
@@ -413,7 +491,7 @@ export default function WorldCup() {
           try { eventsById[f.fixture.id] = await getFixtureEvents(f.fixture.id); }
           catch { eventsById[f.fixture.id] = []; }
         }
-        if (alive) setLiveFeed(buildLiveMoments(eventful, eventsById));
+        if (alive) setLiveFeed(buildLiveMoments(wc, eventsById));
 
         if (pick) {
           // Recent form for the featured two teams = real pre-match signal.
@@ -423,7 +501,7 @@ export default function WorldCup() {
               getTeamForm(pick.teams?.home?.id, 5),
               getTeamForm(pick.teams?.away?.id, 5),
             ]);
-            forms = { home: formFromFixtures(hf, pick.teams?.home?.id), away: formFromFixtures(af, pick.teams?.away?.id) };
+            forms = { home: formStats(hf, pick.teams?.home?.id), away: formStats(af, pick.teams?.away?.id) };
           } catch { /* form optional */ }
           const events = eventsById[pick.fixture.id]
             || await getFixtureEvents(pick.fixture.id).catch(() => []);
@@ -499,9 +577,9 @@ export default function WorldCup() {
 
       {/* ── LIVE MOMENTS ── */}
       <section className="wc-section">
-        <SectionHead eyebrow="Tournament Feed" title="Live Moments" />
+        <SectionHead eyebrow="Tournament Feed" title="Scores & Schedule" />
         <div className="wc-moment-filters">
-          {['all', 'goal', 'red_card', 'upset', 'milestone', 'stat'].map(f => (
+          {['all', 'live', 'result', 'upcoming'].map(f => (
             <button key={f} type="button"
               className={momentFilter === f ? 'wc-mf-btn active' : 'wc-mf-btn'}
               onClick={() => setMomentFilter(f)}
@@ -513,8 +591,8 @@ export default function WorldCup() {
         {filteredMoments.length === 0 ? (
           <div className="wc-moments-empty">
             {liveFeed.length === 0
-              ? 'No goals or red cards in the feed yet — moments appear here live as the games are played.'
-              : 'No moments of this type yet.'
+              ? 'Fixtures appear here as the tournament schedule loads.'
+              : 'No fixtures of this type right now.'
             }
           </div>
         ) : (

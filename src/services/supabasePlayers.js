@@ -188,6 +188,17 @@ export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
 
   if(query.length<3) return [];
 
+  // Try the accent-insensitive RPC first (requires the unaccent extension +
+  // search_players_unaccent function in the DB). Falls back to plain ilike if
+  // the function hasn't been created yet, so existing installs keep working.
+  try {
+    const { data, error } = await client.rpc('search_players_unaccent', {
+      search_term: query,
+      max_results: limit,
+    });
+    if (!error && data) return (data || []).map(normalizePlayer);
+  } catch { /* RPC not available — fall through */ }
+
   const { data, error } = await client
     .from('players')
     .select(PLAYER_SELECT)

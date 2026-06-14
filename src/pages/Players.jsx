@@ -135,6 +135,9 @@ function weekIndex(length){
   return Math.floor(((d-oneJan)/86400000+oneJan.getDay()+1)/7)%length;
 }
 
+// Strip diacritics so "fermin" matches "Fermín", "odegaard" matches "Ødegaard"
+function foldAccents(s){ return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+
 function ageInRange(age,range){
   if(!age || range==='16-40') return true;
   const [a,b] = range.split('-').map(Number);

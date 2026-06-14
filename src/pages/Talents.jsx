@@ -11,7 +11,7 @@ import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { deriveArchetype } from '../services/playerTraits.js';
-import { leagueContext } from '../data/leagues.js';
+import { leagueContext, LEAGUES } from '../data/leagues.js';
 
 // Decode HTML entities that survive in stored/imported names ("O&apos;Reilly" → "O'Reilly").
 function cleanName(value){
@@ -178,12 +178,38 @@ function registryTalentFromProfile(profile) {
     : headroomDelta >= 3 ? `Rising +${headroomDelta}`
     : headroomDelta >= 1 ? `Near ceiling +${headroomDelta}`
     : 'At projected ceiling';
-  const nextStep =
-    minutes >= 1800
-      ? 'Ready for a higher-level role-fit review'
-      : minutes >= 900
-        ? 'Senior-minutes consolidation with step-up monitoring'
-        : 'Build a larger senior-minutes sample';
+  // Tier-aware next-step recommendation: uses the player's current league tier,
+  // rating and minutes to suggest a concrete development move rather than a
+  // generic label. E.g. a Tier 2 player rated 76+ with 1800+ min → "Step up to
+  // a mid-table Tier 1 league for higher-level minutes."
+  const currentTier = (() => {
+    const lid = profile.league_id ?? profile.leagueId;
+    const l = lid ? LEAGUES[Number(lid)] : null;
+    return l ? l.tier : null;
+  })();
+
+  const nextStep = (() => {
+    if (minutes < 900) return 'Build a larger senior-minutes sample at current level';
+    if (minutes < 1800) return currentTier === 1
+      ? 'Needs consistent Tier 1 starts before a role-fit review'
+      : 'Senior-minutes consolidation with step-up monitoring';
+
+    // 1800+ minutes — ready for trajectory assessment
+    if (currentTier === 1) {
+      return ratingNum >= 82 ? 'Established Tier 1 — role optimization and continental exposure'
+        : ratingNum >= 75 ? 'Tier 1 rotation — needs a defined starting role'
+        : 'Tier 1 fringe — loan to a strong Tier 2 league for guaranteed minutes';
+    }
+    if (currentTier === 2) {
+      return ratingNum >= 78 ? 'Step up to a mid-table Tier 1 league for higher-level minutes'
+        : ratingNum >= 72 ? 'Strong Tier 2 performer — Tier 1 bottom-half or top Tier 2 move'
+        : 'Consolidate at Tier 2 before a step-up';
+    }
+    // Tier 3+
+    return ratingNum >= 75 ? 'Move to a Tier 2 league as a stepping stone to Tier 1'
+      : ratingNum >= 68 ? 'Tier 3 standout — target a Tier 2 league for the next step'
+      : 'Continue development at current level';
+  })();
 
   return {
     ...profile,
@@ -498,6 +524,15 @@ export default function Talents() {
           {filtered.map(player=><button type="button" className={player.name===selected?.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
         </div>
         {selected && <Pathway player={selected}/>}
+        <div className="tier-explainer" style={{ marginTop:18, padding:'14px 18px', background:'rgba(198,255,58,.04)', border:'1px solid rgba(198,255,58,.12)', borderRadius:10 }}>
+          <strong style={{ fontSize:11, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--lime,#c6ff3a)' }}>League tier ladder</strong>
+          <p style={{ fontSize:13, opacity:.75, margin:'6px 0 10px', lineHeight:1.5 }}>Calibre grades leagues by competitive strength. The pathway model uses these tiers to recommend development moves — a Tier 2 standout rated 78+ is flagged for a Tier 1 step-up, while a Tier 3 prospect targets Tier 2 first.</p>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, fontSize:12 }}>
+            <div><strong style={{color:'var(--lime,#c6ff3a)'}}>Tier 1</strong><br/><span style={{opacity:.6}}>Premier League, La Liga, Bundesliga, Serie A, Ligue 1</span></div>
+            <div><strong style={{color:'var(--lime,#c6ff3a)'}}>Tier 2</strong><br/><span style={{opacity:.6}}>Primeira Liga, Eredivisie, Brasileirão, Pro League, Championship</span></div>
+            <div><strong style={{color:'var(--lime,#c6ff3a)'}}>Tier 3</strong><br/><span style={{opacity:.6}}>Liga Profesional, Süper Lig, MLS, Saudi Pro League, J1 League</span></div>
+          </div>
+        </div>
       </div>}
 
       {view === 'rankings' && <section className="talent-ranking-panel">

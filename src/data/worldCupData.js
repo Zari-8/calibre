@@ -53,7 +53,7 @@ export const breakoutStars = [
   {
     id:       'bs-004',
     name:     'Igor Thiago',
-    apiPlayerId: 196156, // Igor Thiago — stored in the bank as "Thiago" (Brentford, PL)
+    apiPlayerId: 196156,
     age:      24,
     nation:   'Brazil',
     flag:     '🇧🇷',
@@ -62,6 +62,19 @@ export const breakoutStars = [
     image:    '/assets/players/neutral-player.svg',
     note:     "Brentford's record-breaking No.9 — 25 goals in 2025/26 and a debut-season Brazil call-up that became a World Cup squad place. If Ancelotti needs a pure penalty-box finisher, Thiago is the wildcard who could force his way into the story.",
     featured: false,
+  },
+  {
+    id:       'bs-005',
+    name:     'Ayyoub Bouaddi',
+    apiPlayerId: 397810,
+    age:      18,
+    nation:   'Morocco',
+    flag:     '🇲🇦',
+    role:     'Box-to-Box Midfielder',
+    club:     'LOSC Lille',
+    image:    '/assets/players/neutral-player.svg',
+    note:     "The most exciting 18-year-old in Ligue 1. Bouaddi plays with the composure of a veteran — pressing engine, progressive passer, arrives in the box. Morocco's Atlas Lions could hand him a starting role and he is built for exactly this stage.",
+    featured: true,
   },
 ];
 

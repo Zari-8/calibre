@@ -19,6 +19,69 @@ const WEIGHTS = { Performance: 0.35, Consistency: 0.20, Form: 0.20, Impact: 0.15
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 function per(value, mins) { return mins > 0 ? num(value) / (mins / 90) : 0; }
+
+// ── TheStatsAPI event-stat helpers (v8.1) ────────────────────────────────
+// These fire only when the new columns are populated (non-null). When absent
+// the engine falls back to the v8 path unchanged — no rating breakage.
+
+// Shot quality nudge: rewards on-target efficiency, penalises big-chance waste.
+// Returns a small signed adjustment [-6, +6] to the production score.
+function shotQualityNudge(player) {
+  const acc = num(player.shot_accuracy, -1);
+  const missed = num(player.big_chances_missed, -1);
+  if (acc < 0 && missed < 0) return 0;        // no new data
+  let nudge = 0;
+  if (acc >= 0) nudge += clamp((acc - 33) / 33 * 4, -4, 4);  // 33% SOT = neutral
+  if (missed >= 0) nudge -= clamp(missed / 5 * 3, 0, 3);      // each 5 missed = -3
+  return clamp(nudge, -6, 6);
+}
+
+// Chance creation boost: big_chances_created per 90 is a strong creativity signal.
+// Returns a bonus [0, 10] added to the create component.
+function chanceCreationBoost(player, sm) {
+  const bcc = num(player.big_chances_created, -1);
+  if (bcc < 0) return 0;
+  const bcc90 = per(bcc, sm);
+  return clamp(bcc90 / 0.5 * 10, 0, 10);     // 0.5 BCC/90 = full +10
+}
+
+// Duel quality: replaces raw count-based win rate when % data is available.
+// Returns [0, 100] component score, same scale as the existing duel calc.
+function duelQualityScore(player, du90) {
+  const gd = num(player.ground_duel_win_pct, -1);
+  const ad = num(player.aerial_duel_win_pct, -1);
+  if (gd < 0 && ad < 0) return null;          // fall back to count-based
+  const gdScore = gd >= 0 ? clamp((gd - 30) / 40 * 80, 0, 80) : 40;
+  const adScore = ad >= 0 ? clamp((ad - 25) / 40 * 60, 0, 60) : 30;
+  const pctScore = gdScore * 0.6 + adScore * 0.4;
+  // Blend with volume (du90) so a player who wins 80% of 1 duel/90 isn't overrated
+  const volScore = clamp(du90 / 5.2 * 100, 0, 100);
+  return clamp(pctScore * 0.60 + volScore * 0.40, 0, 110);
+}
+
+// Territorial index: opp_half_passes share → forward aggression score [0, 100].
+// Used in DEF builds: a centre-back who rarely crosses halfway reads differently.
+function territorialIndex(player) {
+  const opp = num(player.opp_half_passes, -1);
+  const own = num(player.own_half_passes, -1);
+  if (opp < 0 || own < 0 || opp + own === 0) return null;
+  const share = opp / (opp + own);            // 0 = never attacks, 1 = always
+  return clamp(share * 100, 0, 100);
+}
+
+// Dribble quality: uses success % when available, else falls back to raw dr90.
+function dribbleScore(player, sm) {
+  const pct = num(player.dribble_success_pct, -1);
+  const cnt = num(player.successful_dribbles ?? player.dribbles_success, -1);
+  if (pct < 0) {
+    const dr90 = per(player.dribbles_success ?? player.dribbles, sm);
+    return { dr90, bonus: 0 };
+  }
+  const dr90 = cnt >= 0 ? per(cnt, sm) : per(player.dribbles_success ?? player.dribbles, sm);
+  // Quality bonus: high success rate above 55% average earns up to +8
+  const bonus = clamp((pct - 55) / 25 * 8, -4, 8);
+  return { dr90, bonus };
+}
 const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,13:0.74,307:0.63,253:0.80,98:0.72,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
 const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.84,'eredivisie':0.83,'championship':0.81,'pro league':0.80,'super lig':0.73,'saudi pro league':0.63,'brasileiro':0.82,'brasileirão':0.82,'mls':0.80,'j1 league':0.72,'npfl':0.55,'zimbabwe psl':0.50 };
 const DEFAULT_LEAGUE = 0.70;
@@ -45,33 +108,41 @@ function productionComponents(player, bucket) {
   const ev = sm > 0 && num(player.passes) > 0;
   const g90=per(player.goals,m), a90=per(player.assists,m);
   const pass90=per(player.passes,sm), acc=num(player.pass_accuracy);
-  const key90=per(player.key_passes,sm), dr90=per(player.dribbles_success ?? player.dribbles,sm);
-  const tk90=per(player.tackles,sm), in90=per(player.interceptions,sm), du90=per(player.duels_won,sm), sh90=per(player.shots,sm);
-  // Volume target defaults to a full top-flight season (34). The overlay line
-  // passes a smaller _volTarget scaled to its minutes, so a continental haul is
-  // judged against what's achievable in that many games — not a full league
-  // season it could never reach. The base never sets it, so the deliberate
-  // "injured/partial season scores lower" property from v7 is preserved.
+  const key90=per(player.key_passes,sm);
+  const tk90=per(player.tackles,sm), in90=per(player.interceptions,sm);
+  const du90=per(player.duels_won,sm), sh90=per(player.shots,sm);
+
+  // v8.1 — TheStatsAPI enhanced signals (fire only when populated)
+  const { dr90, bonus: dribBonus } = dribbleScore(player, sm);
+  const sqNudge   = shotQualityNudge(player);
+  const bccBoost  = chanceCreationBoost(player, sm);
+  const duelScore = duelQualityScore(player, du90);
+  const terr      = territorialIndex(player);
+
   const volTarget = num(player._volTarget, 34) || 34;
   const ratePts=clamp(g90/0.92*100,0,140), volPts=clamp(num(player.goals)/volTarget*100,0,140);
-  const goalScore=ratePts*0.5+volPts*0.5;
+  const goalScore=clamp(ratePts*0.5+volPts*0.5+sqNudge,0,140);
+
   if (bucket==='ATT') {
-    const create=clamp(a90/0.30*80+key90/2.5*30,0,116);
-    const carry=clamp(dr90/2.1*40+sh90/4.0*28,0,92);
+    const create=clamp(a90/0.30*80+key90/2.5*30+bccBoost,0,116);
+    const carry=clamp(dr90/2.1*40+dribBonus+sh90/4.0*28,0,92);
     return { vals:[goalScore,create,carry], w:[0.80,0.13,0.07], ev };
   }
   if (bucket==='DEF') {
-    const defend=clamp(tk90/2.1*40+in90/1.7*38+du90/5.2*40,0,110);
-    const build=ev?clamp((acc-76)/(93-76)*52+pass90/78*48,0,108):56;
-    const prog=clamp(key90/1.0*42+dr90/0.9*28,0,88);
+    const rawDuel=clamp(tk90/2.1*40+in90/1.7*38+du90/5.2*40,0,110);
+    const defend = duelScore !== null ? clamp(duelScore*1.1,0,110) : rawDuel;
+    const build=ev?clamp((acc-76)/(93-76)*52+pass90/78*48+(terr!=null?(terr-40)*0.15:0),0,108):56;
+    const prog=clamp(key90/1.0*42+dr90/0.9*28+dribBonus,0,88);
     const att=clamp(g90/0.14*55+a90/0.18*45,0,90);
     return { vals:[defend,build,prog,att], w:[0.66,0.20,0.09,0.05], ev };
   }
-  const progress=ev?clamp(pass90/68*60+(acc-75)/(93-75)*56,0,124):clamp(48+a90/0.35*25,0,86);
-  const create=clamp(key90/1.9*56+a90/0.46*52,0,116);
-  const goal=clamp(g90/0.42*85,0,120);
-  const carry=clamp(dr90/1.5*64,0,104);
-  const defend=clamp(tk90/2.1*48+in90/1.4*42,0,100);
+  // MID
+  const progress=ev?clamp(pass90/68*60+(acc-75)/(93-75)*56+(terr!=null?(terr-50)*0.10:0),0,124):clamp(48+a90/0.35*25,0,86);
+  const create=clamp(key90/1.9*56+a90/0.46*52+bccBoost,0,116);
+  const goal=clamp(g90/0.42*85+sqNudge,0,120);
+  const carry=clamp(dr90/1.5*64+dribBonus,0,104);
+  const duelRaw=clamp(tk90/2.1*48+in90/1.4*42,0,100);
+  const defend=duelScore!==null?clamp(duelScore*0.90,0,100):duelRaw;
   return { vals:[progress,create,goal,carry,defend], w:[0.62,0.23,0.09,0.04,0.02], ev };
 }
 

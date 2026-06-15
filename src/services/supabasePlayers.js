@@ -47,6 +47,22 @@ const PLAYER_SELECT = [
   'source',
   'last_synced_at',
   'profile_enriched_at',
+  // ── TheStatsAPI enriched event stats (v8.1) ──
+  'statsapi_player_id',
+  'big_chances_created',
+  'big_chances_missed',
+  'total_shots',
+  'shots_on_target',
+  'shot_accuracy',
+  'final_third_passes',
+  'opp_half_passes',
+  'own_half_passes',
+  'accurate_crosses',
+  'cross_accuracy',
+  'ground_duel_win_pct',
+  'aerial_duel_win_pct',
+  'dribble_success_pct',
+  'successful_dribbles',
 ].join(',');
 
 function requireSupabase(){
@@ -94,6 +110,22 @@ function normalizePlayer(row){
     shots:row.shots ?? null,
     // competition splits drive the 70/30 base+overlay blend (jsonb → object)
     competition_splits:row.competition_splits ?? null,
+    // TheStatsAPI enriched signals (v8.1) — null-safe passthrough
+    statsapi_player_id:row.statsapi_player_id ?? null,
+    big_chances_created:row.big_chances_created ?? null,
+    big_chances_missed:row.big_chances_missed ?? null,
+    total_shots:row.total_shots ?? null,
+    shots_on_target:row.shots_on_target ?? null,
+    shot_accuracy:row.shot_accuracy ?? null,
+    final_third_passes:row.final_third_passes ?? null,
+    opp_half_passes:row.opp_half_passes ?? null,
+    own_half_passes:row.own_half_passes ?? null,
+    accurate_crosses:row.accurate_crosses ?? null,
+    cross_accuracy:row.cross_accuracy ?? null,
+    ground_duel_win_pct:row.ground_duel_win_pct ?? null,
+    aerial_duel_win_pct:row.aerial_duel_win_pct ?? null,
+    dribble_success_pct:row.dribble_success_pct ?? null,
+    successful_dribbles:row.successful_dribbles ?? null,
   };
 }
 

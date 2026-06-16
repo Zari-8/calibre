@@ -182,9 +182,11 @@ function buildFields(player, stats, compId, seasonId) {
     aerial_duel_win_pct:du.aerial_duels_won_percentage??null,
     dribble_success_pct:du.successful_dribbles_percentage??null,
     successful_dribbles:du.successful_dribbles??null,
-    goals:sc.goals??null, assists, appearances:stats.appearances??null,
-    stats_minutes:stats.minutes_played??null, pass_accuracy:pa.pass_accuracy??null,
-    key_passes:pa.key_passes??null, tackles:de.tackles??null, interceptions:de.interceptions??null,
+    // ── DO NOT overwrite API-Football base fields ────────────────
+    // goals, assists, appearances, stats_minutes, pass_accuracy,
+    // key_passes, tackles, interceptions all belong to enrichPlayerStats.mjs.
+    // TheStatsAPI only writes the new columns above.
+    // ─────────────────────────────────────────────────────────────
   };
 }
 

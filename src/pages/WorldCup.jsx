@@ -3,6 +3,7 @@ import { Star, Zap, Trophy, ArrowRight, Clock3, Swords, ShieldCheck, BarChart3, 
 import Panel from '../components/Panel.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
+import PremierBetBanner from '../components/PremierBetBanner.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { playerIdFor } from '../data/playerIds.js';
@@ -634,6 +635,9 @@ export default function WorldCup() {
           </div>
         )}
       </section>
+
+      {/* ── BETTING PARTNER BANNER ── */}
+      <PremierBetBanner source="worldcup" variant="bar" />
 
       {/* ── BREAKOUT STARS ── */}
       <section className="wc-section">

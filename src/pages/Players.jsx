@@ -751,7 +751,7 @@ export default function Players(){
                   return (
                   <tr key={p.id||p.name} className="player-table-row" onClick={()=>openProfile(p)}>
                     <td>{i+1}</td>
-                    <td><div className="plp-player-cell"><ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} loading="lazy"/><strong>{p.name}</strong></div></td>
+                    <td><div className="plp-player-cell"><div className="plp-portrait-wrap"><ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} loading="lazy"/></div><strong>{p.name}</strong></div></td>
                     <td>{p.age||'—'}</td>
                     <td>{p.team||p.club||'API-Football profile'}</td>
                     <td><span className="plp-pos-badge">{p.position||p.pos||'—'}</span></td>

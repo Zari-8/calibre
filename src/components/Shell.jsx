@@ -1,6 +1,6 @@
 import { Menu, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { navItems } from '../data/calibreData.js';
+import { navItems as rawNavItems } from '../data/calibreData.js';
 import { WC_CONFIG } from '../data/worldCupData.js';
 import NavLink, { navigateTo } from './NavLink.jsx';
 import LiveTicker from './LiveTicker.jsx';
@@ -9,6 +9,16 @@ import DataFlowBar from './DataFlowBar.jsx';
 import AuthModal from './AuthModal.jsx';
 import useAuth from '../hooks/useAuth.js';
 import { signOut } from '../services/supabaseClient.js';
+
+// Nav order: Home → Debates → System Fit → Competitions → Talents → Players → [World Cup]
+const NAV_ORDER = ['/', '/debates', '/system-fit', '/competitions', '/talents', '/players'];
+const navItems = [...rawNavItems].sort((a, b) => {
+  const ai = NAV_ORDER.indexOf(a.href);
+  const bi = NAV_ORDER.indexOf(b.href);
+  const ap = ai === -1 ? 99 : ai;
+  const bp = bi === -1 ? 99 : bi;
+  return ap - bp;
+});
 
 function useShowWorldCup() {
   const kick = new Date(WC_CONFIG.kickoff);

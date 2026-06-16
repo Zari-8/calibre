@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Crown, Check, Clock, ArrowRight, BarChart3, ShieldCheck } from 'lucide-react';
+import PremierBetBanner from '../components/PremierBetBanner.jsx';
 
 const PLANS = [
   {
@@ -243,6 +244,8 @@ export default function Pricing() {
           />
         ))}
       </div>
+
+      <PremierBetBanner source="pricing" variant="card" />
 
       <section
         className="market-insights-mini"

@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { navigateTo } from "../components/NavLink.jsx";
 
 const AFFILIATE_LINKS = {
   sportsbook: "https://media.premierbetpartners.com/redirect.aspx?pid=143895&bid=5246",
@@ -46,9 +46,7 @@ const CONTEXT = {
 const DEFAULT_CONTEXT = CONTEXT.worldcup;
 
 export default function BetLanding() {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const params = new URLSearchParams(location.search);
+  const params = new URLSearchParams(window.location.search);
   const source = params.get("from") || "worldcup";
   const ctx = CONTEXT[source] || DEFAULT_CONTEXT;
 
@@ -81,7 +79,7 @@ export default function BetLanding() {
   return (
     <div style={styles.page}>
       {/* Back nav */}
-      <button style={styles.back} onClick={() => navigate(-1)}>
+      <button style={styles.back} onClick={() => navigateTo('/')}>
         ← Back to Calibre
       </button>
 

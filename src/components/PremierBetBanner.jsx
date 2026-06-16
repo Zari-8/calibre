@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { navigateTo } from "../components/NavLink.jsx";
 
 /**
  * PremierBetBanner
@@ -36,10 +36,9 @@ const COPY = {
 };
 
 export default function PremierBetBanner({ source = "worldcup", variant = "bar" }) {
-  const navigate = useNavigate();
   const copy = COPY[source] || COPY.worldcup;
 
-  const go = () => navigate(`/bet?from=${source}`);
+  const go = () => navigateTo(`/bet?from=${source}`);
 
   if (variant === "bar") {
     return (

@@ -262,23 +262,166 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
   );
 }
 
-function PlayerHero({ report, mode, comparison, challenger }) {
+function PositionBoard({ report }) {
+  const roles = [
+    { role: report.primaryRoles?.[0] || report.player.position || 'Primary', score: report.score, label: 'PRIMARY', x: 50, y: 32 },
+    { role: report.primaryRoles?.[1] || 'Secondary', score: Math.max(70, report.score - 14), label: 'SECONDARY', x: 28, y: 58 },
+    { role: report.primaryRoles?.[2] || 'Option', score: Math.max(66, report.score - 18), label: 'SECONDARY', x: 72, y: 58 },
+    { role: 'Depth option', score: Math.max(62, report.score - 25), label: 'DEPTH OPTION', x: 50, y: 78 },
+  ];
+  return (
+    <div className="sf-lineup-board sf-lineup-board--dashboard" aria-label="Possible lineup positions">
+      <div className="sf-lineup-board__title"><Layers3 size={14} /> POSSIBLE LINEUP POSITIONS <b>{report.team.formation}</b></div>
+      <div className="sf-pitch sf-pitch--dashboard">
+        <span className="sf-pitch-half" />
+        <span className="sf-pitch-box sf-pitch-box--top" />
+        <span className="sf-pitch-box sf-pitch-box--bottom" />
+        <span className="sf-pitch-direction">ATTACK ↑</span>
+        {roles.map(position => (
+          <div className={`sf-pitch-role ${position.label === 'PRIMARY' ? 'sf-pitch-role--primary' : ''}`} key={`${position.role}-${position.label}`} style={{ left: `${position.x}%`, top: `${position.y}%` }}>
+            <CircleDot size={18} /><b>{position.role}</b><em>{position.score}%</em><small>{position.label}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TacticalImpact({ report }) {
+  const t = report.player.traits || {};
+  const impact = [
+    { label: 'Ball Progression', text: `${report.player.name.split(' ')[0]} helps ${report.team.short || report.team.name} advance through pressure.`, score: Math.min(9.8, ((t.control || 80) + (t.tempo || 80)) / 20).toFixed(1) },
+    { label: 'Chance Creation', text: 'Final-third involvement and decision quality survive in this role.', score: Math.min(9.6, ((t.transition || 80) + (t.width || 72)) / 20).toFixed(1) },
+    { label: 'Defensive Work Rate', text: 'Pressing intensity and recovery runs fit the team structure.', score: Math.min(9.4, ((t.pressing || 78) + (t.defensiveLoad || 72)) / 20).toFixed(1) },
+  ];
+  return (
+    <section className="sf-panel sf-tactical-impact">
+      <div className="sf-panel-head"><div><Sparkles size={17} /><span>TACTICAL IMPACT</span></div></div>
+      {impact.map(item => (
+        <div className="sf-impact-row" key={item.label}>
+          <div className="sf-impact-icon"><Sparkles size={17} /></div>
+          <div><b>{item.label}</b><p>{item.text}</p></div>
+          <strong>{item.score}<small>/10</small></strong>
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function KeyStats({ report }) {
+  const p = report.player;
+  const mins = Number(p.stats_minutes || p.minutes || 0);
+  const per90 = (val) => {
+    const n = Number(val || 0);
+    if (!mins || !n) return null;
+    return (n / mins * 90).toFixed(2);
+  };
+  const fmt = (val) => (val == null ? '—' : val);
+  const goalsP90   = per90(p._goals   ?? p.goals);
+  const assistsP90 = per90(p._assists ?? p.assists);
+  const keyPassP90 = per90(p.key_passes);
+  const tacklesP90 = per90(p.tackles);
+  const dribPct    = Number(p.dribbles_attempts) > 0
+    ? Math.round((Number(p.dribbles_success) / Number(p.dribbles_attempts)) * 100) + '%'
+    : null;
+  const passAcc    = p.pass_accuracy != null
+    ? Math.round(Number(p.pass_accuracy)) + '%'
+    : null;
+  const hasReal = mins > 0;
+  const cells = hasReal
+    ? [
+        { value: fmt(goalsP90),   label: 'Goals',      sub: 'per 90' },
+        { value: fmt(assistsP90), label: 'Assists',     sub: 'per 90' },
+        { value: fmt(keyPassP90), label: 'Key passes',  sub: 'per 90' },
+        { value: fmt(tacklesP90), label: 'Tackles',     sub: 'per 90' },
+        { value: fmt(dribPct),    label: 'Dribbles',    sub: 'success %' },
+        { value: fmt(passAcc),    label: 'Pass acc.',   sub: '' },
+      ]
+    : [
+        { value: `${report.score}%`,                          label: 'Fit score',    sub: '' },
+        { value: `${Math.max(72, report.score)}%`,             label: 'Primary role', sub: '' },
+        { value: String(report.risks.length),                  label: 'Risk flags',   sub: '' },
+        { value: report.verdict?.replace(' FIT', '') || '—',   label: 'Model read',   sub: '' },
+      ];
+  return (
+    <section className="sf-panel sf-key-stats">
+      <div className="sf-panel-head">
+        <div><BarChart3 size={17} /><span>KEY STATS</span></div>
+        {hasReal && <b style={{ fontSize: '10px', color: 'var(--sf-muted)' }}>{Math.round(mins / 90)}× 90s</b>}
+      </div>
+      <div className="sf-key-stats-grid">
+        {cells.map(item => (
+          <div key={item.label}>
+            <strong>{item.value}</strong>
+            <span>{item.label}</span>
+            {item.sub && <em style={{ display: 'block', fontSize: '9px', color: 'var(--sf-muted)', marginTop: '1px' }}>{item.sub}</em>}
+          </div>
+        ))}
+      </div>
+      {!hasReal && <small style={{ color: 'var(--sf-muted)', fontSize: '10px', marginTop: '8px', display: 'block' }}>Per-90 stats load once this player is selected from the registry.</small>}
+    </section>
+  );
+}
+
+function RoleRadar({ report, player }) {
+  const items = report.rolePulse.slice(0, 6);
+  const cx = 110, cy = 110, r = 76;
+  const angles = items.map((_, i) => (Math.PI / 2) - (i * (Math.PI * 2)) / 6);
+  const toXY = (angle, radius) => [
+    cx + radius * Math.cos(angle),
+    cy - radius * Math.sin(angle),
+  ];
+  const poly = (pts) => pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const playerPts = items.map((item, i) => toXY(angles[i], (item.value / 100) * r));
+  const systemPts = items.map((item, i) => toXY(angles[i], (Math.max(58, item.value - 10) / 100) * r));
+  return (
+    <section className="sf-panel sf-role-radar-panel">
+      <div className="sf-panel-head"><div><Activity size={17} /><span>ROLE FIT MAP</span></div><b>{player.archetype}</b></div>
+      <svg viewBox="0 0 220 220" width="100%" style={{ maxHeight: 210, display: 'block', margin: '0 auto' }} aria-label="Role fit radar chart">
+        {[0.33, 0.66, 1].map(pct => (
+          <polygon key={pct} points={poly(angles.map(a => toXY(a, r * pct)))} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="1" />
+        ))}
+        {angles.map((a, i) => {
+          const [x1, y1] = toXY(a, 0);
+          const [x2, y2] = toXY(a, r);
+          return <line key={i} x1={x1.toFixed(1)} y1={y1.toFixed(1)} x2={x2.toFixed(1)} y2={y2.toFixed(1)} stroke="rgba(255,255,255,0.05)" strokeWidth="1" />;
+        })}
+        <polygon points={poly(systemPts)} fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.18)" strokeWidth="1" strokeDasharray="3 3" />
+        <polygon points={poly(playerPts)} fill="rgba(166,255,0,0.13)" stroke="#a6ff00" strokeWidth="1.5" />
+        {playerPts.map(([x, y], i) => <circle key={i} cx={x.toFixed(1)} cy={y.toFixed(1)} r="3" fill="#a6ff00" />)}
+        {items.map((item, i) => {
+          const [lx, ly] = toXY(angles[i], r + 18);
+          const anchor = lx < cx - 6 ? 'end' : lx > cx + 6 ? 'start' : 'middle';
+          return (
+            <g key={item.label}>
+              <text x={lx.toFixed(1)} y={(ly - 5).toFixed(1)} textAnchor={anchor} fontSize="8" fill="#7a8290" fontFamily="'Barlow Condensed',sans-serif" letterSpacing="0.05em">{item.label.toUpperCase()}</text>
+              <text x={lx.toFixed(1)} y={(ly + 8).toFixed(1)} textAnchor={anchor} fontSize="11" fill="#a6ff00" fontWeight="700" fontFamily="'Barlow Condensed',sans-serif">{item.value}</text>
+            </g>
+          );
+        })}
+      </svg>
+      <div className="sf-panel-legend"><span><i className="lime" />player profile</span><span><i className="marker" />system need</span></div>
+    </section>
+  );
+}
+
+function FitIntelligenceDashboard({ report, mode, comparison, challenger }) {
   const player = report.player;
   return (
-    <section className="sf-hero-card">
-      <div className="sf-hero-topline">
-        <div><span>CALIBRE SYSTEM FIT ENGINE</span><b>REPORT GENERATED FROM LIVE SELECTIONS</b></div>
-        <div className="sf-live"><i /> DATA MODEL ACTIVE</div>
-      </div>
-      <div className="sf-hero-grid">
-        <div className="sf-player-portrait">
+    <section className="sf-dashboard-shell">
+      <div className="sf-dashboard-hero">
+        <div className="sf-player-portrait sf-player-portrait--dashboard">
           <ApiPlayerImage playerId={playerIdFor(player.name) || player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
           <div className="sf-player-portrait-fade" />
           <div className="sf-player-portrait-label"><small>{player.archetype}</small><strong>{player.name}</strong><span>{player.position} · {player.team}</span></div>
         </div>
-        <div className="sf-score-summary">
+
+        <div className="sf-dashboard-verdict">
           <div className="sf-kicker">DOES HE FIT?</div>
           <div className="sf-score-main"><ScoreRing score={report.score} /><div><h2>{report.verdict}</h2><p>{report.conclusion}</p></div></div>
+          <div className="sf-dashboard-checks">
+            {report.strengths.slice(0, 3).map(text => <span key={text}><CheckCircle2 size={14} />{text}</span>)}
+          </div>
           <div className="sf-score-chips"><span>{report.team.formation}</span><span>{report.team.philosophy}</span><span>{player.archetype}</span></div>
           <ShareBar
             text={`${player.name} → ${report.team.name}: ${report.score}% system fit on Calibre — “${report.verdict}”.`}
@@ -286,14 +429,45 @@ function PlayerHero({ report, mode, comparison, challenger }) {
             title="Calibre System Fit"
           />
         </div>
-        <div className="sf-breakdown-card">
-          <div className="sf-kicker">FIT BREAKDOWN</div>
-          {report.breakdown.slice(0, 6).map(item => <MetricBar key={item.label} label={item.label} value={item.value} />)}
+
+        <PositionBoard report={report} />
+
+        <div className="sf-system-read">
+          <div className="sf-kicker">SYSTEM FIT READ</div>
+          <p>{report.conclusion}</p>
+          <div className="sf-transfer-points">
+            {report.strengths.slice(0, 3).map(text => <span key={text}><i />{text}</span>)}
+          </div>
+          <small>Auto-generated by Calibre System Fit from the selected player profile and team model.</small>
         </div>
       </div>
+
       {mode === 'compare' && (
         <div className="sf-compare-banner"><GitCompare size={16} /><span>COMPARISON MODE</span><b>{player.name}</b><em>vs</em><b>{challenger.name}</b><strong>{comparison.primaryScore}% / {comparison.challengerScore}%</strong></div>
       )}
+
+      <div className="sf-dashboard-grid">
+        <section className="sf-panel sf-fit-breakdown-panel">
+          <div className="sf-panel-head"><div><Activity size={17} /><span>FIT BREAKDOWN</span></div><b>MODEL OUTPUT</b></div>
+          {report.breakdown.slice(0, 6).map(item => <MetricBar key={item.label} label={item.label} value={item.value} compare={Math.max(58, item.value - 8)} />)}
+          <div className="sf-panel-legend"><span><i className="lime" />player score</span><span><i className="marker" />system avg</span></div>
+        </section>
+
+        <RoleRadar report={report} player={player} />
+
+        <TacticalImpact report={report} />
+      </div>
+
+      <div className="sf-dashboard-grid sf-dashboard-grid--lower">
+        <section className="sf-panel sf-panel--wide">
+          <div className="sf-panel-head"><div><ShieldCheck size={17} /><span>TACTICAL READ</span></div></div>
+          <div className="sf-analysis-columns">
+            <div><div className="sf-kicker">WHAT WORKS</div>{report.strengths.map(text => <p key={text}>✓ {text}</p>)}</div>
+            <div><div className="sf-kicker sf-kicker--risk">WHAT NEEDS PROTECTION</div>{report.risks.map(text => <p key={text}>− {text}</p>)}</div>
+          </div>
+        </section>
+        <KeyStats report={report} />
+      </div>
     </section>
   );
 }
@@ -485,9 +659,7 @@ export default function SystemFit() {
           <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER</button>
           <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS</button>
         </div>
-        <TransferSpotlightLoader onLoad={(player, team) => { setSelectedPlayer(player); setSelectedTeam(team); setMode('fit'); }} />
-        <PlayerHero report={report} mode={mode} comparison={comparison} challenger={challenger} />
-        {mode === 'fit' && <FitOverview report={report} />}
+        <FitIntelligenceDashboard report={report} mode={mode} comparison={comparison} challenger={challenger} />
         {mode === 'compare' && <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} />}
         {mode === 'analysis' && <DetailedAnalysis report={report} />}
         <section className="sf-panel sf-ranking-panel">
@@ -495,6 +667,47 @@ export default function SystemFit() {
           <div className="sf-ranking-grid">{report.alternativeFits.slice(0, 6).map((team, index) => <button type="button" key={team.id} onClick={() => setSelectedTeam(team)}><b>0{index + 1}</b><Crest team={team} size={32} /><span><strong>{team.name}</strong><small>{team.formation} · {team.league}</small></span><em>{team.score}%</em></button>)}</div>
         </section>
         <div className="sf-founder-strip"><Crown size={18} /><div><b>Get World Cup Founder Pass</b><span>Pro exports, advanced analysis and World Cup intelligence.</span></div><button type="button" className="btn btn--lime btn--sm" onClick={() => navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={13} /></button></div>
+
+        <style>{`
+          .sf-page { --sf-lime:#a6ff00; --sf-panel:rgba(15,15,19,.92); --sf-border:rgba(166,255,0,.16); --sf-muted:#8d929b; }
+          .sf-main { padding-bottom: 34px; }
+          .sf-dashboard-shell { display:flex; flex-direction:column; gap:14px; }
+          .sf-dashboard-hero { display:grid; grid-template-columns: minmax(190px, 240px) minmax(260px, 1.15fr) minmax(280px, .95fr) minmax(250px, .9fr); gap:12px; align-items:stretch; background:linear-gradient(135deg, rgba(166,255,0,.08), rgba(12,12,16,.96) 30%, rgba(10,10,12,.98)); border:1px solid var(--sf-border); border-radius:14px; padding:12px; box-shadow:0 0 0 1px rgba(255,255,255,.025) inset, 0 24px 70px rgba(0,0,0,.45); }
+          .sf-player-portrait--dashboard { min-height:250px; border-radius:10px; overflow:hidden; }
+          .sf-player-portrait--dashboard img { width:100%; height:100%; object-fit:cover; }
+          .sf-dashboard-verdict, .sf-system-read, .sf-lineup-board--dashboard { background:rgba(10,10,13,.78); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:16px; }
+          .sf-dashboard-verdict { display:flex; flex-direction:column; justify-content:center; gap:12px; }
+          .sf-dashboard-verdict h2 { margin:0 0 6px; color:var(--sf-lime); font-size:34px; line-height:.95; letter-spacing:-.03em; }
+          .sf-dashboard-verdict p, .sf-system-read p { color:#c7cbd2; line-height:1.55; margin:0; }
+          .sf-dashboard-checks { display:grid; gap:8px; }
+          .sf-dashboard-checks span { display:flex; gap:7px; align-items:flex-start; color:#cfd3d8; font-size:12px; line-height:1.35; }
+          .sf-dashboard-checks svg { color:var(--sf-lime); flex:0 0 auto; margin-top:1px; }
+          .sf-pitch--dashboard { min-height:220px; }
+          .sf-system-read { display:flex; flex-direction:column; justify-content:center; gap:12px; }
+          .sf-transfer-points { display:grid; gap:9px; }
+          .sf-transfer-points span { display:flex; gap:8px; color:#d8dce1; font-size:12px; line-height:1.35; }
+          .sf-transfer-points i { width:7px; height:7px; border-radius:999px; background:var(--sf-lime); margin-top:4px; box-shadow:0 0 14px rgba(166,255,0,.7); flex:0 0 auto; }
+          .sf-system-read small { color:var(--sf-muted); line-height:1.4; }
+          .sf-dashboard-grid { display:grid; grid-template-columns: 1.05fr .95fr 1fr; gap:12px; }
+          .sf-dashboard-grid--lower { grid-template-columns: 1.45fr .55fr; }
+          .sf-fit-breakdown-panel .sf-metric-row { margin-bottom:10px; }
+          .sf-role-radar-panel { overflow: hidden; }
+          .sf-impact-row { display:grid; grid-template-columns:42px 1fr auto; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid rgba(255,255,255,.06); }
+          .sf-impact-row:last-child { border-bottom:0; }
+          .sf-impact-icon { width:38px; height:38px; border-radius:9px; display:grid; place-items:center; color:var(--sf-lime); background:rgba(166,255,0,.08); border:1px solid rgba(166,255,0,.22); }
+          .sf-impact-row b { color:#fff; display:block; margin-bottom:3px; }
+          .sf-impact-row p { color:#aeb4bd; margin:0; font-size:12px; line-height:1.35; }
+          .sf-impact-row strong { color:var(--sf-lime); font-size:25px; letter-spacing:-.05em; }
+          .sf-impact-row strong small { color:#cbd0d6; font-size:12px; margin-left:2px; }
+          .sf-key-stats-grid { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; }
+          .sf-key-stats-grid div { padding:14px 10px; border:1px solid rgba(255,255,255,.06); border-radius:10px; background:rgba(255,255,255,.025); text-align:center; }
+          .sf-key-stats-grid strong { display:block; color:#fff; font-size:24px; line-height:1; letter-spacing:-.04em; }
+          .sf-key-stats-grid span { display:block; margin-top:6px; color:#9aa0a9; text-transform:uppercase; font-size:10px; letter-spacing:.08em; }
+          .sf-kicker--risk { color:#ff6464; }
+          .sf-ranking-panel { margin-top:0; }
+          @media (max-width: 1280px) { .sf-dashboard-hero { grid-template-columns:220px 1fr 1fr; } .sf-system-read { grid-column:2 / 4; } .sf-dashboard-grid, .sf-dashboard-grid--lower { grid-template-columns:1fr; } }
+          @media (max-width: 900px) { .sf-dashboard-hero { grid-template-columns:1fr; } .sf-system-read { grid-column:auto; } .sf-player-portrait--dashboard { min-height:320px; } }
+        `}</style>
       </main>
     </div>
   );

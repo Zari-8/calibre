@@ -368,7 +368,7 @@ function TalentDetailModal({ player, onClose }) {
         </div>
 
         {/* ── Link to full player bank profile ── */}
-        <div style={{padding:'0 26px 26px',display:'flex',gap:10}}>
+        <div style={{padding:'0 26px 16px',display:'flex',gap:10}}>
           <button
             type="button"
             className="btn btn--lime btn--sm"
@@ -393,7 +393,17 @@ function TalentDetailModal({ player, onClose }) {
             }}
           >
             RUN SYSTEM FIT <ArrowRight size={13}/>
+
           </button>
+        </div>
+
+        {/* ── Share bar ── */}
+        <div style={{padding:'0 26px 22px'}}>
+          <ShareBar
+            text={`${player.name} — ${Math.round(player.rating || 0)} Calibre rating, ${player.role || 'rising talent'}. Scouted on Calibre.`}
+            url={shareUrl('/talents')}
+            label={false}
+          />
         </div>
       </div>
     </div>

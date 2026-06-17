@@ -672,9 +672,9 @@ export default function SystemFit() {
           .sf-page { --sf-lime:#a6ff00; --sf-panel:rgba(15,15,19,.92); --sf-border:rgba(166,255,0,.16); --sf-muted:#8d929b; }
           .sf-main { padding-bottom: 34px; }
           .sf-dashboard-shell { display:flex; flex-direction:column; gap:14px; }
-          .sf-dashboard-hero { display:grid; grid-template-columns: minmax(190px, 240px) minmax(260px, 1.15fr) minmax(280px, .95fr) minmax(250px, .9fr); gap:12px; align-items:stretch; background:linear-gradient(135deg, rgba(166,255,0,.08), rgba(12,12,16,.96) 30%, rgba(10,10,12,.98)); border:1px solid var(--sf-border); border-radius:14px; padding:12px; box-shadow:0 0 0 1px rgba(255,255,255,.025) inset, 0 24px 70px rgba(0,0,0,.45); }
-          .sf-player-portrait--dashboard { min-height:250px; border-radius:10px; overflow:hidden; }
-          .sf-player-portrait--dashboard img { width:100%; height:100%; object-fit:cover; }
+          .sf-dashboard-hero { display:grid; grid-template-columns: 120px minmax(260px, 1.3fr) minmax(240px, .95fr) minmax(220px, .85fr); gap:12px; align-items:stretch; background:linear-gradient(135deg, rgba(166,255,0,.08), rgba(12,12,16,.96) 30%, rgba(10,10,12,.98)); border:1px solid var(--sf-border); border-radius:14px; padding:12px; box-shadow:0 0 0 1px rgba(255,255,255,.025) inset, 0 24px 70px rgba(0,0,0,.45); }
+          .sf-player-portrait--dashboard { min-height:160px; max-height:200px; border-radius:10px; overflow:hidden; }
+          .sf-player-portrait--dashboard img { width:100%; height:100%; object-fit:cover; object-position:top center; }
           .sf-dashboard-verdict, .sf-system-read, .sf-lineup-board--dashboard { background:rgba(10,10,13,.78); border:1px solid rgba(255,255,255,.07); border-radius:10px; padding:16px; }
           .sf-dashboard-verdict { display:flex; flex-direction:column; justify-content:center; gap:12px; }
           .sf-dashboard-verdict h2 { margin:0 0 6px; color:var(--sf-lime); font-size:34px; line-height:.95; letter-spacing:-.03em; }
@@ -705,8 +705,8 @@ export default function SystemFit() {
           .sf-key-stats-grid span { display:block; margin-top:6px; color:#9aa0a9; text-transform:uppercase; font-size:10px; letter-spacing:.08em; }
           .sf-kicker--risk { color:#ff6464; }
           .sf-ranking-panel { margin-top:0; }
-          @media (max-width: 1280px) { .sf-dashboard-hero { grid-template-columns:220px 1fr 1fr; } .sf-system-read { grid-column:2 / 4; } .sf-dashboard-grid, .sf-dashboard-grid--lower { grid-template-columns:1fr; } }
-          @media (max-width: 900px) { .sf-dashboard-hero { grid-template-columns:1fr; } .sf-system-read { grid-column:auto; } .sf-player-portrait--dashboard { min-height:320px; } }
+          @media (max-width: 1280px) { .sf-dashboard-hero { grid-template-columns:100px 1fr 1fr; } .sf-system-read { grid-column:2 / 4; } .sf-dashboard-grid, .sf-dashboard-grid--lower { grid-template-columns:1fr; } }
+          @media (max-width: 900px) { .sf-dashboard-hero { grid-template-columns:80px 1fr; } .sf-system-read { grid-column:auto; } .sf-player-portrait--dashboard { min-height:120px; max-height:160px; } }
         `}</style>
       </main>
     </div>

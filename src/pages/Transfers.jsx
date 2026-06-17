@@ -725,7 +725,7 @@ export default function Transfers() {
         </div>
 
         {/* ── ASIDE ── */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 24, alignSelf: 'flex-start' }}>
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {/* Recent transfers */}
           <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
@@ -793,8 +793,7 @@ const pageStyle = {
   background: '#0a0a0a',
   color: '#ffffff',
   fontFamily: "'Barlow', sans-serif",
-  minHeight: '100vh',
-  paddingBottom: 60,
+  paddingBottom: 32,
 };
 
 const heroWrap = {

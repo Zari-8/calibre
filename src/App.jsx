@@ -8,6 +8,7 @@ import Talents from './pages/Talents.jsx';
 import SystemFit from './pages/SystemFit.jsx';
 import Pricing from './pages/Pricing.jsx';
 import WorldCup from './pages/WorldCup.jsx';
+import Transfers from './pages/Transfers.jsx';
 import BetLanding from './pages/BetLanding.jsx';
 
 const routes = {
@@ -19,6 +20,7 @@ const routes = {
   '/system-fit':   SystemFit,
   '/pricing':      Pricing,
   '/world-cup':    WorldCup,
+  '/transfers':    Transfers,
   '/bet':          BetLanding,
 };
 

@@ -420,8 +420,10 @@ export default function Transfers() {
         </div>
       </div>
 
-      {/* ── LAYOUT: main + aside ── */}
-      <div style={layoutStyle}>
+      {/* ── FULL PAGE 3-COLUMN LAYOUT ── */}
+      <div style={{ maxWidth: 1340, margin: '24px auto 0', padding: '0 24px', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+
+        {/* ── LEFT+MAIN ── */}
         <div style={{ minWidth: 0 }}>
 
           {/* ── EDITORIAL SPOTLIGHT ── */}
@@ -724,9 +726,9 @@ export default function Transfers() {
           </div>
         </div>
 
-        {/* ── ASIDE ── */}
+        {/* ── RIGHT ASIDE — Market Pulse + System Fit link ── */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Recent transfers */}
+          {/* Recent transfers — now in the far right column */}
           <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
               <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>Recent<br />Transfers</div>
@@ -799,11 +801,11 @@ const pageStyle = {
 const heroWrap = {
   background: '#0f0f0f',
   borderBottom: '1px solid #1c1c1c',
-  padding: '28px 32px 24px',
+  padding: '28px 24px 24px',
 };
 
 const heroInner = {
-  maxWidth: 1200,
+  maxWidth: 1340,
   margin: '0 auto',
   display: 'grid',
   gridTemplateColumns: '1fr 420px',

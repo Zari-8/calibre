@@ -301,11 +301,17 @@ export default function Transfers() {
 
   return (
     <div style={pageStyle}>
-      {/* ── HERO ── */}
-      <div style={heroWrap}>
-        <div style={heroInner}>
+      {/* ── SINGLE OUTER GRID: main | right sidebar ── */}
+      <div style={{ maxWidth: 1340, margin: '0 auto', padding: '0 24px 32px', display: 'grid', gridTemplateColumns: '1fr 290px', gap: 20, alignItems: 'start' }}>
+
+        {/* ── LEFT COLUMN: hero + tabs ── */}
+        <div style={{ minWidth: 0 }}>
+
+          {/* ── HERO ── */}
+          <div style={{ background: '#0f0f0f', borderBottom: '1px solid #1c1c1c', padding: '20px 0 18px', marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24, alignItems: 'start' }}>
           {/* Left — headline + search */}
-          <div style={{ paddingRight: 32 }}>
+          <div style={{ paddingRight: 0 }}>
             <div style={eyebrowStyle}>Transfer Intelligence · Live Deal Room</div>
             <h1 style={headlineStyle}>Deal or<br />No Deal?</h1>
             <p style={heroSubStyle}>
@@ -416,15 +422,8 @@ export default function Transfers() {
                 <ShareBar text={shareText} url={shareUrl('/transfers')} />
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── FULL PAGE 3-COLUMN LAYOUT ── */}
-      <div style={{ maxWidth: 1340, margin: '24px auto 0', padding: '0 24px', display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
-
-        {/* ── LEFT+MAIN ── */}
-        <div style={{ minWidth: 0 }}>
+            </div>{/* close hero grid */}
+          </div>{/* close hero wrap */}
 
           {/* ── EDITORIAL SPOTLIGHT ── */}
           {spotlight && (
@@ -727,7 +726,7 @@ export default function Transfers() {
         </div>
 
         {/* ── RIGHT ASIDE — Market Pulse + System Fit link ── */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 0, paddingTop: 16 }}>
           {/* Recent transfers — now in the far right column */}
           <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>

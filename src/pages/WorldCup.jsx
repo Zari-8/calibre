@@ -468,9 +468,11 @@ export default function WorldCup() {
           const match = byId.get(Number(star.apiPlayerId));
           if (!match) return [star.name, null];
           const scored = calibreRating(match);
-          if (scored.rating == null) return [star.name, null];
+          // Use computed rating first, fall back to stored DB rating
+          const finalRating = scored.rating ?? (match.rating ? Math.round(Number(match.rating)) : null);
+          if (finalRating == null) return [star.name, null];
           return [star.name, {
-            rating: scored.rating,
+            rating: finalRating,
             apiPlayerId: Number(star.apiPlayerId) || null,
             appearances: Number(match.appearances || 0),
             goals: Number(match.goals || 0),

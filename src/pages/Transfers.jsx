@@ -4,52 +4,144 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
+import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 
-// ── Editorial spotlight pool — top transfer buzz players from highlighted leagues
-// Rotates every 3 days using a deterministic date seed so all users see the same pick
-const SPOTLIGHT_POOL = [
-  { apiPlayerId: 284888, name: 'Viktor Gyökeres', pos: 'ST', club: 'Sporting CP', to: 'Arsenal',     fee: 80,  marketValue: 55, context: 'Arsenal\'s first-choice striker target. Gyökeres led Europe in goals per 90 last season. The question is whether £80M represents fair value for a player yet to prove himself in a top-5 league.' },
-  { apiPlayerId: 203224, name: 'Florian Wirtz',   pos: 'AM', club: 'Leverkusen',  to: 'Liverpool',   fee: 125, marketValue: 100, context: 'The most complete young midfielder in Europe. Liverpool secured one of the best pure playmakers in a generation. At €125M the fee is steep but the ceiling is elite.' },
-  { apiPlayerId: 390489, name: 'Nico Williams',   pos: 'LW', club: 'Athletic Club',to: 'Barcelona',  fee: 58,  marketValue: 60, context: 'Barcelona activate release clause on the Spain international. One of the purest 1v1 wingers in European football — at this price, arguably the deal of the summer.' },
-  { apiPlayerId: 397810, name: 'Junior Kroupi',   pos: 'ST', club: 'LOSC Lille',  to: 'Bournemouth', fee: 100, marketValue: 40, context: 'Bournemouth\'s record pursuit of the Ligue 1 breakthrough striker. Calibre rates his ceiling highly but the €100M ask is a 150% premium on market value.' },
-  { apiPlayerId: 348905, name: 'Dean Huijsen',    pos: 'CB', club: 'Bournemouth', to: 'Real Madrid', fee: 60,  marketValue: 45, context: 'Real Madrid\'s long-term successor to their defensive spine. At 19, Huijsen represents exactly the kind of curve buy the Bernabéu has built its dynasty on.' },
-  { apiPlayerId: 281854, name: 'Evan Ferguson',   pos: 'ST', club: 'Brighton',    to: 'Man United',  fee: 50,  marketValue: 45, context: 'United\'s striker search lands on Brighton\'s young Irishman. Strong positional instincts, good aerial presence, needs consistency at the highest level.' },
-];
+// ── Live data fetchers ────────────────────────────────────────────────────────
 
-// Deterministic rotation — changes every 3 days, consistent for all users
-function getSpotlightIndex() {
-  const epoch = new Date('2026-06-01').getTime();
-  const daysSince = Math.floor((Date.now() - epoch) / (1000 * 60 * 60 * 24));
-  const slot = Math.floor(daysSince / 3);
-  return slot % SPOTLIGHT_POOL.length;
+async function fetchRecentTransfers() {
+  if (!supabaseConfigured || !supabase) return [];
+  const { data, error } = await supabase
+    .from('transfers')
+    .select('*')
+    .eq('published', true)
+    .eq('season', '2026-27')
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (error || !data?.length) return FALLBACK_TRANSFERS;
+  return data.map(t => ({
+    id: t.id,
+    name: t.player_name,
+    pos: t.position_label || t.position,
+    from: t.from_club,
+    to: t.to_club || '—',
+    fee: t.fee_millions,
+    status: t.status,
+    apiPlayerId: t.api_player_id,
+    marketValue: t.market_value,
+  }));
 }
 
-// ── Static transfer feed ──────────────────────────────────────────────────────
-const RECENT_TRANSFERS = [
-  { id: 1, name: 'Florian Wirtz',    pos: 'AM / Creator',  from: 'Leverkusen',   to: 'Liverpool',    fee: 125, status: 'done',    apiPlayerId: 203224 },
-  { id: 2, name: 'Viktor Gyökeres', pos: 'ST / Power',    from: 'Sporting',      to: 'Arsenal',      fee: 80,  status: 'rumour',  apiPlayerId: 284888 },
-  { id: 3, name: 'Nico Williams',   pos: 'LW / 1v1',      from: 'Athletic Club', to: 'Barcelona',    fee: 58,  status: 'premium', apiPlayerId: 390489 },
-  { id: 4, name: 'Dean Huijsen',    pos: 'CB / Builder',  from: 'Bournemouth',   to: 'Real Madrid',  fee: 60,  status: 'done',    apiPlayerId: 348905 },
-  { id: 5, name: 'Lamine Yamal',    pos: 'RW / Creator',  from: 'Barcelona',     to: '—',            fee: null,status: 'watch',   apiPlayerId: 386828 },
+async function fetchMarketPulse() {
+  if (!supabaseConfigured || !supabase) return FALLBACK_PULSE;
+  const { data, error } = await supabase
+    .from('market_pulse')
+    .select('*')
+    .single();
+  if (error || !data) return FALLBACK_PULSE;
+  return [
+    { label: 'Most inflated position', value: data.most_inflated_position || 'ST', highlight: true },
+    { label: 'Average quoted premium', value: `+${data.avg_premium_pct || 0}%`, highlight: true },
+    { label: 'Best value lane',        value: data.best_value_lane || 'U23 CB',  highlight: false },
+    { label: 'Highest risk lane',      value: data.highest_risk_lane || 'Teen ST', highlight: false },
+    { label: 'Transfers done (2026)',  value: String(data.transfers_done || 0),  highlight: false },
+    { label: 'Avg fee vs TM value',    value: `+${data.avg_fee_vs_tm_pct || 0}%`, highlight: true },
+  ];
+}
+
+async function fetchComparables(position) {
+  if (!supabaseConfigured || !supabase) return FALLBACK_COMPARABLES;
+  const { data, error } = await supabase
+    .from('transfers')
+    .select('*')
+    .eq('published', true)
+    .eq('season', '2026-27')
+    .not('fee_millions', 'is', null)
+    .order('fee_millions', { ascending: false })
+    .limit(8);
+  if (error || !data?.length) return FALLBACK_COMPARABLES;
+  return data.map(t => {
+    const premium = t.market_value ? ((t.fee_millions - t.market_value) / t.market_value * 100) : 0;
+    const roi = premium > 60 ? 'OVERPAY FLAG' : premium > 20 ? 'MIXED ROI' : 'GOOD CEILING';
+    const roiClass = premium > 60 ? 'red' : premium > 20 ? 'amber' : 'lime';
+    return {
+      name: t.player_name,
+      fee: t.fee_millions,
+      tag: t.position_label || t.position || '—',
+      roi,
+      roiClass,
+      apiPlayerId: t.api_player_id,
+    };
+  });
+}
+
+// ── Spotlight — picks from live transfers table (highest-fee rumour/watch) ────
+async function fetchSpotlight() {
+  if (!supabaseConfigured || !supabase) return null;
+  // Pick the highest-fee active deal that isn't 'done' — most buzz
+  const slot = Math.floor(Math.floor((Date.now() - new Date('2026-06-01').getTime()) / 86400000) / 3);
+  const { data, error } = await supabase
+    .from('transfers')
+    .select('*')
+    .eq('published', true)
+    .in('status', ['rumour', 'watch', 'premium'])
+    .not('fee_millions', 'is', null)
+    .order('fee_millions', { ascending: false })
+    .limit(6);
+  if (error || !data?.length) return null;
+  const pick = data[slot % data.length];
+  return {
+    apiPlayerId: pick.api_player_id,
+    name: pick.player_name,
+    pos: pick.position,
+    club: pick.from_club,
+    to: pick.to_club || 'Unknown destination',
+    fee: pick.fee_millions,
+    marketValue: pick.market_value,
+    context: buildSpotlightContext(pick),
+  };
+}
+
+function buildSpotlightContext(t) {
+  const premium = t.market_value ? Math.round((t.fee_millions - t.market_value) / t.market_value * 100) : null;
+  const premiumStr = premium != null ? ` The quoted fee of €${t.fee_millions}M represents a ${premium > 0 ? '+' : ''}${premium}% ${premium > 0 ? 'premium' : 'discount'} on Transfermarkt value.` : '';
+  return `${t.player_name} is one of the most talked-about moves of the summer window. ${t.from_club} to ${t.to_club || 'an unnamed destination'} — the deal is still developing.${premiumStr} Run the analysis to see Calibre's full verdict.`;
+}
+
+// ── Fallbacks (shown while Supabase loads or if unavailable) ─────────────────
+const FALLBACK_TRANSFERS = [
+  { id: '1', name: 'Florian Wirtz',   pos: 'AM / Creator', from: 'Leverkusen',   to: 'Liverpool',   fee: 125, status: 'done',   apiPlayerId: 203224, marketValue: 100 },
+  { id: '2', name: 'Viktor Gyökeres', pos: 'ST / Power',   from: 'Sporting CP',  to: 'Arsenal',     fee: 80,  status: 'rumour', apiPlayerId: 284888, marketValue: 60 },
+  { id: '3', name: 'Nico Williams',   pos: 'LW / 1v1',     from: 'Athletic Club',to: 'Barcelona',   fee: 58,  status: 'done',   apiPlayerId: 390489, marketValue: 60 },
+  { id: '4', name: 'Dean Huijsen',    pos: 'CB / Builder', from: 'Bournemouth',  to: 'Real Madrid',  fee: 60,  status: 'done',   apiPlayerId: 348905, marketValue: 45 },
+  { id: '5', name: 'Lamine Yamal',    pos: 'RW / Creator', from: 'Barcelona',    to: '—',            fee: null,status: 'watch',  apiPlayerId: 386828, marketValue: 180 },
 ];
 
-const MARKET_PULSE = [
-  { label: 'Most inflated position', value: 'Striker',   highlight: true },
-  { label: 'Average quoted premium', value: '+38%',      highlight: true },
-  { label: 'Best value lane',        value: 'U23 CB',    highlight: false },
-  { label: 'Highest risk lane',      value: 'Teen ST',   highlight: false },
-  { label: 'Transfers done (June)',  value: '14',        highlight: false },
-  { label: 'Avg fee vs TM value',    value: '+61%',      highlight: true },
+const FALLBACK_PULSE = [
+  { label: 'Most inflated position', value: 'Striker', highlight: true },
+  { label: 'Average quoted premium', value: '+48%',    highlight: true },
+  { label: 'Best value lane',        value: 'U23 CB',  highlight: false },
+  { label: 'Highest risk lane',      value: 'Teen ST', highlight: false },
+  { label: 'Transfers done (2026)',  value: '—',       highlight: false },
+  { label: 'Avg fee vs TM value',    value: '—',       highlight: true },
 ];
 
-// ── Comparables db ────────────────────────────────────────────────────────────
-const COMPARABLES = [
-  { name: 'Rasmus Højlund',   fee: 75,  tag: 'Young ST',      roi: 'MIXED ROI',      roiClass: 'amber', apiPlayerId: 284621 },
-  { name: 'Benjamin Šeško',   fee: 65,  tag: 'Profile match', roi: 'GOOD CEILING',   roiClass: 'lime',  apiPlayerId: 339149 },
-  { name: 'João Félix',       fee: 126, tag: 'Premium risk',  roi: 'OVERPAY FLAG',   roiClass: 'red',   apiPlayerId: 521 },
-  { name: 'Evan Ferguson',    fee: 45,  tag: 'Value pick',    roi: 'BACK IT',        roiClass: 'lime',  apiPlayerId: 281854 },
-  { name: 'Lois Openda',      fee: 38,  tag: 'Ligue 1 jump',  roi: 'GOOD CEILING',   roiClass: 'lime',  apiPlayerId: 180271 },
+const FALLBACK_COMPARABLES = [
+  { name: 'Rasmus Højlund',   fee: 75,  tag: 'Young ST',      roi: 'MIXED ROI',    roiClass: 'amber', apiPlayerId: 284621 },
+  { name: 'Benjamin Šeško',   fee: 65,  tag: 'Profile match', roi: 'GOOD CEILING', roiClass: 'lime',  apiPlayerId: 339149 },
+  { name: 'João Félix',       fee: 126, tag: 'Premium risk',  roi: 'OVERPAY FLAG', roiClass: 'red',   apiPlayerId: 521 },
 ];
+
+// ── Spotlight pool fallback ───────────────────────────────────────────────────
+const SPOTLIGHT_POOL_FALLBACK = [
+  { apiPlayerId: 284888, name: 'Viktor Gyökeres', pos: 'ST', club: 'Sporting CP', to: 'Arsenal',     fee: 80,  marketValue: 60,  context: "Arsenal's first-choice striker target. Gyökeres led Europe in goals per 90 last season. The question is whether €80M represents fair value for a player yet to prove himself in a top-5 league." },
+  { apiPlayerId: 397810, name: 'Junior Kroupi',   pos: 'ST', club: 'LOSC Lille',  to: 'Bournemouth', fee: 100, marketValue: 40,  context: "Bournemouth's record pursuit of the Ligue 1 breakthrough striker. At €100M the ask is a 150% premium on market value. Calibre rates his ceiling highly but the price is the problem." },
+  { apiPlayerId: 281854, name: 'Evan Ferguson',   pos: 'ST', club: 'Brighton',    to: 'Man United',  fee: 50,  marketValue: 45,  context: "United's striker search lands on Brighton's young Irishman. Strong positional instincts, good aerial presence, needs consistency at the highest level." },
+];
+
+function getSpotlightFallback() {
+  const slot = Math.floor(Math.floor((Date.now() - new Date('2026-06-01').getTime()) / 86400000) / 3);
+  return SPOTLIGHT_POOL_FALLBACK[slot % SPOTLIGHT_POOL_FALLBACK.length];
+}
 
 // ── Verdict engine ─────────────────────────────────────────────────────────────
 function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStrength = 0.78 }) {
@@ -249,26 +341,54 @@ export default function Transfers() {
   // ── Editorial spotlight — DB-wired, rotates every 3 days ──
   const [spotlight, setSpotlight] = useState(null);
   const [spotlightLoading, setSpotlightLoading] = useState(true);
+  const [recentTransfers, setRecentTransfers] = useState(FALLBACK_TRANSFERS);
+  const [marketPulse, setMarketPulse] = useState(FALLBACK_PULSE);
+  const [comparables, setComparables] = useState(FALLBACK_COMPARABLES);
+  const [transfersLoading, setTransfersLoading] = useState(true);
 
   useEffect(() => {
-    const pick = SPOTLIGHT_POOL[getSpotlightIndex()];
+    // Load all live data in parallel
     setSpotlightLoading(true);
-    getSupabasePlayersByApiIds([pick.apiPlayerId])
-      .then(rows => {
-        const dbPlayer = rows[0];
-        setSpotlight({
-          ...pick,
-          rating: dbPlayer?.rating ? Math.round(dbPlayer.rating) : null,
-          appearances: dbPlayer?.appearances || null,
-          goals: dbPlayer?.goals || null,
-          assists: dbPlayer?.assists || null,
-          position: dbPlayer?.position || dbPlayer?.pos || pick.pos,
-          nationality: dbPlayer?.nationality || null,
-        });
-      })
-      .catch(() => setSpotlight(pick))
-      .finally(() => setSpotlightLoading(false));
+    setTransfersLoading(true);
+
+    Promise.all([
+      fetchRecentTransfers(),
+      fetchMarketPulse(),
+      fetchComparables(),
+      fetchSpotlight(),
+    ]).then(([transfers, pulse, comps, liveSpotlight]) => {
+      setRecentTransfers(transfers);
+      setMarketPulse(pulse);
+      setComparables(comps);
+
+      // Wire spotlight player to DB for live rating/stats
+      const spotlightBase = liveSpotlight || getSpotlightFallback();
+      if (spotlightBase?.apiPlayerId) {
+        getSupabasePlayersByApiIds([spotlightBase.apiPlayerId])
+          .then(rows => {
+            const dbPlayer = rows[0];
+            setSpotlight({
+              ...spotlightBase,
+              rating: dbPlayer?.rating ? Math.round(dbPlayer.rating) : null,
+              appearances: dbPlayer?.appearances || null,
+              goals: dbPlayer?.goals || null,
+              assists: dbPlayer?.assists || null,
+              position: dbPlayer?.position || dbPlayer?.pos || spotlightBase.pos,
+              nationality: dbPlayer?.nationality || null,
+            });
+          })
+          .catch(() => setSpotlight(spotlightBase))
+          .finally(() => setSpotlightLoading(false));
+      } else {
+        setSpotlight(spotlightBase);
+        setSpotlightLoading(false);
+      }
+    }).catch(() => {
+      setSpotlight(getSpotlightFallback());
+      setSpotlightLoading(false);
+    }).finally(() => setTransfersLoading(false));
   }, []);
+
   const [playerQuery, setPlayerQuery] = useState('Junior Kroupi');
   const [buyerQuery, setBuyerQuery] = useState('Bournemouth');
   const [selectedPlayer, setSelectedPlayer] = useState({
@@ -530,6 +650,12 @@ export default function Transfers() {
 
           {/* Tab panels */}
           <div style={{ border: '1px solid #1c1c1c', background: '#0a0a0a' }}>
+            {/* Data source note */}
+            <div style={{ padding: '8px 16px', borderBottom: '1px solid #1c1c1c', background: '#080808', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>
+                Value Score — computed · System Fit — model estimate · Risk Profile — model estimate · Full live wiring in V2
+              </span>
+            </div>
 
             {/* OVERVIEW */}
             {activeTab === 'Overview' && (
@@ -699,7 +825,7 @@ export default function Transfers() {
                       <div key={h} style={{ background: '#0a0a0a', padding: '8px 14px', fontSize: 9, letterSpacing: '0.12em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{h}</div>
                     ))}
                   </div>
-                  {COMPARABLES.map(c => (
+                  {comparables.map(c => (
                     <div key={c.name} style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
                       <div style={{ background: '#0f0f0f', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <ApiPlayerImage playerId={c.apiPlayerId} name={c.name} fallbackSrc="/assets/players/neutral-player.svg" style={{ width: 28, height: 28, borderRadius: '50%' }} />
@@ -753,16 +879,16 @@ export default function Transfers() {
               <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>Recent<br />Transfers</div>
               <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
             </div>
-            {RECENT_TRANSFERS.map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
+            {recentTransfers.map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
           </div>
 
           {/* Market pulse */}
           <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
               <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>Market<br />Pulse</div>
-              <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#c8ff00', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Live</span>
+              <span style={{ fontSize: 9, letterSpacing: '0.15em', color: transfersLoading ? '#444' : '#c8ff00', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{transfersLoading ? 'Loading…' : 'Live'}</span>
             </div>
-            {MARKET_PULSE.map(p => (
+            {marketPulse.map(p => (
               <div key={p.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #1c1c1c' }}>
                 <span style={{ fontSize: 11, color: '#666' }}>{p.label}</span>
                 <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, color: p.highlight ? '#c8ff00' : '#fff' }}>{p.value}</span>

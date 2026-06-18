@@ -189,7 +189,7 @@ function RecentTransferCard({ transfer, onAnalyse }) {
 }
 
 // ── Search box with debounce + Supabase lookup ─────────────────────────────────
-function PlayerSearch({ value, onChange, onSelect }) {
+function PlayerSearch({ value, onChange, onSelect, onEnter }) {
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
   const debounce = useRef(null);
@@ -213,6 +213,7 @@ function PlayerSearch({ value, onChange, onSelect }) {
         onChange={e => { onChange(e.target.value); search(e.target.value); }}
         onFocus={() => results.length && setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onKeyDown={e => e.key === 'Enter' && onEnter?.()}
         placeholder="Search player — try Kroupi, Gyökeres, Wirtz…"
         style={inputStyle}
       />
@@ -294,6 +295,25 @@ export default function Transfers() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  async function handleAnalyse() {
+    if (!playerQuery.trim()) return;
+    try {
+      const rows = await searchSupabasePlayers(playerQuery.trim(), { limit: 1 });
+      if (rows.length) {
+        const p = rows[0];
+        setSelectedPlayer(p);
+        setPlayerQuery(p.full_name || p.name);
+        // Auto-set market value from rating if not manually set
+        if (p.rating) {
+          const estMarket = Math.round(p.rating * 0.6);
+          setMarketValue(estMarket);
+        }
+      }
+    } catch (e) {
+      // keep existing selectedPlayer
+    }
+  }
+
   const premiumColor = verdict ? (verdict.premium > 100 ? '#ef4444' : verdict.premium > 50 ? '#f59e0b' : '#c8ff00') : '#888';
   const shareText = verdict
     ? `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdict.verdict}. Calibre fair ceiling: €${verdict?.fairCeiling}M. calibrefootball.com/transfers`
@@ -323,6 +343,7 @@ export default function Transfers() {
                 value={playerQuery}
                 onChange={setPlayerQuery}
                 onSelect={p => { setSelectedPlayer(p); setPlayerQuery(p.full_name || p.name); }}
+                onEnter={handleAnalyse}
               />
               <input
                 value={buyerQuery}
@@ -330,7 +351,7 @@ export default function Transfers() {
                 placeholder="Buying club"
                 style={{ ...inputStyle, width: 160 }}
               />
-              <button style={ctaBtn} onClick={() => {}}>Analyse →</button>
+              <button style={ctaBtn} onClick={handleAnalyse}>Analyse →</button>
             </div>
 
             {/* KPI row */}

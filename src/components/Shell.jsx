@@ -9,6 +9,7 @@ import DataFlowBar from './DataFlowBar.jsx';
 import AuthModal from './AuthModal.jsx';
 import useAuth from '../hooks/useAuth.js';
 import { signOut } from '../services/supabaseClient.js';
+import TermsBanner from './TermsBanner.jsx';
 
 function useShowWorldCup() {
   const kick = new Date(WC_CONFIG.kickoff);
@@ -91,6 +92,7 @@ export default function Shell({ children, currentPath }) {
       </footer>
 
       <AuthModal open={authOpen} onClose={()=>setAuthOpen(false)} returnTo={returnTo} />
+      <TermsBanner />
     </div>
   );
 }

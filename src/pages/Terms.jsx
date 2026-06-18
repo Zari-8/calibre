@@ -146,7 +146,9 @@ You may cancel your account at any time by contacting us at ${CONTACT_EMAIL}.`,
   {
     id: 'governing-law',
     title: '12. Governing Law',
-    content: `These Terms shall be governed by and construed in accordance with the laws of Zimbabwe. Any disputes arising from these Terms or your use of Calibre shall be subject to the exclusive jurisdiction of the courts of Zimbabwe.
+    content: `These Terms shall be governed by and construed in accordance with the laws of England and Wales. Any disputes arising from these Terms or your use of Calibre shall be subject to the non-exclusive jurisdiction of the courts of England and Wales.
+
+We operate internationally and make no representation that Calibre is appropriate or available in all locations. Users access the platform at their own initiative and are responsible for compliance with local laws.
 
 If any provision of these Terms is found to be unenforceable, the remaining provisions shall continue in full force and effect.`,
   },
@@ -186,7 +188,7 @@ export default function Terms() {
             </div>
             <div style={metaItem}>
               <span style={metaLabel}>Jurisdiction</span>
-              <span style={metaVal}>Zimbabwe</span>
+              <span style={metaVal}>England & Wales</span>
             </div>
           </div>
         </div>

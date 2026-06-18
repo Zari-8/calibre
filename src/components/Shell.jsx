@@ -85,6 +85,7 @@ export default function Shell({ children, currentPath }) {
             <button type="button" onClick={() => go('/players')}>Players</button>
             <button type="button" onClick={() => go('/debates')}>Debates</button>
             <button type="button" onClick={() => go('/pricing')}>Pricing</button>
+            <button type="button" onClick={() => go('/terms')}>Terms of Service</button>
           </div>
         </div>
       </footer>

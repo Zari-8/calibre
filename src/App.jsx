@@ -10,6 +10,7 @@ import Pricing from './pages/Pricing.jsx';
 import WorldCup from './pages/WorldCup.jsx';
 import Transfers from './pages/Transfers.jsx';
 import BetLanding from './pages/BetLanding.jsx';
+import Terms from './pages/Terms.jsx';
 
 const routes = {
   '/':             Home,
@@ -22,6 +23,7 @@ const routes = {
   '/world-cup':    WorldCup,
   '/transfers':    Transfers,
   '/bet':          BetLanding,
+  '/terms':        Terms,
 };
 
 function usePathname() {

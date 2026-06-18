@@ -376,7 +376,6 @@ export default function Transfers() {
           </div>
 
           {/* Right — player card + verdict */}
-          <div>
             <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
               {/* Player identity */}
               <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid #1c1c1c' }}>
@@ -421,7 +420,7 @@ export default function Transfers() {
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
                 <ShareBar text={shareText} url={shareUrl('/transfers')} />
               </div>
-            </div>
+            </div>{/* close left hero col */}
             </div>{/* close hero grid */}
           </div>{/* close hero wrap */}
 

@@ -144,13 +144,17 @@ function getSpotlightFallback() {
 }
 
 // ── Verdict engine ─────────────────────────────────────────────────────────────
-function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStrength = 0.78 }) {
+function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStrength = 0.78, position = 'MID' }) {
   if (!marketValue || !askingPrice) return null;
 
   const premium = ((askingPrice - marketValue) / marketValue) * 100;
 
   // Age curve score (younger = more justification for premium)
   const ageCurve = age <= 19 ? 88 : age <= 21 ? 78 : age <= 24 ? 65 : age <= 27 ? 50 : 30;
+
+  // Rating multiplier — high rating directly lifts the ceiling
+  // 75 baseline = 1.0x, every 5 rating points = +20% ceiling room
+  const ratingMult = Math.max(0.6, Math.min(1.8, 1 + (calibreRat - 75) * 0.04));
 
   // Rating-to-fee score
   const ratingBaseline = marketValue * (calibreRat / 80);
@@ -159,11 +163,14 @@ function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStren
   // League discount factor
   const leagueScore = Math.round(leagueStrength * 100);
 
-  // Scarcity (hardcoded for now, will come from DB)
-  const scarcity = 68;
+  // Position scarcity — CB and DM are most scarce, FB and WIDE less so
+  const scarcityMap = { ST: 75, CB: 82, DM: 80, AM: 70, CM: 65, LW: 55, RW: 55, FB: 45, LB: 45, RB: 45, GK: 70 };
+  const scarcity = scarcityMap[position] || 60;
 
-  // Fair price ceiling
-  const fairCeiling = Math.round(marketValue * (1 + (ageCurve / 100) * 0.9 + (scarcity / 100) * 0.3));
+  // Fair price ceiling — now factors rating, age curve, AND position scarcity
+  const fairCeiling = Math.round(
+    marketValue * ratingMult * (1 + (ageCurve / 100) * 0.7 + (scarcity / 100) * 0.25)
+  );
 
   // Value score (composite)
   const valueScore = Math.round((ratingScore * 0.4) + (ageCurve * 0.35) + (leagueScore * 0.15) + (scarcity * 0.1));
@@ -197,6 +204,8 @@ function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStren
     dealRiskClass,
     ageCurve,
     ratingScore,
+    ratingMult: Math.round(ratingMult * 100) / 100,
+    scarcity,
     overpayBy: Math.max(0, askingPrice - fairCeiling),
   };
 }
@@ -406,32 +415,46 @@ export default function Transfers() {
     askingPrice,
     calibreRat: selectedPlayer?.rating || 75,
     age: selectedPlayer?.age || 23,
+    position: (selectedPlayer?.pos || selectedPlayer?.position || 'MID').toUpperCase().slice(0, 3),
   });
 
-  function handleAnalyseRecent(transfer) {
+  // ── Player loader: fetches full DB data and sets all related state ──
+  async function loadPlayerIntoEngine(apiPlayerId, name, fallbackMarketValue) {
+    try {
+      let dbPlayer = null;
+      if (apiPlayerId) {
+        const rows = await getSupabasePlayersByApiIds([apiPlayerId]);
+        dbPlayer = rows[0];
+      }
+      if (!dbPlayer && name) {
+        const rows = await searchSupabasePlayers(name, { limit: 1 });
+        dbPlayer = rows[0];
+      }
+      if (dbPlayer) {
+        setSelectedPlayer({
+          ...dbPlayer,
+          rating: dbPlayer.rating ? Math.round(dbPlayer.rating) : 75,
+        });
+        setPlayerQuery(dbPlayer.full_name || dbPlayer.name);
+        // Market value: use real transfer market_value if provided, else estimate from rating
+        const mv = fallbackMarketValue || (dbPlayer.rating ? Math.round(dbPlayer.rating * 0.65) : 40);
+        setMarketValue(mv);
+        return dbPlayer;
+      }
+    } catch (e) { /* keep current state */ }
+    return null;
+  }
+
+  async function handleAnalyseRecent(transfer) {
     setPlayerQuery(transfer.name);
-    setSelectedPlayer({ name: transfer.name, full_name: transfer.name, apiPlayerId: transfer.apiPlayerId, pos: transfer.pos.split('/')[0].trim(), club: transfer.from, age: 24, rating: 78 });
     if (transfer.fee) setAskingPrice(transfer.fee);
+    await loadPlayerIntoEngine(transfer.apiPlayerId, transfer.name, transfer.marketValue);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleAnalyse() {
     if (!playerQuery.trim()) return;
-    try {
-      const rows = await searchSupabasePlayers(playerQuery.trim(), { limit: 1 });
-      if (rows.length) {
-        const p = rows[0];
-        setSelectedPlayer(p);
-        setPlayerQuery(p.full_name || p.name);
-        // Auto-set market value from rating if not manually set
-        if (p.rating) {
-          const estMarket = Math.round(p.rating * 0.6);
-          setMarketValue(estMarket);
-        }
-      }
-    } catch (e) {
-      // keep existing selectedPlayer
-    }
+    await loadPlayerIntoEngine(null, playerQuery.trim(), null);
   }
 
   const premiumColor = verdict ? (verdict.premium > 100 ? '#ef4444' : verdict.premium > 50 ? '#f59e0b' : '#c8ff00') : '#888';
@@ -462,7 +485,11 @@ export default function Transfers() {
               <PlayerSearch
                 value={playerQuery}
                 onChange={setPlayerQuery}
-                onSelect={p => { setSelectedPlayer(p); setPlayerQuery(p.full_name || p.name); }}
+                onSelect={p => {
+                  setSelectedPlayer(p);
+                  setPlayerQuery(p.full_name || p.name);
+                  if (p.rating) setMarketValue(Math.round(p.rating * 0.65));
+                }}
                 onEnter={handleAnalyse}
               />
               <input

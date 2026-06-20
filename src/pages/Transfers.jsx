@@ -5,6 +5,60 @@ import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
+import { SYSTEM_TEAMS } from '../data/systemFitData.js';
+import { playerTraits } from '../services/playerTraits.js';
+
+// ── Team search ──────────────────────────────────────────────────────────────
+function searchTeams(query) {
+  const q = String(query || '').trim().toLowerCase();
+  if (!q) return SYSTEM_TEAMS.slice(0, 8);
+  return SYSTEM_TEAMS.filter(t =>
+    t.name.toLowerCase().includes(q) ||
+    t.short.toLowerCase().includes(q) ||
+    t.country.toLowerCase().includes(q) ||
+    t.league.toLowerCase().includes(q)
+  ).slice(0, 8);
+}
+
+// ── System Fit calculator — runs player traits against team traits ────────────
+function computeSystemFit(player, team) {
+  if (!player || !team) return null;
+  const { traits } = playerTraits(player);
+  const tt = team.traits;
+  // Compatibility = weighted similarity across 6 trait dimensions
+  const dims = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
+  let total = 0;
+  dims.forEach(dim => {
+    const playerVal = traits[dim] || 70;
+    const teamVal = tt[dim] || 70;
+    // The closer the player's trait is to the team's demand, the higher the score
+    const diff = Math.abs(playerVal - teamVal);
+    const dimScore = Math.max(0, 100 - diff * 1.2);
+    total += dimScore;
+  });
+  const fit = Math.round(total / dims.length);
+  return {
+    score: Math.max(40, Math.min(99, fit)),
+    traits,
+    teamTraits: tt,
+    pressing: Math.round((traits.pressing + tt.pressing) / 2),
+    transition: Math.round((traits.transition + tt.transition) / 2),
+    boxThreat: Math.round((traits.width + tt.tempo) / 2),
+  };
+}
+
+import { SYSTEM_TEAMS, searchLocalTeams } from '../data/systemFitData.js';
+import { playerTraits } from '../services/playerTraits.js';
+
+// ── Fit calculation — same dimensions as System Fit page ──────────────────────
+const FIT_DIMS = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
+function calcSystemFit(player, team) {
+  if (!player || !team?.traits) return 84;
+  const { traits } = playerTraits(player);
+  const scores = FIT_DIMS.map(key => 100 - Math.abs((traits[key] ?? 75) - (team.traits[key] ?? 75)));
+  const raw = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
+  return Math.min(97, Math.max(58, raw));
+}
 
 // ── Live data fetchers ────────────────────────────────────────────────────────
 
@@ -342,6 +396,50 @@ function PlayerSearch({ value, onChange, onSelect, onEnter }) {
   );
 }
 
+// ── Team search — local SYSTEM_TEAMS dataset, real tactical profiles ──────────
+function TeamSearch({ value, onChange, onSelect }) {
+  const [results, setResults] = useState([]);
+  const [open, setOpen] = useState(false);
+
+  const search = useCallback((q) => {
+    if (!q || q.length < 1) { setResults([]); return; }
+    setResults(searchTeams(q).slice(0, 6));
+    setOpen(true);
+  }, []);
+
+  return (
+    <div style={{ position: 'relative', width: 200 }}>
+      <input
+        value={value}
+        onChange={e => { onChange(e.target.value); search(e.target.value); }}
+        onFocus={() => { if (value) search(value); }}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder="Buying club"
+        style={{ ...inputStyle, width: '100%' }}
+      />
+      {open && results.length > 0 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#111', border: '1px solid #2a2a2a', zIndex: 100, marginTop: 4, maxHeight: 280, overflowY: 'auto' }}>
+          {results.map(t => (
+            <button
+              key={t.id}
+              onMouseDown={() => { onSelect(t); setOpen(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', background: 'none', border: 'none', padding: '10px 14px', cursor: 'pointer', color: '#fff', textAlign: 'left', borderBottom: '1px solid #1c1c1c' }}
+              onMouseEnter={e => e.currentTarget.style.background = '#1a1a1a'}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}
+            >
+              <div style={{ width: 28, height: 28, borderRadius: '50%', background: t.accent || '#333', color: t.secondary || '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, fontFamily: "'Barlow Condensed', sans-serif", flexShrink: 0 }}>{t.crest}</div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.name}</div>
+                <div style={{ fontSize: 10, color: '#666' }}>{t.league} · {t.formation}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 const TABS = ['Overview', 'Value Analysis', 'System Fit', 'Risk Profile', 'Comparables'];
 
@@ -409,7 +507,10 @@ export default function Transfers() {
   const [marketValue, setMarketValue] = useState(40);
   const [askingPrice, setAskingPrice] = useState(100);
   const [activeTab, setActiveTab] = useState('Overview');
-  const [systemFitScore] = useState(84);
+  const [selectedTeam, setSelectedTeam] = useState(null);
+  // System Fit recalculates whenever player OR team changes
+  const sysFit = selectedTeam ? computeSystemFit(selectedPlayer, selectedTeam) : null;
+  const systemFitScore = sysFit ? sysFit.score : null;
   const verdict = computeVerdict({
     marketValue,
     askingPrice,
@@ -448,6 +549,18 @@ export default function Transfers() {
   async function handleAnalyseRecent(transfer) {
     setPlayerQuery(transfer.name);
     if (transfer.fee) setAskingPrice(transfer.fee);
+    // Try to auto-select destination team from SYSTEM_TEAMS by name match
+    if (transfer.to && transfer.to !== '—') {
+      const teamMatch = SYSTEM_TEAMS.find(t =>
+        t.name.toLowerCase().includes(transfer.to.toLowerCase()) ||
+        t.short.toLowerCase().includes(transfer.to.toLowerCase()) ||
+        transfer.to.toLowerCase().includes(t.short.toLowerCase())
+      );
+      if (teamMatch) {
+        setSelectedTeam(teamMatch);
+        setBuyerQuery(teamMatch.name);
+      }
+    }
     await loadPlayerIntoEngine(transfer.apiPlayerId, transfer.name, transfer.marketValue);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -492,11 +605,10 @@ export default function Transfers() {
                 }}
                 onEnter={handleAnalyse}
               />
-              <input
+              <TeamSearch
                 value={buyerQuery}
-                onChange={e => setBuyerQuery(e.target.value)}
-                placeholder="Buying club"
-                style={{ ...inputStyle, width: 160 }}
+                onChange={setBuyerQuery}
+                onSelect={t => { setSelectedTeam(t); setBuyerQuery(t.name); }}
               />
               <button style={ctaBtn} onClick={handleAnalyse}>Analyse →</button>
             </div>
@@ -571,7 +683,7 @@ export default function Transfers() {
                 {[
                   { label: 'Fair Price Ceiling', value: verdict ? `€${verdict.fairCeiling}M` : '—', color: '#c8ff00' },
                   { label: 'Premium Justified',  value: verdict ? `${verdict.premiumJustified}%` : '—', color: verdict?.premiumJustified > 70 ? '#c8ff00' : verdict?.premiumJustified > 50 ? '#f59e0b' : '#ef4444' },
-                  { label: 'System Fit',         value: systemFitScore, color: '#c8ff00' },
+                  { label: 'System Fit',         value: systemFitScore ?? '—', color: '#c8ff00' },
                   { label: 'Deal Risk',          value: verdict?.dealRisk || '—', color: verdict?.dealRiskClass === 'red' ? '#ef4444' : verdict?.dealRiskClass === 'amber' ? '#f59e0b' : '#c8ff00' },
                 ].map(m => (
                   <div key={m.label} style={{ background: '#0a0a0a', padding: '12px 14px' }}>
@@ -695,10 +807,18 @@ export default function Transfers() {
                   </p>
                 </ScorePanel>
 
-                <ScorePanel title="System Fit" score={systemFitScore}>
-                  <MetricBar label="Pressing" value={88} />
-                  <MetricBar label="Transition" value={91} />
-                  <MetricBar label="Box threat" value={82} />
+                <ScorePanel title="System Fit" score={systemFitScore ?? '—'}>
+                  {sysFit ? (
+                    <>
+                      <MetricBar label="Pressing" value={sysFit.pressing} />
+                      <MetricBar label="Transition" value={sysFit.transition} />
+                      <MetricBar label="Box threat" value={sysFit.boxThreat} />
+                    </>
+                  ) : (
+                    <p style={{ fontSize: 11, color: '#666', lineHeight: 1.6, margin: 0 }}>
+                      Select a buying club above to run the System Fit analysis. Calibre will recalculate based on the team's tactical profile.
+                    </p>
+                  )}
                 </ScorePanel>
 
                 <ScorePanel
@@ -778,6 +898,54 @@ export default function Transfers() {
 
             {/* SYSTEM FIT */}
             {activeTab === 'System Fit' && (
+              <div style={{ padding: 24 }}>
+                {!selectedTeam ? (
+                  <div style={{ textAlign: 'center', padding: '40px 20px' }}>
+                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 10 }}>SELECT A BUYING CLUB</div>
+                    <p style={{ fontSize: 13, color: '#666', maxWidth: 420, margin: '0 auto', lineHeight: 1.6 }}>
+                      Type a club name in the search box above and select from the dropdown. Calibre will recalculate System Fit based on the team's real tactical profile — formation, press intensity, line height, and possession style.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 24 }}>
+                      <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: '20px 28px', textAlign: 'center', flexShrink: 0 }}>
+                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 72, fontWeight: 800, color: '#c8ff00', lineHeight: 1 }}>{systemFitScore}</div>
+                        <div style={{ fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>System Fit</div>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 6 }}>
+                          {selectedTeam.name} · {selectedTeam.formation} · {selectedTeam.philosophy}
+                        </div>
+                        <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, margin: '0 0 16px' }}>
+                          {selectedPlayer?.full_name || selectedPlayer?.name} {systemFitScore >= 80 ? `fits ${selectedTeam.short}'s ${selectedTeam.philosophy.toLowerCase()} system strongly` : systemFitScore >= 65 ? `is a workable fit for ${selectedTeam.short} but with adjustments needed` : `is a tactical stretch for ${selectedTeam.short}'s ${selectedTeam.philosophy.toLowerCase()}`}. {selectedTeam.intensity} press intensity and {selectedTeam.lineHeight.toLowerCase()} line height shape the demands on every signing.
+                        </p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <MetricBar label="Press match" value={sysFit.pressing} />
+                          <MetricBar label="Transition" value={sysFit.transition} />
+                          <MetricBar label="Control" value={Math.round((sysFit.traits.control + sysFit.teamTraits.control) / 2)} />
+                          <MetricBar label="Width" value={Math.round((sysFit.traits.width + sysFit.teamTraits.width) / 2)} />
+                          <MetricBar label="Tempo" value={Math.round((sysFit.traits.tempo + sysFit.teamTraits.tempo) / 2)} />
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 16, borderLeft: `2px solid ${systemFitScore >= 75 ? '#c8ff00' : systemFitScore >= 60 ? '#f59e0b' : '#ef4444'}` }}>
+                      <div style={{ fontSize: 10, color: systemFitScore >= 75 ? '#c8ff00' : systemFitScore >= 60 ? '#f59e0b' : '#ef4444', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 6 }}>Fit verdict</div>
+                      <p style={{ fontSize: 13, color: '#888', margin: 0, lineHeight: 1.6 }}>
+                        {systemFitScore >= 80
+                          ? `Elite fit at ${systemFitScore}/100. ${selectedPlayer?.name} matches ${selectedTeam.short}'s tactical demands closely. The system works — the rest is about price.`
+                          : systemFitScore >= 65
+                          ? `Workable fit at ${systemFitScore}/100. There are areas where ${selectedPlayer?.name}'s profile diverges from ${selectedTeam.short}'s structure, but a competent coach can manage it.`
+                          : `Stretched fit at ${systemFitScore}/100. ${selectedPlayer?.name} would need significant tactical adjustment to thrive in ${selectedTeam.short}'s system. Worth the price only if there's a structural shift coming.`}
+                      </p>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* placeholder so old tab block is removed below */}
+            {false && (
               <div style={{ padding: 24 }}>
                 <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 24 }}>
                   <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: '20px 28px', textAlign: 'center', flexShrink: 0 }}>

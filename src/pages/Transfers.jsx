@@ -343,18 +343,25 @@ function RecentTransferCard({ transfer, onAnalyse }) {
 function PlayerSearch({ value, onChange, onSelect, onEnter }) {
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const debounce = useRef(null);
 
   const search = useCallback((q) => {
     clearTimeout(debounce.current);
-    if (q.length < 2) { setResults([]); return; }
+    if (q.length < 2) { setResults([]); setOpen(false); setLoading(false); return; }
+    setLoading(true);
+    setOpen(true);
     debounce.current = setTimeout(async () => {
       try {
-        const rows = await searchSupabasePlayers(q, { limit: 6 });
-        setResults(rows);
-        setOpen(true);
-      } catch { setResults([]); }
-    }, 300);
+        const rows = await searchSupabasePlayers(q, { limit: 8 });
+        setResults(rows || []);
+      } catch (e) {
+        console.warn('[Calibre] player search failed:', e?.message);
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 250);
   }, []);
 
   return (
@@ -362,15 +369,21 @@ function PlayerSearch({ value, onChange, onSelect, onEnter }) {
       <input
         value={value}
         onChange={e => { onChange(e.target.value); search(e.target.value); }}
-        onFocus={() => results.length && setOpen(true)}
-        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        onFocus={() => { if (value && value.length >= 2) setOpen(true); }}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
         onKeyDown={e => e.key === 'Enter' && onEnter?.()}
-        placeholder="Search player — try Kroupi, Gyökeres, Wirtz…"
+        placeholder="Search player — try Bellingham, Vitinha, Wirtz…"
         style={inputStyle}
       />
-      {open && results.length > 0 && (
-        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#111', border: '1px solid #2a2a2a', zIndex: 100, marginTop: 4 }}>
-          {results.map(p => (
+      {open && value && value.length >= 2 && (
+        <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: '#111', border: '1px solid #2a2a2a', zIndex: 100, marginTop: 4, maxHeight: 320, overflowY: 'auto' }}>
+          {loading && (
+            <div style={{ padding: '12px 14px', fontSize: 12, color: '#666' }}>Searching…</div>
+          )}
+          {!loading && results.length === 0 && (
+            <div style={{ padding: '12px 14px', fontSize: 12, color: '#666' }}>No players found for "{value}"</div>
+          )}
+          {!loading && results.map(p => (
             <button
               key={p.id}
               onMouseDown={() => { onSelect(p); setOpen(false); }}
@@ -1067,16 +1080,16 @@ export default function Transfers() {
 
         {/* ── RIGHT ASIDE — Market Pulse + System Fit link ── */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 0, paddingTop: 16 }}>
-          {/* Recent transfers — now in the far right column */}
+          {/* Recent transfers — top 4 above Market Pulse */}
           <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
               <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>Recent<br />Transfers</div>
               <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
             </div>
-            {recentTransfers.map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
+            {recentTransfers.slice(0, 4).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
           </div>
 
-          {/* Market pulse */}
+          {/* Market pulse — promoted up the sidebar */}
           <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
               <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>Market<br />Pulse</div>
@@ -1089,6 +1102,17 @@ export default function Transfers() {
               </div>
             ))}
           </div>
+
+          {/* Recent transfers — remaining cards below Market Pulse */}
+          {recentTransfers.length > 4 && (
+            <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>More<br />Deals</div>
+                <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
+              </div>
+              {recentTransfers.slice(4).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
+            </div>
+          )}
 
           {/* Navigate to System Fit */}
           <button

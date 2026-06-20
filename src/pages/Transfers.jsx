@@ -528,13 +528,15 @@ export default function Transfers() {
         dbPlayer = rows[0];
       }
       if (dbPlayer) {
+        // Use live computed rating when stored is null/missing — same logic the hero card uses
+        const liveRating = dbPlayer.rating || calibreRating(dbPlayer)?.rating || 75;
         setSelectedPlayer({
           ...dbPlayer,
-          rating: dbPlayer.rating ? Math.round(dbPlayer.rating) : 75,
+          rating: Math.round(liveRating),
         });
         setPlayerQuery(dbPlayer.full_name || dbPlayer.name);
-        // Market value: use real transfer market_value if provided, else estimate from rating
-        const mv = fallbackMarketValue || (dbPlayer.rating ? Math.round(dbPlayer.rating * 0.65) : 40);
+        // Market value: use real transfer market_value if provided, else estimate from live rating
+        const mv = fallbackMarketValue || Math.round(liveRating * 0.65);
         setMarketValue(mv);
         return dbPlayer;
       }
@@ -595,9 +597,10 @@ export default function Transfers() {
                 value={playerQuery}
                 onChange={setPlayerQuery}
                 onSelect={p => {
-                  setSelectedPlayer(p);
+                  const live = p.rating || calibreRating(p)?.rating || 75;
+                  setSelectedPlayer({ ...p, rating: Math.round(live) });
                   setPlayerQuery(p.full_name || p.name);
-                  if (p.rating) setMarketValue(Math.round(p.rating * 0.65));
+                  setMarketValue(Math.round(live * 0.65));
                 }}
                 onEnter={handleAnalyse}
               />

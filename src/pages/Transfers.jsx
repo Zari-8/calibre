@@ -50,7 +50,7 @@ function computeSystemFit(player, team) {
 // ── Live data fetchers ────────────────────────────────────────────────────────
 
 async function fetchRecentTransfers() {
-  if (!supabaseConfigured || !supabase) return [];
+  if (!supabaseConfigured || !supabase) return FALLBACK_TRANSFERS;
   const { data, error } = await supabase
     .from('transfers')
     .select('*')
@@ -58,7 +58,11 @@ async function fetchRecentTransfers() {
     .eq('season', '2026-27')
     .order('created_at', { ascending: false })
     .limit(10);
-  if (error || !data?.length) return FALLBACK_TRANSFERS;
+  if (error) {
+    console.warn('[Calibre] transfers fetch failed:', error.message);
+    return FALLBACK_TRANSFERS;
+  }
+  if (!data?.length) return FALLBACK_TRANSFERS;
   return data.map(t => ({
     id: t.id,
     name: t.player_name,
@@ -77,15 +81,20 @@ async function fetchMarketPulse() {
   const { data, error } = await supabase
     .from('market_pulse')
     .select('*')
-    .single();
-  if (error || !data) return FALLBACK_PULSE;
+    .limit(1);
+  if (error) {
+    console.warn('[Calibre] market_pulse fetch failed:', error.message);
+    return FALLBACK_PULSE;
+  }
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return FALLBACK_PULSE;
   return [
-    { label: 'Most inflated position', value: data.most_inflated_position || 'ST', highlight: true },
-    { label: 'Average quoted premium', value: `+${data.avg_premium_pct || 0}%`, highlight: true },
-    { label: 'Best value lane',        value: data.best_value_lane || 'U23 CB',  highlight: false },
-    { label: 'Highest risk lane',      value: data.highest_risk_lane || 'Teen ST', highlight: false },
-    { label: 'Transfers done (2026)',  value: String(data.transfers_done || 0),  highlight: false },
-    { label: 'Avg fee vs TM value',    value: `+${data.avg_fee_vs_tm_pct || 0}%`, highlight: true },
+    { label: 'Most inflated position', value: row.most_inflated_position || 'ST', highlight: true },
+    { label: 'Average quoted premium', value: `+${row.avg_premium_pct ?? 0}%`, highlight: true },
+    { label: 'Best value lane',        value: row.best_value_lane || 'U23 CB',  highlight: false },
+    { label: 'Highest risk lane',      value: row.highest_risk_lane || 'Teen ST', highlight: false },
+    { label: 'Transfers done (2026)',  value: String(row.transfers_done ?? 0),  highlight: false },
+    { label: 'Avg fee vs TM value',    value: `+${row.avg_fee_vs_tm_pct ?? 0}%`, highlight: true },
   ];
 }
 

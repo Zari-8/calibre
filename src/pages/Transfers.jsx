@@ -47,19 +47,6 @@ function computeSystemFit(player, team) {
   };
 }
 
-import { SYSTEM_TEAMS, searchLocalTeams } from '../data/systemFitData.js';
-import { playerTraits } from '../services/playerTraits.js';
-
-// ── Fit calculation — same dimensions as System Fit page ──────────────────────
-const FIT_DIMS = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
-function calcSystemFit(player, team) {
-  if (!player || !team?.traits) return 84;
-  const { traits } = playerTraits(player);
-  const scores = FIT_DIMS.map(key => 100 - Math.abs((traits[key] ?? 75) - (team.traits[key] ?? 75)));
-  const raw = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
-  return Math.min(97, Math.max(58, raw));
-}
-
 // ── Live data fetchers ────────────────────────────────────────────────────────
 
 async function fetchRecentTransfers() {

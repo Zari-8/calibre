@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
+import DealReport from '../components/DealReport.jsx';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
@@ -711,6 +712,18 @@ export default function Transfers() {
               {/* Share */}
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
                 <ShareBar text={shareText} url={shareUrl('/transfers')} />
+              </div>
+
+              {/* PDF Report download — Scout & Club tier feature */}
+              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
+                <DealReport
+                  player={selectedPlayer}
+                  team={selectedTeam}
+                  verdict={verdict}
+                  sysFit={sysFit}
+                  marketValue={marketValue}
+                  askingPrice={askingPrice}
+                />
               </div>
             </div>{/* close left hero col */}
             </div>{/* close hero grid */}

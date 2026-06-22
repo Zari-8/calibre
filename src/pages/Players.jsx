@@ -5,7 +5,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabasePlayerCount, getSupabasePlayers, getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
-import { calibreRating } from '../services/calibreRating.js';
+import { calibreRating, resolveRating } from '../services/calibreRating.js';
 
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
@@ -51,7 +51,7 @@ function displayRating(rating){
 // Compute a Calibre rating from any row (curated, Supabase bank, or live API).
 // Returns a number, or null when there isn't enough evidence to rate.
 function ratingOf(row){
-  const r = calibreRating(row || {});
+  const r = resolveRating(row || {});
   return r && r.rating != null ? r.rating : null;
 }
 // Prefer an already-computed finite rating; otherwise compute from the row.
@@ -577,7 +577,7 @@ export default function Players(){
 
   const risingComputed = useMemo(
     ()=>risingRows.map(a=>{
-      const r = calibreRating(a);
+      const r = resolveRating(a);
       return { ...a, rating:r.rating, bucket:r.bucket, metrics:deriveMetrics(a,r.bucket) };
     }).sort((a,b)=>b.rating-a.rating),
     [risingRows]

@@ -5,7 +5,7 @@ import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { playerIdFor } from '../data/playerIds.js';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
-import { calibreRating } from '../services/calibreRating.js';
+import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -80,7 +80,7 @@ const lanes = [
 ];
 
 function withComputed(row){
-  const r = calibreRating(row);
+  const r = resolveRating(row);
   return { ...row, rating: r.rating, bucket: r.bucket, provisional: r.provisional };
 }
 function displayRating(rating){

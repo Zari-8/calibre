@@ -9,7 +9,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { playerIdFor } from '../data/playerIds.js';
-import { calibreRating } from '../services/calibreRating.js';
+import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams, TRANSFER_STORYLINES, pickTransferStoryline, buildTransferSpotlight,
@@ -85,7 +85,7 @@ function normalizeDbPlayer(player) {
   const numId = Number(rawId);
   const apiPlayerId = Number.isInteger(numId) && numId > 0 ? numId : null;
   const traits = deriveTraitsFromPosition(player.position);
-  const scored = calibreRating(player);
+  const scored = resolveRating(player);
   return {
     ...SYSTEM_PLAYERS[0],
     id: apiPlayerId ?? player.id,

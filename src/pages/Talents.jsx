@@ -9,7 +9,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
-import { calibreRating } from '../services/calibreRating.js';
+import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { deriveArchetype } from '../services/playerTraits.js';
 import { leagueContext, LEAGUES } from '../data/leagues.js';
 
@@ -135,7 +135,7 @@ function registryTalentFromProfile(profile) {
   // Calibre rating from the shared engine (one number, every page). Honors a
   // stored 0-99 rating if the model has written one; otherwise computes from
   // minutes, output, role, league and age. Form & Impact are proxied for now.
-  const scored = calibreRating(profile);
+  const scored = resolveRating(profile);
   const rating = scored.rating != null ? scored.rating : '—';
   const ratingProvisional = scored.provisional === true && scored.rating != null;
   const breakdown = scored.breakdown;

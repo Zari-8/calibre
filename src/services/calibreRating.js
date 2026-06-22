@@ -272,4 +272,19 @@ export function calibreRating(player = {}) {
   return { ...base, rating:blended, computed:blended,
     blend:{ base:base.computed, overlay:ov.computed, overlayWeight:Number(w.toFixed(3)), overlayStrength:num(overlay.strength)||0.95, overlayMinutes:overlayMin } };
 }
+// ── Canonical accessor ──
+// Single source of truth for DISPLAYING a rating. Prefers the stored
+// players.rating written once by scripts/computeRatings.mjs, so every surface
+// shows the SAME number. Falls back to a live compute only when no stored
+// rating exists yet (new prospects, unenriched rows). calibreRating itself is
+// untouched — it stays the pure compute the batch script uses.
+export function resolveRating(player = {}) {
+  const stored = Number(player && player.rating);
+  const full = calibreRating(player);
+  if (Number.isFinite(stored) && stored > 0) {
+    return { ...full, rating: stored, computed: stored, provisional: false, source: 'stored' };
+  }
+  return { ...full, source: 'computed' };
+}
+
 export default calibreRating;

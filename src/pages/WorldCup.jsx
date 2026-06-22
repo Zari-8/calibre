@@ -8,7 +8,7 @@ import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { playerIdFor } from '../data/playerIds.js';
 import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
-import { calibreRating } from '../services/calibreRating.js';
+import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { getFixturesByDate, getFixtureEvents, getTeamForm, getMatchPredictions } from '../services/apiFootball.js';
 import useAuth from '../hooks/useAuth.js';
 import { loadForumPosts, submitForumPost } from '../services/community.js';
@@ -467,7 +467,7 @@ export default function WorldCup() {
         const entries = breakoutStars.map((star) => {
           const match = byId.get(Number(star.apiPlayerId));
           if (!match) return [star.name, null];
-          const scored = calibreRating(match);
+          const scored = resolveRating(match);
           // Use computed rating first, fall back to stored DB rating
           const finalRating = scored.rating ?? (match.rating ? Math.round(Number(match.rating)) : null);
           if (finalRating == null) return [star.name, null];

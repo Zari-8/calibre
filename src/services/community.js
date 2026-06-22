@@ -1,5 +1,47 @@
 import { supabase, supabaseConfigured } from './supabaseClient.js';
 
+// ─────────────────────────────────────────────────────────────────────────
+// EDITORIAL PICKS — single source of truth for the Debates "Editorial picks
+// from the football timeline" strip.
+//
+// HOW THIS RENDERS:
+//   loadBangerTweets() reads the Supabase `banger_tweets` table first. If that
+//   table has published rows, THOSE win and this array is ignored. The array
+//   below only shows when the table is empty.
+//
+//   The table is filled by publish_banger_tweets.py on the VPS (the X-API
+//   cron). While that pipeline is OFF, the table is empty, so EDITORIAL_PICKS
+//   below is what the site shows. This is intentional: the section is editorial,
+//   not live, until you fund the X tier.
+//
+// ⚠️  REPLACE THE TWO PLACEHOLDER ROWS BELOW WITH YOUR REAL CURATED LIST.
+//     Edit this ONE array — nothing else renders this section.
+//
+// TO MAKE IT THE CANONICAL DB SOURCE (so every surface/device agrees), also
+// seed the table once in the Supabase SQL editor:
+//
+//   create table if not exists banger_tweets (
+//     id uuid default gen_random_uuid() primary key,
+//     handle text not null,
+//     text text not null,
+//     likes text default '0',
+//     reposts text default '0',
+//     published boolean default true,
+//     created_at timestamptz default now()
+//   );
+//   alter table banger_tweets enable row level security;
+//   create policy "public read published" on banger_tweets
+//     for select using (published = true);
+//
+//   insert into banger_tweets (handle, text, likes, reposts) values
+//     ('@CalibreFooty', 'YOUR FIRST PICK HERE', '4.8K', '1.1K'),
+//     ('@CarlyTalksBall', 'YOUR SECOND PICK HERE', '3.6K', '782');
+// ─────────────────────────────────────────────────────────────────────────
+const EDITORIAL_PICKS = [
+  { handle:'@CalibreFooty',   text:'Goals tell you who finished the move. They do not always tell you who made the game possible.', likes:'4.8K', reposts:'1.1K', placeholder:true },
+  { handle:'@CarlyTalksBall', text:'The midfielder who keeps the structure alive will always lose the clip war to the player arriving in the box.', likes:'3.6K', reposts:'782', placeholder:true },
+];
+
 const FALLBACK_DEBATES = [
   { slug:'pedri-vs-jude', title:'Pedri vs Bellingham: who owns the midfield?', category:'rate-battle', votes:15100, comments:384, left:'Pedri', right:'Jude Bellingham' },
   { slug:'arsenal-control-vs-chaos', title:'Would Arsenal be better with control or chaos?', category:'hot-potato', votes:8421, comments:205 },
@@ -11,11 +53,6 @@ const FALLBACK_HOT_POTATOES = [
   { slug:'arsenal-control-vs-chaos', title:'Would Arsenal be better with control or chaos?', yes:52, context:'One profile protects the structure. The other makes the game harder to control.' },
   { slug:'ter-stegen-finished', title:'Is ter Stegen truly finished at the top level?', yes:43, context:'Reputation, injuries and the eye test are pulling in different directions.' },
   { slug:'women-equal-pay', title:'Should women players receive equal international-match pay?', yes:66, context:'A football argument with sporting, commercial and institutional layers.' },
-];
-
-const FALLBACK_BANGERS = [
-  { handle:'@CalibreFooty', text:'Goals tell you who finished the move. They do not always tell you who made the game possible.', likes:'4.8K', reposts:'1.1K' },
-  { handle:'@CarlyTalksBall', text:'The midfielder who keeps the structure alive will always lose the clip war to the player arriving in the box.', likes:'3.6K', reposts:'782' },
 ];
 
 function localRead(key, fallback) {
@@ -42,12 +79,28 @@ export async function loadHotPotatoes() {
   return { rows: localRead('calibre:hot-potatoes', FALLBACK_HOT_POTATOES), source:'editorial-snapshot' };
 }
 
+// Editorial picks / banger tweets.
+//   1. Supabase `banger_tweets` (published) — populated by the VPS X-API cron.
+//   2. EDITORIAL_PICKS curated array — shown ONLY when the table is empty.
+// The old localStorage layer was a no-op (nothing ever wrote the key) and has
+// been removed so there is exactly ONE place this content can come from when
+// the pipeline is off: EDITORIAL_PICKS above.
+//
+// `source` lets the UI badge where the content came from, so an empty table can
+// never silently masquerade as live:
+//   'supabase'           → real rows (live pipeline or seeded)
+//   'editorial-curated'  → your hand-authored EDITORIAL_PICKS
 export async function loadBangerTweets() {
   if (supabaseConfigured) {
-    const { data, error } = await supabase.from('banger_tweets').select('*').eq('published', true).order('created_at', { ascending:false }).limit(8);
+    const { data, error } = await supabase
+      .from('banger_tweets')
+      .select('*')
+      .eq('published', true)
+      .order('created_at', { ascending:false })
+      .limit(8);
     if (!error && data?.length) return { rows:data, source:'supabase' };
   }
-  return { rows: localRead('calibre:banger-tweets', FALLBACK_BANGERS), source:'editorial-snapshot' };
+  return { rows: EDITORIAL_PICKS, source:'editorial-curated' };
 }
 
 export async function submitDebateNomination({ title, reason, userId, email }) {

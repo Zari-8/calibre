@@ -8,6 +8,8 @@ import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 import { SYSTEM_TEAMS } from '../data/systemFitData.js';
 import { playerTraits } from '../services/playerTraits.js';
+import { calibreValue } from '../services/calibreValue.js';
+import { fitAdjustedValue, fitVerdict } from '../services/calibreFitValue.js';
 
 // ── Team search ──────────────────────────────────────────────────────────────
 function searchTeams(query) {
@@ -543,7 +545,7 @@ export default function Transfers() {
   const [buyerQuery, setBuyerQuery] = useState('Bournemouth');
   const [selectedPlayer, setSelectedPlayer] = useState({
     name: 'Junior Kroupi', full_name: 'Junior Kroupi', pos: 'ST',
-    age: 19, club: 'LOSC Lille', nationality: 'France',
+    age: 19, club: 'LOSC Lille', league: 'Ligue 1', nationality: 'France',
     rating: 81, apiPlayerId: 397810,
     appearances: 34, goals: 16, assists: 6, pass_accuracy: 79,
   });
@@ -554,8 +556,22 @@ export default function Transfers() {
   // System Fit recalculates whenever player OR team changes
   const sysFit = selectedTeam ? computeSystemFit(selectedPlayer, selectedTeam) : null;
   const systemFitScore = sysFit ? sysFit.score : null;
+
+  // ── Calibre valuation: base value (Piece 1) → fit-adjusted (Piece 2) → verdict ──
+  const valuation = useMemo(() => calibreValue({
+    rating: selectedPlayer?.rating,
+    age: selectedPlayer?.age,
+    position: selectedPlayer?.pos || selectedPlayer?.position,
+    league: selectedPlayer?.league || selectedPlayer?.competition,
+    club: selectedPlayer?.club,
+    minutes: selectedPlayer?.minutes ?? (selectedPlayer?.appearances ? selectedPlayer.appearances * 80 : undefined),
+    hasContractData: false,
+  }), [selectedPlayer]);
+  const fit = useMemo(() => fitAdjustedValue(valuation, systemFitScore), [valuation, systemFitScore]);
+  const dealVerdict = useMemo(() => fitVerdict(valuation, fit, askingPrice), [valuation, fit, askingPrice]);
+  const verdictClass = dealVerdict.tone === 'good' ? 'lime' : dealVerdict.tone === 'bad' ? 'red' : 'amber';
   const verdict = computeVerdict({
-    marketValue,
+    marketValue: valuation.estimatedValue,
     askingPrice,
     calibreRat: selectedPlayer?.rating || 75,
     age: selectedPlayer?.age || 23,
@@ -615,10 +631,8 @@ export default function Transfers() {
     await loadPlayerIntoEngine(null, playerQuery.trim(), null);
   }
 
-  const premiumColor = verdict ? (verdict.premium > 100 ? '#ef4444' : verdict.premium > 50 ? '#f59e0b' : '#c8ff00') : '#888';
-  const shareText = verdict
-    ? `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdict.verdict}. Calibre fair ceiling: €${verdict?.fairCeiling}M. calibrefootball.com/transfers`
-    : `Transfer Intelligence on Calibre — calibrefootball.com/transfers`;
+  const premiumColor = dealVerdict.premium > 100 ? '#ef4444' : dealVerdict.premium > 50 ? '#f59e0b' : '#c8ff00';
+  const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${dealVerdict.label}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
 
   // Comparables react to whoever is being analysed (position group + fee proximity)
   const comparables = useMemo(
@@ -668,9 +682,9 @@ export default function Transfers() {
             {/* KPI row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#1c1c1c' }}>
               {[
-                { label: 'Market Value', value: `€${marketValue}M`, color: '#c8ff00' },
+                { label: 'Calibre Estimated Value', value: `€${valuation.estimatedValue}M`, color: '#c8ff00' },
                 { label: 'Asking Price', value: `€${askingPrice}M`, color: '#fff' },
-                { label: 'Premium', value: verdict ? `+${verdict.premium}%` : '—', color: premiumColor },
+                { label: 'Premium vs Calibre', value: `${dealVerdict.premium >= 0 ? '+' : ''}${dealVerdict.premium}%`, color: premiumColor },
               ].map(k => (
                 <div key={k.label} style={{ background: '#0a0a0a', padding: '14px 16px' }}>
                   <div style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', marginBottom: 5, fontFamily: "'Barlow Condensed', sans-serif" }}>{k.label}</div>
@@ -698,12 +712,10 @@ export default function Transfers() {
                   <span style={{ fontSize: 12, color: '#555' }}>M</span>
                 </div>
               </div>
-              {verdict && (
-                <div style={{ marginTop: 10, fontSize: 11, color: '#666' }}>
-                  Calibre fair ceiling: <span style={{ color: '#c8ff00', fontWeight: 700 }}>€{verdict.fairCeiling}M</span>
-                  {verdict.overpayBy > 0 && <span style={{ color: '#ef4444', marginLeft: 10 }}>Overpay: €{verdict.overpayBy}M</span>}
-                </div>
-              )}
+              <div style={{ marginTop: 10, fontSize: 11, color: '#666' }}>
+                {selectedTeam ? `Max sensible bid for ${selectedTeam.short || selectedTeam.name}` : 'Max sensible bid'}: <span style={{ color: '#c8ff00', fontWeight: 700 }}>€{fit.clubMaxSensibleBid}M</span>
+                <span style={{ marginLeft: 10, color: '#555' }}>Fair range €{fit.fitFairRange.low}–{fit.fitFairRange.high}M</span>
+              </div>
             </div>
           </div>
 
@@ -733,10 +745,10 @@ export default function Transfers() {
               {/* 2×2 metric grid */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: '#1c1c1c', marginBottom: 1 }}>
                 {[
-                  { label: 'Fair Price Ceiling', value: verdict ? `€${verdict.fairCeiling}M` : '—', color: '#c8ff00' },
-                  { label: 'Premium Justified',  value: verdict ? `${verdict.premiumJustified}%` : '—', color: verdict?.premiumJustified > 70 ? '#c8ff00' : verdict?.premiumJustified > 50 ? '#f59e0b' : '#ef4444' },
-                  { label: 'System Fit',         value: systemFitScore ?? '—', color: '#c8ff00' },
-                  { label: 'Deal Risk',          value: verdict?.dealRisk || '—', color: verdict?.dealRiskClass === 'red' ? '#ef4444' : verdict?.dealRiskClass === 'amber' ? '#f59e0b' : '#c8ff00' },
+                  { label: 'Fit-Adjusted Value', value: selectedTeam ? `€${fit.fitAdjustedValue}M` : 'Pick a club', color: '#c8ff00' },
+                  { label: 'Max Sensible Bid',   value: `€${fit.clubMaxSensibleBid}M`, color: '#c8ff00' },
+                  { label: 'System Fit',         value: systemFitScore != null ? `${systemFitScore}` : '—', color: '#c8ff00' },
+                  { label: 'Confidence',         value: `${valuation.confidence}`, color: valuation.confidence >= 70 ? '#c8ff00' : valuation.confidence >= 55 ? '#f59e0b' : '#ef4444' },
                 ].map(m => (
                   <div key={m.label} style={{ background: '#0a0a0a', padding: '12px 14px' }}>
                     <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 4 }}>{m.label}</div>
@@ -746,7 +758,12 @@ export default function Transfers() {
               </div>
 
               {/* Verdict stamp */}
-              {verdict && <VerdictStamp verdict={verdict.verdict} verdictClass={verdict.verdictClass} />}
+              <VerdictStamp verdict={dealVerdict.label} verdictClass={verdictClass} />
+              {dealVerdict.why && (
+                <div style={{ marginTop: 8, fontSize: 12, color: '#999', lineHeight: 1.5 }}>
+                  <span style={{ color: '#c8ff00', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.1em' }}>Why · </span>{dealVerdict.why}
+                </div>
+              )}
 
               {/* Share */}
               <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
@@ -760,7 +777,7 @@ export default function Transfers() {
                   team={selectedTeam}
                   verdict={verdict}
                   sysFit={sysFit}
-                  marketValue={marketValue}
+                  marketValue={valuation.estimatedValue}
                   askingPrice={askingPrice}
                 />
               </div>

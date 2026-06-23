@@ -197,7 +197,7 @@ export const wcFacts = [
   // GOALS
   { id: 'f-006', category: 'goals', emoji: '⚽', fact: "Just Fontaine scored 13 goals at the 1958 World Cup — still the record for a single tournament. France finished third.", tags: ['1958', 'France', 'records'] },
   { id: 'f-007', category: 'goals', emoji: '💥', fact: 'The highest-scoring World Cup game was Austria 7-5 Switzerland in 1954. 12 goals in 90 minutes.', tags: ['1954', 'records'] },
-  { id: 'f-008', category: 'goals', emoji: '🎯', fact: "Miroslav Klose is the all-time leading World Cup scorer with 16 goals across four tournaments for Germany.", tags: ['Germany', 'records', 'Klose'] },
+  { id: 'f-008', category: 'goals', emoji: '🎯', fact: "Lionel Messi is the all-time leading men’s World Cup scorer, overtaking Miroslav Klose (16) at the 2026 tournament — and passing Marta’s overall mark of 17 in the same game.", tags: ['Argentina', 'records', 'Messi'] },
   { id: 'f-009', category: 'goals', emoji: '⚡', fact: "Hakan Sukur scored the fastest World Cup goal in history — 11 seconds into Turkey vs South Korea in 2002.", tags: ['2002', 'Turkey', 'records'] },
   { id: 'f-010', category: 'goals', emoji: '🚀', fact: "Pele is the only player to win three World Cup winner medals (1958, 1962, 1970). He scored his first at age 17.", tags: ['Pele', 'Brazil', 'records'] },
 

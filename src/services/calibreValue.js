@@ -28,15 +28,24 @@
 // Values in €m. Curve is fit log-linearly between anchors, so it honours each
 // point exactly and grows multiplicatively (the natural shape for value).
 const BASE_ANCHORS = [
-  [70, 4],
+  [70, 6],
+  [74, 12],
   [78, 25],
   [85, 90],
   [90, 150],
   [94, 200],
 ];
-const RATING_FLOOR = 50;   // below this we clamp (squad-filler territory)
-const RATING_CEIL = 96;    // above this is effectively non-existent
-const VALUE_FLOOR = 0.3;   // never price a senior pro at literally zero (€m)
+// v1.2 tuning: softened low end (€6m@70, €12m@74) climbing to the UNTOUCHED
+// €25m@78. Below 70 the curve keeps declining — academy / low-league players are
+// genuinely cheap, so it is NOT clamped. A TIERED final floor stops absurd output:
+// €2m for a 70-rated player in the weakest leagues, €1.6m below 70 (roughly a
+// South African PL fee). NOTE: this does not fix UNDER-rated players — only the
+// rating retune does. A true 67 priced ~€2-3m is the engine being honest.
+const RATING_FLOOR = 45;     // clamp curve input here (deep sub-squad)
+const RATING_CEIL = 96;      // above this is effectively non-existent
+const VALUE_FLOOR = 0.5;     // tiny base-curve guard; the real floor is tiered (below)
+const FLOOR_AT_70 = 2.0;     // €m floor for rating >= 70
+const FLOOR_BELOW_70 = 1.6;  // €m floor for rating < 70 (low-league baseline)
 
 function curveBaseValue(ratingRaw) {
   const rating = clamp(Number(ratingRaw) || RATING_FLOOR, RATING_FLOOR, RATING_CEIL);
@@ -197,7 +206,9 @@ export function calibreValue(player = {}) {
   const afterPos = base * posMult;
   const afterLeague = afterPos * lgMult;
   const afterAge = afterLeague * ageMult;
-  const value = afterAge * (1 - risk);
+  const rawValue = afterAge * (1 - risk);
+  const floor = rating >= 70 ? FLOOR_AT_70 : FLOOR_BELOW_70;
+  const value = Math.max(rawValue, floor);
 
   const conf = confidence(player);
   const conf01 = conf.score / 100;
@@ -216,7 +227,7 @@ export function calibreValue(player = {}) {
     factor('Position Scarcity', scoreFromMult(posMult, 0.55, 1.30), afterPos - base, positionGroup(player.position)),
     factor('League Strength', Math.round(lgMult * 100), afterLeague - afterPos, prettyLeague(player.league, player.club)),
     factor('Age Curve', scoreFromMult(ageMult, 0.38, 1.40), afterAge - afterLeague, Number.isFinite(Number(player.age)) ? `${player.age} yrs` : 'age unknown'),
-    factor('Risk Discount', Math.round((1 - risk) * 100), value - afterAge, risk > 0 ? 'Thin sample' : 'No flags (v1)'),
+    factor('Risk Discount', Math.round((1 - risk) * 100), rawValue - afterAge, risk > 0 ? 'Thin sample' : 'No flags (v1)'),
     // v1 stubs — neutral € impact, surfaced so the card is complete and honest
     factor('Minutes / Sample', null, 0, sampleLabel(player.minutes), true),
     factor('International Status', null, 0, 'Not modelled (v1)', true),

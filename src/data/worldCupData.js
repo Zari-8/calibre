@@ -202,7 +202,7 @@ export const wcFacts = [
   { id: 'f-010', category: 'goals', emoji: '🚀', fact: "Pele is the only player to win three World Cup winner medals (1958, 1962, 1970). He scored his first at age 17.", tags: ['Pele', 'Brazil', 'records'] },
 
   // PLAYERS
-  { id: 'f-011', category: 'players', emoji: '👑', fact: "Lothar Matthaus played in five World Cups (1982-1998) and holds the record for most World Cup appearances: 25 games.", tags: ['Germany', 'records', 'Matthaus'] },
+  { id: 'f-011', category: 'players', emoji: '👑', fact: "Lionel Messi holds the record for most World Cup appearances. He overtook Lothar Matthaus (25) at the 2022 final and is the first player to feature at six World Cups.", tags: ['Argentina', 'records', 'Messi'] },
   { id: 'f-012', category: 'players', emoji: '🧤', fact: "Goalkeeper Peter Shilton played in 17 World Cup matches for England — the most by any English player.", tags: ['England', 'records'] },
   { id: 'f-013', category: 'players', emoji: '🌟', fact: "Ronaldo (Brazil) won the Golden Ball at his worst World Cup (1998) and the Golden Boot at his best (2002). Context is everything.", tags: ['Ronaldo', 'Brazil'] },
   { id: 'f-014', category: 'players', emoji: '🦁', fact: "Eusebio scored 9 goals at the 1966 World Cup, leading Portugal to third place. He cried on the pitch after their semi-final loss to England.", tags: ['Portugal', '1966', 'Eusebio'] },

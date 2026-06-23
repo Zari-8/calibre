@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
@@ -99,7 +99,7 @@ async function fetchMarketPulse() {
   ];
 }
 
-async function fetchComparables(position) {
+async function fetchComparablePool() {
   if (!supabaseConfigured || !supabase) return FALLBACK_COMPARABLES;
   const { data, error } = await supabase
     .from('transfers')
@@ -108,7 +108,7 @@ async function fetchComparables(position) {
     .eq('season', '2026-27')
     .not('fee_millions', 'is', null)
     .order('fee_millions', { ascending: false })
-    .limit(8);
+    .limit(40);
   if (error || !data?.length) return FALLBACK_COMPARABLES;
   return data.map(t => {
     const premium = t.market_value ? ((t.fee_millions - t.market_value) / t.market_value * 100) : 0;
@@ -118,11 +118,44 @@ async function fetchComparables(position) {
       name: t.player_name,
       fee: t.fee_millions,
       tag: t.position_label || t.position || '—',
+      position: t.position || t.position_label || '',
       roi,
       roiClass,
       apiPlayerId: t.api_player_id,
     };
   });
+}
+
+// Group a position label into a broad bucket so comparables match like-for-like.
+function comparableGroup(pos = '') {
+  const t = String(pos).toLowerCase();
+  if (/(gk|keeper|goal)/.test(t)) return 'GK';
+  if (/(cb|centre.?back|center.?back|central def)/.test(t)) return 'CB';
+  if (/(\blb\b|\brb\b|wing.?back|full.?back|\bfb\b|left.?back|right.?back)/.test(t)) return 'FB';
+  if (/(\bdm\b|cdm|defensive mid|anchor|regista|holding)/.test(t)) return 'DM';
+  if (/(\blw\b|\brw\b|wing|wide|inside forward)/.test(t)) return 'WIDE';
+  if (/(\bst\b|\bcf\b|striker|forward|\bfw\b|\bfwd\b|attacker|poacher)/.test(t)) return 'FWD';
+  if (/(\bam\b|\bcm\b|midfield|playmaker|creator|box.?to.?box)/.test(t)) return 'MID';
+  return 'MID';
+}
+
+// Comparables shown in the tab: same position group as the analysed player,
+// ranked by how close their fee is to the current asking price. Falls back to
+// the whole pool only when too few in-group matches exist, so the tab is never
+// empty — but it never again mixes centre-backs into a striker's list.
+function deriveComparables(pool, player, askingPrice) {
+  if (!Array.isArray(pool) || !pool.length) return [];
+  const group = comparableGroup(player?.position || player?.pos || '');
+  const refFee = Number(askingPrice) || Number(player?.marketValue) || null;
+  const self = String(player?.name || player?.full_name || '').toLowerCase();
+  const others = pool.filter(c => c && c.name && c.name.toLowerCase() !== self);
+  const inGroup = others.filter(c => comparableGroup(c.tag || c.position) === group);
+  const base = inGroup.length >= 3 ? inGroup : others;
+  const ranked = [...base].sort((a, b) => {
+    if (refFee == null) return (b.fee || 0) - (a.fee || 0);
+    return Math.abs((a.fee || 0) - refFee) - Math.abs((b.fee || 0) - refFee);
+  });
+  return ranked.slice(0, 6);
 }
 
 // ── Spotlight — picks from live transfers table (highest-fee rumour/watch) ────
@@ -460,7 +493,7 @@ export default function Transfers() {
   const [spotlightLoading, setSpotlightLoading] = useState(true);
   const [recentTransfers, setRecentTransfers] = useState(FALLBACK_TRANSFERS);
   const [marketPulse, setMarketPulse] = useState(FALLBACK_PULSE);
-  const [comparables, setComparables] = useState(FALLBACK_COMPARABLES);
+  const [comparablePool, setComparablePool] = useState(FALLBACK_COMPARABLES);
   const [transfersLoading, setTransfersLoading] = useState(true);
 
   useEffect(() => {
@@ -471,12 +504,12 @@ export default function Transfers() {
     Promise.all([
       fetchRecentTransfers(),
       fetchMarketPulse(),
-      fetchComparables(),
+      fetchComparablePool(),
       fetchSpotlight(),
     ]).then(([transfers, pulse, comps, liveSpotlight]) => {
       setRecentTransfers(transfers);
       setMarketPulse(pulse);
-      setComparables(comps);
+      setComparablePool(comps);
 
       // Wire spotlight player to DB for live rating/stats
       const spotlightBase = liveSpotlight || getSpotlightFallback();
@@ -586,6 +619,12 @@ export default function Transfers() {
   const shareText = verdict
     ? `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdict.verdict}. Calibre fair ceiling: €${verdict?.fairCeiling}M. calibrefootball.com/transfers`
     : `Transfer Intelligence on Calibre — calibrefootball.com/transfers`;
+
+  // Comparables react to whoever is being analysed (position group + fee proximity)
+  const comparables = useMemo(
+    () => deriveComparables(comparablePool, selectedPlayer, askingPrice),
+    [comparablePool, selectedPlayer, askingPrice]
+  );
 
   return (
     <div style={pageStyle}>
@@ -728,69 +767,6 @@ export default function Transfers() {
             </div>{/* close left hero col */}
             </div>{/* close hero grid */}
           </div>{/* close hero wrap */}
-
-          {/* ── EDITORIAL SPOTLIGHT ── */}
-          {spotlight && (
-            <div style={{ marginBottom: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', borderLeft: '3px solid #c8ff00', padding: 0, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid #1c1c1c', background: '#0a0a0a' }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 9, letterSpacing: '0.2em', color: '#c8ff00', textTransform: 'uppercase' }}>Editorial Pick</span>
-                <span style={{ fontSize: 9, color: '#444', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>· Rotates every 3 days · Connected to player DB</span>
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 0, alignItems: 'stretch' }}>
-                {/* Portrait */}
-                <div style={{ background: '#1a1a1a', overflow: 'hidden', minHeight: 120 }}>
-                  <ApiPlayerImage
-                    playerId={spotlight.apiPlayerId}
-                    name={spotlight.name}
-                    fallbackSrc="/assets/players/neutral-player.svg"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }}
-                  />
-                </div>
-                {/* Content */}
-                <div style={{ padding: '14px 18px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800, textTransform: 'uppercase' }}>{spotlight.name}</span>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase' }}>{spotlight.pos} · {spotlight.club} → {spotlight.to}</span>
-                    {spotlight.rating && (
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, color: '#c8ff00', marginLeft: 'auto' }}>CR {spotlight.rating}</span>
-                    )}
-                  </div>
-                  <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6, margin: '0 0 10px' }}>{spotlight.context}</p>
-                  {spotlight.goals != null && (
-                    <div style={{ display: 'flex', gap: 16 }}>
-                      {[
-                        { label: 'Apps', value: spotlight.appearances },
-                        { label: 'Goals', value: spotlight.goals },
-                        { label: 'Assists', value: spotlight.assists },
-                      ].map(s => (
-                        <div key={s.label}>
-                          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, color: '#fff' }}>{s.value ?? '—'}</div>
-                          <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-                {/* Load into engine CTA */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '14px 16px', borderLeft: '1px solid #1c1c1c', gap: 8, background: '#0a0a0a' }}>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800 }}>€{spotlight.fee}M</div>
-                  <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Quoted fee</div>
-                  <button
-                    onClick={() => {
-                      setSelectedPlayer({ ...spotlight, full_name: spotlight.name, rating: spotlight.rating || 78 });
-                      setPlayerQuery(spotlight.name);
-                      setAskingPrice(spotlight.fee || 80);
-                      setMarketValue(spotlight.marketValue || 40);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    style={{ background: '#c8ff00', border: 'none', color: '#0a0a0a', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >
-                    Run Analysis →
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 2, background: '#0a0a0a', border: '1px solid #1c1c1c', borderBottom: 'none', overflowX: 'auto' }}>
@@ -1038,7 +1014,7 @@ export default function Transfers() {
             {/* COMPARABLES */}
             {activeTab === 'Comparables' && (
               <div style={{ padding: 24 }}>
-                <div style={tabSectionLabel}>Similar transfers — age, position, fee range</div>
+                <div style={tabSectionLabel}>Similar transfers — same position group, closest fees</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#1c1c1c' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
                     {['Player', 'Fee', 'Profile', 'Calibre verdict'].map(h => (
@@ -1065,6 +1041,69 @@ export default function Transfers() {
               </div>
             )}
           </div>
+
+          {/* ── EDITORIAL SPOTLIGHT ── */}
+          {spotlight && (
+            <div style={{ marginBottom: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', borderLeft: '3px solid #c8ff00', padding: 0, overflow: 'hidden' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid #1c1c1c', background: '#0a0a0a' }}>
+                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 9, letterSpacing: '0.2em', color: '#c8ff00', textTransform: 'uppercase' }}>Editorial Pick</span>
+                <span style={{ fontSize: 9, color: '#444', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>· Rotates every 3 days · Connected to player DB</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 0, alignItems: 'stretch' }}>
+                {/* Portrait */}
+                <div style={{ background: '#1a1a1a', overflow: 'hidden', minHeight: 120 }}>
+                  <ApiPlayerImage
+                    playerId={spotlight.apiPlayerId}
+                    name={spotlight.name}
+                    fallbackSrc="/assets/players/neutral-player.svg"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }}
+                  />
+                </div>
+                {/* Content */}
+                <div style={{ padding: '14px 18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800, textTransform: 'uppercase' }}>{spotlight.name}</span>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase' }}>{spotlight.pos} · {spotlight.club} → {spotlight.to}</span>
+                    {spotlight.rating && (
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, color: '#c8ff00', marginLeft: 'auto' }}>CR {spotlight.rating}</span>
+                    )}
+                  </div>
+                  <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6, margin: '0 0 10px' }}>{spotlight.context}</p>
+                  {spotlight.goals != null && (
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      {[
+                        { label: 'Apps', value: spotlight.appearances },
+                        { label: 'Goals', value: spotlight.goals },
+                        { label: 'Assists', value: spotlight.assists },
+                      ].map(s => (
+                        <div key={s.label}>
+                          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, color: '#fff' }}>{s.value ?? '—'}</div>
+                          <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{s.label}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                {/* Load into engine CTA */}
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '14px 16px', borderLeft: '1px solid #1c1c1c', gap: 8, background: '#0a0a0a' }}>
+                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800 }}>€{spotlight.fee}M</div>
+                  <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Quoted fee</div>
+                  <button
+                    onClick={() => {
+                      setSelectedPlayer({ ...spotlight, full_name: spotlight.name, rating: spotlight.rating || 78 });
+                      setPlayerQuery(spotlight.name);
+                      setAskingPrice(spotlight.fee || 80);
+                      setMarketValue(spotlight.marketValue || 40);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    style={{ background: '#c8ff00', border: 'none', color: '#0a0a0a', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                  >
+                    Run Analysis →
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── HOW CALIBRE VERDICTS WORK ── */}
           <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>

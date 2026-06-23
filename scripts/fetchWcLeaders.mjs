@@ -1,15 +1,15 @@
 // scripts/fetchWcLeaders.mjs
 // ─────────────────────────────────────────────────────────────────────────
-// Calibre — live World Cup leaders.
+// Calibre — live World Cup data feed. Two jobs, one run:
 //
-// Pulls who is actually performing at the World Cup (top scorers + top
-// assisters, with apps/minutes/match-rating) from API-Football and upserts them
-// into the wc_leaders Supabase table. The World Cup page reads that table, so
-// the "who's lighting up the tournament" section reflects reality instead of a
-// pre-tournament prediction array.
+//   1) wc_leaders — who is actually performing (top scorers + assisters, with
+//      apps/minutes/match-rating). Players arrive WITH their api_player_id, so
+//      this drops straight into the portrait/profile plumbing (also fixes the
+//      "awaiting data" cases that name-matching used to miss).
 //
-// Players arrive WITH their api_player_id, so this also sidesteps the name-
-// mapping problem that leaves players like Bouaddi on "awaiting data".
+//   2) wc_teams  — which national teams are still in vs eliminated, derived from
+//      the tournament fixture list. Drives the watchlist "Eliminated" badge so a
+//      pick like Güler is honestly tagged once his team goes home.
 //
 // Run (one line, no quotes):
 //   API_FOOTBALL_KEY=your_key SUPABASE_URL=your_url SUPABASE_SERVICE_ROLE_KEY=your_service_key node scripts/fetchWcLeaders.mjs
@@ -44,6 +44,7 @@ async function api(endpoint) {
   return json.response || [];
 }
 
+// ── 1) LEADERS ────────────────────────────────────────────────────────────
 function rowFrom(entry) {
   const p = entry.player || {};
   const st = (entry.statistics && entry.statistics[0]) || {};
@@ -66,43 +67,100 @@ function rowFrom(entry) {
   };
 }
 
-const map = new Map();
-function merge(entry) {
-  const r = rowFrom(entry);
-  if (!r.api_player_id) return;
-  const cur = map.get(r.api_player_id);
-  if (!cur) { map.set(r.api_player_id, r); return; }
-  cur.goals = Math.max(cur.goals, r.goals);
-  cur.assists = Math.max(cur.assists, r.assists);
-  cur.appearances = Math.max(cur.appearances, r.appearances);
-  cur.minutes = Math.max(cur.minutes, r.minutes);
-  cur.rating = cur.rating ?? r.rating;
-  cur.team = cur.team || r.team;
-  cur.position = cur.position || r.position;
-}
-
-async function run() {
-  console.log(`Fetching World Cup leaders (league ${LEAGUE}, season ${SEASON})...`);
+async function syncLeaders() {
   const scorers = await api('players/topscorers');
   const assisters = await api('players/topassists');
   console.log(`  top scorers: ${scorers.length}  |  top assisters: ${assisters.length}`);
+
+  const map = new Map();
+  const merge = (entry) => {
+    const r = rowFrom(entry);
+    if (!r.api_player_id) return;
+    const cur = map.get(r.api_player_id);
+    if (!cur) { map.set(r.api_player_id, r); return; }
+    cur.goals = Math.max(cur.goals, r.goals);
+    cur.assists = Math.max(cur.assists, r.assists);
+    cur.appearances = Math.max(cur.appearances, r.appearances);
+    cur.minutes = Math.max(cur.minutes, r.minutes);
+    cur.rating = cur.rating ?? r.rating;
+    cur.team = cur.team || r.team;
+    cur.position = cur.position || r.position;
+  };
   scorers.forEach(merge);
   assisters.forEach(merge);
 
   const rows = [...map.values()];
   if (!rows.length) {
-    console.log('\nNo leaders returned. Likely causes:');
-    console.log('  - the 2026 World Cup season is not yet live / not in your API plan');
-    console.log('  - the league id or season differs — try WC_LEAGUE_ID / WC_SEASON overrides');
-    process.exit(0);
+    console.log('  no leaders returned (season may not be live in your plan, or try WC_SEASON / WC_LEAGUE_ID overrides)');
+    return [];
+  }
+  const { error } = await sb.from('wc_leaders').upsert(rows, { onConflict: 'api_player_id,season' });
+  if (error) { console.error('  wc_leaders upsert failed:', error.message); return rows; }
+  rows.sort((a, b) => (b.goals - a.goals) || (b.assists - a.assists));
+  console.log(`  upserted ${rows.length} leaders. Top: ${rows.slice(0, 3).map(r => `${r.name} ${r.goals}G`).join(', ')}`);
+  return rows;
+}
+
+// ── 2) TEAM PROGRESS (eliminated vs in) ─────────────────────────────────────
+const FINISHED = new Set(['FT', 'AET', 'PEN', 'AWD', 'WO']);
+const LIVE     = new Set(['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE']);
+const PENDING  = new Set(['NS', 'TBD', 'PST']);
+
+async function syncTeams() {
+  const fixtures = await api('fixtures');
+  console.log(`  fixtures: ${fixtures.length}`);
+  if (!fixtures.length) {
+    console.log('  no fixtures returned — skipping wc_teams (elimination badges stay off)');
+    return;
   }
 
-  const { error } = await sb.from('wc_leaders').upsert(rows, { onConflict: 'api_player_id,season' });
-  if (error) { console.error('Upsert failed:', error.message); process.exit(1); }
+  // Collect every team and their fixtures.
+  const teams = new Map(); // id -> { id, name, pending, live, finished:[{date, round, won}] }
+  const note = (side, fx) => {
+    const t = fx.teams[side];
+    if (!t || !t.id) return;
+    if (!teams.has(t.id)) teams.set(t.id, { id: t.id, name: t.name, pending: false, live: false, finished: [] });
+    const rec = teams.get(t.id);
+    const short = fx.fixture?.status?.short;
+    if (PENDING.has(short)) rec.pending = true;
+    else if (LIVE.has(short)) rec.live = true;
+    else if (FINISHED.has(short)) {
+      rec.finished.push({ date: fx.fixture?.date || '', round: fx.league?.round || '', won: t.winner === true });
+    }
+  };
+  for (const fx of fixtures) { note('home', fx); note('away', fx); }
 
-  rows.sort((a, b) => (b.goals - a.goals) || (b.assists - a.assists));
-  console.log(`\nUpserted ${rows.length} leaders. Top of the table:`);
-  rows.slice(0, 8).forEach(r => console.log(`  ${r.name} (${r.team}) — ${r.goals}G ${r.assists}A, ${r.appearances} apps, rating ${r.rating ?? '—'}`));
+  const rows = [...teams.values()].map(t => {
+    let eliminated = false;
+    let lastRound = null;
+    if (!t.pending && !t.live && t.finished.length) {
+      const last = t.finished.slice().sort((a, b) => new Date(b.date) - new Date(a.date))[0];
+      lastRound = last.round;
+      const wonFinal = /final/i.test(last.round) && !/semi|quarter|3rd|third/i.test(last.round) && last.won;
+      // No future or live match left, and they didn't win the final → out.
+      eliminated = !wonFinal;
+    }
+    return {
+      team_id: t.id,
+      season: String(SEASON),
+      team_name: t.name,
+      eliminated,
+      last_round: lastRound,
+      updated_at: new Date().toISOString(),
+    };
+  });
+
+  const { error } = await sb.from('wc_teams').upsert(rows, { onConflict: 'team_id,season' });
+  if (error) { console.error('  wc_teams upsert failed:', error.message); return; }
+  const out = rows.filter(r => r.eliminated).map(r => r.team_name);
+  console.log(`  upserted ${rows.length} teams. Eliminated (${out.length}): ${out.join(', ') || 'none yet'}`);
+}
+
+async function run() {
+  console.log(`Calibre WC feed — league ${LEAGUE}, season ${SEASON}`);
+  console.log('Leaders:');   await syncLeaders();
+  console.log('Teams:');     await syncTeams();
+  console.log('Done.');
 }
 
 run().catch((e) => { console.error(e); process.exit(1); });

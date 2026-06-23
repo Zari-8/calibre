@@ -61,13 +61,21 @@ function MomentBadge({ type }) {
   return <span className={`moment-badge ${b.cls}`}>{b.label}</span>;
 }
 
-function BreakoutCard({ star, live }) {
+function BreakoutCard({ star, live, wc, eliminated, tournamentLive }) {
   // Everything quantitative is live: the rating comes from the shared Calibre
   // engine off the registry row, and the form boxes show the player's real club
   // season (apps/goals/assists) — never hand-authored World Cup numbers. Before
   // a player resolves (or pre-tournament), the card shows a clean "awaiting
   // data" state rather than inventing a stat line.
   const rating = live?.rating ?? '—';
+  // World Cup status badge (live): eliminated > in-form > no-returns. Pre-tournament shows nothing.
+  const wcBadge = eliminated
+    ? { label: 'Eliminated', bg: '#241414', color: '#ef4444', border: '#3a1d1d' }
+    : wc
+      ? { label: 'In form at the WC', bg: '#16240a', color: '#c8ff00', border: '#2a3d12' }
+      : tournamentLive
+        ? { label: 'No returns yet', bg: '#161616', color: '#888', border: '#262626' }
+        : null;
   const resolvedId = live?.apiPlayerId || playerIdFor(star.name);
   const club = live?.club || star.club;
   const hasForm = !!(live && (live.appearances || live.goals || live.assists));
@@ -115,6 +123,14 @@ function BreakoutCard({ star, live }) {
           </div>
         </div>
       </div>
+      {wcBadge && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '8px 0 2px', flexWrap: 'wrap' }}>
+          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '3px 8px', background: wcBadge.bg, color: wcBadge.color, border: `1px solid ${wcBadge.border}` }}>{wcBadge.label}</span>
+          {wc && !eliminated && (wc.goals || wc.assists) ? (
+            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, color: '#999', letterSpacing: '0.05em' }}>{wc.goals}G {wc.assists}A in {wc.appearances} apps</span>
+          ) : null}
+        </div>
+      )}
       <div className="wc-bc-stats">
         <div className="wc-bc-stat"><b>{hasForm ? live.appearances : '—'}</b><span>Apps</span></div>
         <div className="wc-bc-stat"><b>{hasForm ? live.goals : '—'}</b><span>Goals</span></div>
@@ -506,6 +522,18 @@ export default function WorldCup() {
     return () => { alive = false; };
   }, []);
 
+  // ── Team progress (wc_teams) for watchlist elimination badges ──
+  const [wcTeams, setWcTeams] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!supabaseConfigured || !supabase) return;
+      const { data, error } = await supabase.from('wc_teams').select('*');
+      if (!error && alive) setWcTeams(data || []);
+    })();
+    return () => { alive = false; };
+  }, []);
+
   const [activeEdition,  setActiveEdition]  = useState(iconicEditions[iconicEditions.length - 1]);
 
   // Featured World Cup match: today's live game, else the most recent finished,
@@ -584,6 +612,22 @@ export default function WorldCup() {
   const pagedFacts     = filteredFacts.slice(factSafePage * FACTS_PER_PAGE, factSafePage * FACTS_PER_PAGE + FACTS_PER_PAGE);
   const setFactCat     = (c) => { setFactCategory(c); setFactPage(0); };
   const setFactQuery   = (q) => { setFactSearch(q); setFactPage(0); };
+
+  // Watchlist status helpers, derived from the live tables.
+  const leaderById = {};
+  wcLeaders.forEach(l => { leaderById[l.api_player_id] = l; });
+  const NATION_ALIASES = {
+    turkey: ['turkey', 'turkiye'],
+    'south korea': ['south korea', 'korea republic', 'korea'],
+    usa: ['usa', 'united states'],
+  };
+  const normNation = (x) => String(x || '').trim().toLowerCase();
+  const eliminatedSet = new Set(wcTeams.filter(t => t.eliminated).map(t => normNation(t.team_name)));
+  const isNationEliminated = (nation) => {
+    const n = normNation(nation);
+    if (eliminatedSet.has(n)) return true;
+    return (NATION_ALIASES[n] || [n]).some(a => eliminatedSet.has(a));
+  };
 
   return (
     <div className="page wc-page">
@@ -696,7 +740,7 @@ export default function WorldCup() {
       <section className="wc-section">
         <SectionHead eyebrow="Scout Pulse" title="Pre-Tournament Watchlist" />
         <div className="wc-breakout-grid">
-          {breakoutStars.map(s => <BreakoutCard key={s.id} star={s} live={liveRatings[s.name]} />)}
+          {breakoutStars.map(s => <BreakoutCard key={s.id} star={s} live={liveRatings[s.name]} wc={leaderById[s.apiPlayerId]} eliminated={isNationEliminated(s.nation)} tournamentLive={wcLeaders.length > 0} />)}
         </div>
       </section>
 

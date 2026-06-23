@@ -8,6 +8,7 @@ import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { playerIdFor } from '../data/playerIds.js';
 import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
+import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { getFixturesByDate, getFixtureEvents, getTeamForm, getMatchPredictions } from '../services/apiFootball.js';
 import useAuth from '../hooks/useAuth.js';
@@ -487,6 +488,24 @@ export default function WorldCup() {
     return () => { alive = false; };
   }, []);
 
+  // ── Live World Cup leaders (wc_leaders, populated by scripts/fetchWcLeaders.mjs) ──
+  const [wcLeaders, setWcLeaders] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      if (!supabaseConfigured || !supabase) return;
+      const { data, error } = await supabase
+        .from('wc_leaders')
+        .select('*')
+        .order('goals', { ascending: false })
+        .order('assists', { ascending: false })
+        .order('rating', { ascending: false, nullsFirst: false })
+        .limit(12);
+      if (!error && alive) setWcLeaders(data || []);
+    })();
+    return () => { alive = false; };
+  }, []);
+
   const [activeEdition,  setActiveEdition]  = useState(iconicEditions[iconicEditions.length - 1]);
 
   // Featured World Cup match: today's live game, else the most recent finished,
@@ -637,6 +656,38 @@ export default function WorldCup() {
           </div>
         )}
       </section>
+
+      {/* ── LIGHTING UP THE WORLD CUP (live leaders) ── */}
+      {wcLeaders.length > 0 && (
+        <section className="wc-section">
+          <SectionHead eyebrow="Live · Tournament Form" title="Lighting Up The World Cup" />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 12 }}>
+            {wcLeaders.map((l, i) => (
+              <div key={l.api_player_id} style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', borderLeft: '3px solid #c8ff00', padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <ApiPlayerImage playerId={l.api_player_id} name={l.name} fallbackSrc="/assets/players/neutral-player.svg" alt={l.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center' }} />
+                  <span style={{ position: 'absolute', top: -6, left: -6, background: '#c8ff00', color: '#0a0a0a', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 11, width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.name}</div>
+                  <div style={{ fontSize: 10, letterSpacing: '0.1em', color: '#666', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 6 }}>{l.team}{l.position ? ` \u00b7 ${l.position}` : ''}</div>
+                  <div style={{ display: 'flex', gap: 14 }}>
+                    {[{ v: l.goals, k: 'G' }, { v: l.assists, k: 'A' }, { v: l.appearances, k: 'Apps' }, { v: l.rating != null ? l.rating : '\u2014', k: 'Rtg' }].map(stat => (
+                      <div key={stat.k} style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 800, color: '#fff' }}>{stat.v}</span>
+                        <span style={{ fontSize: 8, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{stat.k}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 10, color: '#444', marginTop: 10, fontFamily: "'Barlow Condensed', sans-serif", letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Live tournament data from API-Football, refreshed through the tournament
+          </div>
+        </section>
+      )}
 
       {/* ── BETTING PARTNER BANNER ── */}
       <PremierBetBanner source="worldcup" variant="bar" />

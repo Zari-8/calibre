@@ -208,7 +208,7 @@ const FALLBACK_PULSE = [
   { label: 'Best value lane',        value: 'U23 CB',  highlight: false },
   { label: 'Highest risk lane',      value: 'Teen ST', highlight: false },
   { label: 'Transfers done (2026)',  value: '—',       highlight: false },
-  { label: 'Avg fee vs TM value',    value: '—',       highlight: true },
+  { label: 'Avg fee vs Calibre value', value: '—',    highlight: true },
 ];
 
 const FALLBACK_COMPARABLES = [
@@ -810,18 +810,34 @@ export default function Transfers() {
             {/* Data source note */}
             <div style={{ padding: '8px 16px', borderBottom: '1px solid #1c1c1c', background: '#080808', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 11, letterSpacing: '0.12em', color: '#777', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>
-                Value Score — computed · System Fit — model estimate · Risk Profile — model estimate · Full live wiring in V2
+                Calibre Value & Risk — computed live from the rating engine · System Fit — model estimate
               </span>
             </div>
 
             {/* OVERVIEW */}
-            {activeTab === 'Overview' && (
+            {activeTab === 'Overview' && (() => {
+              const est = valuation.estimatedValue;
+              const fairHigh = valuation.fairRange.high;
+              const maxBid = valuation.maxSensibleBid;
+              const prem = dealVerdict.premium ?? 0;
+              const vColor = verdictClass === 'lime' ? '#c8ff00' : verdictClass === 'red' ? '#ef4444' : '#f59e0b';
+              const mins = Number.isFinite(Number(selectedPlayer?.minutes)) ? Number(selectedPlayer.minutes)
+                : Number.isFinite(Number(selectedPlayer?.appearances)) ? Number(selectedPlayer.appearances) * 90 : null;
+              const SCALE = 300;
+              const pct = v => Math.max(0, Math.min(100, (v / SCALE) * 100));
+              const zones = [
+                { from: 0, to: est, color: '#c8ff00' },
+                { from: est, to: fairHigh, color: '#84cc16' },
+                { from: fairHigh, to: maxBid, color: '#f59e0b' },
+                { from: maxBid, to: SCALE, color: '#ef4444' },
+              ];
+              const sampleScore = mins == null ? null : Math.max(0, Math.min(100, Math.round(mins / 30)));
+              const feeScore = Math.max(0, Math.min(100, prem));
+              return (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
-                <ScorePanel title="Value Score" score={verdict?.valueScore || '—'} scoreColor={verdict?.valueScore > 65 ? '#c8ff00' : verdict?.valueScore > 45 ? '#f59e0b' : '#ef4444'}>
-                  <p style={{ fontSize: 12, color: '#666', lineHeight: 1.6, margin: 0 }}>
-                    {verdict && askingPrice > verdict.fairCeiling
-                      ? `At €${askingPrice}M, Calibre sees a €${verdict.overpayBy}M overpay. The age curve justifies a premium — but not this one.`
-                      : `At €${askingPrice}M, this deal is within Calibre's defensible range. Fair ceiling is €${verdict?.fairCeiling}M.`}
+                <ScorePanel title="Calibre Value" score={`€${est}M`} scoreColor={vColor}>
+                  <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6, margin: 0 }}>
+                    {dealVerdict.label} · {prem >= 0 ? '+' : ''}{prem}% vs estimate at €{askingPrice}M ask. {dealVerdict.why}
                   </p>
                 </ScorePanel>
 
@@ -833,49 +849,64 @@ export default function Transfers() {
                       <MetricBar label="Box threat" value={sysFit.boxThreat} />
                     </>
                   ) : (
-                    <p style={{ fontSize: 11, color: '#666', lineHeight: 1.6, margin: 0 }}>
-                      Select a buying club above to run the System Fit analysis. Calibre will recalculate based on the team's tactical profile.
+                    <p style={{ fontSize: 11.5, color: '#888', lineHeight: 1.6, margin: 0 }}>
+                      Select a buying club above to run the System Fit analysis. Calibre recalculates from the team&rsquo;s tactical profile.
                     </p>
                   )}
                 </ScorePanel>
 
-                <ScorePanel
-                  title="Risk Profile"
-                  score={verdict ? (verdict.dealRisk === 'HIGH' ? 67 : verdict.dealRisk === 'MEDIUM' ? 55 : 82) : '—'}
-                  scoreColor={verdict?.dealRiskClass === 'red' ? '#ef4444' : verdict?.dealRiskClass === 'amber' ? '#f59e0b' : '#c8ff00'}
-                >
-                  <MetricBar label="League jump" value={78} color="#f59e0b" />
-                  <MetricBar label="Sample size" value={66} color="#f59e0b" />
-                  <MetricBar label="Fee pressure" value={90} color="#ef4444" />
+                <ScorePanel title="Confidence" score={valuation.confidence} scoreColor={valuation.confidence >= 70 ? '#c8ff00' : valuation.confidence >= 55 ? '#f59e0b' : '#ef4444'}>
+                  {sampleScore != null && <MetricBar label="Sample" value={sampleScore} color={sampleScore >= 60 ? '#c8ff00' : '#f59e0b'} />}
+                  <MetricBar label="Scarcity" value={valuation.scarcity} color={valuation.scarcity >= 65 ? '#ef4444' : '#f59e0b'} />
+                  <MetricBar label="Fee pressure" value={feeScore} color={prem > 30 ? '#ef4444' : prem > 0 ? '#f59e0b' : '#c8ff00'} />
                 </ScorePanel>
 
                 {/* Deal lever — spans full width */}
                 <div style={{ background: '#0f0f0f', padding: 20, gridColumn: 'span 3' }}>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', marginBottom: 12 }}>Deal Lever — drag to find the right price</div>
+                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, letterSpacing: '0.15em', color: '#8a8a8a', textTransform: 'uppercase', marginBottom: 14 }}>Deal Lever — drag to find the right price</div>
+
+                  {/* Zone track */}
+                  <div style={{ position: 'relative', height: 28, marginBottom: 8 }}>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', borderRadius: 3, overflow: 'hidden' }}>
+                      {zones.map((z, i) => (
+                        <div key={i} style={{ width: `${pct(z.to) - pct(z.from)}%`, background: z.color, opacity: 0.30 }} />
+                      ))}
+                    </div>
+                    <div style={{ position: 'absolute', top: -4, bottom: -4, left: `${pct(askingPrice)}%`, width: 2, background: '#fff', boxShadow: '0 0 6px rgba(255,255,255,0.7)' }} />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5, color: '#777', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 14 }}>
+                    <span>€0</span>
+                    <span style={{ color: '#c8ff00' }}>est €{est}M</span>
+                    <span style={{ color: '#f59e0b' }}>fair €{fairHigh}M</span>
+                    <span style={{ color: '#ef4444' }}>max €{maxBid}M</span>
+                    <span>€{SCALE}M</span>
+                  </div>
+
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, color: '#555', width: 48 }}>€1M</span>
-                    <input type="range" min="1" max="300" value={askingPrice} onChange={e => setAskingPrice(Number(e.target.value))} style={{ flex: 1, accentColor: '#c8ff00' }} />
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, color: '#555', width: 52, textAlign: 'right' }}>€300M</span>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, color: '#8a8a8a', width: 48 }}>€1M</span>
+                    <input type="range" min="1" max="300" value={askingPrice} onChange={e => setAskingPrice(Number(e.target.value))} style={{ flex: 1, accentColor: vColor }} />
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, color: '#8a8a8a', width: 52, textAlign: 'right' }}>€300M</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
                     {[
-                      { price: Math.round(verdict?.fairCeiling * 0.7) || 48, label: 'VALUE BUY', color: '#c8ff00' },
-                      { price: verdict?.fairCeiling || 68, label: 'FAIR CEILING', color: '#c8ff00' },
-                      { price: Math.round((verdict?.fairCeiling || 68) * 1.2) || 82, label: 'BORDERLINE', color: '#f59e0b' },
-                      { price: askingPrice, label: 'CURRENT ASK', color: premiumColor },
-                    ].map(p => (
+                      { price: est, label: 'VALUE BUY', color: '#c8ff00' },
+                      { price: fairHigh, label: 'FAIR CEILING', color: '#84cc16' },
+                      { price: maxBid, label: 'MAX SENSIBLE', color: '#f59e0b' },
+                      { price: askingPrice, label: 'CURRENT ASK', color: vColor },
+                    ].map(b => (
                       <button
-                        key={p.label}
-                        onClick={() => setAskingPrice(p.price)}
-                        style={{ background: 'none', border: `1px solid ${p.color}22`, color: p.color, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer' }}
+                        key={b.label}
+                        onClick={() => setAskingPrice(Math.round(b.price))}
+                        style={{ background: 'none', border: `1px solid ${b.color}33`, color: b.color, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer' }}
                       >
-                        €{p.price}M — {p.label}
+                        €{Math.round(b.price)}M — {b.label}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* VALUE ANALYSIS */}
             {activeTab === 'Value Analysis' && (

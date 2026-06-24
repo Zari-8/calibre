@@ -89,12 +89,17 @@ export function fitVerdict(base, fit, askingPrice) {
     return { label: 'NEGOTIATE HARD', tone: 'warn', premium,
       why: `Above fair value but under the €${fit.clubMaxSensibleBid}m sensible ceiling for this club.` };
 
-  // above the club ceiling
-  if (fit.fitScore != null && fit.fitScore >= ELITE_FIT)
+  // above the club ceiling — an elite fit can stretch it, but only so far, never infinitely
+  const elite = fit.fitScore != null && fit.fitScore >= ELITE_FIT;
+  const fitStretch = elite ? 1 + Math.min(0.18, 0.06 + (fit.fitScore - ELITE_FIT) * 0.01) : 1;
+  const conditionalCeiling = round1(fit.clubMaxSensibleBid * fitStretch);
+  if (elite && ask <= conditionalCeiling)
     return { label: 'CONDITIONAL DEAL', tone: 'warn', premium,
-      why: `€${round1(ask - fit.clubMaxSensibleBid)}m over the ceiling — but an elite fit (${fit.fitScore}/100) can carry it if role and resale conviction are high.` };
+      why: `€${round1(ask - fit.clubMaxSensibleBid)}m over the €${fit.clubMaxSensibleBid}m ceiling — an elite fit (${fit.fitScore}/100) can carry a stretch this size if role and resale conviction are high.` };
   return { label: 'WALK AWAY', tone: 'bad', premium,
-    why: `€${round1(ask - fit.clubMaxSensibleBid)}m above the €${fit.clubMaxSensibleBid}m ceiling, and the fit doesn't justify the premium.` };
+    why: elite
+      ? `€${round1(ask - fit.clubMaxSensibleBid)}m over the €${fit.clubMaxSensibleBid}m ceiling — beyond what even an elite fit (${fit.fitScore}/100) can justify.`
+      : `€${round1(ask - fit.clubMaxSensibleBid)}m above the €${fit.clubMaxSensibleBid}m ceiling, and the fit doesn't justify the premium.` };
 }
 
 // ── SELF-TEST: run `node calibreFitValue.js` ─────────────────────────────────

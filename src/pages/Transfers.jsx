@@ -656,7 +656,7 @@ export default function Transfers() {
             <div style={eyebrowStyle}>Transfer Intelligence · Live Deal Room</div>
             <h1 style={headlineStyle}>Deal or<br />No Deal?</h1>
             <p style={heroSubStyle}>
-              Stress-test any transfer fee against market value, Calibre rating, age curve, system fit and risk — then change the asking price and watch the verdict move live.
+              Stress-test any transfer fee against Calibre’s independent valuation — rating, position scarcity, league strength, age curve, system fit and risk — then change the asking price and watch the verdict move live.
             </p>
 
             <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
@@ -880,36 +880,76 @@ export default function Transfers() {
             {/* VALUE ANALYSIS */}
             {activeTab === 'Value Analysis' && (
               <div style={{ padding: 24 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 24 }}>
-                  <div>
-                    <div style={tabSectionLabel}>Rating vs Fee</div>
-                    <MetricBar label="Rating score" value={verdict?.ratingScore || 0} />
-                    <div style={{ marginTop: 12, fontSize: 12, color: '#666', lineHeight: 1.6 }}>
-                      A Calibre rating of {selectedPlayer?.rating ? Math.round(selectedPlayer.rating) : '—'} justifies approximately €{verdict ? Math.round(marketValue * 1.4) : '—'}M at this league strength. Current ask is €{askingPrice}M.
-                    </div>
-                  </div>
-                  <div>
-                    <div style={tabSectionLabel}>Age Curve Premium</div>
-                    <MetricBar label="Age score" value={verdict?.ageCurve || 0} />
-                    <div style={{ marginTop: 12, fontSize: 12, color: '#666', lineHeight: 1.6 }}>
-                      Age {selectedPlayer?.age || '—'} gives this player {selectedPlayer?.age <= 21 ? '6-8 peak years ahead' : selectedPlayer?.age <= 25 ? '3-5 peak years ahead' : 'limited curve upside'}. This {selectedPlayer?.age <= 21 ? 'strongly' : 'partially'} justifies a market premium.
-                    </div>
+                <div style={tabSectionLabel}>Calibre Value Breakdown</div>
+                <p style={{ fontSize: 12.5, color: '#999', lineHeight: 1.6, margin: '0 0 18px', maxWidth: 640 }}>
+                  How Calibre builds {selectedPlayer?.full_name || selectedPlayer?.name || 'this player'}&rsquo;s value from the ground up &mdash; each factor&rsquo;s marginal effect in euros, summing to the Calibre Estimated Value. This is the model&rsquo;s own number, not a market quote.
+                </p>
+
+                {/* Waterfall */}
+                <div style={{ border: '1px solid #1c1c1c', background: '#0a0a0a' }}>
+                  {valuation.breakdown.filter(f => !f.stub).map(f => {
+                    const isBase = f.name === 'Performance Level';
+                    const pos = f.impact > 0, neg = f.impact < 0;
+                    const impactColor = isBase ? '#c8ff00' : neg ? '#ef4444' : pos ? '#c8ff00' : '#666';
+                    const impactTxt = isBase ? `\u20ac${f.impact}M` : pos ? `+\u20ac${f.impact}M` : neg ? `\u2212\u20ac${Math.abs(f.impact)}M` : '\u2014';
+                    return (
+                      <div key={f.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '13px 18px', borderBottom: '1px solid #141414' }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700, color: '#fff' }}>
+                            {isBase ? 'Base \u00b7 ' : ''}{f.name}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: '#888', marginTop: 2 }}>{f.note}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
+                          {f.score != null && (
+                            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, color: '#777', letterSpacing: '0.04em', minWidth: 46, textAlign: 'right' }}>{f.score}<span style={{ color: '#3a3a3a' }}>/100</span></span>
+                          )}
+                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800, color: impactColor, minWidth: 88, textAlign: 'right' }}>{impactTxt}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {/* Result */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '16px 18px', background: 'rgba(200,255,0,0.06)', borderTop: '1px solid #c8ff0033' }}>
+                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c8ff00' }}>Calibre Estimated Value</div>
+                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 30, fontWeight: 800, color: '#c8ff00' }}>&euro;{valuation.estimatedValue}M</div>
                   </div>
                 </div>
-                <div style={tabSectionLabel}>Fair Price Breakdown</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 1, background: '#1c1c1c' }}>
+
+                {/* Confidence + range strip */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginTop: 16, padding: '14px 18px', background: '#0f0f0f', border: '1px solid #1c1c1c' }}>
                   {[
-                    { label: 'Base (TM value)', value: `€${marketValue}M`, note: 'Market consensus' },
-                    { label: 'Age premium', value: `+€${Math.round(marketValue * (verdict?.ageCurve || 0) / 100 * 0.5)}M`, note: 'Curve justified' },
-                    { label: 'Scarcity add', value: '+€8M', note: 'Position scarcity' },
-                    { label: 'Calibre ceiling', value: `€${verdict?.fairCeiling || '—'}M`, note: 'Defensible max', highlight: true },
-                  ].map(b => (
-                    <div key={b.label} style={{ background: b.highlight ? 'rgba(200,255,0,0.06)' : '#0f0f0f', padding: '14px 16px', borderLeft: b.highlight ? '2px solid #c8ff00' : 'none' }}>
-                      <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 6 }}>{b.label}</div>
-                      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, color: b.highlight ? '#c8ff00' : '#fff' }}>{b.value}</div>
-                      <div style={{ fontSize: 10, color: '#555', marginTop: 4 }}>{b.note}</div>
+                    { k: 'Confidence', v: `${valuation.confidence}/100` },
+                    { k: 'Fair range', v: `\u20ac${valuation.fairRange.low}\u2013${valuation.fairRange.high}M` },
+                    { k: 'Max sensible bid', v: `\u20ac${valuation.maxSensibleBid}M` },
+                    { k: 'Scarcity', v: `${valuation.scarcity}/100` },
+                  ].map(s => (
+                    <div key={s.k}>
+                      <div style={{ fontSize: 10, color: '#8a8a8a', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 3 }}>{s.k}</div>
+                      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 17, fontWeight: 800, color: '#fff' }}>{s.v}</div>
                     </div>
                   ))}
+                </div>
+
+                {valuation.confidenceDrivers && valuation.confidenceDrivers.length > 0 && (
+                  <div style={{ marginTop: 12, fontSize: 12, color: '#888', lineHeight: 1.6 }}>
+                    <span style={{ color: '#8a8a8a', textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.1em', fontFamily: "'Barlow Condensed', sans-serif" }}>Confidence notes &middot; </span>
+                    {valuation.confidenceDrivers.join('  \u00b7  ')}
+                  </div>
+                )}
+
+                {/* Not-yet-modelled stubs */}
+                <div style={{ ...tabSectionLabel, marginTop: 24 }}>Not yet in the model &mdash; shown for transparency</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {valuation.breakdown.filter(f => f.stub).map(f => (
+                    <div key={f.name} style={{ border: '1px solid #1c1c1c', background: '#0c0c0c', padding: '8px 12px' }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12.5, color: '#aaa', fontWeight: 700 }}>{f.name}</span>
+                      <span style={{ fontSize: 11, color: '#666', marginLeft: 8 }}>{f.note}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: 14, fontSize: 11, color: '#666', lineHeight: 1.6, maxWidth: 640 }}>
+                  The five live factors are applied in order and sum to the Calibre Estimated Value. The items above are disclosed but held neutral until they&rsquo;re calibrated &mdash; Calibre shows what it doesn&rsquo;t yet model rather than inventing it.
                 </div>
               </div>
             )}
@@ -1127,10 +1167,10 @@ export default function Transfers() {
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.18em', color: '#555', textTransform: 'uppercase', marginBottom: 16 }}>How the verdict engine works</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
               {[
-                { step: '01', title: 'Market value', desc: 'Transfermarkt consensus sets the baseline. This is what the market thinks the player is worth today.' },
-                { step: '02', title: 'Calibre ceiling', desc: 'Rating + age curve + league strength + scarcity factor. The maximum defensible fee based on real data.' },
-                { step: '03', title: 'Your asking price', desc: 'What the selling club is actually quoting. Enter any number and the verdict recalculates instantly.' },
-                { step: '04', title: 'The verdict', desc: 'DEAL / CONDITIONAL DEAL / NEGOTIATE HARD / NO DEAL. One signal. Based entirely on the numbers.' },
+                { step: '01', title: 'Calibre Estimated Value', desc: 'Derived from the rating, position scarcity, league strength and age curve — an independent valuation, not a market quote.' },
+                { step: '02', title: 'Fair range & max bid', desc: 'A defensible band around the estimate, plus the walk-away ceiling — widened by scarcity, narrowed by confidence.' },
+                { step: '03', title: 'The asking price', desc: 'What the selling club is quoting. Enter any number and the verdict recalculates instantly.' },
+                { step: '04', title: 'The verdict', desc: 'VALUE BUY / FAIR DEAL / NEGOTIATE HARD / WALK AWAY — adjusted for how the player fits the buying club.' },
               ].map(s => (
                 <div key={s.step} style={{ background: '#0a0a0a', padding: '14px 16px' }}>
                   <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.15em', color: '#c8ff00', marginBottom: 6 }}>{s.step}</div>
@@ -1143,7 +1183,7 @@ export default function Transfers() {
 
           {/* ── DISCLAIMER ── */}
           <div style={{ marginTop: 12, fontSize: 10, color: '#333', lineHeight: 1.6 }}>
-            Transfer values sourced from Transfermarkt. Calibre ratings, fair price ceilings and system fit scores are computed from TheStatsAPI event data and Calibre's proprietary rating engine. Not financial or sporting advice.
+            Calibre Estimated Value, fair ranges and system fit scores are computed independently from Calibre’s rating engine and TheStatsAPI event data — they are not market quotes. Not financial or sporting advice.
           </div>
         </div>
 
@@ -1311,9 +1351,9 @@ const layoutStyle = {
 
 const tabSectionLabel = {
   fontFamily: "'Barlow Condensed', sans-serif",
-  fontSize: 10,
+  fontSize: 11,
   letterSpacing: '0.18em',
-  color: '#555',
+  color: '#8a8a8a',
   textTransform: 'uppercase',
   marginBottom: 14,
   display: 'block',

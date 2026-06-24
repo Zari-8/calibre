@@ -687,7 +687,7 @@ export default function Transfers() {
                 { label: 'Premium vs Calibre', value: `${dealVerdict.premium >= 0 ? '+' : ''}${dealVerdict.premium}%`, color: premiumColor },
               ].map(k => (
                 <div key={k.label} style={{ background: '#0a0a0a', padding: '14px 16px' }}>
-                  <div style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', marginBottom: 5, fontFamily: "'Barlow Condensed', sans-serif" }}>{k.label}</div>
+                  <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#8a8a8a', textTransform: 'uppercase', marginBottom: 5, fontFamily: "'Barlow Condensed', sans-serif" }}>{k.label}</div>
                   <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: k.color }}>{k.value}</div>
                 </div>
               ))}
@@ -695,7 +695,7 @@ export default function Transfers() {
 
             {/* Asking price adjuster */}
             <div style={{ marginTop: 14, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: '14px 16px' }}>
-              <div style={{ fontSize: 10, letterSpacing: '0.12em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 8 }}>Adjust asking price — verdict updates live</div>
+              <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#8a8a8a', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 8 }}>Adjust asking price — verdict updates live</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, color: '#c8ff00', fontWeight: 800 }}>€</span>
                 <input
@@ -712,9 +712,9 @@ export default function Transfers() {
                   <span style={{ fontSize: 12, color: '#555' }}>M</span>
                 </div>
               </div>
-              <div style={{ marginTop: 10, fontSize: 11, color: '#666' }}>
+              <div style={{ marginTop: 10, fontSize: 13, color: '#8a8a8a' }}>
                 {selectedTeam ? `Max sensible bid for ${selectedTeam.short || selectedTeam.name}` : 'Max sensible bid'}: <span style={{ color: '#c8ff00', fontWeight: 700 }}>€{fit.clubMaxSensibleBid}M</span>
-                <span style={{ marginLeft: 10, color: '#555' }}>Fair range €{fit.fitFairRange.low}–{fit.fitFairRange.high}M</span>
+                <span style={{ marginLeft: 10, color: '#8a8a8a' }}>Fair range €{fit.fitFairRange.low}–{fit.fitFairRange.high}M</span>
               </div>
             </div>
           </div>
@@ -733,10 +733,10 @@ export default function Transfers() {
                 </div>
                 <div>
                   <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>{selectedPlayer?.full_name || selectedPlayer?.name || 'Select a player'}</div>
-                  <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>
+                  <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>
                     {selectedPlayer?.pos} · Age {selectedPlayer?.age} · {selectedPlayer?.club}
                   </div>
-                  <div style={{ fontSize: 10, color: '#555', marginTop: 2, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  <div style={{ fontSize: 11, color: '#8a8a8a', marginTop: 2, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {selectedPlayer?.nationality} · Calibre {selectedPlayer?.rating ? Math.round(selectedPlayer.rating) : '—'}
                   </div>
                 </div>
@@ -751,7 +751,7 @@ export default function Transfers() {
                   { label: 'Confidence',         value: `${valuation.confidence}`, color: valuation.confidence >= 70 ? '#c8ff00' : valuation.confidence >= 55 ? '#f59e0b' : '#ef4444' },
                 ].map(m => (
                   <div key={m.label} style={{ background: '#0a0a0a', padding: '12px 14px' }}>
-                    <div style={{ fontSize: 9, letterSpacing: '0.12em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 4 }}>{m.label}</div>
+                    <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#8a8a8a', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 4 }}>{m.label}</div>
                     <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 26, fontWeight: 800, color: m.color }}>{m.value}</div>
                   </div>
                 ))}
@@ -760,8 +760,8 @@ export default function Transfers() {
               {/* Verdict stamp */}
               <VerdictStamp verdict={dealVerdict.label} verdictClass={verdictClass} />
               {dealVerdict.why && (
-                <div style={{ marginTop: 8, fontSize: 12, color: '#999', lineHeight: 1.5 }}>
-                  <span style={{ color: '#c8ff00', fontWeight: 700, textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.1em' }}>Why · </span>{dealVerdict.why}
+                <div style={{ marginTop: 8, fontSize: 13, color: '#aaa', lineHeight: 1.5 }}>
+                  <span style={{ color: '#c8ff00', fontWeight: 700, textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.1em' }}>Why · </span>{dealVerdict.why}
                 </div>
               )}
 
@@ -809,7 +809,7 @@ export default function Transfers() {
           <div style={{ border: '1px solid #1c1c1c', background: '#0a0a0a' }}>
             {/* Data source note */}
             <div style={{ padding: '8px 16px', borderBottom: '1px solid #1c1c1c', background: '#080808', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 9, letterSpacing: '0.12em', color: '#444', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>
+              <span style={{ fontSize: 11, letterSpacing: '0.12em', color: '#777', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>
                 Value Score — computed · System Fit — model estimate · Risk Profile — model estimate · Full live wiring in V2
               </span>
             </div>

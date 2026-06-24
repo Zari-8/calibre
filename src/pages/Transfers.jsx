@@ -934,7 +934,7 @@ export default function Transfers() {
                 {valuation.confidenceDrivers && valuation.confidenceDrivers.length > 0 && (
                   <div style={{ marginTop: 12, fontSize: 12, color: '#888', lineHeight: 1.6 }}>
                     <span style={{ color: '#8a8a8a', textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.1em', fontFamily: "'Barlow Condensed', sans-serif" }}>Confidence notes &middot; </span>
-                    {valuation.confidenceDrivers.join('  \u00b7  ')}
+                    {valuation.confidenceDrivers.map(d => Array.isArray(d) ? `${d[0]}: ${d[1]}` : d).join('  \u00b7  ')}
                   </div>
                 )}
 
@@ -1034,39 +1034,88 @@ export default function Transfers() {
             )}
 
             {/* RISK PROFILE */}
-            {activeTab === 'Risk Profile' && (
+            {activeTab === 'Risk Profile' && (() => {
+              const col = c => c === 'lime' ? '#c8ff00' : c === 'amber' ? '#f59e0b' : '#ef4444';
+              const age = Number(selectedPlayer?.age);
+              const mins = Number.isFinite(Number(selectedPlayer?.minutes)) ? Number(selectedPlayer.minutes)
+                : Number.isFinite(Number(selectedPlayer?.appearances)) ? Number(selectedPlayer.appearances) * 90 : null;
+              const ageMult = valuation.inputs?.ageMult ?? 1;
+              const conf = valuation.confidence;
+              const prem = dealVerdict?.premium ?? 0;
+              const scar = valuation.scarcity;
+              const fitS = (selectedTeam && systemFitScore != null) ? systemFitScore : null;
+              const fromLeague = selectedPlayer?.league || selectedPlayer?.competition || null;
+              const toLeague = selectedTeam ? (selectedTeam.league || selectedTeam.competition || null) : null;
+              const crossLeague = (fromLeague && toLeague) ? String(fromLeague).toLowerCase() !== String(toLeague).toLowerCase() : null;
+
+              const signals = [
+                { label: 'Confidence', value: `${conf}/100`, cls: conf >= 70 ? 'lime' : conf >= 55 ? 'amber' : 'red' },
+                { label: 'Minutes sample', value: mins == null ? 'Unknown' : `${Math.round(mins)}\u2032`, cls: mins == null ? 'amber' : mins >= 1800 ? 'lime' : mins >= 900 ? 'amber' : 'red' },
+                { label: 'Age profile', value: !Number.isFinite(age) ? 'Unknown' : age <= 21 ? `${age} \u00b7 developing` : age <= 27 ? `${age} \u00b7 peak` : age <= 29 ? `${age} \u00b7 late peak` : `${age} \u00b7 decline risk`, cls: !Number.isFinite(age) ? 'amber' : age <= 21 ? 'amber' : age <= 27 ? 'lime' : age <= 29 ? 'amber' : 'red' },
+                { label: 'Curve direction', value: ageMult >= 1.05 ? 'Appreciating' : ageMult >= 0.85 ? 'Stable' : 'Depreciating', cls: ageMult >= 1.05 ? 'lime' : ageMult >= 0.85 ? 'amber' : 'red' },
+                { label: 'League adaptation', value: !toLeague ? 'Select a club' : crossLeague ? `${fromLeague} \u2192 ${toLeague}` : 'Same league', cls: !toLeague ? 'amber' : crossLeague ? 'amber' : 'lime' },
+                { label: 'System fit', value: fitS == null ? 'Select a club' : fitS < 58 ? `${fitS} \u00b7 system risk` : `${fitS}/100`, cls: fitS == null ? 'amber' : fitS < 58 ? 'red' : fitS < 72 ? 'amber' : 'lime' },
+                { label: 'Fee pressure', value: `${prem >= 0 ? '+' : ''}${prem}% vs Calibre`, cls: prem <= 0 ? 'lime' : prem <= 30 ? 'amber' : 'red' },
+                { label: 'Seller leverage', value: `${scar}/100`, cls: scar >= 65 ? 'red' : scar >= 40 ? 'amber' : 'lime' },
+              ];
+
+              const drivers = Array.isArray(valuation.confidenceDrivers) ? valuation.confidenceDrivers : [];
+              const dCls = s => /known|strong|calibrated/i.test(s) ? 'lime' : /medium/i.test(s) ? 'amber' : 'red';
+
+              return (
               <div style={{ padding: 24 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+                <p style={{ fontSize: 12.5, color: '#999', lineHeight: 1.6, margin: '0 0 18px', maxWidth: 660 }}>
+                  Every signal below is computed from Calibre&rsquo;s own inputs &mdash; rating, minutes, age curve, league and system fit. Calibre does not invent injury, contract or agent data it cannot see; those are listed separately as not modelled.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                   <div>
-                    <div style={tabSectionLabel}>Risk Signals</div>
+                    <div style={tabSectionLabel}>Risk &amp; Uncertainty Signals</div>
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {[
-                        { label: 'Injury history',     value: 'Low',    cls: 'lime' },
-                        { label: 'Games missed',       value: '3',      cls: 'lime' },
-                        { label: 'Contract expires',   value: '2027',   cls: 'amber' },
-                        { label: 'League jump',        value: 'Ligue 1 → PL', cls: 'amber' },
-                        { label: 'Adaptation risk',    value: 'Medium', cls: 'amber' },
-                        { label: 'Agent leverage',     value: 'High',   cls: 'red' },
-                        { label: 'Sample size',        value: '34 apps', cls: 'lime' },
-                        { label: 'Fee pressure risk',  value: 'High',   cls: 'red' },
-                      ].map(r => (
-                        <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid #1c1c1c' }}>
-                          <span style={{ fontSize: 12, color: '#888' }}>{r.label}</span>
-                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, fontWeight: 800, color: r.cls === 'lime' ? '#c8ff00' : r.cls === 'amber' ? '#f59e0b' : '#ef4444' }}>{r.value}</span>
+                      {signals.map(r => (
+                        <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid #1c1c1c' }}>
+                          <span style={{ fontSize: 12.5, color: '#999' }}>{r.label}</span>
+                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 800, color: col(r.cls) }}>{r.value}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   <div>
-                    <div style={tabSectionLabel}>Age Curve — Peak Projection</div>
-                    <AgeCurveChart currentAge={selectedPlayer?.age || 19} />
-                    <div style={{ fontSize: 11, color: '#666', marginTop: 12, lineHeight: 1.6 }}>
-                      Peak window: 22–27. Buying club gets the full curve if this deal completes now.
+                    <div style={tabSectionLabel}>Why confidence is {conf}/100</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 18 }}>
+                      {drivers.length === 0 ? (
+                        <span style={{ fontSize: 12, color: '#888' }}>All key inputs present.</span>
+                      ) : drivers.map((d, i) => {
+                        const label = Array.isArray(d) ? d[0] : d;
+                        const status = Array.isArray(d) ? d[1] : '';
+                        return (
+                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: 12, color: '#999' }}>{label}</span>
+                            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, color: col(dCls(String(status))) }}>{status}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={tabSectionLabel}>Age Curve &mdash; Peak Projection</div>
+                    <AgeCurveChart currentAge={Number.isFinite(age) ? age : 24} />
+                    <div style={{ fontSize: 11.5, color: '#888', marginTop: 12, lineHeight: 1.6 }}>
+                      {Number.isFinite(age)
+                        ? `At ${age}, Calibre applies an age multiplier of \u00d7${ageMult.toFixed(2)} to the valuation. Peak window is 22\u201327.`
+                        : 'Age unknown \u2014 the curve shows the model\u2019s generic peak projection (22\u201327).'}
                     </div>
                   </div>
                 </div>
+                <div style={{ ...tabSectionLabel, marginTop: 24 }}>Not modelled &mdash; Calibre has no data for these</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {['Injury history', 'Contract term', 'Agent leverage', 'Disciplinary record'].map(x => (
+                    <div key={x} style={{ border: '1px solid #1c1c1c', background: '#0c0c0c', padding: '8px 12px' }}>
+                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12.5, color: '#aaa', fontWeight: 700 }}>{x}</span>
+                      <span style={{ fontSize: 11, color: '#666', marginLeft: 8 }}>not modelled</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            )}
+              );
+            })()}
 
             {/* COMPARABLES */}
             {activeTab === 'Comparables' && (

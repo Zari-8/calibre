@@ -8,8 +8,28 @@ import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 import { SYSTEM_TEAMS } from '../data/systemFitData.js';
 import { playerTraits } from '../services/playerTraits.js';
-import { calibreValue } from '../services/calibreValue.js';
+import { calibreValue, valuationVerdict } from '../services/calibreValue.js';
 import { fitAdjustedValue, fitVerdict } from '../services/calibreFitValue.js';
+
+// API-Football league id -> Calibre league name. DB player rows store league_id (a
+// number), not a league name, so any value run through the engine must map it first
+// or the league multiplier silently falls back to the 0.45 "unknown league" default.
+const LEAGUE_ID_TO_NAME = {
+  39: 'Premier League', 140: 'La Liga', 135: 'Serie A', 78: 'Bundesliga', 61: 'Ligue 1',
+  88: 'Eredivisie', 94: 'Primeira Liga', 71: 'Brasileir\u00e3o S\u00e9rie A', 144: 'Belgian Pro League', 253: 'MLS',
+};
+
+// Guard against wrong-id / wrong-name DB matches: the queried player's last-name
+// token must appear in the resolved record, otherwise we treat it as unresolved and
+// show a neutral placeholder rather than a confidently-wrong face. Accent-folded.
+function namesMatch(queryName, row) {
+  if (!row) return false;
+  const strip = s => String(s || '').toLowerCase().normalize('NFD').split('').filter(ch => { const c = ch.charCodeAt(0); return c < 0x300 || c > 0x36f; }).join('');
+  const cand = strip(row.full_name) + ' ' + strip(row.name);
+  const tokens = strip(queryName).split(' ').filter(t => t.length >= 3);
+  const last = tokens.length ? tokens[tokens.length - 1] : '';
+  return last.length >= 3 && cand.indexOf(last) !== -1;
+}
 
 // ── Team search ──────────────────────────────────────────────────────────────
 function searchTeams(query) {
@@ -562,7 +582,7 @@ export default function Transfers() {
     rating: selectedPlayer?.rating,
     age: selectedPlayer?.age,
     position: selectedPlayer?.pos || selectedPlayer?.position,
-    league: selectedPlayer?.league || selectedPlayer?.competition,
+    league: selectedPlayer?.league || selectedPlayer?.competition || LEAGUE_ID_TO_NAME[selectedPlayer?.league_id],
     club: selectedPlayer?.club,
     minutes: selectedPlayer?.minutes ?? (selectedPlayer?.appearances ? selectedPlayer.appearances * 80 : undefined),
     hasContractData: false,
@@ -635,9 +655,60 @@ export default function Transfers() {
   const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${dealVerdict.label}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
 
   // Comparables react to whoever is being analysed (position group + fee proximity)
-  const comparables = useMemo(
+  const rankedComparables = useMemo(
     () => deriveComparables(comparablePool, selectedPlayer, askingPrice),
     [comparablePool, selectedPlayer, askingPrice]
+  );
+
+  // Resolve each comparable against the player DB by name (the fallback apiPlayerIds
+  // are unreliable, so name-resolution is the trustworthy key), then run the real
+  // value engine on the actual fee. Each name is resolved once and cached; verdicts
+  // recompute locally, so dragging the asking price never re-queries the DB.
+  const [comparableIntel, setComparableIntel] = useState({});
+  const comparableIntelRef = useRef({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!supabaseConfigured || !supabase || !rankedComparables.length) return;
+      const cache = comparableIntelRef.current;
+      const need = rankedComparables.filter(c => c.name && !((c.name).toLowerCase() in cache));
+      await Promise.all(need.map(async c => {
+        const key = c.name.toLowerCase();
+        try {
+          const rows = await searchSupabasePlayers(c.name, { limit: 1 });
+          const row = rows && rows[0];
+          cache[key] = (row && namesMatch(c.name, row)) ? row : null;
+        } catch { cache[key] = null; }
+      }));
+      if (cancelled) return;
+      const intel = {};
+      for (const c of rankedComparables) {
+        const key = (c.name || '').toLowerCase();
+        const row = cache[key];
+        if (!row) { intel[key] = { resolved: false }; continue; }
+        let verdict = null, estimate = null;
+        if (row.rating != null) {
+          try {
+            const cv = calibreValue({
+              rating: row.rating, age: row.age,
+              position: row.pos || row.position || String(c.tag || c.position || '').split('/')[0].trim(),
+              league: LEAGUE_ID_TO_NAME[row.league_id] || undefined,
+              minutes: row.minutes,
+            });
+            estimate = cv.estimatedValue;
+            verdict = c.fee ? valuationVerdict(cv, c.fee) : null;
+          } catch { /* leave verdict null on engine error */ }
+        }
+        intel[key] = { resolved: true, image: row.image || row.img || null, resolvedApiId: row.apiPlayerId, verdict, estimate };
+      }
+      if (!cancelled) setComparableIntel(intel);
+    })();
+    return () => { cancelled = true; };
+  }, [rankedComparables]);
+
+  const comparables = useMemo(
+    () => rankedComparables.map(c => ({ ...c, ...(comparableIntel[(c.name || '').toLowerCase()] || {}) })),
+    [rankedComparables, comparableIntel]
   );
 
   return (
@@ -1161,19 +1232,19 @@ export default function Transfers() {
                   {comparables.map(c => (
                     <div key={c.name} style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
                       <div style={{ background: '#0f0f0f', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <ApiPlayerImage playerId={c.apiPlayerId} name={c.name} fallbackSrc="/assets/players/neutral-player.svg" style={{ width: 28, height: 28, borderRadius: '50%' }} />
+                        <ApiPlayerImage preferredSrc={c.image} apiPlayerId={c.resolvedApiId} name={c.name} allowLookup={c.resolved === true} fallbackSrc="/assets/players/neutral-player.svg" style={{ width: 28, height: 28, borderRadius: '50%' }} />
                         <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700 }}>{c.name}</span>
                       </div>
                       <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800 }}>€{c.fee}M</div>
                       <div style={{ background: '#0f0f0f', padding: '12px 14px' }}>
                         <span style={{ border: '1px solid #2a2a2a', padding: '3px 8px', fontSize: 10, color: '#666', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{c.tag}</span>
                       </div>
-                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, color: c.roiClass === 'lime' ? '#c8ff00' : c.roiClass === 'amber' ? '#f59e0b' : '#ef4444' }}>{c.roi}</div>
+                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, color: c.verdict ? (c.verdict.tone === 'good' ? '#c8ff00' : c.verdict.tone === 'bad' ? '#ef4444' : '#f59e0b') : '#555' }}>{c.verdict ? c.verdict.label : '\u2014'}</div>
                     </div>
                   ))}
                 </div>
                 <div style={{ marginTop: 16, fontSize: 11, color: '#555' }}>
-                  Comparables sourced from Calibre's transfer database. Performance verdict based on post-transfer calibreRating trajectory.
+                  Each comparable is resolved against the player database; the verdict is Calibre's value engine run on the actual fee — VALUE BUY / FAIR DEAL / NEGOTIATE HARD / WALK AWAY. Players not in the database show a neutral placeholder.
                 </div>
               </div>
             )}

@@ -1313,6 +1313,19 @@ export default function Transfers() {
             </div>
           )}
 
+          {/* ── MORE DEALS — horizontal strip (moved out of the sidebar) ── */}
+          {recentTransfers.length > 4 && (
+            <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
+                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>More Deals</div>
+                <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {recentTransfers.slice(4, 12).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
+              </div>
+            </div>
+          )}
+
           {/* ── HOW CALIBRE VERDICTS WORK ── */}
           <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.18em', color: '#555', textTransform: 'uppercase', marginBottom: 16 }}>How the verdict engine works</div>
@@ -1363,16 +1376,6 @@ export default function Transfers() {
             ))}
           </div>
 
-          {/* Recent transfers — remaining cards below Market Pulse */}
-          {recentTransfers.length > 4 && (
-            <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>More<br />Deals</div>
-                <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
-              </div>
-              {recentTransfers.slice(4, 8).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
-            </div>
-          )}
 
           {/* Navigate to System Fit */}
           <button

@@ -4,19 +4,15 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from 'react';
 import { navigateTo } from './NavLink.jsx';
+import useAuth from '../hooks/useAuth.js';
+import { resolveTier, hasPaidAccess } from '../services/access.js';
 
 // ── Tier check ───────────────────────────────────────────────────────────────
-// Replace this with real Supabase Auth / Stripe subscription state when ready.
-// For now, reads from localStorage so you can toggle access for testing:
-//   localStorage.setItem('calibre:tier', 'scout')   → unlocks
-//   localStorage.setItem('calibre:tier', 'club')    → unlocks
-//   localStorage.setItem('calibre:tier', 'founder') → unlocks
-//   localStorage.removeItem('calibre:tier')         → locks
-function getUserTier() {
-  if (typeof window === 'undefined') return null;
-  try { return localStorage.getItem('calibre:tier'); } catch { return null; }
-}
-const PAID_TIERS = ['scout', 'club', 'founder'];
+// Access is resolved centrally in services/access.js:
+//   • Owner accounts (OWNER_EMAILS) always get full 'founder' access.
+//   • Everyone else falls back to the localStorage placeholder for testing:
+//       localStorage.setItem('calibre:tier', 'scout' | 'club' | 'founder')  → unlocks
+//       localStorage.removeItem('calibre:tier')                             → locks
 
 // ── Styles ───────────────────────────────────────────────────────────────────
 const btnStyle = {
@@ -46,9 +42,10 @@ export default function DealReport({ player, team, verdict, sysFit, marketValue,
   const [generating, setGenerating] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
   const [hover, setHover] = useState(false);
+  const { user } = useAuth();
 
-  const tier = getUserTier();
-  const hasAccess = PAID_TIERS.includes(tier);
+  const tier = resolveTier(user?.email);
+  const hasAccess = hasPaidAccess(tier);
 
   async function handleDownload() {
     if (!hasAccess) {

@@ -4,15 +4,25 @@
 //
 // WHY: computeRatings.mjs scores each ROW independently, so a player with an
 // enriched row AND a thin duplicate gets two different stored ratings (Haaland
-// 90 on the full row, 81 on the shell). Every surface already PREFERS the
-// stored players.rating — the modal uses `storedRating ?? liveCalc`, the
-// transfer hero uses `dbPlayer.rating || calibreRating(...)` — so the badge only
-// flips because the two rows store different numbers.
+// 90 on the full row, 81 on the shell). Every surface PREFERS the stored
+// players.rating, so the badge flips purely because the rows store different
+// numbers.
 //
-// THE FIX: group rows by api_player_id, compute calibreRating() ONCE on the
-// most-enriched ("canonical") row of each group, and write that single value to
-// EVERY row of that player. Whichever row a surface grabs, the stored rating is
-// now identical — it can no longer disagree with itself. No frontend change.
+// THE FIX: compute calibreRating() ONCE on the most-enriched ("canonical") row
+// of each api_player_id, then write that one value to EVERY row of that player.
+// Whichever row a surface grabs, the stored rating is identical. No frontend
+// change.
+//
+// WHY THIS VERSION: the players table is huge (~322k rows). Pulling select('*')
+// across all of them in one long stream terminated the connection mid-run
+// ("TypeError: terminated"). This version is built for that scale:
+//   • A cheap LIGHT scan (id, api_player_id, rating only) to see every row.
+//   • The heavy compute runs only on EVIDENCE rows (minutes/apps/api rating),
+//     a much smaller set.
+//   • Writes go out ONE bulk call per player — update(...).eq('api_player_id')
+//     fixes all of a player's rows (including thin shells) in a single request.
+//   • Every fetch is wrapped in retry-with-backoff, so a transient drop just
+//     retries that page instead of killing the whole run.
 //
 // SAFE BY DEFAULT: dry run. It prints the players whose rows currently DISAGREE
 // (the visible bug cases) and what each collapses to, and writes nothing.
@@ -38,8 +48,31 @@ if (!URL || !KEY) {
 }
 
 const sb = createClient(URL, KEY, { auth: { persistSession: false } });
-const PAGE = 1000;
+
+const PAGE = 500;          // smaller pages -> faster, lighter requests that don't time out
+const WRITE_CONCURRENCY = 12;
 const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+// Retry wrapper — the "terminated" failure is a transient network drop, not a
+// real error. Retry the same page with backoff instead of aborting the run.
+async function withRetry(fn, label, tries = 6) {
+  let delay = 600;
+  for (let attempt = 1; attempt <= tries; attempt++) {
+    try {
+      return await fn();
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : String(e);
+      if (attempt === tries) {
+        console.error(`\n  ${label} failed after ${tries} attempts: ${msg}`);
+        throw e;
+      }
+      process.stdout.write(`\n  ${label} hiccup (${msg}) — retry ${attempt}/${tries - 1} in ${delay}ms\n`);
+      await sleep(delay);
+      delay = Math.min(delay * 2, 8000);
+    }
+  }
+}
 
 // Most-enriched row wins: real competition splits >> api rating >> has age >> appearances/minutes.
 function evidenceScore(r) {
@@ -53,20 +86,25 @@ function evidenceScore(r) {
     + num(r.stats_minutes) * 0.1;
 }
 
-async function fetchAll() {
+// Paginated fetch with retry. `filter` is an optional PostgREST .or() string.
+async function fetchAllPaged(select, filter, label) {
   const rows = [];
   let offset = 0;
   while (true) {
-    const { data, error } = await sb
-      .from('players').select('*')
-      .order('id', { ascending: true })
-      .range(offset, offset + PAGE - 1);
-    if (error) { console.error('Fetch failed:', error.message); process.exit(1); }
+    const data = await withRetry(async () => {
+      let q = sb.from('players').select(select).order('id', { ascending: true }).range(offset, offset + PAGE - 1);
+      if (filter) q = q.or(filter);
+      const { data, error } = await q;
+      if (error) throw new Error(error.message);
+      return data;
+    }, `${label} @${offset}`);
+
     if (!data || data.length === 0) break;
     rows.push(...data);
     offset += data.length;
-    process.stdout.write(`\r  fetched ${rows.length} rows...`);
+    process.stdout.write(`\r  ${label}: ${rows.length} rows...`);
     if (data.length < PAGE) break;
+    await sleep(40); // breathe between pages
   }
   process.stdout.write('\n');
   return rows;
@@ -74,47 +112,99 @@ async function fetchAll() {
 
 async function run() {
   console.log(`Canonical rating backfill — ${COMMIT ? 'COMMIT (writing)' : 'DRY RUN (no writes)'}\n`);
-  const rows = await fetchAll();
 
-  // Group by api_player_id; rows with no api id are their own singleton group.
-  const groups = new Map();
-  for (const r of rows) {
-    const key = r.api_player_id != null ? `id:${r.api_player_id}` : `row:${r.id}`;
-    if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(r);
+  // ── 1. LIGHT scan: every row, three columns. Tiny payload, sees the shells. ──
+  const light = await fetchAllPaged('id, api_player_id, rating', null, 'light scan');
+
+  // api_player_id -> [{ id, rating }]   (rows with no api id are singletons)
+  const byApi = new Map();
+  const orphanIds = [];
+  for (const r of light) {
+    if (r.api_player_id != null) {
+      const k = r.api_player_id;
+      if (!byApi.has(k)) byApi.set(k, []);
+      byApi.get(k).push({ id: r.id, rating: r.rating != null ? Number(r.rating) : null });
+    } else {
+      orphanIds.push({ id: r.id, rating: r.rating != null ? Number(r.rating) : null });
+    }
   }
 
-  let players = 0, multi = 0, divergent = 0, willWrite = 0, skipped = 0;
-  const plan = [];
+  // ── 2. EVIDENCE rows only: the smaller set worth scoring. Full columns. ──
+  const evidence = await fetchAllPaged(
+    '*',
+    'minutes.gt.0,appearances.gt.0,api_average_rating.gt.0,stats_minutes.gt.0',
+    'evidence'
+  );
+
+  // Best evidence row per api id -> canonical rating.
+  const bestByApi = new Map();
+  const orphanRows = [];
+  for (const r of evidence) {
+    if (r.api_player_id != null) {
+      const cur = bestByApi.get(r.api_player_id);
+      if (!cur || evidenceScore(r) > evidenceScore(cur)) bestByApi.set(r.api_player_id, r);
+    } else {
+      orphanRows.push(r);
+    }
+  }
+
+  const canonicalByApi = new Map();
+  for (const [api, row] of bestByApi) {
+    const res = calibreRating(row);
+    if (res && res.rating != null) canonicalByApi.set(api, Math.round(res.rating));
+  }
+  const canonicalByOrphanId = new Map();
+  for (const row of orphanRows) {
+    const res = calibreRating(row);
+    if (res && res.rating != null) canonicalByOrphanId.set(row.id, Math.round(res.rating));
+  }
+
+  // ── 3. Plan: which players need a write, and report the visible disagreements. ──
+  let players = 0, multi = 0, divergent = 0, noEvidence = 0;
+  let bulkWrites = 0, orphanWrites = 0, rowsTouched = 0;
+  const apiPlan = [];   // { api, rating }
+  const orphanPlan = []; // { id, rating }
   const samples = [];
 
-  for (const [, grp] of groups) {
+  for (const [api, group] of byApi) {
     players++;
-    const canonical = grp.reduce((best, r) => evidenceScore(r) > evidenceScore(best) ? r : best, grp[0]);
-    const res = calibreRating(canonical);
-    const rating = res && res.rating != null ? Math.round(res.rating) : null;
-    if (rating == null) { skipped++; continue; }     // no evidence anywhere -> leave as-is
+    if (group.length > 1) multi++;
+    const rating = canonicalByApi.get(api);
+    if (rating == null) { noEvidence++; continue; } // no evidence anywhere -> leave as-is
 
-    const current = grp.map(r => (r.rating != null ? Number(r.rating) : null));
-    const distinct = [...new Set(current.filter(v => v != null))];
-    if (grp.length > 1) multi++;
+    const distinct = [...new Set(group.map(g => g.rating).filter(v => v != null))];
     if (distinct.length > 1) {
       divergent++;
-      if (samples.length < 40) samples.push({
-        name: canonical.full_name || canonical.name || '?',
-        api: canonical.api_player_id, rows: grp.length,
-        was: distinct.sort((a, b) => a - b), now: rating,
-      });
+      if (samples.length < 40) {
+        const best = bestByApi.get(api);
+        samples.push({
+          name: (best && (best.full_name || best.name)) || '?',
+          api, rows: group.length,
+          was: distinct.sort((a, b) => a - b), now: rating,
+        });
+      }
     }
-    const toFix = grp.filter(r => Number(r.rating) !== rating).map(r => r.id);
-    if (toFix.length) { willWrite += toFix.length; plan.push({ ids: toFix, rating }); }
+    const needs = group.some(g => g.rating !== rating); // any row (incl. null shell) off the canonical
+    if (needs) {
+      apiPlan.push({ api, rating });
+      bulkWrites++;
+      rowsTouched += group.length;
+    }
   }
 
-  console.log(`\nGroups (players):                       ${players}`);
+  for (const o of orphanIds) {
+    const rating = canonicalByOrphanId.get(o.id);
+    if (rating == null) continue;
+    if (o.rating !== rating) { orphanPlan.push({ id: o.id, rating }); orphanWrites++; rowsTouched++; }
+  }
+
+  console.log(`\nDistinct players (api_player_id):        ${players}`);
   console.log(`  with multiple rows:                   ${multi}`);
   console.log(`  with DIVERGENT stored ratings (bug):  ${divergent}`);
-  console.log(`  rows that will be rewritten:          ${willWrite}`);
-  console.log(`  groups skipped (no evidence):         ${skipped}`);
+  console.log(`  with no evidence row (left as-is):    ${noEvidence}`);
+  console.log(`\nPlayers needing a write:                 ${bulkWrites}  (one bulk call each)`);
+  console.log(`Orphan rows (no api id) needing write:   ${orphanWrites}`);
+  console.log(`Total rows that will change:             ${rowsTouched}`);
 
   if (samples.length) {
     console.log(`\nPlayers whose rows currently disagree (sample):`);
@@ -128,22 +218,41 @@ async function run() {
     return;
   }
 
+  // ── 4. Commit: one bulk update per player (fixes every row incl. shells). ──
   console.log(`\nWriting canonical ratings...`);
-  const writes = [];
-  for (const p of plan) for (const id of p.ids) writes.push({ id, rating: p.rating });
-  let updated = 0, failed = 0;
-  const C = 20;
-  for (let i = 0; i < writes.length; i += C) {
-    await Promise.all(writes.slice(i, i + C).map(async w => {
-      const { error } = await sb.from('players').update({ rating: w.rating }).eq('id', w.id);
-      if (error) { failed++; if (failed <= 10) console.error('  update failed', w.id, error.message); }
-      else updated++;
-    }));
-    process.stdout.write(`\r  updated ${updated}/${writes.length}...`);
+  let done = 0, failed = 0;
+  const total = apiPlan.length + orphanPlan.length;
+
+  async function writeApi(p) {
+    try {
+      await withRetry(async () => {
+        const { error } = await sb.from('players').update({ rating: p.rating }).eq('api_player_id', p.api);
+        if (error) throw new Error(error.message);
+      }, `write api=${p.api}`);
+      done++;
+    } catch { failed++; }
+  }
+  async function writeOrphan(p) {
+    try {
+      await withRetry(async () => {
+        const { error } = await sb.from('players').update({ rating: p.rating }).eq('id', p.id);
+        if (error) throw new Error(error.message);
+      }, `write id=${p.id}`);
+      done++;
+    } catch { failed++; }
+  }
+
+  for (let i = 0; i < apiPlan.length; i += WRITE_CONCURRENCY) {
+    await Promise.all(apiPlan.slice(i, i + WRITE_CONCURRENCY).map(writeApi));
+    process.stdout.write(`\r  written ${done}/${total}...`);
+  }
+  for (let i = 0; i < orphanPlan.length; i += WRITE_CONCURRENCY) {
+    await Promise.all(orphanPlan.slice(i, i + WRITE_CONCURRENCY).map(writeOrphan));
+    process.stdout.write(`\r  written ${done}/${total}...`);
   }
   process.stdout.write('\n');
-  console.log(`\nDone. updated ${updated}, failed ${failed}.`);
+  console.log(`\nDone. players/orphans written ${done}, failed ${failed}.`);
   console.log(`Refresh the site — the same player now reads one rating everywhere.`);
 }
 
-run().catch(e => { console.error(e); process.exit(1); });
+run().catch(e => { console.error('\nFatal:', e && e.message ? e.message : e); process.exit(1); });

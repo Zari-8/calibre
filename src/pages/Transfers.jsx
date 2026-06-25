@@ -1146,8 +1146,8 @@ export default function Transfers() {
               const prem = dealVerdict?.premium ?? 0;
               const scar = valuation.scarcity;
               const fitS = (selectedTeam && systemFitScore != null) ? systemFitScore : null;
-              const fromLeague = selectedPlayer?.league || selectedPlayer?.competition || null;
-              const toLeague = selectedTeam ? (selectedTeam.league || selectedTeam.competition || null) : null;
+              const fromLeague = selectedPlayer?.league || selectedPlayer?.competition || LEAGUE_ID_TO_NAME[selectedPlayer?.league_id] || null;
+              const toLeague = selectedTeam ? (selectedTeam.league || selectedTeam.competition || LEAGUE_ID_TO_NAME[selectedTeam.league_id] || null) : null;
               const crossLeague = (fromLeague && toLeague) ? String(fromLeague).toLowerCase() !== String(toLeague).toLowerCase() : null;
 
               const signals = [
@@ -1370,7 +1370,7 @@ export default function Transfers() {
                 <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>More<br />Deals</div>
                 <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
               </div>
-              {recentTransfers.slice(4).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
+              {recentTransfers.slice(4, 8).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
             </div>
           )}
 

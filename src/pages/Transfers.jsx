@@ -3,6 +3,9 @@ import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import DealReport from '../components/DealReport.jsx';
+import Dossier from '../components/Dossier.jsx';
+import useAuth from '../hooks/useAuth.js';
+import { resolveTier, hasPaidAccess } from '../services/access.js';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
@@ -518,6 +521,9 @@ export default function Transfers() {
   const [comparablePool, setComparablePool] = useState(FALLBACK_COMPARABLES);
   const [transfersLoading, setTransfersLoading] = useState(true);
   const [moreDealsPage, setMoreDealsPage] = useState(0);
+  const [showDossier, setShowDossier] = useState(false);
+  const { user } = useAuth();
+  const canDossier = hasPaidAccess(resolveTier(user?.email));
 
   useEffect(() => {
     // Load all live data in parallel
@@ -853,6 +859,16 @@ export default function Transfers() {
                   askingPrice={askingPrice}
                 />
               </div>
+
+              {canDossier && (
+                <div style={{ marginTop: 12, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
+                  <button
+                    onClick={() => setShowDossier(true)}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#c8ff00', color: '#0a0a0a', border: '1px solid #c8ff00', padding: '10px 16px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  >Generate full dossier →</button>
+                  <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginTop: 8 }}>Commissioned · multi-page decision brief</div>
+                </div>
+              )}
             </div>{/* close left hero col */}
             </div>{/* close hero grid */}
           </div>{/* close hero wrap */}
@@ -1407,6 +1423,22 @@ export default function Transfers() {
           </button>
         </aside>
       </div>
+
+      {showDossier && (
+        <Dossier
+          player={selectedPlayer}
+          team={selectedTeam}
+          valuation={valuation}
+          fit={fit}
+          dealVerdict={dealVerdict}
+          verdict={verdict}
+          sysFit={sysFit}
+          comparables={comparables}
+          askingPrice={askingPrice}
+          marketValue={valuation.estimatedValue}
+          onClose={() => setShowDossier(false)}
+        />
+      )}
     </div>
   );
 }

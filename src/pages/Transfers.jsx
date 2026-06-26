@@ -172,15 +172,76 @@ function deriveComparables(pool, player, askingPrice) {
   if (!Array.isArray(pool) || !pool.length) return [];
   const group = comparableGroup(player?.position || player?.pos || '');
   const refFee = Number(askingPrice) || Number(player?.marketValue) || null;
+  const selfRating = Number(player?.rating);
   const self = String(player?.name || player?.full_name || '').toLowerCase();
   const others = pool.filter(c => c && c.name && c.name.toLowerCase() !== self);
-  const inGroup = others.filter(c => comparableGroup(c.tag || c.position) === group);
+  const inGroup = others.filter(c => comparableGroup(c.tag || c.position || c.pos) === group);
   const base = inGroup.length >= 3 ? inGroup : others;
   const ranked = [...base].sort((a, b) => {
+    if (Number.isFinite(selfRating) && a.rating != null && b.rating != null) {
+      return Math.abs(a.rating - selfRating) - Math.abs(b.rating - selfRating);
+    }
     if (refFee == null) return (b.fee || 0) - (a.fee || 0);
     return Math.abs((a.fee || 0) - refFee) - Math.abs((b.fee || 0) - refFee);
   });
   return ranked.slice(0, 6);
+}
+
+// Player-specific comparables: pull like-rated players in the same position
+// group from the DB and value each on the engine, so the tab changes with the
+// deal instead of recycling the same handful of transfers.
+async function fetchSimilarPlayers(player) {
+  if (!supabaseConfigured || !supabase || !player) return null;
+  const r = Number(player.rating);
+  if (!Number.isFinite(r)) return null;
+  const group = comparableGroup(player.position || player.pos || '');
+  const selfId = player.apiPlayerId;
+  const selfName = String(player.full_name || player.name || '').toLowerCase();
+  let data;
+  try {
+    const res = await supabase
+      .from('players').select('*')
+      .gte('rating', Math.round(r) - 5).lte('rating', Math.round(r) + 5)
+      .not('rating', 'is', null).limit(500);
+    if (res.error || !res.data || !res.data.length) return null;
+    data = res.data;
+  } catch { return null; }
+
+  const seen = new Set();
+  const cand = [];
+  for (const row of data) {
+    const key = row.api_player_id != null ? `a${row.api_player_id}` : `i${row.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const nm = String(row.full_name || row.name || '').toLowerCase();
+    if ((selfId != null && row.api_player_id === selfId) || (nm && nm === selfName)) continue;
+    if (comparableGroup(row.pos || row.position || '') !== group) continue;
+    cand.push(row);
+  }
+  cand.sort((a, b) => Math.abs((Number(a.rating) || 0) - r) - Math.abs((Number(b.rating) || 0) - r));
+
+  return cand.slice(0, 8).map(row => {
+    let estimate = null;
+    try {
+      const cv = calibreValue({
+        rating: row.rating, age: row.age,
+        position: row.pos || row.position,
+        league: LEAGUE_ID_TO_NAME[row.league_id],
+        minutes: row.minutes ?? (row.appearances ? row.appearances * 80 : undefined),
+      });
+      estimate = cv.estimatedValue;
+    } catch { /* leave null */ }
+    const pos = row.pos || row.position || '';
+    return {
+      name: row.full_name || row.name,
+      apiPlayerId: row.api_player_id, resolvedApiId: row.api_player_id,
+      rating: row.rating != null ? Math.round(row.rating) : null,
+      pos, position: pos, tag: pos,
+      image: row.image || row.img || null,
+      estimate, fee: estimate != null ? Math.round(estimate) : null,
+      resolved: true,
+    };
+  });
 }
 
 // ── Spotlight — picks from live transfers table (highest-fee rumour/watch) ────
@@ -667,6 +728,16 @@ export default function Transfers() {
     [comparablePool, selectedPlayer, askingPrice]
   );
 
+  // Refresh the comparables pool from the DB whenever the analysed player changes.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const sims = await fetchSimilarPlayers(selectedPlayer);
+      if (!cancelled && sims && sims.length) setComparablePool(sims);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedPlayer?.apiPlayerId, selectedPlayer?.rating, selectedPlayer?.pos, selectedPlayer?.position]);
+
   // Resolve each comparable against the player DB by name (the fallback apiPlayerIds
   // are unreliable, so name-resolution is the trustworthy key), then run the real
   // value engine on the actual fee. Each name is resolved once and cached; verdicts
@@ -678,7 +749,7 @@ export default function Transfers() {
     (async () => {
       if (!supabaseConfigured || !supabase || !rankedComparables.length) return;
       const cache = comparableIntelRef.current;
-      const need = rankedComparables.filter(c => c.name && !((c.name).toLowerCase() in cache));
+      const need = rankedComparables.filter(c => c.name && c.resolved !== true && !((c.name).toLowerCase() in cache));
       await Promise.all(need.map(async c => {
         const key = c.name.toLowerCase();
         try {
@@ -1239,10 +1310,10 @@ export default function Transfers() {
             {/* COMPARABLES */}
             {activeTab === 'Comparables' && (
               <div style={{ padding: 24 }}>
-                <div style={tabSectionLabel}>Similar transfers — same position group, closest fees</div>
+                <div style={tabSectionLabel}>Similar players — same position group, comparable rating</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#1c1c1c' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
-                    {['Player', 'Fee', 'Profile', 'Calibre verdict'].map(h => (
+                    {['Player', 'Calibre Value', 'Profile', 'Rating'].map(h => (
                       <div key={h} style={{ background: '#0a0a0a', padding: '8px 14px', fontSize: 9, letterSpacing: '0.12em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{h}</div>
                     ))}
                   </div>
@@ -1252,16 +1323,16 @@ export default function Transfers() {
                         <ApiPlayerImage preferredSrc={c.image} apiPlayerId={c.resolvedApiId} name={c.name} allowLookup={c.resolved === true} fallbackSrc="/assets/players/neutral-player.svg" style={{ width: 28, height: 28, borderRadius: '50%' }} />
                         <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700 }}>{c.name}</span>
                       </div>
-                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800 }}>€{c.fee}M</div>
+                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800, color: '#c8ff00' }}>{c.fee != null ? `€${c.fee}M` : c.estimate != null ? `€${Math.round(c.estimate)}M` : '—'}</div>
                       <div style={{ background: '#0f0f0f', padding: '12px 14px' }}>
                         <span style={{ border: '1px solid #2a2a2a', padding: '3px 8px', fontSize: 10, color: '#666', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{c.tag}</span>
                       </div>
-                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, color: c.verdict ? (c.verdict.tone === 'good' ? '#c8ff00' : c.verdict.tone === 'bad' ? '#ef4444' : '#f59e0b') : '#555' }}>{c.verdict ? c.verdict.label : '\u2014'}</div>
+                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800, color: c.rating != null ? (c.rating >= 80 ? '#c8ff00' : c.rating >= 72 ? '#f59e0b' : '#888') : '#555' }}>{c.rating != null ? c.rating : '—'}</div>
                     </div>
                   ))}
                 </div>
                 <div style={{ marginTop: 16, fontSize: 11, color: '#555' }}>
-                  Each comparable is resolved against the player database; the verdict is Calibre's value engine run on the actual fee — VALUE BUY / FAIR DEAL / NEGOTIATE HARD / WALK AWAY. Players not in the database show a neutral placeholder.
+                  Comparables are drawn from the player database — same position group, comparable Calibre rating — and each is valued live by Calibre's engine, so the set changes with the player you analyse.
                 </div>
               </div>
             )}

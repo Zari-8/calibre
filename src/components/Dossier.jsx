@@ -88,9 +88,13 @@ export default function Dossier({ player, team, valuation, fit, dealVerdict, ver
 
   // ── Opportunity cost: alternatives you could pursue for ≤ this fee ──
   const alternatives = comparables
-    .filter(c => c && c.name && c.fee != null && Number(c.fee) <= fee && Number(c.fee) > 0)
-    .map(c => ({ ...c, vfm: (c.estimate != null && c.fee) ? Number(c.estimate) / Number(c.fee) : null }))
-    .sort((a, b) => (b.vfm || 0) - (a.vfm || 0))
+    .filter(c => c && c.name && (c.estimate != null || c.fee != null))
+    .map(c => {
+      const val = c.estimate != null ? Number(c.estimate) : Number(c.fee);
+      return { ...c, val, vfm: fee ? val / fee : null };
+    })
+    .filter(c => c.val > 0 && c.val <= fee)
+    .sort((a, b) => (b.val || 0) - (a.val || 0))
     .slice(0, 5);
 
   // ── DoF decision scorecard — themed; computed where the engine supports it ──
@@ -280,21 +284,21 @@ export default function Dossier({ player, team, valuation, fit, dealVerdict, ver
           {alternatives.length ? (
             <div style={{ border: '1px solid #1c1c1c' }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 110px', gap: 1, background: '#1c1c1c', fontFamily: BC, fontSize: 10, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#666' }}>
-                {['Alternative', 'Fee', 'Calibre', 'Value/fee'].map((h, i) => <div key={h} style={{ background: '#0a0a0a', padding: '8px 12px', textAlign: i ? 'right' : 'left' }}>{h}</div>)}
+                {['Alternative', 'Calibre Value', 'Rating', 'vs fee'].map((h, i) => <div key={h} style={{ background: '#0a0a0a', padding: '8px 12px', textAlign: i ? 'right' : 'left' }}>{h}</div>)}
               </div>
               {alternatives.map(a => (
                 <div key={a.name} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 110px', gap: 1, background: '#161616' }}>
                   <div style={{ background: '#0c0c0c', padding: '10px 12px', fontSize: 13, color: '#ddd' }}>{a.name}<span style={{ color: '#666', fontSize: 11 }}>{a.pos || a.tag ? `  ·  ${a.pos || a.tag}` : ''}</span></div>
-                  <div style={{ background: '#0c0c0c', padding: '10px 12px', textAlign: 'right', fontSize: 13, color: '#fff' }}>€{a.fee}M</div>
-                  <div style={{ background: '#0c0c0c', padding: '10px 12px', textAlign: 'right', fontSize: 13, color: LIME }}>{a.estimate != null ? eur(a.estimate) : '—'}</div>
-                  <div style={{ background: '#0c0c0c', padding: '10px 12px', textAlign: 'right', fontSize: 13, color: a.vfm >= 1 ? LIME : '#f59e0b' }}>{a.vfm != null ? `${a.vfm.toFixed(2)}×` : '—'}</div>
+                  <div style={{ background: '#0c0c0c', padding: '10px 12px', textAlign: 'right', fontSize: 13, color: LIME }}>{eur(a.val)}</div>
+                  <div style={{ background: '#0c0c0c', padding: '10px 12px', textAlign: 'right', fontSize: 13, color: a.rating >= 80 ? LIME : a.rating >= 72 ? '#f59e0b' : '#aaa' }}>{a.rating != null ? a.rating : '—'}</div>
+                  <div style={{ background: '#0c0c0c', padding: '10px 12px', textAlign: 'right', fontSize: 13, color: a.vfm >= 0.8 ? LIME : '#f59e0b' }}>{a.vfm != null ? `${a.vfm.toFixed(2)}×` : '—'}</div>
                 </div>
               ))}
             </div>
           ) : (
-            <p style={{ fontSize: 13, color: '#888' }}>No comparable alternative in the pool costs €{fee}M or less — at this fee the target is the efficient option among players analysed.</p>
+            <p style={{ fontSize: 13, color: '#888' }}>No comparably-rated alternative is valued at €{fee}M or less — at this fee the target is the efficient option among similar players.</p>
           )}
-          <div style={{ fontSize: 11, color: '#555', marginTop: 10 }}>Value/fee &gt; 1.00× means Calibre values the alternative above its quoted fee. Drawn from the live comparables pool, scored on the same engine.</div>
+          <div style={{ fontSize: 11, color: '#555', marginTop: 10 }}>vs fee = the alternative's Calibre value as a multiple of your €{fee}M outlay. Same-position, comparable-rating players, valued on the same engine.</div>
         </div>
 
         {/* 05 DEAL STRUCTURE */}

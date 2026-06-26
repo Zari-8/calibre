@@ -572,10 +572,36 @@ function FitOverview({ report }) {
 }
 
 function ComparePlayers({ comparison, challenger, setChallenger }) {
+  const [query, setQuery] = useState('');
+  const { remote, loading } = useDatabaseSearch('player', query);
+  const local = searchLocalPlayers(query);
+  const localIds = new Set(local.map(item => String(item.id)));
+  const merged = [...local, ...remote.filter(item => !localIds.has(String(item.id)))].slice(0, 6);
+  const choose = (item) => {
+    const src = String(item.source || '');
+    setChallenger(src === 'db' ? normalizeDbPlayer(item) : src.startsWith('api') ? normalizeApiPlayer(item) : item);
+    setQuery('');
+  };
   return (
     <div className="sf-content-grid">
       <section className="sf-panel sf-panel--wide">
-        <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div><select value={challenger.id} onChange={event => setChallenger(SYSTEM_PLAYERS.find(player => String(player.id) === event.target.value) || SYSTEM_PLAYERS[1])}>{SYSTEM_PLAYERS.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
+        <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div></div>
+        <label className="sf-search-box" style={{ marginBottom: 6 }}>
+          <Search size={14} />
+          <input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search any registry player to compare with ${comparison.primary.name}\u2026`} />
+          {loading && <span style={{ fontSize: 10, color: 'var(--sf-muted)' }}>SEARCHING\u2026</span>}
+        </label>
+        {query.trim().length >= 2 && (
+          <div className="sf-search-results" style={{ marginBottom: 10 }}>
+            {merged.map(item => (
+              <button type="button" className="sf-search-result" key={`cmp-${item.id}`} onClick={() => choose(item)}>
+                <ApiPlayerImage playerId={item.api_player_id ?? item.apiPlayerId ?? playerIdFor(item.name) ?? item.id} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />
+                <span><b>{item.name}</b><small>{item.team} \u00b7 {item.position}</small></span>
+              </button>
+            ))}
+            {!merged.length && !loading && <div className="sf-database-note" style={{ padding: 8 }}>No registry match yet \u2014 keep typing.</div>}
+          </div>
+        )}
         <div className="sf-compare-head">
           <div><ApiPlayerImage playerId={comparison.primary.apiPlayerId ?? playerIdFor(comparison.primary.name) ?? comparison.primary.id} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
           <em>VS</em>

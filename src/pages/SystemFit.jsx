@@ -8,8 +8,11 @@ import { searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers } from '../services/supabasePlayers.js';
+import useAuth from '../hooks/useAuth.js';
+import { resolveTier, hasPaidAccess } from '../services/access.js';
 import { playerIdFor } from '../data/playerIds.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
+import { playerTraits, deriveArchetype } from '../services/playerTraits.js';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams, TRANSFER_STORYLINES, pickTransferStoryline, buildTransferSpotlight,
@@ -18,8 +21,8 @@ import {
   exportComparisonCsv, exportComparisonPdf, exportFitCsv, exportFitPdf,
 } from '../services/reportExport.js';
 
-const DEMO_PLAN = (import.meta.env.VITE_DEMO_PLAN || 'pro').toLowerCase();
-const CAN_EXPORT = ['pro', 'scout', 'club'].includes(DEMO_PLAN);
+// Export access is resolved per-user via services/access.js (owner allowlist +
+// paid tier), consistent with the PDF report and dossier gating.
 
 function normalizeApiTeam(team) {
   return {
@@ -36,46 +39,24 @@ function normalizeApiTeam(team) {
   };
 }
 
-// Derive a provisional tactical profile from a player's position so registry/API
-// players produce a fit that reflects their role instead of inheriting a fixed
-// placeholder. Replaced by real trait data once the model writes it.
-function deriveTraitsFromPosition(position = '') {
-  const p = String(position).toLowerCase();
-  if (/(goalkeeper|keeper|\bgk\b)/.test(p)) return { control: 70, transition: 40, pressing: 40, width: 30, tempo: 50, defensiveLoad: 88 };
-  if (/(wing.?back|full.?back|\brb\b|\blb\b|\brwb\b|\blwb\b)/.test(p)) return { control: 74, transition: 82, pressing: 80, width: 88, tempo: 78, defensiveLoad: 82 };
-  if (/(back|defender|centre.?back|center.?back|\bcb\b|\bdef\b)/.test(p)) return { control: 76, transition: 64, pressing: 72, width: 48, tempo: 66, defensiveLoad: 92 };
-  if (/(wing|\brw\b|\blw\b|winger)/.test(p)) return { control: 80, transition: 90, pressing: 74, width: 92, tempo: 88, defensiveLoad: 56 };
-  if (/(forward|striker|\bcf\b|\bst\b|attacker)/.test(p)) return { control: 72, transition: 92, pressing: 70, width: 70, tempo: 90, defensiveLoad: 50 };
-  if (/(attacking mid|\bam\b|\bcam\b|playmaker)/.test(p)) return { control: 90, transition: 82, pressing: 78, width: 74, tempo: 88, defensiveLoad: 64 };
-  if (/(defensive mid|\bdm\b|\bcdm\b|anchor|holding)/.test(p)) return { control: 88, transition: 70, pressing: 84, width: 60, tempo: 80, defensiveLoad: 88 };
-  if (/(midfield|\bcm\b|\bmid\b)/.test(p)) return { control: 86, transition: 80, pressing: 82, width: 70, tempo: 84, defensiveLoad: 78 };
-  return { control: 80, transition: 80, pressing: 78, width: 72, tempo: 82, defensiveLoad: 72 };
-}
-
-function deriveRoleMetrics(t) {
-  return {
-    Positioning: Math.round((t.control + t.defensiveLoad) / 2),
-    'Decision making': Math.round((t.control + t.tempo) / 2),
-    'Link-up play': Math.round((t.control + t.width) / 2),
-    'Final-third impact': Math.round((t.transition + t.width) / 2),
-    'Press resistance': Math.round((t.control + t.pressing) / 2),
-    'Transition contribution': t.transition,
-  };
-}
+// Trait derivation, role metrics and individual archetype labels now come from
+// the shared engine in services/playerTraits.js — the same one the Transfers
+// page uses — so a player's traits and fit score are identical across pages.
 
 function normalizeApiPlayer(player) {
-  const traits = deriveTraitsFromPosition(player.position);
+  const { traits, roleMetrics } = playerTraits(player);
   return {
     ...SYSTEM_PLAYERS[0],
     id: player.id,
+    apiPlayerId: Number(player.id) > 0 ? Number(player.id) : null,
     name: player.name,
     team: player.team || 'Live API player directory',
     age: player.age || '—',
     image: player.image || '/assets/players/neutral-player.svg',
     position: player.position || 'Profile pending',
-    archetype: 'Profile pending enrichment',
+    archetype: deriveArchetype(player),
     traits,
-    roleMetrics: deriveRoleMetrics(traits),
+    roleMetrics,
     source: 'api',
   };
 }
@@ -84,10 +65,11 @@ function normalizeDbPlayer(player) {
   const rawId = player.api_player_id ?? player.apiPlayerId ?? player.id;
   const numId = Number(rawId);
   const apiPlayerId = Number.isInteger(numId) && numId > 0 ? numId : null;
-  const traits = deriveTraitsFromPosition(player.position);
+  const { traits, roleMetrics } = playerTraits(player);
   const scored = resolveRating(player);
   return {
     ...SYSTEM_PLAYERS[0],
+    ...player,                 // carry real per-90 stat fields through to Key Stats + trait tuning
     id: apiPlayerId ?? player.id,
     apiPlayerId,
     name: player.name,
@@ -96,10 +78,10 @@ function normalizeDbPlayer(player) {
     image: player.image || player.img
       || (apiPlayerId ? `https://media.api-sports.io/football/players/${apiPlayerId}.png` : '/assets/players/neutral-player.svg'),
     position: player.position || 'Profile pending',
-    archetype: 'Registry profile · traits provisional',
+    archetype: deriveArchetype(player),
     rating: scored.rating ?? SYSTEM_PLAYERS[0].rating,
     traits,
-    roleMetrics: deriveRoleMetrics(traits),
+    roleMetrics,
     source: 'db',
   };
 }
@@ -184,13 +166,13 @@ function MetricBar({ label, value, compare }) {
   );
 }
 
-function ExportButtons({ mode, fitReport, comparison }) {
+function ExportButtons({ mode, fitReport, comparison, canExport }) {
   function blocked() {
     navigateTo('/pricing');
   }
   const fit = mode !== 'compare';
   const run = (format) => {
-    if (!CAN_EXPORT) return blocked();
+    if (!canExport) return blocked();
     if (fit && format === 'csv') return exportFitCsv(fitReport);
     if (fit && format === 'pdf') return exportFitPdf(fitReport);
     if (!fit && format === 'csv') return exportComparisonCsv(comparison);
@@ -236,7 +218,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
       <div className="sf-search-results">
         {merged.map(item => (
           <button type="button" className="sf-search-result" key={`${kind}-${item.id}`} onClick={() => choose(item)}>
-            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage playerId={playerIdFor(item.name) || item.id} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />}
+            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage playerId={item.api_player_id ?? item.apiPlayerId ?? playerIdFor(item.name) ?? item.id} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />}
             <span><b>{item.name}</b><small>{kind === 'team' ? `${item.country} · ${item.league || 'database club'}` : `${item.team} · ${item.position}`}</small></span>
           </button>
         ))}
@@ -248,7 +230,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
           <div><b>{selectedTeam.name}</b><small>{selectedTeam.formation} · {selectedTeam.philosophy}</small></div>
         </div>
         <div className="sf-current-pair">
-          <ApiPlayerImage playerId={playerIdFor(selectedPlayer.name) || selectedPlayer.id} name={selectedPlayer.name} fallbackSrc={selectedPlayer.image || '/assets/players/neutral-player.svg'} alt={selectedPlayer.name} />
+          <ApiPlayerImage playerId={selectedPlayer.apiPlayerId ?? playerIdFor(selectedPlayer.name) ?? selectedPlayer.id} name={selectedPlayer.name} fallbackSrc={selectedPlayer.image || '/assets/players/neutral-player.svg'} alt={selectedPlayer.name} />
           <div><b>{selectedPlayer.name}</b><small>{selectedPlayer.position} · {selectedPlayer.archetype}</small></div>
         </div>
       </div>
@@ -411,7 +393,7 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger }) {
     <section className="sf-dashboard-shell">
       <div className="sf-dashboard-hero">
         <div className="sf-player-portrait sf-player-portrait--dashboard">
-          <ApiPlayerImage playerId={playerIdFor(player.name) || player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
+          <ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name) ?? player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
           <div className="sf-player-portrait-fade" />
           <div className="sf-player-portrait-label"><small>{player.archetype}</small><strong>{player.name}</strong><span>{player.position} · {player.team}</span></div>
         </div>
@@ -595,9 +577,9 @@ function ComparePlayers({ comparison, challenger, setChallenger }) {
       <section className="sf-panel sf-panel--wide">
         <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div><select value={challenger.id} onChange={event => setChallenger(SYSTEM_PLAYERS.find(player => String(player.id) === event.target.value) || SYSTEM_PLAYERS[1])}>{SYSTEM_PLAYERS.map(player => <option key={player.id} value={player.id}>{player.name}</option>)}</select></div>
         <div className="sf-compare-head">
-          <div><ApiPlayerImage playerId={playerIdFor(comparison.primary.name) || comparison.primary.id} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
+          <div><ApiPlayerImage playerId={comparison.primary.apiPlayerId ?? playerIdFor(comparison.primary.name) ?? comparison.primary.id} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
           <em>VS</em>
-          <div><ApiPlayerImage playerId={playerIdFor(comparison.challenger.name) || comparison.challenger.id} name={comparison.challenger.name} fallbackSrc={comparison.challenger.image || '/assets/players/neutral-player.svg'} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
+          <div><ApiPlayerImage playerId={comparison.challenger.apiPlayerId ?? playerIdFor(comparison.challenger.name) ?? comparison.challenger.id} name={comparison.challenger.name} fallbackSrc={comparison.challenger.image || '/assets/players/neutral-player.svg'} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
         </div>
         <div className="sf-versus-bars">{comparison.dimensions.map(item => (
           <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>
@@ -632,6 +614,8 @@ function DetailedAnalysis({ report }) {
 }
 
 export default function SystemFit() {
+  const { user } = useAuth();
+  const canExport = hasPaidAccess(resolveTier(user?.email));
   const [selectedTeam, setSelectedTeam] = useState(SYSTEM_TEAMS[0]);
   const [selectedPlayer, setSelectedPlayer] = useState(SYSTEM_PLAYERS[0]);
   const [challenger, setChallenger] = useState(SYSTEM_PLAYERS[1]);
@@ -659,7 +643,7 @@ export default function SystemFit() {
       <main className="sf-main">
         <div className="sf-pagebar">
           <div><div className="sf-kicker">PLAYER INTELLIGENCE</div><h1>SYSTEM FIT ENGINE</h1></div>
-          <div className="sf-pagebar-actions"><button type="button" className="btn btn--ghost btn--sm"><Share2 size={14} /> SHARE</button><ExportButtons mode={mode} fitReport={report} comparison={comparison} /></div>
+          <div className="sf-pagebar-actions"><button type="button" className="btn btn--ghost btn--sm"><Share2 size={14} /> SHARE</button><ExportButtons mode={mode} fitReport={report} comparison={comparison} canExport={canExport} /></div>
         </div>
         <div className="sf-mode-tabs">
           <button type="button" className={mode === 'fit' ? 'active' : ''} onClick={() => setMode('fit')}>SYSTEM FIT</button>

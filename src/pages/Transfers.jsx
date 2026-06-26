@@ -9,8 +9,7 @@ import { resolveTier, hasPaidAccess } from '../services/access.js';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { SYSTEM_TEAMS } from '../data/systemFitData.js';
-import { playerTraits } from '../services/playerTraits.js';
+import { SYSTEM_TEAMS, computeSystemFit } from '../data/systemFitData.js';
 import { calibreValue, valuationVerdict } from '../services/calibreValue.js';
 import { fitAdjustedValue, fitVerdict } from '../services/calibreFitValue.js';
 
@@ -47,31 +46,8 @@ function searchTeams(query) {
 }
 
 // ── System Fit calculator — runs player traits against team traits ────────────
-function computeSystemFit(player, team) {
-  if (!player || !team) return null;
-  const { traits } = playerTraits(player);
-  const tt = team.traits;
-  // Compatibility = weighted similarity across 6 trait dimensions
-  const dims = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
-  let total = 0;
-  dims.forEach(dim => {
-    const playerVal = traits[dim] || 70;
-    const teamVal = tt[dim] || 70;
-    // The closer the player's trait is to the team's demand, the higher the score
-    const diff = Math.abs(playerVal - teamVal);
-    const dimScore = Math.max(0, 100 - diff * 1.2);
-    total += dimScore;
-  });
-  const fit = Math.round(total / dims.length);
-  return {
-    score: Math.max(40, Math.min(99, fit)),
-    traits,
-    teamTraits: tt,
-    pressing: Math.round((traits.pressing + tt.pressing) / 2),
-    transition: Math.round((traits.transition + tt.transition) / 2),
-    boxThreat: Math.round((traits.width + tt.tempo) / 2),
-  };
-}
+// computeSystemFit is now imported from systemFitData.js (shared engine), so the
+// Transfers page and the System Fit page score the same player x club identically.
 
 // ── Live data fetchers ────────────────────────────────────────────────────────
 

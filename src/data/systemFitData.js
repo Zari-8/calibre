@@ -1,3 +1,5 @@
+import { playerTraits } from '../services/playerTraits.js';
+
 export const SYSTEM_TEAMS = [
   // ── Premier League ──
   { id: 50, name: 'Manchester City', short: 'Man City', country: 'England', league: 'Premier League', formation: '4-3-3', philosophy: 'Territorial control', intensity: 'High', lineHeight: 'High', crest: 'MC', accent: '#6cabdd', secondary: '#1c2c5b', traits: { control: 96, transition: 80, pressing: 90, width: 86, tempo: 88, defensiveLoad: 79 } },
@@ -98,14 +100,37 @@ function average(values) {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
+// ── Canonical System Fit scorer ────────────────────────────────────
+// One formula, used by BOTH the System Fit page (buildSystemFitReport) and the
+// Transfers page (computeSystemFit), so the same player x club scores identically
+// on both. Traits come from the shared engine in services/playerTraits.js.
+export function systemFitScore(traits, team) {
+  const dims = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
+  const tt = (team && team.traits) || {};
+  const scores = dims.map(k => 100 - Math.abs((traits?.[k] ?? 75) - (tt[k] ?? 75)));
+  const raw = scores.reduce((a, b) => a + b, 0) / dims.length;
+  return Math.min(97, Math.max(58, Math.round(raw)));
+}
+
 function compatibility(player, team) {
-  const dimensions = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
-  const scores = dimensions.map(key => 100 - Math.abs((player.traits[key] ?? 75) - (team.traits[key] ?? 75)));
-  const raw = average(scores);
-  const roleBoost = player.archetype === 'Puppeteer' && team.philosophy.toLowerCase().includes('control') ? 4
-    : player.archetype === 'Box Crasher' && team.traits.transition > 88 ? 3
-      : player.archetype === 'Paintbrush' && team.traits.width > 88 ? 3 : 0;
-  return Math.min(97, Math.max(58, raw + roleBoost));
+  return systemFitScore(player.traits, team);
+}
+
+// Used by the Transfers page. Derives the player's traits from the shared engine,
+// scores them with the canonical formula, and returns the sub-metrics the
+// Transfers system-fit readout consumes.
+export function computeSystemFit(player, team) {
+  if (!player || !team) return null;
+  const { traits } = playerTraits(player);
+  const tt = team.traits || {};
+  return {
+    score: systemFitScore(traits, team),
+    traits,
+    teamTraits: tt,
+    pressing: Math.round(((traits.pressing ?? 70) + (tt.pressing ?? 70)) / 2),
+    transition: Math.round(((traits.transition ?? 70) + (tt.transition ?? 70)) / 2),
+    boxThreat: Math.round(((traits.width ?? 70) + (tt.tempo ?? 70)) / 2),
+  };
 }
 
 function verdictFor(score) {

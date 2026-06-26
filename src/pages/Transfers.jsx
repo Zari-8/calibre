@@ -4,6 +4,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import DealReport from '../components/DealReport.jsx';
 import Dossier from '../components/Dossier.jsx';
+import CommissionForm from '../components/CommissionForm.jsx';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, hasPaidAccess } from '../services/access.js';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
@@ -559,6 +560,7 @@ export default function Transfers() {
   const [transfersLoading, setTransfersLoading] = useState(true);
   const [moreDealsPage, setMoreDealsPage] = useState(0);
   const [showDossier, setShowDossier] = useState(false);
+  const [showCommission, setShowCommission] = useState(false);
   const { user } = useAuth();
   const canDossier = hasPaidAccess(resolveTier(user?.email));
 
@@ -916,6 +918,15 @@ export default function Transfers() {
                   <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginTop: 8 }}>Commissioned · multi-page decision brief</div>
                 </div>
               )}
+
+              {/* Public commissioning CTA — opens the €499 request form for everyone */}
+              <div style={{ marginTop: 12, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
+                <button
+                  onClick={() => setShowCommission(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#c8ff00', border: '1px solid #c8ff00', padding: '10px 16px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
+                >Commission a full dossier · €499</button>
+                <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginTop: 8 }}>40-point Director-of-Football brief · token-gated PDF</div>
+              </div>
             </div>{/* close left hero col */}
             </div>{/* close hero grid */}
           </div>{/* close hero wrap */}
@@ -1484,6 +1495,13 @@ export default function Transfers() {
           askingPrice={askingPrice}
           marketValue={valuation.estimatedValue}
           onClose={() => setShowDossier(false)}
+        />
+      )}
+      {showCommission && (
+        <CommissionForm
+          player={selectedPlayer}
+          club={selectedTeam}
+          onClose={() => setShowCommission(false)}
         />
       )}
     </div>

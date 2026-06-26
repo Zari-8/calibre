@@ -517,6 +517,7 @@ export default function Transfers() {
   const [marketPulse, setMarketPulse] = useState(FALLBACK_PULSE);
   const [comparablePool, setComparablePool] = useState(FALLBACK_COMPARABLES);
   const [transfersLoading, setTransfersLoading] = useState(true);
+  const [moreDealsPage, setMoreDealsPage] = useState(0);
 
   useEffect(() => {
     // Load all live data in parallel
@@ -1313,18 +1314,34 @@ export default function Transfers() {
             </div>
           )}
 
-          {/* ── MORE DEALS — horizontal strip (moved out of the sidebar) ── */}
-          {recentTransfers.length > 4 && (
-            <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
-                <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>More Deals</div>
-                <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
+          {/* ── MORE DEALS — single row, paged like World Cup Facts ── */}
+          {recentTransfers.length > 4 && (() => {
+            const more = recentTransfers.slice(4);
+            const PER = 4;
+            const pageCount = Math.max(1, Math.ceil(more.length / PER));
+            const safePage = Math.min(moreDealsPage, pageCount - 1);
+            const paged = more.slice(safePage * PER, safePage * PER + PER);
+            return (
+              <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
+                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>More Deals</div>
+                  <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, alignItems: 'start' }}>
+                  {paged.map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
+                </div>
+                {pageCount > 1 && (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 14 }}>
+                    <button type="button" disabled={safePage === 0} onClick={() => setMoreDealsPage(p => Math.max(0, p - 1))}
+                      style={{ background: 'none', border: '1px solid #2a2a2a', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 14px', color: safePage === 0 ? '#444' : '#888', cursor: safePage === 0 ? 'not-allowed' : 'pointer' }}>← Prev</button>
+                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.12em', color: '#666', textTransform: 'uppercase', minWidth: '11ch', textAlign: 'center' }}>Page {safePage + 1} of {pageCount}</span>
+                    <button type="button" disabled={safePage >= pageCount - 1} onClick={() => setMoreDealsPage(p => Math.min(pageCount - 1, p + 1))}
+                      style={{ background: 'none', border: '1px solid #2a2a2a', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 14px', color: safePage >= pageCount - 1 ? '#444' : '#888', cursor: safePage >= pageCount - 1 ? 'not-allowed' : 'pointer' }}>Next →</button>
+                  </div>
+                )}
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                {recentTransfers.slice(4, 12).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* ── HOW CALIBRE VERDICTS WORK ── */}
           <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>

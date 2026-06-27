@@ -185,6 +185,49 @@ export function buildSystemFitReport(player, team) {
   };
 }
 
+// Build a comparison verdict specific to the two archetypes and how the swap
+// reshapes the side \u2014 not a generic "grades higher" line.
+function comparisonVerdict(primary, challenger, team, first, second) {
+  const DIMS = [
+    ['control', 'possession control'],
+    ['transition', 'vertical transition threat'],
+    ['pressing', 'press intensity'],
+    ['width', 'natural width'],
+    ['tempo', 'ball-circulation tempo'],
+    ['defensiveLoad', 'defensive coverage'],
+  ];
+  const teamName = team.short || team.name;
+  const list = arr => arr.map(d => d.phrase).join(' and ');
+
+  if (first.score === second.score) {
+    const d = DIMS
+      .map(([k, phrase]) => ({ phrase, diff: (challenger.traits[k] ?? 75) - (primary.traits[k] ?? 75) }))
+      .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))[0];
+    const leansChallenger = d.diff > 0;
+    return `${primary.name} (${primary.archetype}) and ${challenger.name} (${challenger.archetype}) both grade ${first.score}% for ${teamName} \u2014 level on the number, but not interchangeable. ${leansChallenger ? challenger.name : primary.name} pulls the side toward ${d.phrase}; pick the other and ${teamName} keeps its current shape. Same fit, different team.`;
+  }
+
+  const challengerWins = second.score > first.score;
+  const winner = challengerWins ? challenger : primary;
+  const loser = challengerWins ? primary : challenger;
+  const wScore = challengerWins ? second.score : first.score;
+  const lScore = challengerWins ? first.score : second.score;
+
+  const deltas = DIMS.map(([k, phrase]) => ({ phrase, diff: (winner.traits[k] ?? 75) - (loser.traits[k] ?? 75) }));
+  const gains = deltas.filter(d => d.diff >= 4).sort((a, b) => b.diff - a.diff).slice(0, 2);
+  const losses = deltas.filter(d => d.diff <= -4).sort((a, b) => a.diff - b.diff).slice(0, 2);
+
+  let s = `${winner.name} (${winner.archetype}) fits ${teamName} better \u2014 ${wScore}% to ${lScore}%`;
+  if (gains.length) s += `, adding ${list(gains)}`;
+  s += `. `;
+  if (losses.length) {
+    s += `Picking him over ${loser.name} (${loser.archetype}) costs you ${list(losses)}, so ${teamName} becomes a different side \u2014 more ${gains.length ? gains[0].phrase : winner.archetype.toLowerCase()}, less ${losses[0].phrase}. It changes what the team becomes, not just who plays.`;
+  } else {
+    s += `He clears ${loser.name} (${loser.archetype}) with no real stylistic trade-off \u2014 a cleaner upgrade than a like-for-like swap.`;
+  }
+  return s;
+}
+
 export function buildPlayerComparison(primary, challenger, team) {
   const first = buildSystemFitReport(primary, team);
   const second = buildSystemFitReport(challenger, team);
@@ -202,9 +245,7 @@ export function buildPlayerComparison(primary, challenger, team) {
     primaryScore: first.score,
     challengerScore: second.score,
     dimensions,
-    verdict: first.score === second.score
-      ? `${primary.name} and ${challenger.name} land level, but they solve different problems.`
-      : `${first.score > second.score ? primary.name : challenger.name} grades higher for ${team.short}. That does not make the other player worse. It changes what the team becomes.`,
+    verdict: comparisonVerdict(primary, challenger, team, first, second),
   };
 }
 

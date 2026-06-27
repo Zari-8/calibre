@@ -11,6 +11,8 @@ import ApiLeagueLogo from '../components/ApiLeagueLogo.jsx';
 import useAuth from '../hooks/useAuth.js';
 import { loadForumPosts, submitForumPost } from '../services/community.js';
 import { CURRENT_SEASON, getRecentFixtures, getStandings, getTopCreators, getTopScorers, getUpcomingFixtures, resolveLeagueId, leagueLogoUrl } from '../services/apiFootball.js';
+import { getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
+import { resolveRating } from '../services/calibreRating.js';
 import { COMPETITION_DEBATES, COMPETITION_GROUPS, featuredMatchFor, snapshotFor } from '../data/competitionData.js';
 import PremierBetBanner from '../components/PremierBetBanner.jsx';
 
@@ -81,7 +83,7 @@ function PlayerPanel({ title, suffix, rows, stat, live = false, loading = false 
             open();
           }}
         >
-          <span className="comp-standings-pos">{row.pos}</span><ApiPlayerImage playerId={resolvedId} name={row.name} preferredSrc={row.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" loading="lazy"/><span title={row.name}>{row.name}</span><small title={row.team}>{row.team}</small><strong>{row[stat]}</strong>
+          <span className="comp-standings-pos">{row.pos}</span><ApiPlayerImage playerId={resolvedId} name={row.name} preferredSrc={row.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" loading="lazy"/><span title={row.name}>{row.name}</span><small title={row.team}>{row.team}</small>{row.cal!=null&&<span style={{fontFamily:"'Barlow Condensed', sans-serif",fontSize:11,fontWeight:800,color:row.cal>=80?'#c8ff00':row.cal>=72?'#f59e0b':'#888',marginRight:8,padding:'1px 6px',border:'1px solid #2a2a2a',borderRadius:3}} title="Calibre rating">CAL {row.cal}</span>}<strong>{row[stat]}</strong>
         </div>
         );
       })}
@@ -168,6 +170,23 @@ export default function Competitions() {
       if(creatorRows?.length){setCreators(creatorRows.map((row,index)=>({pos:index+1,id:row.player.id,apiPlayerId:row.player.id,name:row.player.name,team:row.team||'—',assists:row.assists||0,img:row.player.photo||'/assets/players/neutral-player.svg'})));setLiveState(current=>({...current,creators:true}));}
       let fixtureRows=upcomingRows; if(!fixtureRows?.length)fixtureRows=await getRecentFixtures(leagueId,season,1); if(!cancelled&&fixtureRows?.[0]){setFeaturedMatch(normalizeFixture(fixtureRows[0],fallbackMatch,active));setLiveState(current=>({...current,fixture:true}));}
     })().catch(()=>{}).finally(()=>{if(!cancelled)setLoading(false);}); return()=>{cancelled=true;}; },[active]);
+  // B: Calibre-rate the scorer / creator boards \u2014 resolve each player's engine
+  // rating by the API id the leaderboard already carries, then show it inline.
+  useEffect(()=>{
+    const pending=[...scorers,...creators].filter(r=>(r.apiPlayerId||r.id)&&!r._calTried);
+    if(!pending.length)return;
+    const ids=[...new Set(pending.map(r=>r.apiPlayerId||r.id))];
+    let cancelled=false;
+    getSupabasePlayersByApiIds(ids).then(dbRows=>{
+      if(cancelled)return;
+      const byApi={};
+      (dbRows||[]).forEach(row=>{ const apiId=row.api_player_id??row.apiPlayerId??row.id; const rt=resolveRating(row)?.rating; if(apiId!=null&&rt!=null)byApi[apiId]=Math.round(rt); });
+      const enrich=list=>{ let changed=false; const out=list.map(r=>{ const apiId=r.apiPlayerId||r.id; if(r._calTried||!apiId)return r; changed=true; return {...r,cal:byApi[apiId]??null,_calTried:true}; }); return changed?out:list; };
+      setScorers(prev=>enrich(prev));
+      setCreators(prev=>enrich(prev));
+    }).catch(()=>{});
+    return()=>{cancelled=true;};
+  },[scorers,creators]);
   const debates=COMPETITION_DEBATES[group];
   return <div className="page" style={{paddingTop:16}}><div className="comp-page"><Sidebar group={group} setGroup={setGroup}/><main className="comp-main"><section className="comp-hero"><div className="comp-hero-bg"><ApiLeagueLogo id={active.id} name={active.name} fallback={active.logo}/></div><div className="comp-hero-left"><div className="comp-hero-eyebrow">{group}</div><div className="comp-hero-title">{active.name}</div><div className="comp-hero-season">{active.country} · {active.stage}</div><div className="comp-hero-desc">{active.hero}. Explore standings, match analysis, form, scorers and creators without leaving the category hub.</div></div><div className="comp-hero-right"><div className="comp-hero-next-label">DATA STATUS</div><div className="comp-status-card"><Database size={17}/><b>{live?'LIVE DATABASE':'SNAPSHOT READY'}</b><span>{live?`${Object.values(liveState).filter(Boolean).length}/4 feeds refreshed`:'Fallback model active'}</span></div></div></section><div className="comp-type-tabs">{GROUPS.map(item=><button type="button" key={item} className={`comp-type-tab ${group===item?'active':''}`} onClick={()=>setGroup(item)}>{item}</button>)}</div><div className="comp-leagues-grid">{competitions.map(item=><CompetitionCard key={item.name} competition={item} active={item.name===active.name} onClick={()=>setActiveName(item.name)}/>)}</div><FeaturedMatch match={featuredMatch} openForum={()=>setForumOpen(true)}/><PremierBetBanner source="competitions" variant="bar" /><div className="comp-data-grid comp-data-grid--v7"><StandingsPanel competition={active} standings={standings} live={liveState.standings} loading={loading} unavailable={standingsUnavailable}/><FormPanel standings={standings}/><PlayerPanel title="Top Scorers" suffix={active.name} rows={scorers} stat="goals" live={liveState.scorers} loading={loading}/><PlayerPanel title="Top Creators" suffix={active.name} rows={creators} stat="assists" live={liveState.creators} loading={loading}/></div><div className="comp-lower"><section className="panel"><div className="panel-head"><div className="panel-title">Category Intelligence</div><Trophy size={15}/></div><div className="comp-intelligence-box"><b>{competitions.length}</b><span>competition hubs in {group}</span></div></section><section className="panel"><div className="panel-head"><div className="panel-title">Hot Debates</div><span className="panel-action">{group}</span></div>{debates.map(text=><button type="button" className="row-item comp-debate-row" key={text} onClick={()=>navigateTo(`/debates?topic=${encodeURIComponent(text)}`)}>{text}<ArrowRight size={13}/></button>)}</section><section className="panel"><div className="panel-head"><div className="panel-title">Coverage Architecture</div></div><div className="comp-coverage-list"><span><i/> League database refresh</span><span><i/> Fixture-specific Matchroom analysis</span><span><i/> API league and team logos</span><span><i/> Persistent match threads</span></div></section></div></main></div><div className="founder-strip"><Crown size={22} className="founder-strip-icon"/><strong>Get World Cup Founder Pass</strong><span>Unlock premium reports, advanced filters and exclusive World Cup intelligence.</span><button type="button" className="btn btn--lime" onClick={()=>navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14}/></button></div>{forumOpen&&<MatchForumModal match={featuredMatch} onClose={()=>setForumOpen(false)}/>}</div>;
 }

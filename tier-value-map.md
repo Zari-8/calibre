@@ -1,154 +1,115 @@
-# Calibre — Tier Value Map
+# Calibre — Tier Value Map (reconciled to live pricing)
 
-Free → **Pro (€4.99/mo)** → **Scout (€24.99/mo)** → **Club (€100/mo)** → **Dossier (€499 one-time)**
+Free → **Pro ($4.99/mo)** → **Scout ($19/mo)** → **Club ($99/mo)** → **Dossier ($499 one-time)**
+Promo: **World Cup Founder Pass — $8.99 one-time, 2 months of Pro.**
 
-The ladder is built on three axes at once: **depth per player** (how much of the
-analysis you see), **breadth / volume** (how much you can run), and **feature
-access** (which tools unlock). Each tier moves you up all three.
-
----
-
-## Why five tiers, not four
-
-The jump from Free directly to Scout (€24.99) eliminates a huge cohort of users
-in Nigeria, India, Zimbabwe, and across Africa and South Asia — people who are
-often the most engaged early users and best word-of-mouth vectors. €29 is a
-barrier; €4.99 is a considered but real buy for a scout or analyst who doesn't
-derive direct monetary benefit from the platform.
-
-**Pro at €4.99 is a volume tier.** 200 Pro subscribers = €1k/mo and broad market
-signal. 20 Scout subscribers at €29 = same revenue, far thinner reach. Pro earns
-trust, grows the base, and creates a natural upgrade path to Scout once the user
-sees what's locked.
+All prices **USD** (the live page is in dollars; the dossier moves from €499 → $499 to match).
 
 ---
 
-## Who each tier is for
+## Reconciliation note
 
-| Tier | Price | Buyer | One-line job |
-|---|---|---|---|
-| **Free** | — | Fans, first-timers, social traffic | Prove the engine is sharp; give a verdict, hold back the reasoning |
-| **Pro** | €4.99/mo | Global scouts, analysts, data fans, emerging-market users | Full valuation reasoning + unlimited analyses — the "I believe in this" tier |
-| **Scout** | €24.99/mo | Agents, individual scouts at mid/large clubs, football media | Full deal toolkit — comparables, PDF report, reasoning chain |
-| **Club** | €100/mo | Championship-level clubs, agencies, smaller sporting directors | Recruitment desk — System Fit depth, compare, exports, volume |
-| **Dossier** | €499 one-time | A club making an actual signing decision | One bespoke commissioned brief answering the full DoF framework |
+The live pricing page was written in *debate / fan* language ("Rate Battles",
+"GOAT debate tools", "watchlists") and predates the scouting build. System Fit,
+DB-sourced comparables, the Deal Report PDF, and the commissioned dossier are
+**not yet surfaced on it**. This doc reconciles what's actually built against the
+four live tiers, and flags where the page copy needs updating.
 
-**Dossier is a product, not a subscription tier** — a commissioned add-on
-available to anyone via the public request form, priced per brief.
+Legend: **[live]** = built & gated in code · **[planned]** = on the page, not built yet
 
 ---
 
-## The three axes, tier by tier
+## Tier table — built features mapped to live tiers
 
-**Depth per player — what you actually see**
-- Free → the *what*: verdict + Calibre Value (point estimate)
-- Pro → + the *why*: fair range, max bid, premium %, age curve
-- Scout → + the *toolkit*: comparables, Deal Report PDF
-- Club → + the *context*: full System Fit, key stats, role radar, compare, best-fit ranking
-- Dossier → + the *judgement*: opportunity cost, deal structure, 40-pt scorecard, qualitative read
-
-**Volume — how much you can run**
-- Free → capped (rate limit on analyses + fit checks)
-- Pro → individual unlimited
-- Scout → individual unlimited
-- Club → club-unlimited + multiple seats
-- Dossier → per-commission
-
-**Feature access — which tools unlock**
-
----
-
-## Feature × tier matrix
-
-| Capability | Free | Pro | Scout | Club | Dossier |
-|---|:--:|:--:|:--:|:--:|:--:|
-| Player search + Calibre rating | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Transfer verdict (DEAL / NEGOTIATE…) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Calibre Value (point estimate) | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Full valuation breakdown (fair range, max bid, premium, age curve) | — | ✓ | ✓ | ✓ | ✓ |
-| Unlimited analyses | — | ✓ | ✓ | ✓ | ✓ |
-| Comparables (DB-sourced, same position + rating) | — | — | ✓ | ✓ | ✓ |
-| Deal Report PDF | — | — | ✓ | ✓ | ✓ (richer) |
-| System Fit score (basic) | ✓ (capped) | ✓ | ✓ | ✓ | ✓ |
-| System Fit full read (key stats, role radar, lineup, best-fit) | — | — | — | ✓ | ✓ |
-| Compare two live players | — | — | — | ✓ | ✓ |
-| System Fit exports (PDF / CSV) | — | — | — | ✓ | ✓ |
-| Club seats (multi-user) | — | — | — | ✓ | — |
-| 40-point DoF dossier (commissioned) | — | — | — | — | ✓ |
-| Token-gated, watermarked delivery | — | — | — | — | ✓ |
+| Capability | Free | Pro | Scout | Club | Status |
+|---|:--:|:--:|:--:|:--:|---|
+| Rate Battles / GOAT debates / public feed | ✓ | ✓ | ✓ | ✓ | [live] |
+| Player search + Calibre rating | ✓ | ✓ | ✓ | ✓ | [live] |
+| Transfer verdict + Calibre Value (point) | ✓ | ✓ | ✓ | ✓ | [live] `valuation.verdict` |
+| Full valuation breakdown (fair range, max bid, premium, age curve) | — | ✓ | ✓ | ✓ | [live] `valuation.breakdown` |
+| Unlimited analyses (Free is rate-capped) | — | ✓ | ✓ | ✓ | [live] `volume.unlimited` |
+| Debate / comparison exports (PDF·CSV) | — | ✓ | ✓ | ✓ | [planned] |
+| Watchlists · extended history · advanced filters | — | ✓ | ✓ | ✓ | [planned] |
+| Comparables = **Similar-player finder** | — | — | ✓ | ✓ | [live] `valuation.comparables` |
+| **Deal Report PDF** (scout notes & exports) | — | — | ✓ | ✓ | [live] `valuation.report` |
+| Youth trajectory · career pathway modelling | — | — | ✓ | ✓ | [planned] |
+| System Fit score (basic) | ✓ (capped) | ✓ | ✓ | ✓ | [live] `fit.score` |
+| **Full System Fit desk** (breakdown, role radar, lineup, best-fit ranking) | — | — | — | ✓ | [live] `fit.full` |
+| **Compare two live players** | — | — | — | ✓ | [live] `fit.compare` |
+| **System Fit / bulk CSV exports** | — | — | — | ✓ | [live] `fit.export` |
+| Team workflows (seats, shared lists) | — | — | — | ✓ | [planned] |
+| Higher data limits · deeper API access | — | — | — | ✓ | [planned] |
+| Custom contracts | — | — | — | ✓ | sales hook |
+| **Commissioned dossier** (40-pt DoF brief) | add-on | add-on | add-on | add-on | [live] $499 |
 
 ---
 
-## Upgrade pressure — where each wall is hit
+## The export question (resolved)
 
-The ladder only works if each gate is hit at a natural moment of wanting more.
+The page promises "PDF and CSV report exports" at **Pro**, but the code gates the
+scouting Deal Report to **Scout** and System Fit/CSV to **Club**. These are two
+different artifacts — keep them separate on the page:
 
-- **Free → Pro** — they get a verdict they trust, then hit the locked breakdown.
-  "I believe the call; now I need the *reasoning* to act on it." €4.99 removes the
-  friction for emerging-market users who'd bounce at €25.
-- **Pro → Scout** — the analyst who's been running unlimited analyses wants to
-  *share* work (PDF report) or see *who else is comparable* (comparables tab).
-  Both are locked to Scout, which is the natural step for anyone using Calibre
-  professionally.
-- **Scout → Club** — an individual who keeps checking *does he suit our system?*
-  and wants to compare two targets, or needs a second seat. Fit depth + compare +
-  exports are the Club moat.
-- **Any → Dossier** — a real signing is on the table and a subscription read
-  isn't enough. They want one defensible, board-ready brief. €499 is cheap against
-  an eight-figure transfer.
+- **Pro** → debate-card / player-comparison exports (the fan product)
+- **Scout** → the **Deal Report PDF** (`valuation.report`) — a scouting artifact
+- **Club** → **System Fit exports + bulk CSV** (`fit.export`, `export.csv`)
+
+No code change needed; the page wording just needs to distinguish them.
 
 ---
 
-## Capability model in code (`src/services/access.js`)
+## "Team workflows" — what it actually means (Club)
 
-`access.js` now implements `can(tier, capability)` instead of a single
-`hasPaidAccess` flag. Every gate in the app reads its own capability:
+This is the vague bullet that, in reality, is **everything we've been building for
+the Club tier**. Concretely, Team workflows = the multi-seat club account:
 
-```js
-can(tier, 'valuation.breakdown')   // Pro+
-can(tier, 'valuation.comparables') // Scout+
-can(tier, 'valuation.report')      // Scout+ (Deal Report PDF)
-can(tier, 'valuation.dossier')     // Club+  (founder dossier overlay)
-can(tier, 'fit.score')             // Free   (capped)
-can(tier, 'fit.full')              // Club+
-can(tier, 'fit.compare')           // Club+
-can(tier, 'fit.export')            // Club+
-can(tier, 'volume.unlimited')      // Pro+
-```
+- **Seats** — several staff under one club/org login (not one shared password)
+- **Shared shortlists & watchlists** — a target list the whole desk sees
+- **Assign targets** to colleagues; **shared scout notes** on a player
+- **A collaborative recruitment board** — pipeline of who's being assessed
+- **The full System Fit desk** (fit breakdown, compare, best-fit ranking, exports)
+- **Saved dossiers** for the club in one place
 
-To add a new gate: add one line to the `CAPABILITIES` map in `access.js` with
-the minimum tier, then call `can(tier, 'your.capability')` at the feature site.
-No other change needed.
+So "Team workflows" isn't a single feature — it's the label for the Club desk:
+**System Fit (built) + seats + shared lists (to build)**. That's the Club moat,
+and right now the page doesn't say any of it. It should.
 
 ---
 
-## What's already enforced vs. what to build next
+## "Custom contracts available" — what it means (Club)
 
-**Already live:**
-- Deal Report PDF → `can(tier, 'valuation.report')` (Scout+)
-- System Fit exports → `can(tier, 'fit.export')` (Club+)
-- System Fit full/compare → `can(tier, 'fit.full')` / `can(tier, 'fit.compare')` (Club+)
-- Founder dossier overlay → `can(tier, 'valuation.dossier')` (Club+)
-- Owner email → `founder` everywhere
+Two readings; recommend the commercial one and split out the other:
 
-**To build next (in priority order):**
-1. **Free/Pro depth wall on Transfers** — show verdict + value to all; lock the
-   full breakdown + comparables behind Pro/Scout (blur/teaser, not removal — the
-   lock IS the upgrade prompt)
-2. **Volume cap for Free** — simple per-day counter (analyses + fit checks)
-3. **Pricing/upgrade page** — the five-tier ladder as a public page with ContiPay
-   payment links
-4. **Seats** — Club multi-user (needs Supabase auth work, defer)
+1. **Commercial terms (recommended meaning).** Bespoke deals negotiated directly:
+   annual/enterprise billing, volume/multi-club licensing, higher API limits and
+   SLAs, bundled commissioned dossiers. Practically a **"Contact us"** CTA on the
+   Club card — not a self-serve feature. This is the enterprise sales hook.
+2. **Commissioned dossiers.** If "custom contracts" was meant as *bespoke
+   deliverables*, that's the **$499 Dossier** — surface it as its own add-on
+   (the public request form we built), not buried in a Club bullet, to avoid
+   confusion.
+
+Keep (1) as the Club "Contact us" line; promote (2) to a visible Dossier add-on.
 
 ---
 
-## Open decisions (yours to set)
+## Open decisions
 
-- **Scout price.** Set at €24.99 in this doc — adjust up or down depending on
-  early conversion data. The Pro/Scout gap should feel like a meaningful step up
-  in professional utility, not just more volume.
-- **Free volume cap.** A few full analyses per day is a reasonable start — enough
-  to experience the engine, not enough to use it as a full tool.
-- **Pro System Fit access.** Map above gives Pro the basic fit score (same as
-  Free, just uncapped). Alternative: let Pro see the full fit read and reserve
-  compare + exports for Club. Keeping it as-is makes the Club moat cleaner.
+- **Currency:** standardize on USD (done in this doc + access.js). If ContiPay
+  settles in ZWL/USD, display stays USD; only the gateway handles conversion.
+- **Dossier on the pricing page:** add a slim "Commission a dossier — $499"
+  add-on strip below the four tiers (links to the request form), so the $499
+  product is discoverable, not hidden inside the Transfers analysis card.
+- **Pricing-page copy is stale:** Free/Pro/Scout/Club bullets don't mention
+  System Fit, comparables, the Deal Report, or the dossier. The page should be
+  rewritten to surface what's actually built (see the tier table above).
+
+---
+
+## Capability model (`src/services/access.js`)
+
+Every gate reads `can(tier, capability)` against `free < pro < scout < club <
+founder`. To add a gate: one line in the `CAPABILITIES` map + one `can()` call at
+the feature. Current gates: `valuation.breakdown` (Pro+), `valuation.comparables`
+/ `valuation.report` (Scout+), `valuation.dossier` / `fit.full` / `fit.compare` /
+`fit.export` (Club+), `volume.unlimited` (Pro+).

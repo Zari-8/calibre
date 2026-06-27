@@ -548,6 +548,7 @@ function TeamSearch({ value, onChange, onSelect }) {
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
 const TABS = ['Overview', 'Value Analysis', 'System Fit', 'Risk Profile', 'Comparables'];
+const TAB_GATE = { 'Value Analysis': 'valuation.breakdown', 'Comparables': 'valuation.comparables' };
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Transfers() {
@@ -564,6 +565,8 @@ export default function Transfers() {
   const { user } = useAuth();
   const tier = resolveTier(user?.email);
   const canDossier = can(tier, 'valuation.dossier');
+  const canBreakdown = can(tier, 'valuation.breakdown');
+  const canComparables = can(tier, 'valuation.comparables');
 
   useEffect(() => {
     // Load all live data in parallel
@@ -840,10 +843,16 @@ export default function Transfers() {
                   <span style={{ fontSize: 12, color: '#555' }}>M</span>
                 </div>
               </div>
+              {canBreakdown ? (
               <div style={{ marginTop: 10, fontSize: 13, color: '#8a8a8a' }}>
                 {selectedTeam ? `Max sensible bid for ${selectedTeam.short || selectedTeam.name}` : 'Max sensible bid'}: <span style={{ color: '#c8ff00', fontWeight: 700 }}>€{fit.clubMaxSensibleBid}M</span>
                 <span style={{ marginLeft: 10, color: '#8a8a8a' }}>Fair range €{fit.fitFairRange.low}–{fit.fitFairRange.high}M</span>
               </div>
+              ) : (
+              <div style={{ marginTop: 10, fontSize: 13, color: '#8a8a8a' }}>
+                Max sensible bid & fair range — <span onClick={() => navigateTo('/pricing')} style={{ color: '#c8ff00', cursor: 'pointer', fontWeight: 700 }}>unlock with Pro →</span>
+              </div>
+              )}
             </div>
           </div>
 
@@ -934,7 +943,10 @@ export default function Transfers() {
 
           {/* Tabs */}
           <div style={{ display: 'flex', gap: 2, background: '#0a0a0a', border: '1px solid #1c1c1c', borderBottom: 'none', overflowX: 'auto' }}>
-            {TABS.map(tab => (
+            {TABS.map(tab => {
+              const gate = TAB_GATE[tab];
+              const locked = gate && !can(tier, gate);
+              return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -948,8 +960,8 @@ export default function Transfers() {
                   cursor: 'pointer', whiteSpace: 'nowrap',
                   transition: 'all 0.15s',
                 }}
-              >{tab}</button>
-            ))}
+              >{tab}{locked && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, color: activeTab === tab ? '#0a0a0a' : '#c8ff00', opacity: 0.85 }}>{gate === 'valuation.comparables' ? 'SCOUT' : 'PRO'}</span>}</button>
+            );})}
           </div>
 
           {/* Tab panels */}
@@ -961,6 +973,12 @@ export default function Transfers() {
               </span>
             </div>
 
+            {activeTab === 'Value Analysis' && !canBreakdown && (
+              <TierLock title="Full valuation breakdown" blurb="Fair-value range, max sensible bid, premium analysis and the drivers behind the verdict." tierLabel="Pro" />
+            )}
+            {activeTab === 'Comparables' && !canComparables && (
+              <TierLock title="Comparable players" blurb="Like-rated players in the same position, valued live by the engine — the market context for this deal." tierLabel="Scout" />
+            )}
             {/* OVERVIEW */}
             {activeTab === 'Overview' && (() => {
               const est = valuation.estimatedValue;
@@ -1056,7 +1074,7 @@ export default function Transfers() {
             })()}
 
             {/* VALUE ANALYSIS */}
-            {activeTab === 'Value Analysis' && (
+            {activeTab === 'Value Analysis' && canBreakdown && (
               <div style={{ padding: 24 }}>
                 <div style={tabSectionLabel}>Calibre Value Breakdown</div>
                 <p style={{ fontSize: 12.5, color: '#999', lineHeight: 1.6, margin: '0 0 18px', maxWidth: 640 }}>
@@ -1296,7 +1314,7 @@ export default function Transfers() {
             })()}
 
             {/* COMPARABLES */}
-            {activeTab === 'Comparables' && (
+            {activeTab === 'Comparables' && canComparables && (
               <div style={{ padding: 24 }}>
                 <div style={tabSectionLabel}>Similar players — same position group, comparable rating</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#1c1c1c' }}>
@@ -1505,6 +1523,20 @@ export default function Transfers() {
           onClose={() => setShowCommission(false)}
         />
       )}
+    </div>
+  );
+}
+
+// ── Tier lock panel ─ shown in place of gated tab content ──────────────────
+function TierLock({ title, blurb, tierLabel }) {
+  return (
+    <div style={{ padding: '52px 24px', textAlign: 'center' }}>
+      <div style={{ width: 44, height: 44, margin: '0 auto 16px', borderRadius: '50%', border: '1px solid #c8ff00', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8ff00" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+      </div>
+      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{title}</div>
+      <p style={{ color: '#999', fontSize: 14, lineHeight: 1.6, maxWidth: 420, margin: '10px auto 18px' }}>{blurb}</p>
+      <button onClick={() => navigateTo('/pricing')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#c8ff00', color: '#0a0a0a', border: 'none', padding: '11px 22px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer' }}>Unlock with {tierLabel} →</button>
     </div>
   );
 }

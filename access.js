@@ -21,7 +21,7 @@
 
 // 👇 Replace with the email(s) you log into Calibre with (lowercase fine).
 export const OWNER_EMAILS = [
-  'team@calibrefootball.com',
+  'owner@calibrefootball.com', // <-- REPLACE with your real Calibre login email
 ];
 
 // Tier order — each tier includes all capabilities of every tier below it.

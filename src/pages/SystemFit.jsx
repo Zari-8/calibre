@@ -387,7 +387,21 @@ function RoleRadar({ report, player }) {
   );
 }
 
-function FitIntelligenceDashboard({ report, mode, comparison, challenger }) {
+function SystemFitLock({ mode }) {
+  const isCompare = mode === 'compare';
+  return (
+    <section className="sf-panel" style={{ textAlign: 'center', padding: '52px 24px', margin: '16px 0' }}>
+      <div style={{ width: 44, height: 44, margin: '0 auto 16px', borderRadius: '50%', border: '1px solid #a6ff00', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a6ff00" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+      </div>
+      <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 800, textTransform: 'uppercase', margin: 0 }}>{isCompare ? 'Compare players' : 'The full System Fit desk'}</h3>
+      <p style={{ color: '#999', maxWidth: 440, margin: '10px auto 18px', lineHeight: 1.6 }}>{isCompare ? 'Put two real players head-to-head across the six tactical dimensions for a club \u2014 part of the Club recruitment desk.' : 'Fit breakdown, role-fit map, tactical read and key stats \u2014 the full recruitment-desk analysis, available on Club.'}</p>
+      <button type="button" className="btn btn--lime btn--sm" onClick={() => navigateTo('/pricing')}>UNLOCK WITH CLUB <ArrowRight size={13} /></button>
+    </section>
+  );
+}
+
+function FitIntelligenceDashboard({ report, mode, comparison, challenger, canFitFull }) {
   const player = report.player;
   return (
     <section className="sf-dashboard-shell">
@@ -435,6 +449,7 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger }) {
         <div className="sf-compare-banner"><GitCompare size={16} /><span>COMPARISON MODE</span><b>{player.name}</b><em>vs</em><b>{challenger.name}</b><strong>{comparison.primaryScore}% / {comparison.challengerScore}%</strong></div>
       )}
 
+      {canFitFull ? (<>
       <div className="sf-dashboard-grid">
         <section className="sf-panel sf-fit-breakdown-panel">
           <div className="sf-panel-head"><div><Activity size={17} /><span>FIT BREAKDOWN</span></div><b>MODEL OUTPUT</b></div>
@@ -457,6 +472,7 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger }) {
         </section>
         <KeyStats report={report} />
       </div>
+      </>) : <SystemFitLock />}
     </section>
   );
 }
@@ -676,12 +692,12 @@ export default function SystemFit() {
         </div>
         <div className="sf-mode-tabs">
           <button type="button" className={mode === 'fit' ? 'active' : ''} onClick={() => setMode('fit')}>SYSTEM FIT</button>
-          <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER</button>
-          <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS</button>
+          <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER{!canCompare && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, opacity: 0.85 }}>CLUB</span>}</button>
+          <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS{!canFitFull && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, opacity: 0.85 }}>CLUB</span>}</button>
         </div>
-        <FitIntelligenceDashboard report={report} mode={mode} comparison={comparison} challenger={challenger} />
-        {mode === 'compare' && <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} />}
-        {mode === 'analysis' && <DetailedAnalysis report={report} />}
+        <FitIntelligenceDashboard report={report} mode={mode} comparison={comparison} challenger={challenger} canFitFull={canFitFull} />
+        {mode === 'compare' && (canCompare ? <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} /> : <SystemFitLock mode="compare" />)}
+        {mode === 'analysis' && (canFitFull ? <DetailedAnalysis report={report} /> : <SystemFitLock />)}
         <section className="sf-panel sf-ranking-panel">
           <div className="sf-panel-head"><div><Star size={17} /><span>BEST-FIT CLUB RANKING</span></div><b>MODEL OUTPUT</b></div>
           <div className="sf-ranking-grid">{report.alternativeFits.slice(0, 6).map((team, index) => <button type="button" key={team.id} onClick={() => setSelectedTeam(team)}><b>0{index + 1}</b><Crest team={team} size={32} /><span><strong>{team.name}</strong><small>{team.formation} · {team.league}</small></span><em>{team.score}%</em></button>)}</div>

@@ -593,6 +593,31 @@ export default function Players(){
 
     setProfileLoading(true);
 
+    // Reconcile against the canonical enriched DB row so identity (full name,
+    // age, position) and the stored Calibre rating are identical no matter how
+    // the profile was opened — list click, ?playerId= URL, Competitions board.
+    // Without this, a bare {id,name} open computes a live rating off partial
+    // data (e.g. Haaland 81 / "Player") instead of the enriched record (90 / ST).
+    try {
+      const dbRows = await getSupabasePlayersByApiIds([apiId]);
+      const db = dbRows && dbRows[0];
+      if (db) {
+        const scored = resolveRating(db);
+        setActivePlayer(prev => ({
+          ...prev,
+          ...db,
+          name: db.full_name || db.name || (prev && prev.name),
+          apiPlayerId: apiId,
+          id: (prev && prev.id) ?? db.id ?? apiId,
+          age: db.age ?? (prev && prev.age) ?? null,
+          position: db.position || db.pos || (prev && (prev.position || prev.pos)) || '',
+          pos: db.pos || db.position || (prev && (prev.pos || prev.position)) || '',
+          rating: (scored && scored.rating != null) ? scored.rating : (prev && prev.rating != null ? prev.rating : null),
+          league_id: db.league_id ?? (prev && prev.league_id) ?? null,
+        }));
+      }
+    } catch { /* keep the original record if the lookup fails */ }
+
     try{
       setActiveStats(await getPlayerStats(apiId));
     }finally{

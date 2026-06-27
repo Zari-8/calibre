@@ -6,7 +6,7 @@ import DealReport from '../components/DealReport.jsx';
 import Dossier from '../components/Dossier.jsx';
 import CommissionForm from '../components/CommissionForm.jsx';
 import useAuth from '../hooks/useAuth.js';
-import { resolveTier, hasPaidAccess } from '../services/access.js';
+import { resolveTier, can } from '../services/access.js';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
@@ -562,7 +562,8 @@ export default function Transfers() {
   const [showDossier, setShowDossier] = useState(false);
   const [showCommission, setShowCommission] = useState(false);
   const { user } = useAuth();
-  const canDossier = hasPaidAccess(resolveTier(user?.email));
+  const tier = resolveTier(user?.email);
+  const canDossier = can(tier, 'valuation.dossier');
 
   useEffect(() => {
     // Load all live data in parallel

@@ -9,7 +9,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers } from '../services/supabasePlayers.js';
 import useAuth from '../hooks/useAuth.js';
-import { resolveTier, hasPaidAccess } from '../services/access.js';
+import { resolveTier, can } from '../services/access.js';
 import { playerIdFor } from '../data/playerIds.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { playerTraits, deriveArchetype } from '../services/playerTraits.js';
@@ -641,7 +641,10 @@ function DetailedAnalysis({ report }) {
 
 export default function SystemFit() {
   const { user } = useAuth();
-  const canExport = hasPaidAccess(resolveTier(user?.email));
+  const tier = resolveTier(user?.email);
+  const canExport  = can(tier, 'fit.export');
+  const canFitFull = can(tier, 'fit.full');
+  const canCompare = can(tier, 'fit.compare');
   const [selectedTeam, setSelectedTeam] = useState(SYSTEM_TEAMS[0]);
   const [selectedPlayer, setSelectedPlayer] = useState(SYSTEM_PLAYERS[0]);
   const [challenger, setChallenger] = useState(SYSTEM_PLAYERS[1]);

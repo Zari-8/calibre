@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { navigateTo } from './NavLink.jsx';
 import useAuth from '../hooks/useAuth.js';
-import { resolveTier, hasPaidAccess } from '../services/access.js';
+import { resolveTier, can } from '../services/access.js';
 
 // ── Tier check ───────────────────────────────────────────────────────────────
 // Access is resolved centrally in services/access.js:
@@ -45,7 +45,7 @@ export default function DealReport({ player, team, verdict, sysFit, marketValue,
   const { user } = useAuth();
 
   const tier = resolveTier(user?.email);
-  const hasAccess = hasPaidAccess(tier);
+  const hasAccess = can(tier, 'valuation.report');
 
   async function handleDownload() {
     if (!hasAccess) {

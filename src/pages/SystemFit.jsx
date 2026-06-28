@@ -8,6 +8,7 @@ import { searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { getDerivedTeamProfile } from '../services/derivedTeams.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
 import { playerIdFor } from '../data/playerIds.js';
@@ -24,19 +25,42 @@ import {
 // Export access is resolved per-user via services/access.js (owner allowlist +
 // paid tier), consistent with the PDF report and dossier gating.
 
+// Synchronous fallback for an API-Football club with no derived profile yet.
+// IMPORTANT: this used to inherit SYSTEM_TEAMS[0] (Man City) traits, which made
+// every uncovered club score as if it played like City. We now fall to a NEUTRAL
+// profile so an unknown club reads as genuinely unknown, not as City.
 function normalizeApiTeam(team) {
   return {
-    ...SYSTEM_TEAMS[0],
     id: team.id,
     name: team.name,
-    short: team.name,
+    short: team.short || team.name,
     country: team.country || 'International',
     league: team.league || 'API-Football database',
     crestUrl: team.crestUrl,
     crest: team.name.split(' ').slice(0, 2).map(word => word[0]).join('').slice(0, 3).toUpperCase(),
+    formation: '4-3-3',
     philosophy: 'Data profile pending enrichment',
+    intensity: 'Medium',
+    lineHeight: 'Medium',
+    traits: { control: 72, transition: 72, pressing: 72, width: 72, tempo: 72, defensiveLoad: 72 },
     source: 'api',
   };
+}
+
+// Resolve an API club to the best available profile:
+//   derived_team_profiles (real, auto-generated)  ->  neutral fallback.
+// Curated SYSTEM_TEAMS are handled upstream (they never reach here).
+async function resolveApiTeam(team) {
+  const derived = await getDerivedTeamProfile(team.id);
+  if (derived) {
+    // keep the live crest/league label from the search hit if present
+    return {
+      ...derived,
+      crestUrl: team.crestUrl || derived.crestUrl || null,
+      league: derived.league || team.league || 'Derived profile',
+    };
+  }
+  return normalizeApiTeam(team);
 }
 
 // Trait derivation, role metrics and individual archetype labels now come from
@@ -199,7 +223,16 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
   const merged = [...local, ...remote.filter(item => !localIds.has(String(item.id)))].slice(0, 8);
 
   const choose = (item) => {
-    if (kind === 'team') { setSelectedTeam(String(item.source || '').startsWith('api') ? normalizeApiTeam(item) : item); return; }
+    if (kind === 'team') {
+      if (String(item.source || '').startsWith('api')) {
+        // Resolve to the derived profile (real traits) before scoring,
+        // falling back to a neutral profile if none exists yet.
+        resolveApiTeam(item).then(setSelectedTeam);
+      } else {
+        setSelectedTeam(item);
+      }
+      return;
+    }
     const src = String(item.source || '');
     setSelectedPlayer(src === 'db' ? normalizeDbPlayer(item) : src.startsWith('api') ? normalizeApiPlayer(item) : item);
   };

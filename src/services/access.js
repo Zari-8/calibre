@@ -47,6 +47,9 @@ const CAPABILITIES = {
   // Volume
   'volume.unlimited':        'pro',     // unlimited analyses (free is rate-capped)
 
+  // Watchlist (advertised Pro feature)
+  'watchlist':               'pro',     // save players to a personal watchlist
+
   // Exports (general)
   'export.pdf':              'scout',   // Deal Report PDF
   'export.csv':              'club',    // CSV exports (System Fit etc.)

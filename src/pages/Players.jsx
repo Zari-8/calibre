@@ -6,6 +6,9 @@ import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabasePlayerCount, getSupabasePlayers, getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
+import useAuth from '../hooks/useAuth.js';
+import { resolveTier, can } from '../services/access.js';
+import { getWatchlist, isWatched, toggleWatch, removeWatch, WATCHLIST_EVENT } from '../services/watchlist.js';
 
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
@@ -278,7 +281,7 @@ function lineToRatingInput(player, stat){
   };
 }
 
-function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
+function PlayerProfileModal({player,stats,loading,onClose,onCompare,watched,onToggleWatch,canWatch}){
   if(!player) return null;
 
   const stat = pickLeagueLine(stats?.statistics);
@@ -343,6 +346,7 @@ function PlayerProfileModal({player,stats,loading,onClose,onCompare}){
 
         <div className="player-profile-modal__actions">
           <button type="button" className="btn btn--lime btn--sm" onClick={()=>onCompare(player)}><Plus size={13}/> Add to compare</button>
+          <button type="button" className={`btn btn--sm ${watched ? 'btn--lime' : 'btn--outline'}`} onClick={onToggleWatch} title={canWatch ? (watched ? 'Remove from watchlist' : 'Add to watchlist') : 'Watchlist is a Pro feature'}><Star size={13}/> {watched ? 'Watching' : 'Watch'}</button>
           <button type="button" className="btn btn--outline btn--sm" onClick={()=>navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}>Run system fit <ArrowRight size={13}/></button>
           <ShareBar text={`${player.name} — Calibre rating ${displayRating(liveRating)}${player.archetype ? `, ${player.archetype}` : ''}.`} url={shareUrl('/players')} label={false}/>
         </div>
@@ -377,6 +381,34 @@ function CompareModal({players,onClose}){
   );
 }
 
+function WatchlistModal({ items, onOpen, onRemove, onClose }) {
+  return (
+    <div role="presentation" onMouseDown={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.72)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
+      <section onMouseDown={e=>e.stopPropagation()} style={{ position:'relative', width:'100%', maxWidth:520, maxHeight:'82vh', overflowY:'auto', background:'#0a0a0c', border:'1px solid #1c1c1c', borderRadius:14, padding:'24px 22px' }}>
+        <button type="button" onClick={onClose} aria-label="Close watchlist" style={{ position:'absolute', top:14, right:14, background:'none', border:'none', color:'#888', cursor:'pointer' }}><X size={18} /></button>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, color:'#c8ff00', fontSize:12, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase' }}><Star size={14} /> Your watchlist</div>
+        <h3 style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:26, fontWeight:800, margin:'0 0 14px', textTransform:'uppercase', color:'#fff' }}>{items.length} player{items.length === 1 ? '' : 's'} saved</h3>
+        {items.length ? (
+          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+            {items.map(pl => (
+              <div key={pl.apiPlayerId} style={{ display:'flex', alignItems:'center', gap:10, background:'#0c0c0e', border:'1px solid #1c1c1c', borderRadius:8, padding:'10px 12px' }}>
+                <button type="button" onClick={()=>onOpen({ id: pl.apiPlayerId, apiPlayerId: pl.apiPlayerId, name: pl.name })} style={{ flex:1, display:'flex', alignItems:'center', gap:12, background:'none', border:'none', color:'#eee', cursor:'pointer', textAlign:'left', minWidth:0 }}>
+                  <ApiPlayerImage playerId={pl.apiPlayerId} name={pl.name} preferredSrc={pl.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" />
+                  <span style={{ display:'flex', flexDirection:'column', minWidth:0 }}><strong style={{ fontSize:15, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pl.name}</strong><small style={{ color:'#888' }}>{[pl.position, pl.team].filter(Boolean).join(' \u00b7 ') || '\u2014'}</small></span>
+                  {pl.rating != null && <span style={{ marginLeft:'auto', fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, color:'#c8ff00' }}>{Math.round(pl.rating)}</span>}
+                </button>
+                <button type="button" onClick={()=>onRemove(pl.apiPlayerId)} aria-label={`Remove ${pl.name}`} style={{ background:'none', border:'none', color:'#666', cursor:'pointer', padding:4, flexShrink:0 }}><X size={15} /></button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p style={{ color:'#888', lineHeight:1.6 }}>No players saved yet. Open any player profile and tap <b style={{ color:'#c8ff00' }}>Watch</b> to add them here.</p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export default function Players(){
   const [rankTab,setRankTab] = useState('Calibre Rating');
   const [search,setSearch] = useState('');
@@ -386,6 +418,13 @@ export default function Players(){
   const [searchError,setSearchError] = useState('');
   const [activePlayer,setActivePlayer] = useState(null);
   const [activeStats,setActiveStats] = useState(null);
+  const { user } = useAuth();
+  const tier = resolveTier(user?.email);
+  const canWatch = can(tier, 'watchlist');
+  const [watchlist,setWatchlist] = useState(()=>getWatchlist());
+  const [watchlistOpen,setWatchlistOpen] = useState(false);
+  useEffect(()=>{ const sync=()=>setWatchlist(getWatchlist()); window.addEventListener(WATCHLIST_EVENT,sync); return ()=>window.removeEventListener(WATCHLIST_EVENT,sync); },[]);
+  const handleToggleWatch=(pl)=>{ if(!canWatch){ navigateTo('/pricing'); return; } toggleWatch(pl); };
   const [profileLoading,setProfileLoading] = useState(false);
 
   useEffect(() => {
@@ -415,6 +454,7 @@ export default function Players(){
     league:'all',
     nation:'all',
     archetype:'all',
+    rating:'all',
   });
 
   const landingPlayers = useMemo(
@@ -538,7 +578,9 @@ export default function Players(){
       const posVal = p.position || p.pos || '';
       const posOk = !posVal || posMatches(posVal,filters.position);
       const natOk = filters.nation==='all' || !p.nationality || String(p.nationality).toLowerCase().includes(filters.nation);
-      return ageInRange(p.age,filters.age) && posOk && natOk;
+      const archOk = filters.archetype==='all' || foldAccents(p.archetype)===foldAccents(filters.archetype);
+      const ratingOk = filters.rating==='all' || (Number.isFinite(Number(p.rating)) && Number(p.rating)>=Number(filters.rating));
+      return ageInRange(p.age,filters.age) && posOk && natOk && archOk && ratingOk;
     }).slice(0,PLAYER_TABLE_LIMIT),
     [sourceRows,filters]
   );
@@ -644,6 +686,7 @@ export default function Players(){
       <div className="plp-header">
         <div className="plp-title">Players</div>
         <div className="plp-sub">Discover, analyse and compare football talent through the Calibre player bank and live enrichment layer.</div>
+        <button type="button" className="btn btn--outline btn--sm" style={{ marginTop:10 }} onClick={()=>setWatchlistOpen(true)}><Star size={13} /> Watchlist{watchlist.length ? ` (${watchlist.length})` : ''}</button>
       </div>
 
       <div className="plp-stats-bar">
@@ -694,12 +737,24 @@ export default function Players(){
           <option>Pressing Engine</option>
           <option>Inside Forward</option>
           <option>Wide Creator</option>
+          <option>Box Crasher</option>
+          <option>Poacher</option>
+          <option>Pure Striker</option>
+        </select>
+
+        <select className="plp-filter-select" value={filters.rating} onChange={e=>setFilters({...filters,rating:e.target.value})}>
+          <option value="all">All Ratings</option>
+          <option value="90">Calibre 90+</option>
+          <option value="85">Calibre 85+</option>
+          <option value="80">Calibre 80+</option>
+          <option value="75">Calibre 75+</option>
+          <option value="70">Calibre 70+</option>
         </select>
 
         <button className="btn btn--ghost btn--sm" type="button" onClick={()=>{
           setSearch('');
           setBrowseRows([]);
-          setFilters({position:'all',age:'16-40',league:'all',nation:'all',archetype:'all'});
+          setFilters({position:'all',age:'16-40',league:'all',nation:'all',archetype:'all',rating:'all'});
         }}>
           Clear all
         </button>
@@ -847,9 +902,10 @@ export default function Players(){
         <button type="button" className="btn btn--lime" onClick={()=>navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14}/></button>
       </div>
 
-      <PlayerProfileModal player={activePlayer} stats={activeStats} loading={profileLoading} onClose={()=>setActivePlayer(null)} onCompare={addToCompare}/>
+      <PlayerProfileModal player={activePlayer} stats={activeStats} loading={profileLoading} onClose={()=>setActivePlayer(null)} onCompare={addToCompare} watched={activePlayer ? isWatched(activePlayer.apiPlayerId ?? activePlayer.id) : false} onToggleWatch={()=>handleToggleWatch(activePlayer)} canWatch={canWatch}/>
 
       {compareOpen && <CompareModal players={comparePlayers} onClose={()=>setCompareOpen(false)}/>}
+      {watchlistOpen && <WatchlistModal items={watchlist} onOpen={(pl)=>{ setWatchlistOpen(false); openProfile(pl); }} onRemove={(id)=>removeWatch(id)} onClose={()=>setWatchlistOpen(false)} />}
     </div>
   );
 }

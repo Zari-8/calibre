@@ -923,7 +923,7 @@ export default function Transfers() {
                 <div style={{ marginTop: 12, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
                   <button
                     onClick={() => setShowDossier(true)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#c8ff00', color: '#0a0a0a', border: '1px solid #c8ff00', padding: '10px 16px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#c8ff00', color: '#0a0a0a', border: '1px solid #c8ff00', padding: '7px 13px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}
                   >Generate full dossier →</button>
                   <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginTop: 8 }}>Commissioned · multi-page decision brief</div>
                 </div>
@@ -933,7 +933,7 @@ export default function Transfers() {
               <div style={{ marginTop: 12, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
                 <button
                   onClick={() => setShowCommission(true)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#c8ff00', border: '1px solid #c8ff00', padding: '10px 16px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.15em', textTransform: 'uppercase', cursor: 'pointer' }}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#9a9a9a', border: '1px solid #2a2a2a', padding: '7px 12px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
                 >Commission a full dossier · €499</button>
                 <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginTop: 8 }}>40-point Director-of-Football brief · token-gated PDF</div>
               </div>

@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, Bookmark, BookmarkCheck, ChevronRight, Crown, Filter,
-  Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
+  FileText, Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
 } from 'lucide-react';
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
+import CommissionForm from '../components/CommissionForm.jsx';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
@@ -333,6 +334,7 @@ function TalentDetailModal({ player, onClose }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+  const [showCommission, setShowCommission] = useState(false);
   if (!player) return null;
   const lime = '#c6ff3a';
   const muted = '#9aa4b2';
@@ -397,6 +399,12 @@ function TalentDetailModal({ player, onClose }) {
           </button>
         </div>
 
+        {/* ── Discovery Dossier (quiet) ── */}
+        <div style={{padding:'0 26px 18px'}}>
+          <button type="button" onClick={() => setShowCommission(true)} style={{width:'100%',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,background:'transparent',color:'#9aa4b2',border:'1px solid #232b34',borderRadius:10,padding:'10px 14px',fontFamily:"'Barlow Condensed', sans-serif",fontSize:12,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer'}}><FileText size={13}/> Commission a Discovery Dossier · $499</button>
+          <div style={{textAlign:'center',fontSize:11,color:'#5f6976',marginTop:8,lineHeight:1.5}}>Should your club bet on him? A commissioned brief on the ceiling, the pathway and the risk.</div>
+        </div>
+
         {/* ── Share bar ── */}
         <div style={{padding:'0 26px 22px'}}>
           <ShareBar
@@ -405,6 +413,8 @@ function TalentDetailModal({ player, onClose }) {
             label={false}
           />
         </div>
+
+        {showCommission && <CommissionForm player={{ name: player.name, apiPlayerId: playerApiId(player), pos: player.position }} club={{ name: player.club }} dossierType="discovery" onClose={() => setShowCommission(false)} />}
       </div>
     </div>
   );
@@ -537,7 +547,7 @@ export default function Talents() {
       <div className="td-header">
         <div className="td-title">
           <div className="td-title-icon"><Zap size={20}/></div>
-          <div><h1>Talent <em>Discovery</em></h1><p>Discover, compare and project the next generation of footballers.</p></div>
+          <div><h1>Talent <em>Discovery</em></h1><p>Find the players nobody is watching — and decide which ones are worth betting on.</p></div>
         </div>
         <div className="td-header-stats"><span><b>{liveMode ? liveTalents.length : sourceTalents.length}</b> {liveMode ? 'live matches' : 'indexed'}</span><span><b>{shortlist.length}</b> shortlisted</span></div>
       </div>

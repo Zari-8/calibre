@@ -161,9 +161,9 @@ function MatchroomChip({ match, onOpen }) {
   return (
     <button type="button" onClick={onOpen} style={{ display:'flex', flexDirection:'column', gap:8, textAlign:'left', background:'#0c0c0e', border:'1px solid #1c1c1c', borderRadius:10, padding:'12px 14px', cursor:'pointer', color:'#ddd', width:'100%' }}>
       <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:14, fontWeight:700 }}>
-        <ApiTeamLogo src={match.homeLogo} name={match.home} /><span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{match.home}</span>
+        <ApiTeamLogo src={match.homeLogo} name={match.home} style={{ width:22, height:22, objectFit:'contain', flexShrink:0 }} /><span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{match.home}</span>
         <em style={{ color:'#666', fontStyle:'normal', fontSize:11 }}>vs</em>
-        <span style={{ flex:1, textAlign:'right', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{match.away}</span><ApiTeamLogo src={match.awayLogo} name={match.away} />
+        <span style={{ flex:1, textAlign:'right', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{match.away}</span><ApiTeamLogo src={match.awayLogo} name={match.away} style={{ width:22, height:22, objectFit:'contain', flexShrink:0 }} />
       </div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', fontSize:11, color:'#888' }}>
         <span style={{ display:'inline-flex', alignItems:'center', gap:4 }}><Clock3 size={11}/> {match.kickoff || 'TBC'}</span>

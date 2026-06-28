@@ -17,10 +17,10 @@ import { resolveTier, can } from '../services/access.js';
 // ── Styles ───────────────────────────────────────────────────────────────────
 const btnStyle = {
   display: 'inline-flex', alignItems: 'center', gap: 8,
-  background: 'transparent', color: '#c8ff00',
-  border: '1px solid #c8ff00', padding: '10px 16px',
+  background: 'transparent', color: '#9a9a9a',
+  border: '1px solid #2a2a2a', padding: '7px 12px',
   fontFamily: "'Barlow Condensed', sans-serif",
-  fontSize: 12, fontWeight: 800, letterSpacing: '0.15em',
+  fontSize: 11, fontWeight: 800, letterSpacing: '0.1em',
   textTransform: 'uppercase', cursor: 'pointer',
   transition: 'all 0.15s',
 };

@@ -1,12 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, Bookmark, BookmarkCheck, ChevronRight, Crown, Filter,
-  Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
+  FileText, Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
 } from 'lucide-react';
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
+import CommissionForm from '../components/CommissionForm.jsx';
+import DiscoveryDossier from '../components/DiscoveryDossier.jsx';
+import useAuth from '../hooks/useAuth.js';
+import { resolveTier, can } from '../services/access.js';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
@@ -327,13 +331,29 @@ function Pathway({ player }) {
   );
 }
 
-function TalentDetailModal({ player, onClose }) {
+function TalentDetailModal({ player, pool = [], onClose }) {
   useEffect(() => {
     function onKey(event) { if (event.key === 'Escape') onClose(); }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
+  const [showCommission, setShowCommission] = useState(false);
+  const [showDossier, setShowDossier] = useState(false);
+  const { user: dossierUser } = useAuth();
+  const canGenerateDossier = can(resolveTier(dossierUser?.email), 'valuation.dossier');
   if (!player) return null;
+  // Real DB comparables from the loaded talent pool: closest-rated same-position
+  // talents, excluding the player himself (falls back to the whole pool if the
+  // position is sparse).
+  const _norm = v => (v || '').toString().trim().toUpperCase();
+  const _ppos = _norm(player.position || player.role);
+  const _others = (pool || []).filter(p => p && p.name !== player.name);
+  let _peers = _others.filter(p => _norm(p.position || p.role) === _ppos);
+  if (_peers.length < 3) _peers = _others;
+  const dossierComparables = _peers
+    .map(p => ({ ...p, _d: Math.abs((Number(p.rating) || 0) - (Number(player.rating) || 0)) }))
+    .sort((a, b) => a._d - b._d)
+    .slice(0, 4);
   const lime = '#c6ff3a';
   const muted = '#9aa4b2';
   const isReg = player.source === 'supabase-registry';
@@ -397,6 +417,13 @@ function TalentDetailModal({ player, onClose }) {
           </button>
         </div>
 
+        {/* ── Discovery Dossier (quiet) ── */}
+        <div style={{padding:'0 26px 18px'}}>
+          <button type="button" onClick={() => setShowCommission(true)} style={{width:'100%',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,background:'transparent',color:'#9aa4b2',border:'1px solid #232b34',borderRadius:10,padding:'10px 14px',fontFamily:"'Barlow Condensed', sans-serif",fontSize:12,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer'}}><FileText size={13}/> Commission a Discovery Dossier · $499</button>
+          <div style={{textAlign:'center',fontSize:11,color:'#5f6976',marginTop:8,lineHeight:1.5}}>Should your club bet on him? A commissioned brief on the ceiling, the pathway and the risk.</div>
+          {canGenerateDossier && <button type="button" onClick={() => setShowDossier(true)} style={{width:'100%',marginTop:10,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,background:'#c8ff00',color:'#0a0a0a',border:'none',borderRadius:10,padding:'9px 14px',fontFamily:"'Barlow Condensed', sans-serif",fontSize:11,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer'}}>Generate Discovery dossier \u2192</button>}
+        </div>
+
         {/* ── Share bar ── */}
         <div style={{padding:'0 26px 22px'}}>
           <ShareBar
@@ -405,6 +432,9 @@ function TalentDetailModal({ player, onClose }) {
             label={false}
           />
         </div>
+
+        {showCommission && <CommissionForm player={{ name: player.name, apiPlayerId: playerApiId(player), pos: player.position }} club={{ name: player.club }} dossierType="discovery" onClose={() => setShowCommission(false)} />}
+        {showDossier && <DiscoveryDossier player={player} buyerKind="club" recipient={dossierUser?.email} comparables={dossierComparables} onClose={() => setShowDossier(false)} />}
       </div>
     </div>
   );
@@ -537,7 +567,7 @@ export default function Talents() {
       <div className="td-header">
         <div className="td-title">
           <div className="td-title-icon"><Zap size={20}/></div>
-          <div><h1>Talent <em>Discovery</em></h1><p>Discover, compare and project the next generation of footballers.</p></div>
+          <div><h1>Talent <em>Discovery</em></h1><p>Find the players nobody is watching — and decide which ones are worth betting on.</p></div>
         </div>
         <div className="td-header-stats"><span><b>{liveMode ? liveTalents.length : sourceTalents.length}</b> {liveMode ? 'live matches' : 'indexed'}</span><span><b>{shortlist.length}</b> shortlisted</span></div>
       </div>
@@ -607,7 +637,7 @@ export default function Talents() {
         <button type="button" className="btn btn--lime" onClick={()=>navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14}/></button>
       </div>
 
-      <TalentDetailModal player={detailPlayer} onClose={()=>setDetailPlayer(null)}/>
+      <TalentDetailModal player={detailPlayer} pool={sourceTalents} onClose={()=>setDetailPlayer(null)}/>
     </div>
   );
 }

@@ -65,7 +65,7 @@ function Bar({ label, value }) {
   );
 }
 
-export default function Dossier({ player, team, valuation, fit, dealVerdict, verdict, sysFit, comparables = [], askingPrice, marketValue, onClose }) {
+export default function Dossier({ player, team, valuation, fit, dealVerdict, verdict, sysFit, comparables = [], askingPrice, marketValue, recipient, onClose }) {
   useEffect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -161,7 +161,15 @@ export default function Dossier({ player, team, valuation, fit, dealVerdict, ver
       </div>
 
       {/* document */}
-      <div className="dossier-doc" style={{ maxWidth: 860, margin: '24px auto', background: '#0c0c0c', border: '1px solid #1c1c1c', color: '#e8e8e8' }}>
+      <div className="dossier-doc" style={{ position: 'relative', overflow: 'hidden', maxWidth: 860, margin: '24px auto', background: '#0c0c0c', border: '1px solid #1c1c1c', color: '#e8e8e8' }}>
+
+        {(() => { const mark = recipient ? String(recipient).toUpperCase() : 'CALIBRE · PREVIEW'; return (
+          <div aria-hidden style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 1, opacity: 0.045 }}>
+            {Array.from({ length: 11 }).map((_, r) => (
+              <div key={r} style={{ position: 'absolute', top: `${r * 10 - 4}%`, left: '-12%', right: '-12%', transform: 'rotate(-24deg)', whiteSpace: 'nowrap', fontFamily: BC, fontSize: 30, fontWeight: 800, letterSpacing: '0.3em', color: '#fff', textTransform: 'uppercase' }}>{`${mark}   `.repeat(8)}</div>
+            ))}
+          </div>
+        ); })()}
 
         {/* COVER */}
         <div className="dossier-section" style={{ padding: '40px 44px', borderBottom: `2px solid ${LIME}` }}>

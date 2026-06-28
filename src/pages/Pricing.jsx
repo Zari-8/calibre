@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Crown, Check, Clock, ArrowRight, BarChart3, ShieldCheck } from 'lucide-react';
+import { Crown, Check, Clock, ArrowRight, BarChart3, ShieldCheck, FileText } from 'lucide-react';
 import PremierBetBanner from '../components/PremierBetBanner.jsx';
+import { navigateTo } from '../components/NavLink.jsx';
 
 const PLANS = [
   {
@@ -8,15 +9,16 @@ const PLANS = [
     name: 'Free',
     price: '$0',
     period: 'forever',
-    tagline: 'For casual fans and public debate traffic.',
+    tagline: 'For fans and first-time scouts.',
     badge: null,
     cta: 'Get started free',
     ctaStyle: 'outline',
     paymentEnabled: false,
     features: [
-      'Basic Rate Battles',
-      'Current-season comparisons',
-      'Limited player pages',
+      'Player database + Calibre ratings',
+      'Transfer verdict + Calibre Value',
+      'Basic System Fit score',
+      'Rate Battles + GOAT vote (always free)',
       'Public debate feed',
     ],
     disabled: false,
@@ -26,7 +28,7 @@ const PLANS = [
     name: 'Pro',
     price: '$4.99',
     period: '/month',
-    tagline: 'For serious fans and creators.',
+    tagline: 'For serious fans, creators and analysts.',
     badge: 'MOST POPULAR',
     cta: 'Start Pro',
     ctaStyle: 'lime',
@@ -34,12 +36,12 @@ const PLANS = [
     product: 'pro',
     features: [
       'Everything in Free',
-      'GOAT debate tools',
-      'Deeper player comparisons',
-      'PDF and CSV report exports',
+      'Full valuation breakdown — fair range, max bid, premium, age curve',
+      'Unlimited analyses',
       'Watchlists',
-      'Extended history',
       'Advanced filters',
+      'Player comparison exports (PDF/CSV)',
+      'Extended history',
     ],
     disabled: false,
   },
@@ -48,18 +50,20 @@ const PLANS = [
     name: 'Scout',
     price: '$19',
     period: '/month',
-    tagline: 'For analysts, scouts and academy staff.',
+    tagline: 'For analysts, scouts and content creators.',
     badge: 'COMING SOON',
     cta: 'Join waitlist',
     ctaStyle: 'outline',
     paymentEnabled: false,
     features: [
       'Everything in Pro',
-      'Youth trajectory data',
-      'Career pathway modelling',
-      'Larger watchlists',
-      'Similar-player finder',
-      'Scout notes and exports',
+      'Full System Fit desk — breakdown, role radar, best-fit ranking',
+      'Compare two live players',
+      'Comparables / similar-player finder',
+      'Deal Report PDF',
+      'System Fit exports (PDF/CSV)',
+      { text: 'Youth trajectory data', soon: true },
+      { text: 'Career pathway modelling', soon: true },
     ],
     disabled: true,
   },
@@ -68,17 +72,18 @@ const PLANS = [
     name: 'Club',
     price: '$99',
     period: '/month',
-    tagline: 'For clubs, agencies and media teams.',
+    tagline: 'For clubs, agencies and recruitment desks.',
     badge: 'COMING SOON',
-    cta: 'Join waitlist',
+    cta: 'Contact us',
     ctaStyle: 'outline',
     paymentEnabled: false,
     features: [
       'Everything in Scout',
-      'Team workflows',
-      'Higher data limits',
-      'Deeper API access',
-      'Custom contracts available',
+      { text: 'Team seats & shared shortlists', soon: true },
+      { text: 'Collaborative recruitment board', soon: true },
+      { text: 'Higher data limits', soon: true },
+      { text: 'API access', soon: true },
+      'Custom contracts — talk to us',
     ],
     disabled: true,
   },
@@ -156,12 +161,16 @@ function PlanCard({ plan, loading, setLoading }) {
       <p className="pricing-tagline">{plan.tagline}</p>
 
       <ul className="pricing-features">
-        {plan.features.map((feature) => (
-          <li key={feature}>
-            <Check size={14} />
-            {feature}
+        {plan.features.map((feature) => {
+          const text = typeof feature === 'object' ? feature.text : feature;
+          const soon = typeof feature === 'object' && feature.soon;
+          return (
+          <li key={text} style={soon ? { opacity: 0.5 } : undefined}>
+            {soon ? <Clock size={14} /> : <Check size={14} />}
+            {text}{soon && <span style={{ fontSize: 9, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#888', marginLeft: 6 }}>soon</span>}
           </li>
-        ))}
+          );
+        })}
       </ul>
 
       <button
@@ -244,6 +253,17 @@ export default function Pricing() {
           />
         ))}
       </div>
+
+      <section className="dossier-addon" style={{ margin: '8px 0 4px', background: 'linear-gradient(180deg,#0c0d0a,#0a0a0a)', border: '1px solid #1c1c1c', borderLeft: '3px solid #c8ff00', borderRadius: 10, padding: '20px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+          <FileText size={26} color="#c8ff00" style={{ flexShrink: 0 }} />
+          <div>
+            <strong style={{ display: 'block', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800, textTransform: 'uppercase', color: '#fff' }}>Commission a Dossier — $499</strong>
+            <span style={{ color: '#9a9a9a', fontSize: 13, lineHeight: 1.5 }}>A decision-grade scouting brief on any player or talent — the 40-point Director-of-Football framework, or the development-tuned Discovery Dossier for an under-the-radar prospect. One-time, delivered as a watermarked PDF.</span>
+          </div>
+        </div>
+        <button type="button" onClick={() => navigateTo('/talents')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#c8ff00', border: '1px solid #c8ff00', borderRadius: 6, padding: '10px 18px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>Explore on Talents <ArrowRight size={13} /></button>
+      </section>
 
       <PremierBetBanner source="pricing" variant="card" />
 

@@ -40,9 +40,9 @@ const CAPABILITIES = {
 
   // System Fit
   'fit.score':               'free',    // fit score visible (capped volume for free)
-  'fit.full':                'club',    // key stats, role radar, lineup, best-fit ranking
-  'fit.compare':             'club',    // compare two live players
-  'fit.export':              'club',    // export fit / comparison PDF or CSV
+  'fit.full':                'scout',   // key stats, role radar, lineup, best-fit ranking
+  'fit.compare':             'scout',   // compare two live players
+  'fit.export':              'scout',   // export fit / comparison PDF or CSV
 
   // Volume
   'volume.unlimited':        'pro',     // unlimited analyses (free is rate-capped)

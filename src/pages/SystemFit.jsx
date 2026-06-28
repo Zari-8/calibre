@@ -395,8 +395,8 @@ function SystemFitLock({ mode }) {
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a6ff00" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
       </div>
       <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 800, textTransform: 'uppercase', margin: 0 }}>{isCompare ? 'Compare players' : 'The full System Fit desk'}</h3>
-      <p style={{ color: '#999', maxWidth: 440, margin: '10px auto 18px', lineHeight: 1.6 }}>{isCompare ? 'Put two real players head-to-head across the six tactical dimensions for a club \u2014 part of the Club recruitment desk.' : 'Fit breakdown, role-fit map, tactical read and key stats \u2014 the full recruitment-desk analysis, available on Club.'}</p>
-      <button type="button" className="btn btn--lime btn--sm" onClick={() => navigateTo('/pricing')}>UNLOCK WITH CLUB <ArrowRight size={13} /></button>
+      <p style={{ color: '#999', maxWidth: 440, margin: '10px auto 18px', lineHeight: 1.6 }}>{isCompare ? 'Put two real players head-to-head across the six tactical dimensions for a club \u2014 part of the Scout toolkit.' : 'Fit breakdown, role-fit map, tactical read and key stats \u2014 the full analysis, available on Scout.'}</p>
+      <button type="button" className="btn btn--lime btn--sm" onClick={() => navigateTo('/pricing')}>UNLOCK WITH SCOUT <ArrowRight size={13} /></button>
     </section>
   );
 }
@@ -692,8 +692,8 @@ export default function SystemFit() {
         </div>
         <div className="sf-mode-tabs">
           <button type="button" className={mode === 'fit' ? 'active' : ''} onClick={() => setMode('fit')}>SYSTEM FIT</button>
-          <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER{!canCompare && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, opacity: 0.85 }}>CLUB</span>}</button>
-          <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS{!canFitFull && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, opacity: 0.85 }}>CLUB</span>}</button>
+          <button type="button" className={mode === 'compare' ? 'active' : ''} onClick={() => setMode('compare')}>COMPARE PLAYER{!canCompare && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, opacity: 0.85 }}>SCOUT</span>}</button>
+          <button type="button" className={mode === 'analysis' ? 'active' : ''} onClick={() => setMode('analysis')}>DETAILED ANALYSIS{!canFitFull && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, opacity: 0.85 }}>SCOUT</span>}</button>
         </div>
         <FitIntelligenceDashboard report={report} mode={mode} comparison={comparison} challenger={challenger} canFitFull={canFitFull} />
         {mode === 'compare' && (canCompare ? <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} /> : <SystemFitLock mode="compare" />)}

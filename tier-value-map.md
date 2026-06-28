@@ -7,6 +7,14 @@ All prices **USD** (the live page is in dollars; the dossier moves from €499 �
 
 ---
 
+## Go-to-market note (influencer-first)
+
+First customers are **influencers/analysts**, not clubs — people who'll pay ~$25
+to access System Fit so they can sound expert on their platforms. Clubs move last,
+once there's noise. So **System Fit lives at Scout**, not Club. Club becomes the
+pure team/enterprise tier (seats, shared workflows, API, custom contracts) — the
+things only an organisation needs. The analysis is Scout; the org tooling is Club.
+
 ## Reconciliation note
 
 The live pricing page was written in *debate / fan* language ("Rate Battles",
@@ -34,9 +42,9 @@ Legend: **[live]** = built & gated in code · **[planned]** = on the page, not b
 | **Deal Report PDF** (scout notes & exports) | — | — | ✓ | ✓ | [live] `valuation.report` |
 | Youth trajectory · career pathway modelling | — | — | ✓ | ✓ | [planned] |
 | System Fit score (basic) | ✓ (capped) | ✓ | ✓ | ✓ | [live] `fit.score` |
-| **Full System Fit desk** (breakdown, role radar, lineup, best-fit ranking) | — | — | — | ✓ | [live] `fit.full` |
-| **Compare two live players** | — | — | — | ✓ | [live] `fit.compare` |
-| **System Fit / bulk CSV exports** | — | — | — | ✓ | [live] `fit.export` |
+| **Full System Fit desk** (breakdown, role radar, lineup, best-fit ranking) | — | — | ✓ | ✓ | [live] `fit.full` |
+| **Compare two live players** | — | — | ✓ | ✓ | [live] `fit.compare` |
+| **System Fit exports (PDF/CSV)** | — | — | ✓ | ✓ | [live] `fit.export` |
 | Team workflows (seats, shared lists) | — | — | — | ✓ | [planned] |
 | Higher data limits · deeper API access | — | — | — | ✓ | [planned] |
 | Custom contracts | — | — | — | ✓ | sales hook |
@@ -52,7 +60,7 @@ different artifacts — keep them separate on the page:
 
 - **Pro** → debate-card / player-comparison exports (the fan product)
 - **Scout** → the **Deal Report PDF** (`valuation.report`) — a scouting artifact
-- **Club** → **System Fit exports + bulk CSV** (`fit.export`, `export.csv`)
+- **Scout** → **System Fit exports (PDF/CSV)** (`fit.export`)
 
 No code change needed; the page wording just needs to distinguish them.
 
@@ -111,5 +119,5 @@ Keep (1) as the Club "Contact us" line; promote (2) to a visible Dossier add-on.
 Every gate reads `can(tier, capability)` against `free < pro < scout < club <
 founder`. To add a gate: one line in the `CAPABILITIES` map + one `can()` call at
 the feature. Current gates: `valuation.breakdown` (Pro+), `valuation.comparables`
-/ `valuation.report` (Scout+), `valuation.dossier` / `fit.full` / `fit.compare` /
-`fit.export` (Club+), `volume.unlimited` (Pro+).
+/ `valuation.report` / `fit.full` / `fit.compare` / `fit.export` (Scout+),
+`valuation.dossier` (Club+), `volume.unlimited` (Pro+).

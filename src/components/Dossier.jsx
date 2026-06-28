@@ -16,6 +16,7 @@
 // rather than faked.
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 const LIME = '#c8ff00';
 const INK = '#0a0a0a';
@@ -138,16 +139,19 @@ export default function Dossier({ player, team, valuation, fit, dealVerdict, ver
 
   const btn = { fontFamily: BC, fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', padding: '10px 18px', cursor: 'pointer', border: '1px solid', background: 'transparent' };
 
-  return (
+  return createPortal((
     <div className="dossier-overlay" style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 4000, overflowY: 'auto', padding: '0 0 60px' }}>
       <style>{`
         @media print {
+          @page { margin: 12mm; size: A4; }
+          html, body { background: #0a0a0a !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          body > *:not(.dossier-overlay) { display: none !important; }
           .dossier-toolbar { display: none !important; }
-          .dossier-overlay { position: static !important; background: #0a0a0a !important; overflow: visible !important; padding: 0 !important; }
-          .dossier-doc { box-shadow: none !important; border: none !important; margin: 0 !important; max-width: 100% !important; }
+          .dossier-overlay { position: static !important; background: #0a0a0a !important; overflow: visible !important; padding: 0 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .dossier-overlay * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          .dossier-doc { box-shadow: none !important; border: none !important; margin: 0 auto !important; max-width: 100% !important; }
           .dossier-section { break-inside: avoid; page-break-inside: avoid; }
           .dossier-pb { break-before: page; page-break-before: always; }
-          @page { margin: 12mm; size: A4; }
         }
       `}</style>
 
@@ -357,5 +361,5 @@ export default function Dossier({ player, team, valuation, fit, dealVerdict, ver
         </div>
       </div>
     </div>
-  );
+  ), document.body);
 }

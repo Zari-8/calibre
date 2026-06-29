@@ -104,12 +104,84 @@ function average(values) {
 // One formula, used by BOTH the System Fit page (buildSystemFitReport) and the
 // Transfers page (computeSystemFit), so the same player x club scores identically
 // on both. Traits come from the shared engine in services/playerTraits.js.
+//
+// v2: weighted, punishing distance. The old version averaged six
+// (100 - |gap|) terms and clamped to 58..97 — which made every player
+// score 80s-90s for every team (especially when traits were missing and
+// defaulted to 75-vs-75 = a perfect 100 on that axis). The new version:
+//   - weights the identity axes (control/transition/pressing) heaviest
+//   - uses squared distance so big tactical gaps are punished hard
+//   - spans 32..99 so good and bad fits actually separate
+//   - returns null when there's no real data to score on (see fitDetail)
+
+const FIT_DIMS = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
+const FIT_WEIGHTS = { control: 1.4, transition: 1.3, pressing: 1.3, width: 0.9, tempo: 0.8, defensiveLoad: 1.1 };
+
+// Does this team carry a real tactical profile (curated or derived),
+// as opposed to a generic API placeholder with no traits?
+function teamHasProfile(team) {
+  return !!(team && team.traits && Object.keys(team.traits).length >= 4);
+}
+
+// Raw weighted-distance score from two trait sets. Assumes both are real.
+function rawFit(traits, teamTraits) {
+  let acc = 0, wsum = 0;
+  for (const k of FIT_DIMS) {
+    const p = traits[k] ?? 70;
+    const t = teamTraits[k] ?? 70;
+    const d = Math.abs(p - t);
+    acc += FIT_WEIGHTS[k] * (d * d);
+    wsum += FIT_WEIGHTS[k];
+  }
+  const rmsd = Math.sqrt(acc / wsum);            // ~0..50 in "points"
+  const score = Math.round(99 - rmsd * 2.0 - (rmsd * rmsd) / 40);
+  return Math.max(32, Math.min(99, score));
+}
+
+// Backwards-compatible signature: returns a number. Used by existing call
+// sites that expect a plain score. Falls back to a neutral 70 only when a
+// real score genuinely can't be computed (so old call sites never crash),
+// but the page should prefer fitDetail() which exposes confidence.
 export function systemFitScore(traits, team) {
-  const dims = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
   const tt = (team && team.traits) || {};
-  const scores = dims.map(k => 100 - Math.abs((traits?.[k] ?? 75) - (tt[k] ?? 75)));
-  const raw = scores.reduce((a, b) => a + b, 0) / dims.length;
-  return Math.min(97, Math.max(58, Math.round(raw)));
+  if (!traits || !teamHasProfile(team)) return 70;
+  return rawFit(traits, tt);
+}
+
+// Richer result: score + confidence + the dimensional gaps that drive it.
+// confidence: 'high' (real player traits + real team profile),
+//             'team' (player ok, team has no profile),
+//             'player' (team ok, player has no match data),
+//             'none'  (neither).
+// hasStats tells us whether the player's traits are backed by match data.
+export function fitDetail(player, team, hasStats) {
+  const pt = player?.traits || {};
+  const realTeam = teamHasProfile(team);
+  const realPlayer = !!hasStats && pt && Object.keys(pt).length >= 4;
+
+  if (!realPlayer && !realTeam) {
+    return { score: null, confidence: 'none',
+      note: 'Neither this player nor this club has enough data to compute a tactical fit yet.' };
+  }
+  if (!realPlayer) {
+    return { score: null, confidence: 'player',
+      note: 'This player has no match data yet, so tactical fit cannot be computed. Rating and profile fill in once he logs minutes in a covered competition.' };
+  }
+  if (!realTeam) {
+    return { score: null, confidence: 'team',
+      note: 'This club has no tactical profile yet (outside the covered leagues), so fit cannot be computed against it.' };
+  }
+
+  const tt = team.traits;
+  const score = rawFit(pt, tt);
+  // Per-axis gap detail, for the read.
+  const gaps = FIT_DIMS.map(k => ({
+    axis: k,
+    player: pt[k] ?? 70,
+    team: tt[k] ?? 70,
+    gap: (pt[k] ?? 70) - (tt[k] ?? 70),
+  }));
+  return { score, confidence: 'high', note: null, gaps };
 }
 
 function compatibility(player, team) {
@@ -134,46 +206,119 @@ export function computeSystemFit(player, team) {
 }
 
 function verdictFor(score) {
-  if (score >= 90) return 'Elite fit';
-  if (score >= 84) return 'Excellent fit';
-  if (score >= 78) return 'Very good fit';
-  if (score >= 70) return 'Good fit';
-  return 'Conditional fit';
+  if (score >= 86) return 'Elite fit';
+  if (score >= 76) return 'Strong fit';
+  if (score >= 64) return 'Workable fit';
+  if (score >= 50) return 'Compromise fit';
+  return 'Poor fit';
+}
+
+// Human-readable axis labels for the read.
+const AXIS_LABEL = {
+  control: 'possession control',
+  transition: 'vertical transition',
+  pressing: 'pressing intensity',
+  width: 'natural width',
+  tempo: 'ball-circulation tempo',
+  defensiveLoad: 'defensive workload',
+};
+
+// Build strengths/risks from the real per-axis gaps, so two different
+// players (or the same player at two clubs) get genuinely different reads.
+function readFromGaps(player, team, gaps) {
+  // sort by where the player most exceeds the team (strengths) and most
+  // falls short (risks)
+  const sorted = [...gaps].sort((a, b) => b.gap - a.gap);
+  const aligned = [...gaps].sort((a, b) => Math.abs(a.gap) - Math.abs(b.gap));
+
+  const topStrength = sorted[0];
+  const matched = aligned[0];
+  const shortfall = sorted[sorted.length - 1];
+
+  const strengths = [];
+  if (topStrength.gap > 6) {
+    strengths.push(`${player.name} brings clearly more ${AXIS_LABEL[topStrength.axis]} than ${team.short} currently has — a dimension he upgrades on arrival.`);
+  } else {
+    strengths.push(`${player.name} matches ${team.short}'s level across the board without a single weak axis — a clean, low-friction profile fit.`);
+  }
+  strengths.push(`The tightest alignment is ${AXIS_LABEL[matched.axis]} (he sits ${Math.abs(matched.gap)} pts from the team baseline), so that part of the game needs no adjustment.`);
+
+  const risks = [];
+  if (shortfall.gap < -8) {
+    risks.push(`He trails ${team.short}'s demands on ${AXIS_LABEL[shortfall.axis]} by ${Math.abs(shortfall.gap)} pts — the system would have to cover that gap around him.`);
+  } else {
+    risks.push(`No axis is a serious mismatch; the main question is role design rather than profile.`);
+  }
+  if (player.traits.defensiveLoad < team.traits.defensiveLoad - 8) {
+    risks.push(`His defensive workload runs below what ${team.short} asks, so the surrounding structure must shield that.`);
+  } else if (player.traits.width < team.traits.width - 8) {
+    risks.push(`He shouldn't be asked to provide ${team.short}'s width by himself — pair him with an overlapping runner.`);
+  } else {
+    risks.push(`Against deep blocks his decisive actions need a clear, defined role rather than a roaming brief.`);
+  }
+
+  return { strengths, risks };
 }
 
 export function buildSystemFitReport(player, team) {
-  const score = compatibility(player, team);
+  const detail = fitDetail(player, team, player?._hasStats !== false);
+  const score = detail.score;
+
+  // When we can't honestly score (thin player or unprofiled club), return a
+  // report that says so rather than inventing an elite verdict.
+  if (score == null) {
+    return {
+      generatedAt: new Date().toISOString(),
+      player, team,
+      score: null,
+      verdict: 'Insufficient data',
+      note: detail.note,
+      breakdown: [],
+      rolePulse: player?.roleMetrics ? Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })) : [],
+      alternativeFits: SYSTEM_TEAMS
+        .map(c => {
+          const d = fitDetail(player, c, player?._hasStats !== false);
+          return { ...c, score: d.score, verdict: d.score == null ? '—' : verdictFor(d.score) };
+        })
+        .filter(c => c.score != null)
+        .sort((a, b) => b.score - a.score),
+      primaryRoles: ROLE_MAP[player?.archetype] ?? ['Hybrid role', 'Flexible starter', 'Rotation option'],
+      strengths: [],
+      risks: [],
+      conclusion: detail.note,
+    };
+  }
+
+  const gaps = detail.gaps;
+  // Breakdown now reflects the REAL dimensional alignment, not score+4.
   const breakdown = [
-    ['Role compatibility', Math.min(97, score + 4)],
-    ['System demands', Math.min(96, score + 1)],
-    ['Possession value', Math.round((player.traits.control + team.traits.control) / 2)],
-    ['Transition value', Math.round((player.traits.transition + team.traits.transition) / 2)],
-    ['Pressing match', Math.round((player.traits.pressing + team.traits.pressing) / 2)],
+    ['Role compatibility', score],
+    ['Possession value', 100 - Math.abs((player.traits.control ?? 70) - (team.traits.control ?? 70))],
+    ['Transition value', 100 - Math.abs((player.traits.transition ?? 70) - (team.traits.transition ?? 70))],
+    ['Pressing match', 100 - Math.abs((player.traits.pressing ?? 70) - (team.traits.pressing ?? 70))],
+    ['Width fit', 100 - Math.abs((player.traits.width ?? 70) - (team.traits.width ?? 70))],
     ['Development ceiling', Math.min(96, player.age <= 23 ? player.rating + 3 : player.rating)],
-  ].map(([label, value]) => ({ label, value }));
+  ].map(([label, value]) => ({ label, value: Math.max(20, Math.min(99, Math.round(value))) }));
 
   const alternativeFits = SYSTEM_TEAMS
-    .map(candidate => ({ ...candidate, score: compatibility(player, candidate), verdict: verdictFor(compatibility(player, candidate)) }))
+    .map(candidate => {
+      const d = fitDetail(player, candidate, player?._hasStats !== false);
+      return { ...candidate, score: d.score, verdict: d.score == null ? '—' : verdictFor(d.score) };
+    })
+    .filter(c => c.score != null)
     .sort((a, b) => b.score - a.score);
 
-  const strengths = [
-    `${player.name}'s ${player.archetype.toLowerCase()} profile gives ${team.short} another route through pressure.`,
-    `${team.philosophy} rewards his strongest actions without forcing him into a generic midfield role.`,
-    `The strongest signal is ${breakdown.sort((a,b) => b.value - a.value)[0].label.toLowerCase()} at ${breakdown.sort((a,b) => b.value - a.value)[0].value}.`,
-  ];
-  const risks = [
-    player.traits.defensiveLoad < team.traits.defensiveLoad ? 'Defensive cover must be protected by the surrounding midfield structure.' : 'The workload is manageable, but role clarity matters against deep blocks.',
-    player.traits.width < team.traits.width ? 'He should not be asked to provide the team width by himself.' : 'His wide influence works best when paired with an overlapping runner.',
-  ];
-  const conclusion = score >= 84
-    ? `${player.name} improves ${team.short} because the profile changes the attack without breaking the structure. The fit is not about squeezing him into every phase. It is about giving his decisive actions the right platform.`
-    : `${player.name} can work at ${team.short}, but the system would need to bend around his best actions. The talent is obvious. The role design is the real question.`;
+  const { strengths, risks } = readFromGaps(player, team, gaps);
+
+  const conclusion = score >= 76
+    ? `${player.name} improves ${team.short} because the profile changes the attack without breaking the structure — the decisive actions get the right platform.`
+    : score >= 64
+    ? `${player.name} can work at ${team.short}, but the system would have to bend around his best actions. The talent is clear; the role design is the real question.`
+    : `${player.name} is a poor structural fit for ${team.short} as currently set up — the tactical demands pull against his strengths rather than with them.`;
 
   return {
     generatedAt: new Date().toISOString(),
-    player,
-    team,
-    score,
+    player, team, score,
     verdict: verdictFor(score),
     breakdown,
     rolePulse: Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })),

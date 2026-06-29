@@ -8,7 +8,7 @@ import { searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { searchSupabasePlayers } from '../services/supabasePlayers.js';
-import { getDerivedTeamProfile } from '../services/derivedTeams.js';
+import { loadDerivedTeams, enrichFromDerived } from '../services/derivedTeams.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
 import { playerIdFor } from '../data/playerIds.js';
@@ -25,42 +25,24 @@ import {
 // Export access is resolved per-user via services/access.js (owner allowlist +
 // paid tier), consistent with the PDF report and dossier gating.
 
-// Synchronous fallback for an API-Football club with no derived profile yet.
-// IMPORTANT: this used to inherit SYSTEM_TEAMS[0] (Man City) traits, which made
-// every uncovered club score as if it played like City. We now fall to a NEUTRAL
-// profile so an unknown club reads as genuinely unknown, not as City.
 function normalizeApiTeam(team) {
+  // If we have a derived profile for this club (real traits from API-Football
+  // stats), use it instead of the generic "pending enrichment" placeholder.
+  const derived = enrichFromDerived(team);
+  if (derived) return derived;
+
   return {
+    ...SYSTEM_TEAMS[0],
     id: team.id,
     name: team.name,
-    short: team.short || team.name,
+    short: team.name,
     country: team.country || 'International',
     league: team.league || 'API-Football database',
     crestUrl: team.crestUrl,
     crest: team.name.split(' ').slice(0, 2).map(word => word[0]).join('').slice(0, 3).toUpperCase(),
-    formation: '4-3-3',
     philosophy: 'Data profile pending enrichment',
-    intensity: 'Medium',
-    lineHeight: 'Medium',
-    traits: { control: 72, transition: 72, pressing: 72, width: 72, tempo: 72, defensiveLoad: 72 },
     source: 'api',
   };
-}
-
-// Resolve an API club to the best available profile:
-//   derived_team_profiles (real, auto-generated)  ->  neutral fallback.
-// Curated SYSTEM_TEAMS are handled upstream (they never reach here).
-async function resolveApiTeam(team) {
-  const derived = await getDerivedTeamProfile(team.id);
-  if (derived) {
-    // keep the live crest/league label from the search hit if present
-    return {
-      ...derived,
-      crestUrl: team.crestUrl || derived.crestUrl || null,
-      league: derived.league || team.league || 'Derived profile',
-    };
-  }
-  return normalizeApiTeam(team);
 }
 
 // Trait derivation, role metrics and individual archetype labels now come from
@@ -166,14 +148,15 @@ function ScoreRing({ score, compact = false }) {
   const radius = compact ? 31 : 43;
   const width = compact ? 84 : 116;
   const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+  const hasScore = typeof score === 'number' && !Number.isNaN(score);
+  const offset = hasScore ? circumference - (score / 100) * circumference : circumference;
   return (
-    <div className={`sf-score-ring ${compact ? 'sf-score-ring--compact' : ''}`} style={{ width, height: width }}>
+    <div className={`sf-score-ring ${compact ? 'sf-score-ring--compact' : ''} ${hasScore ? '' : 'sf-score-ring--empty'}`} style={{ width, height: width }}>
       <svg width={width} height={width} viewBox={`0 0 ${width} ${width}`}>
         <circle cx={width / 2} cy={width / 2} r={radius} className="sf-ring-track" />
-        <circle cx={width / 2} cy={width / 2} r={radius} className="sf-ring-fill" strokeDasharray={circumference} strokeDashoffset={offset} />
+        {hasScore && <circle cx={width / 2} cy={width / 2} r={radius} className="sf-ring-fill" strokeDasharray={circumference} strokeDashoffset={offset} />}
       </svg>
-      <div className="sf-score-ring-value"><strong>{score}</strong><span>FIT</span></div>
+      <div className="sf-score-ring-value"><strong>{hasScore ? score : 'N/A'}</strong><span>FIT</span></div>
     </div>
   );
 }
@@ -223,16 +206,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
   const merged = [...local, ...remote.filter(item => !localIds.has(String(item.id)))].slice(0, 8);
 
   const choose = (item) => {
-    if (kind === 'team') {
-      if (String(item.source || '').startsWith('api')) {
-        // Resolve to the derived profile (real traits) before scoring,
-        // falling back to a neutral profile if none exists yet.
-        resolveApiTeam(item).then(setSelectedTeam);
-      } else {
-        setSelectedTeam(item);
-      }
-      return;
-    }
+    if (kind === 'team') { setSelectedTeam(String(item.source || '').startsWith('api') ? normalizeApiTeam(item) : item); return; }
     const src = String(item.source || '');
     setSelectedPlayer(src === 'db' ? normalizeDbPlayer(item) : src.startsWith('api') ? normalizeApiPlayer(item) : item);
   };
@@ -278,11 +252,12 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
 }
 
 function PositionBoard({ report }) {
+  const s = typeof report.score === 'number' ? report.score : null;
   const roles = [
-    { role: report.primaryRoles?.[0] || report.player.position || 'Primary', score: report.score, label: 'PRIMARY', x: 50, y: 32 },
-    { role: report.primaryRoles?.[1] || 'Secondary', score: Math.max(70, report.score - 14), label: 'SECONDARY', x: 28, y: 58 },
-    { role: report.primaryRoles?.[2] || 'Option', score: Math.max(66, report.score - 18), label: 'SECONDARY', x: 72, y: 58 },
-    { role: 'Depth option', score: Math.max(62, report.score - 25), label: 'DEPTH OPTION', x: 50, y: 78 },
+    { role: report.primaryRoles?.[0] || report.player.position || 'Primary', score: s ?? '—', label: 'PRIMARY', x: 50, y: 32 },
+    { role: report.primaryRoles?.[1] || 'Secondary', score: s == null ? '—' : Math.max(70, s - 14), label: 'SECONDARY', x: 28, y: 58 },
+    { role: report.primaryRoles?.[2] || 'Option', score: s == null ? '—' : Math.max(66, s - 18), label: 'SECONDARY', x: 72, y: 58 },
+    { role: 'Depth option', score: s == null ? '—' : Math.max(62, s - 25), label: 'DEPTH OPTION', x: 50, y: 78 },
   ];
   return (
     <div className="sf-lineup-board sf-lineup-board--dashboard" aria-label="Possible lineup positions">
@@ -353,8 +328,8 @@ function KeyStats({ report }) {
         { value: fmt(passAcc),    label: 'Pass acc.',   sub: '' },
       ]
     : [
-        { value: `${report.score}%`,                          label: 'Fit score',    sub: '' },
-        { value: `${Math.max(72, report.score)}%`,             label: 'Primary role', sub: '' },
+        { value: report.score == null ? 'N/A' : `${report.score}%`,                          label: 'Fit score',    sub: '' },
+        { value: report.score == null ? '—' : `${Math.max(72, report.score)}%`,             label: 'Primary role', sub: '' },
         { value: String(report.risks.length),                  label: 'Risk flags',   sub: '' },
         { value: report.verdict?.replace(' FIT', '') || '—',   label: 'Model read',   sub: '' },
       ];
@@ -448,6 +423,11 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger, canFit
         <div className="sf-dashboard-verdict">
           <div className="sf-kicker">DOES HE FIT?</div>
           <div className="sf-score-main"><ScoreRing score={report.score} /><div><h2>{report.verdict}</h2><p>{report.conclusion}</p></div></div>
+          {report.score == null && report.note && (
+            <div style={{ marginTop: 4, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 8, background: 'rgba(255,255,255,0.03)', fontSize: 12.5, color: '#bbb', lineHeight: 1.5 }}>
+              {report.note}
+            </div>
+          )}
           <div className="sf-dashboard-checks">
             {report.strengths.slice(0, 3).map(text => <span key={text}><CheckCircle2 size={14} />{text}</span>)}
           </div>
@@ -698,6 +678,13 @@ export default function SystemFit() {
   const [selectedPlayer, setSelectedPlayer] = useState(SYSTEM_PLAYERS[0]);
   const [challenger, setChallenger] = useState(SYSTEM_PLAYERS[1]);
   const [mode, setMode] = useState('fit');
+
+  useEffect(() => {
+    // Warm the derived-team cache so that when a user searches a club outside
+    // the curated 54, normalizeApiTeam can give it real traits instead of the
+    // generic placeholder. Fire-and-forget; failures degrade to generic.
+    loadDerivedTeams();
+  }, []);
 
   useEffect(() => {
     const playerQuery = new URLSearchParams(window.location.search).get('player');

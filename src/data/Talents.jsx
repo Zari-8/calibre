@@ -1,623 +1,529 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  ArrowRight, Bookmark, BookmarkCheck, ChevronRight, Crown, Filter,
-  FileText, Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
-} from 'lucide-react';
-import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
-import { navigateTo } from '../components/NavLink.jsx';
-import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
-import ShareBar, { shareUrl } from '../components/Share.jsx';
-import CommissionForm from '../components/CommissionForm.jsx';
-import { searchPlayerProfiles } from '../services/apiFootball.js';
-import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
-import { calibreRating, resolveRating } from '../services/calibreRating.js';
-import { deriveArchetype } from '../services/playerTraits.js';
-import { leagueContext, LEAGUES } from '../data/leagues.js';
+import { playerTraits } from '../services/playerTraits.js';
 
-// Decode HTML entities that survive in stored/imported names ("O&apos;Reilly" → "O'Reilly").
-function cleanName(value){
-  return String(value ?? '')
-    .replace(/&apos;|&#0?39;/g, "'")
-    .replace(/&quot;|&#0?34;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .trim();
-}
+export const SYSTEM_TEAMS = [
+  // ── Premier League ──
+  { id: 50, name: 'Manchester City', short: 'Man City', country: 'England', league: 'Premier League', formation: '4-3-3', philosophy: 'Territorial control', intensity: 'High', lineHeight: 'High', crest: 'MC', accent: '#6cabdd', secondary: '#1c2c5b', traits: { control: 96, transition: 80, pressing: 90, width: 86, tempo: 88, defensiveLoad: 79 } },
+  { id: 42, name: 'Arsenal', short: 'Arsenal', country: 'England', league: 'Premier League', formation: '4-3-3', philosophy: 'Structured pressure', intensity: 'High', lineHeight: 'High', crest: 'ARS', accent: '#ef0107', secondary: '#ffffff', traits: { control: 88, transition: 84, pressing: 92, width: 84, tempo: 85, defensiveLoad: 83 } },
+  { id: 40, name: 'Liverpool', short: 'Liverpool', country: 'England', league: 'Premier League', formation: '4-3-3', philosophy: 'Transition pressure', intensity: 'Very high', lineHeight: 'High', crest: 'LFC', accent: '#c8102e', secondary: '#ffffff', traits: { control: 82, transition: 96, pressing: 94, width: 84, tempo: 94, defensiveLoad: 80 } },
+  { id: 49, name: 'Chelsea', short: 'Chelsea', country: 'England', league: 'Premier League', formation: '4-2-3-1', philosophy: 'Vertical width', intensity: 'High', lineHeight: 'High', crest: 'CHE', accent: '#034694', secondary: '#ffffff', traits: { control: 80, transition: 88, pressing: 85, width: 89, tempo: 86, defensiveLoad: 74 } },
+  { id: 47, name: 'Tottenham Hotspur', short: 'Spurs', country: 'England', league: 'Premier League', formation: '4-3-3', philosophy: 'High-line verticality', intensity: 'Very high', lineHeight: 'Very high', crest: 'TOT', accent: '#132257', secondary: '#ffffff', traits: { control: 78, transition: 92, pressing: 90, width: 86, tempo: 93, defensiveLoad: 66 } },
+  { id: 34, name: 'Newcastle United', short: 'Newcastle', country: 'England', league: 'Premier League', formation: '4-3-3', philosophy: 'Aggressive duels', intensity: 'High', lineHeight: 'Medium', crest: 'NEW', accent: '#241f20', secondary: '#ffffff', traits: { control: 74, transition: 86, pressing: 88, width: 82, tempo: 84, defensiveLoad: 82 } },
 
-// Fabricated demo players removed. The discovery pool is now sourced from the
-// real Supabase registry (scored by calibreRating); live search covers the rest.
-const LOCAL_TALENTS = [];
+  // ── La Liga ──
+  { id: 529, name: 'FC Barcelona', short: 'Barcelona', country: 'Spain', league: 'La Liga', formation: '4-3-3', philosophy: 'Positional control', intensity: 'High', lineHeight: 'High', crest: 'FCB', accent: '#a50044', secondary: '#ffd700', traits: { control: 94, transition: 78, pressing: 86, width: 88, tempo: 84, defensiveLoad: 76 } },
+  { id: 541, name: 'Real Madrid', short: 'Real Madrid', country: 'Spain', league: 'La Liga', formation: '4-3-1-2', philosophy: 'Vertical dominance', intensity: 'High', lineHeight: 'Medium', crest: 'RM', accent: '#00529f', secondary: '#ffd700', traits: { control: 85, transition: 94, pressing: 79, width: 82, tempo: 91, defensiveLoad: 72 } },
+  { id: 530, name: 'Atlético Madrid', short: 'Atlético', country: 'Spain', league: 'La Liga', formation: '4-4-2', philosophy: 'Compact defensive block', intensity: 'Medium', lineHeight: 'Low', crest: 'ATM', accent: '#cb3524', secondary: '#ffffff', traits: { control: 68, transition: 80, pressing: 74, width: 70, tempo: 72, defensiveLoad: 95 } },
+  { id: 531, name: 'Athletic Club', short: 'Athletic', country: 'Spain', league: 'La Liga', formation: '4-2-3-1', philosophy: 'Direct intensity', intensity: 'High', lineHeight: 'Medium', crest: 'ATH', accent: '#ee2523', secondary: '#ffffff', traits: { control: 72, transition: 84, pressing: 86, width: 80, tempo: 82, defensiveLoad: 80 } },
+  { id: 533, name: 'Villarreal', short: 'Villarreal', country: 'Spain', league: 'La Liga', formation: '4-4-2', philosophy: 'Patient possession', intensity: 'Medium', lineHeight: 'Medium', crest: 'VIL', accent: '#ffe667', secondary: '#005187', traits: { control: 82, transition: 76, pressing: 72, width: 78, tempo: 78, defensiveLoad: 74 } },
+  { id: 548, name: 'Real Sociedad', short: 'Real Sociedad', country: 'Spain', league: 'La Liga', formation: '4-3-3', philosophy: 'Positional rotations', intensity: 'High', lineHeight: 'Medium', crest: 'RSO', accent: '#143c8b', secondary: '#ffffff', traits: { control: 84, transition: 78, pressing: 82, width: 80, tempo: 80, defensiveLoad: 76 } },
 
-const MAX_DISCOVERY_AGE = 22;
+  // ── Bundesliga ──
+  { id: 157, name: 'Bayern München', short: 'Bayern', country: 'Germany', league: 'Bundesliga', formation: '4-2-3-1', philosophy: 'Front-foot overloads', intensity: 'High', lineHeight: 'High', crest: 'FCB', accent: '#dc052d', secondary: '#ffffff', traits: { control: 87, transition: 90, pressing: 88, width: 90, tempo: 91, defensiveLoad: 77 } },
+  { id: 168, name: 'Bayer Leverkusen', short: 'Leverkusen', country: 'Germany', league: 'Bundesliga', formation: '3-4-3', philosophy: 'Fluid overloads', intensity: 'High', lineHeight: 'High', crest: 'B04', accent: '#e32221', secondary: '#000000', traits: { control: 88, transition: 86, pressing: 84, width: 88, tempo: 86, defensiveLoad: 78 } },
+  { id: 165, name: 'Borussia Dortmund', short: 'Dortmund', country: 'Germany', league: 'Bundesliga', formation: '4-2-3-1', philosophy: 'Vertical transitions', intensity: 'High', lineHeight: 'High', crest: 'BVB', accent: '#fde100', secondary: '#000000', traits: { control: 80, transition: 92, pressing: 82, width: 86, tempo: 90, defensiveLoad: 70 } },
+  { id: 173, name: 'RB Leipzig', short: 'Leipzig', country: 'Germany', league: 'Bundesliga', formation: '4-2-2-2', philosophy: 'Press and counter', intensity: 'Very high', lineHeight: 'High', crest: 'RBL', accent: '#dd0741', secondary: '#ffffff', traits: { control: 78, transition: 94, pressing: 93, width: 80, tempo: 90, defensiveLoad: 76 } },
+  { id: 172, name: 'VfB Stuttgart', short: 'Stuttgart', country: 'Germany', league: 'Bundesliga', formation: '4-2-3-1', philosophy: 'Aggressive width', intensity: 'High', lineHeight: 'High', crest: 'VFB', accent: '#e30613', secondary: '#ffffff', traits: { control: 79, transition: 85, pressing: 84, width: 87, tempo: 85, defensiveLoad: 72 } },
+  { id: 169, name: 'Eintracht Frankfurt', short: 'Frankfurt', country: 'Germany', league: 'Bundesliga', formation: '3-4-3', philosophy: 'Physical transition', intensity: 'High', lineHeight: 'Medium', crest: 'SGE', accent: '#e1000f', secondary: '#000000', traits: { control: 74, transition: 87, pressing: 83, width: 84, tempo: 83, defensiveLoad: 75 } },
 
-const ESTABLISHED_DISCOVERY_EXCLUSIONS = new Set([
-  'Takefusa Kubo',
-  'Lee Kang-in',
-  'Kaoru Mitoma',
-  'Ao Tanaka',
-  'Hwang Hee-chan',
-  'Gue-sung Cho',
-  'Chanathip Songkrasin',
-  'Nguyen Quang Hai',
-  'Salem Al-Dawsari',
-  'Yasser Al-Shahrani',
-  'Akram Afif',
-  'Florian Wirtz',
-]);
+  // ── Serie A ──
+  { id: 505, name: 'Inter', short: 'Inter', country: 'Italy', league: 'Serie A', formation: '3-5-2', philosophy: 'Automated rotations', intensity: 'Medium', lineHeight: 'Medium', crest: 'INT', accent: '#00529f', secondary: '#000000', traits: { control: 84, transition: 86, pressing: 78, width: 91, tempo: 82, defensiveLoad: 91 } },
+  { id: 496, name: 'Juventus', short: 'Juventus', country: 'Italy', league: 'Serie A', formation: '3-5-2', philosophy: 'Controlled solidity', intensity: 'Medium', lineHeight: 'Medium', crest: 'JUV', accent: '#000000', secondary: '#ffffff', traits: { control: 80, transition: 80, pressing: 74, width: 84, tempo: 76, defensiveLoad: 88 } },
+  { id: 489, name: 'AC Milan', short: 'Milan', country: 'Italy', league: 'Serie A', formation: '4-2-3-1', philosophy: 'Transition balance', intensity: 'Medium', lineHeight: 'Medium', crest: 'MIL', accent: '#fb090b', secondary: '#000000', traits: { control: 80, transition: 84, pressing: 78, width: 82, tempo: 80, defensiveLoad: 80 } },
+  { id: 492, name: 'Napoli', short: 'Napoli', country: 'Italy', league: 'Serie A', formation: '4-3-3', philosophy: 'Possession tempo', intensity: 'High', lineHeight: 'Medium', crest: 'NAP', accent: '#12a0d7', secondary: '#ffffff', traits: { control: 86, transition: 82, pressing: 82, width: 84, tempo: 84, defensiveLoad: 78 } },
+  { id: 499, name: 'Atalanta', short: 'Atalanta', country: 'Italy', league: 'Serie A', formation: '3-4-1-2', philosophy: 'Man-marking press', intensity: 'Very high', lineHeight: 'High', crest: 'ATA', accent: '#1d71b8', secondary: '#000000', traits: { control: 76, transition: 90, pressing: 94, width: 86, tempo: 88, defensiveLoad: 78 } },
+  { id: 497, name: 'AS Roma', short: 'Roma', country: 'Italy', league: 'Serie A', formation: '3-5-2', philosophy: 'Pragmatic structure', intensity: 'Medium', lineHeight: 'Medium', crest: 'ROM', accent: '#8e1116', secondary: '#f0bc42', traits: { control: 76, transition: 82, pressing: 78, width: 82, tempo: 78, defensiveLoad: 84 } },
 
-function isDiscoveryTalent(player) {
-  const age = Number(player?.age);
-  const trajectory = String(player?.trajectory || '').toLowerCase();
-  const trend = Number(String(player?.trend || '0').replace('%', '').replace('+', ''));
+  // ── Ligue 1 ──
+  { id: 85, name: 'Paris Saint-Germain', short: 'PSG', country: 'France', league: 'Ligue 1', formation: '4-3-3', philosophy: 'Fluid possession', intensity: 'High', lineHeight: 'High', crest: 'PSG', accent: '#004170', secondary: '#e30613', traits: { control: 90, transition: 89, pressing: 86, width: 92, tempo: 89, defensiveLoad: 73 } },
+  { id: 81, name: 'Marseille', short: 'Marseille', country: 'France', league: 'Ligue 1', formation: '4-3-3', philosophy: 'High-press intensity', intensity: 'High', lineHeight: 'High', crest: 'OM', accent: '#2faee0', secondary: '#ffffff', traits: { control: 78, transition: 86, pressing: 90, width: 82, tempo: 86, defensiveLoad: 74 } },
+  { id: 91, name: 'AS Monaco', short: 'Monaco', country: 'France', league: 'Ligue 1', formation: '4-2-3-1', philosophy: 'Vertical youth', intensity: 'High', lineHeight: 'High', crest: 'ASM', accent: '#e63312', secondary: '#ffffff', traits: { control: 78, transition: 88, pressing: 82, width: 84, tempo: 86, defensiveLoad: 72 } },
+  { id: 79, name: 'Lille', short: 'Lille', country: 'France', league: 'Ligue 1', formation: '4-4-2', philosophy: 'Compact counter', intensity: 'Medium', lineHeight: 'Medium', crest: 'LIL', accent: '#e01e13', secondary: '#ffffff', traits: { control: 74, transition: 84, pressing: 80, width: 78, tempo: 80, defensiveLoad: 82 } },
+  { id: 80, name: 'Olympique Lyonnais', short: 'Lyon', country: 'France', league: 'Ligue 1', formation: '4-3-3', philosophy: 'Possession width', intensity: 'Medium', lineHeight: 'Medium', crest: 'OL', accent: '#1b1464', secondary: '#ffffff', traits: { control: 80, transition: 80, pressing: 76, width: 84, tempo: 80, defensiveLoad: 72 } },
+  { id: 84, name: 'OGC Nice', short: 'Nice', country: 'France', league: 'Ligue 1', formation: '4-3-3', philosophy: 'Defensive structure', intensity: 'Medium', lineHeight: 'Low', crest: 'NIC', accent: '#c2122e', secondary: '#000000', traits: { control: 74, transition: 78, pressing: 76, width: 76, tempo: 74, defensiveLoad: 84 } },
 
-  return Number.isFinite(age)
-    && age >= 16
-    && age <= MAX_DISCOVERY_AGE
-    && trajectory === 'rising'
-    && Number.isFinite(trend)
-    && trend > 0
-    && !ESTABLISHED_DISCOVERY_EXCLUSIONS.has(player?.name);
-}
+  // ── Eredivisie ──
+  { id: 194, name: 'Ajax', short: 'Ajax', country: 'Netherlands', league: 'Eredivisie', formation: '4-3-3', philosophy: 'Development possession', intensity: 'High', lineHeight: 'High', crest: 'AJX', accent: '#d2122e', secondary: '#ffffff', traits: { control: 86, transition: 82, pressing: 87, width: 85, tempo: 86, defensiveLoad: 70 } },
+  { id: 197, name: 'PSV Eindhoven', short: 'PSV', country: 'Netherlands', league: 'Eredivisie', formation: '4-2-3-1', philosophy: 'Front-foot dominance', intensity: 'High', lineHeight: 'High', crest: 'PSV', accent: '#ed1c24', secondary: '#ffffff', traits: { control: 86, transition: 86, pressing: 88, width: 88, tempo: 88, defensiveLoad: 72 } },
+  { id: 209, name: 'Feyenoord', short: 'Feyenoord', country: 'Netherlands', league: 'Eredivisie', formation: '4-3-3', philosophy: 'Pressing tempo', intensity: 'High', lineHeight: 'High', crest: 'FEY', accent: '#e30613', secondary: '#ffffff', traits: { control: 82, transition: 84, pressing: 86, width: 84, tempo: 86, defensiveLoad: 74 } },
+  { id: 201, name: 'AZ Alkmaar', short: 'AZ', country: 'Netherlands', league: 'Eredivisie', formation: '4-3-3', philosophy: 'Positional development', intensity: 'High', lineHeight: 'Medium', crest: 'AZ', accent: '#e2001a', secondary: '#ffffff', traits: { control: 82, transition: 78, pressing: 82, width: 80, tempo: 80, defensiveLoad: 72 } },
+  { id: 415, name: 'FC Twente', short: 'Twente', country: 'Netherlands', league: 'Eredivisie', formation: '4-2-3-1', philosophy: 'Balanced possession', intensity: 'Medium', lineHeight: 'Medium', crest: 'TWE', accent: '#e2001a', secondary: '#ffffff', traits: { control: 78, transition: 78, pressing: 78, width: 78, tempo: 78, defensiveLoad: 74 } },
+  { id: 200, name: 'FC Utrecht', short: 'Utrecht', country: 'Netherlands', league: 'Eredivisie', formation: '4-3-3', philosophy: 'Direct pressure', intensity: 'High', lineHeight: 'Medium', crest: 'UTR', accent: '#e2001a', secondary: '#000000', traits: { control: 74, transition: 82, pressing: 82, width: 78, tempo: 80, defensiveLoad: 76 } },
 
-const NORMALISED_ASIAN = asianTalents
-  .filter(isDiscoveryTalent)
-  .map((p, index) => ({
-  ...p,
-  position: /Forward|Striker/.test(p.role) ? 'ST' : /Fullback/.test(p.role) ? 'FB' : /Wide|Inside/.test(p.role) ? 'RW' : 'CM',
-  potential: Math.min(94, p.rating + (p.trajectory === 'rising' ? 7 : 3)),
-  pathway: [p.league, p.nextStep, p.rating >= 82 ? 'Top-five league impact player' : 'Senior-minutes consolidation'],
-  localImage: ['/assets/players/lamine-yamal.jpg','/assets/players/pedri.jpg','/assets/players/florian-wirtz.jpg','/assets/players/vitinha.jpg'][index % 4],
-}));
+  // ── Belgian Pro League ──
+  { id: 554, name: 'Club Brugge', short: 'Club Brugge', country: 'Belgium', league: 'Belgian Pro League', formation: '4-2-3-1', philosophy: 'Aggressive progression', intensity: 'High', lineHeight: 'Medium', crest: 'CB', accent: '#0071c8', secondary: '#000000', traits: { control: 77, transition: 85, pressing: 82, width: 83, tempo: 84, defensiveLoad: 76 } },
+  { id: 733, name: 'Anderlecht', short: 'Anderlecht', country: 'Belgium', league: 'Belgian Pro League', formation: '4-3-3', philosophy: 'Possession identity', intensity: 'Medium', lineHeight: 'Medium', crest: 'AND', accent: '#5d2d7e', secondary: '#ffffff', traits: { control: 80, transition: 76, pressing: 78, width: 80, tempo: 78, defensiveLoad: 72 } },
+  { id: 742, name: 'KRC Genk', short: 'Genk', country: 'Belgium', league: 'Belgian Pro League', formation: '4-3-3', philosophy: 'Attacking transitions', intensity: 'High', lineHeight: 'High', crest: 'GNK', accent: '#0066b3', secondary: '#ffffff', traits: { control: 78, transition: 86, pressing: 82, width: 84, tempo: 84, defensiveLoad: 72 } },
+  { id: 1393, name: 'Union Saint-Gilloise', short: 'Union SG', country: 'Belgium', league: 'Belgian Pro League', formation: '3-5-2', philosophy: 'Compact verticality', intensity: 'High', lineHeight: 'Medium', crest: 'USG', accent: '#ffd200', secondary: '#003d7c', traits: { control: 74, transition: 86, pressing: 82, width: 82, tempo: 82, defensiveLoad: 80 } },
+  { id: 740, name: 'Royal Antwerp', short: 'Antwerp', country: 'Belgium', league: 'Belgian Pro League', formation: '4-3-3', philosophy: 'Balanced pressing', intensity: 'Medium', lineHeight: 'Medium', crest: 'ANT', accent: '#d2122e', secondary: '#ffffff', traits: { control: 76, transition: 80, pressing: 78, width: 78, tempo: 78, defensiveLoad: 76 } },
+  { id: 631, name: 'KAA Gent', short: 'Gent', country: 'Belgium', league: 'Belgian Pro League', formation: '4-2-3-1', philosophy: 'Direct width', intensity: 'Medium', lineHeight: 'Medium', crest: 'GNT', accent: '#0a3d8f', secondary: '#ffffff', traits: { control: 74, transition: 80, pressing: 78, width: 82, tempo: 78, defensiveLoad: 74 } },
 
-const TALENTS = [...LOCAL_TALENTS, ...NORMALISED_ASIAN].filter(isDiscoveryTalent);
-const VIEW_TABS = [
-  { key:'discover', label:'Discovery Pool', icon:Sparkles },
-  { key:'pathways', label:'Trajectory Pathways', icon:Route },
-  { key:'rankings', label:'Rising Rankings', icon:TrendingUp },
+  // ── Primeira Liga ──
+  { id: 211, name: 'Benfica', short: 'Benfica', country: 'Portugal', league: 'Primeira Liga', formation: '4-2-3-1', philosophy: 'Possession press', intensity: 'High', lineHeight: 'High', crest: 'SLB', accent: '#da020e', secondary: '#ffffff', traits: { control: 86, transition: 84, pressing: 86, width: 86, tempo: 86, defensiveLoad: 76 } },
+  { id: 212, name: 'FC Porto', short: 'Porto', country: 'Portugal', league: 'Primeira Liga', formation: '4-4-2', philosophy: 'Aggressive structure', intensity: 'High', lineHeight: 'Medium', crest: 'POR', accent: '#00428c', secondary: '#ffffff', traits: { control: 80, transition: 84, pressing: 84, width: 80, tempo: 82, defensiveLoad: 82 } },
+  { id: 228, name: 'Sporting CP', short: 'Sporting', country: 'Portugal', league: 'Primeira Liga', formation: '3-4-3', philosophy: 'Wing-back overloads', intensity: 'High', lineHeight: 'High', crest: 'SCP', accent: '#008057', secondary: '#ffffff', traits: { control: 84, transition: 84, pressing: 84, width: 90, tempo: 84, defensiveLoad: 78 } },
+  { id: 217, name: 'SC Braga', short: 'Braga', country: 'Portugal', league: 'Primeira Liga', formation: '4-4-2', philosophy: 'Transition counter', intensity: 'Medium', lineHeight: 'Medium', crest: 'BRA', accent: '#e30613', secondary: '#ffffff', traits: { control: 76, transition: 84, pressing: 80, width: 78, tempo: 80, defensiveLoad: 76 } },
+  { id: 224, name: 'Vitória SC', short: 'Vitória', country: 'Portugal', league: 'Primeira Liga', formation: '4-3-3', philosophy: 'Pressing energy', intensity: 'Medium', lineHeight: 'Medium', crest: 'VIT', accent: '#ffffff', secondary: '#000000', traits: { control: 72, transition: 80, pressing: 82, width: 78, tempo: 78, defensiveLoad: 74 } },
+  { id: 242, name: 'Famalicão', short: 'Famalicão', country: 'Portugal', league: 'Primeira Liga', formation: '4-3-3', philosophy: 'Possession build', intensity: 'Medium', lineHeight: 'Medium', crest: 'FAM', accent: '#1f4ba0', secondary: '#ffffff', traits: { control: 76, transition: 76, pressing: 76, width: 78, tempo: 76, defensiveLoad: 72 } },
+
+  // ── Brasileirão ──
+  { id: 127, name: 'Flamengo', short: 'Flamengo', country: 'Brazil', league: 'Brasileirão', formation: '4-3-3', philosophy: 'Possession flair', intensity: 'High', lineHeight: 'Medium', crest: 'FLA', accent: '#c52613', secondary: '#000000', traits: { control: 84, transition: 84, pressing: 82, width: 86, tempo: 84, defensiveLoad: 74 } },
+  { id: 121, name: 'Palmeiras', short: 'Palmeiras', country: 'Brazil', league: 'Brasileirão', formation: '4-2-3-1', philosophy: 'Intense pressing', intensity: 'Very high', lineHeight: 'High', crest: 'PAL', accent: '#006437', secondary: '#ffffff', traits: { control: 80, transition: 86, pressing: 90, width: 84, tempo: 86, defensiveLoad: 80 } },
+  { id: 120, name: 'Botafogo', short: 'Botafogo', country: 'Brazil', league: 'Brasileirão', formation: '4-2-3-1', philosophy: 'Transition speed', intensity: 'High', lineHeight: 'High', crest: 'BOT', accent: '#000000', secondary: '#ffffff', traits: { control: 78, transition: 88, pressing: 84, width: 82, tempo: 86, defensiveLoad: 76 } },
+  { id: 124, name: 'Fluminense', short: 'Fluminense', country: 'Brazil', league: 'Brasileirão', formation: '4-2-3-1', philosophy: 'Possession patience', intensity: 'Medium', lineHeight: 'Medium', crest: 'FLU', accent: '#870a28', secondary: '#006437', traits: { control: 84, transition: 76, pressing: 80, width: 80, tempo: 78, defensiveLoad: 76 } },
+  { id: 126, name: 'São Paulo', short: 'São Paulo', country: 'Brazil', league: 'Brasileirão', formation: '3-4-3', philosophy: 'Structured build', intensity: 'Medium', lineHeight: 'Medium', crest: 'SAO', accent: '#fe0000', secondary: '#000000', traits: { control: 80, transition: 78, pressing: 78, width: 82, tempo: 78, defensiveLoad: 80 } },
+  { id: 119, name: 'Internacional', short: 'Internacional', country: 'Brazil', league: 'Brasileirão', formation: '4-2-3-1', philosophy: 'Compact pressure', intensity: 'Medium', lineHeight: 'Medium', crest: 'INT', accent: '#e5050f', secondary: '#ffffff', traits: { control: 78, transition: 80, pressing: 82, width: 80, tempo: 80, defensiveLoad: 80 } },
 ];
-const POSITION_OPTIONS = ['all','RW','LW','CM','DM','ST','FB'];
 
-function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
-function trendValue(trend='0') { return Number.parseFloat(String(trend).replace('%','').replace('+','')) || 0; }
-function imageFor(player) {
-  return player.verifiedImage || player.apiImage || player.image || player.img || player.localImage || '';
+export const SYSTEM_PLAYERS = [
+  { id: 154, name: 'Jude Bellingham', team: 'Real Madrid', age: 22, position: 'CM / AM', archetype: 'Box Crasher', image: '/assets/players/jude-bellingham.jpg', rating: 92, traits: { control: 86, transition: 94, pressing: 88, width: 72, tempo: 91, defensiveLoad: 84 }, roleMetrics: { Positioning: 92, 'Decision making': 91, 'Link-up play': 87, 'Final-third impact': 94, 'Press resistance': 85, 'Transition contribution': 93 } },
+  { id: 276, name: 'Pedri', team: 'FC Barcelona', age: 23, position: 'CM', archetype: 'Puppeteer', image: '/assets/players/pedri.jpg', rating: 91, traits: { control: 98, transition: 77, pressing: 84, width: 76, tempo: 94, defensiveLoad: 75 }, roleMetrics: { Positioning: 96, 'Decision making': 95, 'Link-up play': 94, 'Final-third impact': 82, 'Press resistance': 96, 'Transition contribution': 79 } },
+  { id: 1100, name: 'Florian Wirtz', team: 'Bayer Leverkusen', age: 23, position: 'AM', archetype: 'Magic Wand', image: '/assets/players/florian-wirtz.jpg', rating: 90, traits: { control: 91, transition: 90, pressing: 80, width: 82, tempo: 89, defensiveLoad: 67 }, roleMetrics: { Positioning: 89, 'Decision making': 91, 'Link-up play': 93, 'Final-third impact': 92, 'Press resistance': 88, 'Transition contribution': 87 } },
+  { id: 874, name: 'Vitinha', team: 'Paris Saint-Germain', age: 26, position: 'CM', archetype: 'Controller', image: '/assets/players/vitinha.jpg', rating: 89, traits: { control: 95, transition: 78, pressing: 86, width: 74, tempo: 93, defensiveLoad: 81 }, roleMetrics: { Positioning: 94, 'Decision making': 93, 'Link-up play': 94, 'Final-third impact': 79, 'Press resistance': 94, 'Transition contribution': 80 } },
+  { id: 762, name: 'Lamine Yamal', team: 'FC Barcelona', age: 18, position: 'RW', archetype: 'Paintbrush', image: '/assets/players/lamine-yamal.jpg', rating: 88, traits: { control: 88, transition: 96, pressing: 72, width: 98, tempo: 91, defensiveLoad: 54 }, roleMetrics: { Positioning: 84, 'Decision making': 88, 'Link-up play': 86, 'Final-third impact': 96, 'Press resistance': 91, 'Transition contribution': 93 } },
+  { id: 278, name: 'Vinícius Júnior', team: 'Real Madrid', age: 25, position: 'LW', archetype: 'Dagger', image: '/assets/players/vinicius-junior.jpg', rating: 93, traits: { control: 82, transition: 99, pressing: 69, width: 96, tempo: 95, defensiveLoad: 48 }, roleMetrics: { Positioning: 87, 'Decision making': 85, 'Link-up play': 82, 'Final-third impact': 98, 'Press resistance': 89, 'Transition contribution': 99 } },
+  { id: 521, name: 'Kylian Mbappé', team: 'Real Madrid', age: 27, position: 'CF / LW', archetype: 'Fox', image: '/assets/players/kylian-mbappe.jpg', rating: 94, traits: { control: 80, transition: 99, pressing: 62, width: 90, tempo: 98, defensiveLoad: 42 }, roleMetrics: { Positioning: 95, 'Decision making': 91, 'Link-up play': 79, 'Final-third impact': 99, 'Press resistance': 86, 'Transition contribution': 99 } },
+  { id: 9091, name: 'Anthony Gordon', team: 'Newcastle United', age: 25, position: 'LW / RW / AM', archetype: 'Transition Monster', image: '/assets/players/gordon.jpg', rating: 86, traits: { control: 78, transition: 95, pressing: 91, width: 92, tempo: 94, defensiveLoad: 73 }, roleMetrics: { Positioning: 83, 'Decision making': 81, 'Link-up play': 79, 'Final-third impact': 87, 'Press resistance': 76, 'Transition contribution': 96 } },
+];
+
+const ROLE_MAP = {
+  'Box Crasher': ['Advanced 8', 'Roaming midfielder', 'Second-wave creator'],
+  Puppeteer: ['Controller', 'Deep-lying playmaker', 'Interior organiser'],
+  'Magic Wand': ['Advanced playmaker', 'Free 10', 'Wide creator'],
+  Controller: ['Deep-lying playmaker', 'Tempo controller', 'Press escape valve'],
+  Paintbrush: ['Wide creator', 'Inside forward', 'Touchline isolator'],
+  Dagger: ['Inside forward', 'Transition monster', 'Wide outlet'],
+  Fox: ['Poacher', 'Channel runner', 'Transition finisher'],
+  'Transition Monster': ['Left-wing runner', 'Right-wing outlet', 'Inside-left presser'],
+};
+
+function average(values) {
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
-function playerApiId(player) {
-  return player.apiPlayerId ?? (player.source === 'api-profile' || player.source === 'supabase-registry' ? player.id : null);
+
+// ── Canonical System Fit scorer ────────────────────────────────────
+// One formula, used by BOTH the System Fit page (buildSystemFitReport) and the
+// Transfers page (computeSystemFit), so the same player x club scores identically
+// on both. Traits come from the shared engine in services/playerTraits.js.
+//
+// v2: weighted, punishing distance. The old version averaged six
+// (100 - |gap|) terms and clamped to 58..97 — which made every player
+// score 80s-90s for every team (especially when traits were missing and
+// defaulted to 75-vs-75 = a perfect 100 on that axis). The new version:
+//   - weights the identity axes (control/transition/pressing) heaviest
+//   - uses squared distance so big tactical gaps are punished hard
+//   - spans 32..99 so good and bad fits actually separate
+//   - returns null when there's no real data to score on (see fitDetail)
+
+const FIT_DIMS = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
+const FIT_WEIGHTS = { control: 1.4, transition: 1.3, pressing: 1.3, width: 0.9, tempo: 0.8, defensiveLoad: 1.1 };
+
+// Does this team carry a real tactical profile (curated or derived),
+// as opposed to a generic API placeholder with no traits?
+function teamHasProfile(team) {
+  return !!(team && team.traits && Object.keys(team.traits).length >= 4);
 }
-function allowOfficialLookup(player) {
-  return Boolean(playerApiId(player) || player.source === 'api-profile' || player.source === 'supabase-registry');
+
+// Raw weighted-distance score from two trait sets. Assumes both are real.
+function rawFit(traits, teamTraits) {
+  let acc = 0, wsum = 0;
+  for (const k of FIT_DIMS) {
+    const p = traits[k] ?? 70;
+    const t = teamTraits[k] ?? 70;
+    const d = Math.abs(p - t);
+    acc += FIT_WEIGHTS[k] * (d * d);
+    wsum += FIT_WEIGHTS[k];
+  }
+  const rmsd = Math.sqrt(acc / wsum);            // ~0..50 in "points"
+  const score = Math.round(99 - rmsd * 2.0 - (rmsd * rmsd) / 40);
+  return Math.max(32, Math.min(99, score));
 }
-function playerKey(player) { return player.id ? `api-${player.id}` : player.name; }
-function regionForNation(nation='') {
-  const value = String(nation).toLowerCase();
-  if (/nigeria|ghana|senegal|morocco|egypt|algeria|south africa|zimbabwe|cameroon|mali|ivory coast|côte d/i.test(value)) return 'africa';
-  if (/brazil|argentina|uruguay|colombia|chile|ecuador|paraguay|peru|venezuela/i.test(value)) return 'south_america';
-  if (/saudi arabia|qatar|uae|united arab emirates|bahrain|oman|kuwait/i.test(value)) return 'saudi';
-  if (/united states|usa|canada|mexico|costa rica|honduras|jamaica|panama|guatemala|trinidad|el salvador/i.test(value)) return 'north_america';
-  if (/japan|korea|china|india|indonesia|australia|thailand|vietnam|malaysia|singapore/i.test(value)) return 'asia';
-  return 'europe';
+
+// Backwards-compatible signature: returns a number. Used by existing call
+// sites that expect a plain score. Falls back to a neutral 70 only when a
+// real score genuinely can't be computed (so old call sites never crash),
+// but the page should prefer fitDetail() which exposes confidence.
+export function systemFitScore(traits, team) {
+  const tt = (team && team.traits) || {};
+  if (!traits || !teamHasProfile(team)) return 70;
+  return rawFit(traits, tt);
 }
-function roleForPosition(position='') {
-  const value = String(position).toLowerCase();
-  if (/goalkeeper|keeper/.test(value)) return 'Goalkeeper';
-  if (/defender|back/.test(value)) return 'Defensive Prospect';
-  if (/midfielder/.test(value)) return 'Emerging Midfielder';
-  if (/attacker|forward|striker/.test(value)) return 'Emerging Forward';
-  return 'Emerging Talent';
+
+// Richer result: score + confidence + the dimensional gaps that drive it.
+// confidence: 'high' (real player traits + real team profile),
+//             'team' (player ok, team has no profile),
+//             'player' (team ok, player has no match data),
+//             'none'  (neither).
+// hasStats tells us whether the player's traits are backed by match data.
+export function fitDetail(player, team, hasStats) {
+  const pt = player?.traits || {};
+  const realTeam = teamHasProfile(team);
+  const realPlayer = !!hasStats && pt && Object.keys(pt).length >= 4;
+
+  if (!realPlayer && !realTeam) {
+    return { score: null, confidence: 'none',
+      note: 'Neither this player nor this club has enough data to compute a tactical fit yet.' };
+  }
+  if (!realPlayer) {
+    return { score: null, confidence: 'player',
+      note: 'This player has no match data yet, so tactical fit cannot be computed. Rating and profile fill in once he logs minutes in a covered competition.' };
+  }
+  if (!realTeam) {
+    return { score: null, confidence: 'team',
+      note: 'This club has no tactical profile yet (outside the covered leagues), so fit cannot be computed against it.' };
+  }
+
+  const tt = team.traits;
+  const score = rawFit(pt, tt);
+  // Per-axis gap detail, for the read.
+  const gaps = FIT_DIMS.map(k => ({
+    axis: k,
+    player: pt[k] ?? 70,
+    team: tt[k] ?? 70,
+    gap: (pt[k] ?? 70) - (tt[k] ?? 70),
+  }));
+  return { score, confidence: 'high', note: null, gaps };
 }
-function shortPosition(position='') {
-  const value = String(position).toLowerCase();
-  if (/goalkeeper|keeper/.test(value)) return 'GK';
-  if (/defender|back/.test(value)) return 'DF';
-  if (/midfielder/.test(value)) return 'CM';
-  if (/attacker|forward|striker/.test(value)) return 'ST';
-  return 'U22';
+
+function compatibility(player, team) {
+  return systemFitScore(player.traits, team);
 }
-function liveTalentFromProfile(profile) {
-  const age = Number(profile.age || 0);
-  const position = shortPosition(profile.position);
-  const nation = profile.nationality || 'International';
+
+// Used by the Transfers page. Derives the player's traits from the shared engine,
+// scores them with the canonical formula, and returns the sub-metrics the
+// Transfers system-fit readout consumes.
+export function computeSystemFit(player, team) {
+  if (!player || !team) return null;
+  const { traits } = playerTraits(player);
+  const tt = team.traits || {};
   return {
-    id: profile.id, name: cleanName(profile.name), age: age || '—', nation, flag: '🌍', league: 'Live API profile', club: 'Club loads with stats feed',
-    role: roleForPosition(profile.position), position, rating: 'API', potential: 'Pending', readiness: 'LIVE', trend: 'Profile found',
-    region: regionForNation(nation), trajectory: 'profile', nextStep: 'Run Calibre trajectory analysis',
-    pathway: ['API-Football identity profile', 'Statistics and minutes ingest', 'Calibre Next Step projection'], image: profile.image, provisional: true, source: 'api-profile',
-  };
-}
-function registryTalentFromProfile(profile) {
-  const minutes = numeric(profile.minutes);
-  const appearances = numeric(profile.appearances);
-  const starts = numeric(profile.starts);
-  const goals = numeric(profile.goals);
-  const assists = numeric(profile.assists);
-  const apiRating = numeric(profile.api_average_rating ?? profile.apiAverageRating);
-  // Calibre rating from the shared engine (one number, every page). Honors a
-  // stored 0-99 rating if the model has written one; otherwise computes from
-  // minutes, output, role, league and age. Form & Impact are proxied for now.
-  const scored = resolveRating(profile);
-  const rating = scored.rating != null ? scored.rating : '—';
-  const ratingProvisional = scored.provisional === true && scored.rating != null;
-  const breakdown = scored.breakdown;
-  const hasEvidence = minutes > 0 || appearances > 0 || apiRating > 0;
-  const age = Number(profile.age);
-  const startRate = appearances > 0 ? starts / appearances : 0;
-  const experience = clamp(minutes / 4500, 0, 1) * 100; // senior-minutes evidence, saturating
-  const ratingValue = Number.isFinite(Number(rating)) ? Number(rating) : 60;
-  // Readiness = how proven the player is right now: current Calibre level
-  // reinforced by accumulated senior minutes and regular-starter reliability.
-  // Career-minute totals saturate (÷4500) so they sharpen the score instead of
-  // pegging everyone at the top bucket the way the old minutes-only ladder did.
-  const readiness = hasEvidence
-    ? clamp(Math.round(ratingValue * 0.6 + experience * 0.2 + clamp(startRate * 100, 0, 100) * 0.2), 40, 99)
-    : 60;
-  const ratingNum = Number.isFinite(Number(rating)) ? Number(rating) : null;
-  // Real projection: current level + development headroom. Younger players and
-  // those with room below the elite ceiling get more upside; a player already
-  // near the top, or older, gets a smaller, honest bump. Trajectory (the engine's
-  // age/form component) nudges it. Not a fixed prediction — a development band.
-  const potential = ratingNum == null
-    ? 'Review'
-    : (() => {
-        const youth    = clamp((23 - age) / (23 - 16), 0, 1);              // 1.0 ≤16 → 0 ≥23
-        const headroom = clamp((92 - ratingNum) / 30, 0, 1);              // less ceiling near elite
-        const traj     = breakdown?.Trajectory != null
-          ? clamp((breakdown.Trajectory - 55) / 30, 0, 1)
-          : youth;
-        const upside   = Math.round(2 + youth * 7 + headroom * 3 + traj * 2); // ~2..14
-        return clamp(ratingNum + upside, ratingNum, 96);
-      })();
-  // Card momentum signal — the real ceiling headroom, replacing the old
-  // "EVIDENCE READY" placeholder. Shows how much projected room is left.
-  const headroomDelta = (ratingNum != null && typeof potential === 'number')
-    ? potential - ratingNum
-    : null;
-  const momentum = headroomDelta == null
-    ? 'Awaiting stats'
-    : headroomDelta >= 6 ? `High ceiling +${headroomDelta}`
-    : headroomDelta >= 3 ? `Rising +${headroomDelta}`
-    : headroomDelta >= 1 ? `Near ceiling +${headroomDelta}`
-    : 'At projected ceiling';
-  // Tier-aware next-step recommendation: uses the player's current league tier,
-  // rating and minutes to suggest a concrete development move rather than a
-  // generic label. E.g. a Tier 2 player rated 76+ with 1800+ min → "Step up to
-  // a mid-table Tier 1 league for higher-level minutes."
-  const currentTier = (() => {
-    const lid = profile.league_id ?? profile.leagueId;
-    const l = lid ? LEAGUES[Number(lid)] : null;
-    return l ? l.tier : null;
-  })();
-
-  const nextStep = (() => {
-    if (minutes < 900) return 'Build a larger senior-minutes sample at current level';
-    if (minutes < 1800) return currentTier === 1
-      ? 'Needs consistent Tier 1 starts before a role-fit review'
-      : 'Senior-minutes consolidation with step-up monitoring';
-
-    // 1800+ minutes — ready for trajectory assessment
-    if (currentTier === 1) {
-      return ratingNum >= 82 ? 'Established Tier 1 — role optimization and continental exposure'
-        : ratingNum >= 75 ? 'Tier 1 rotation — needs a defined starting role'
-        : 'Tier 1 fringe — loan to a strong Tier 2 league for guaranteed minutes';
-    }
-    if (currentTier === 2) {
-      return ratingNum >= 78 ? 'Step up to a mid-table Tier 1 league for higher-level minutes'
-        : ratingNum >= 72 ? 'Strong Tier 2 performer — Tier 1 bottom-half or top Tier 2 move'
-        : 'Consolidate at Tier 2 before a step-up';
-    }
-    // Tier 3+
-    return ratingNum >= 75 ? 'Move to a Tier 2 league as a stepping stone to Tier 1'
-      : ratingNum >= 68 ? 'Tier 3 standout — target a Tier 2 league for the next step'
-      : 'Continue development at current level';
-  })();
-
-  return {
-    ...profile,
-    id: profile.apiPlayerId ?? profile.id,
-    apiPlayerId: profile.apiPlayerId ?? profile.id,
-    name: cleanName(profile.name),
-    age,
-    nation: profile.nationality || 'Unknown',
-    flag: '🌐',
-    club: profile.club || profile.team || 'Club pending',
-    league: profile.league || leagueContext(profile.league_id ?? profile.leagueId) || 'Imported registry',
-    role: profile.archetype || deriveArchetype(profile),
-    position: shortPosition(profile.position),
-    rating,
-    ratingProvisional,
-    breakdown,
-    readiness,
-    potential,
-    trend: momentum,
-    trajectory: hasEvidence ? 'rising' : 'profile',
-    region: regionForNation(profile.nationality),
-    nextStep,
-    pathway: [
-      profile.club || profile.team || 'Current club',
-      nextStep,
-      (typeof potential === 'number' ? `Projected ceiling · ${potential}` : 'Projection pending')
-    ],
-    image: profile.image || profile.img || null,
-    provisional: !hasEvidence,
-    source: 'supabase-registry',
-    minutes,
-    appearances,
-    starts,
-    goals,
-    assists,
-    apiRating
+    score: systemFitScore(traits, team),
+    traits,
+    teamTraits: tt,
+    pressing: Math.round(((traits.pressing ?? 70) + (tt.pressing ?? 70)) / 2),
+    transition: Math.round(((traits.transition ?? 70) + (tt.transition ?? 70)) / 2),
+    boxThreat: Math.round(((traits.width ?? 70) + (tt.tempo ?? 70)) / 2),
   };
 }
 
-function numeric(value, fallback=0) { return Number.isFinite(Number(value)) ? Number(value) : fallback; }
-
-function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist }) {
-  return (
-    <article className={`talent-result-card${selected ? ' is-selected' : ''}`} onClick={() => onSelect(player)}>
-      <ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/>
-      <div className="talent-result-card__body">
-        <div className="talent-result-card__topline"><span>{player.flag} {player.nation}</span><b>{player.provisional ? 'LIVE' : player.rating}</b></div>
-        <h3>{player.name}</h3>
-        <p>{player.position} · {player.club}</p>{player.provisional && <small className="talent-live-profile">API DIRECTORY PROFILE · MODEL PENDING</small>}
-        <div className="talent-result-card__meta"><span>{player.role}</span><span>{player.age} yrs</span><span className="trend-up">{player.trend}</span></div>
-        {player.source === 'supabase-registry' && <div className="talent-result-card__meta">
-          <span>{numeric(player.minutes)} mins</span>
-          <span>{numeric(player.appearances)} apps</span>
-          <span>{numeric(player.starts)} starts</span>
-          <span>{numeric(player.goals)}G · {numeric(player.assists)}A</span>
-          <span>{numeric(player.apiRating) ? `API ${numeric(player.apiRating).toFixed(1)}` : 'rating pending'}</span>
-        </div>}
-        {player.source === 'supabase-registry' && <div className="talent-result-card__meta">
-          <span>U22 · senior-minute screen · registry-backed</span>
-        </div>}
-        <div className="talent-result-card__footer">
-          <span>{player.nextStep}</span>
-          <div style={{display:'flex',gap:6,alignItems:'center'}}>
-            <button
-              type="button"
-              style={{background:'none',border:'none',color:'rgba(166,255,0,0.7)',cursor:'pointer',fontSize:10,letterSpacing:'.06em',padding:0,display:'flex',alignItems:'center',gap:3}}
-              onClick={(event) => {
-                event.stopPropagation();
-                const apiId = playerApiId(player);
-                if (apiId) {
-                  navigateTo(`/players?playerId=${apiId}&player=${encodeURIComponent(player.name)}`);
-                } else {
-                  navigateTo(`/players?player=${encodeURIComponent(player.name)}`);
-                }
-              }}
-              aria-label={`Open ${player.name} full profile`}
-            >
-              PROFILE <ArrowRight size={10}/>
-            </button>
-            <button type="button" aria-label={`${shortlisted ? 'Remove' : 'Add'} ${player.name} ${shortlisted ? 'from' : 'to'} shortlist`} onClick={(event) => { event.stopPropagation(); onToggleShortlist(player.name); }}>
-              {shortlisted ? <BookmarkCheck size={15}/> : <Bookmark size={15}/>}
-            </button>
-          </div>
-        </div>
-      </div>
-    </article>
-  );
+function verdictFor(score) {
+  if (score >= 86) return 'Elite fit';
+  if (score >= 76) return 'Strong fit';
+  if (score >= 64) return 'Workable fit';
+  if (score >= 50) return 'Compromise fit';
+  return 'Poor fit';
 }
 
-function Pathway({ player }) {
-  const stages = player.pathway || [player.league, player.nextStep, 'Senior-minutes consolidation'];
-  return (
-    <section className="trajectory-panel">
-      <div className="trajectory-panel__head">
-        <div><span>Talent trajectory pathway</span><h2>{player.name}</h2></div>
-        <div className="trajectory-readiness"><strong>{player.provisional ? 'LIVE' : player.readiness}</strong><small>{player.provisional ? 'API profile' : 'Readiness'}</small></div>
-      </div>
-      <p className="trajectory-panel__intro">{player.provisional ? 'This player identity is live from API-Football. The pathway shell is ready, but Calibre will only publish the rating and Next Step projection after the statistics, minutes and league-strength layers have been ingested.' : 'The projection is relative to age, role, league strength, senior minutes and current trajectory. It is a development pathway, not a fixed transfer prediction.'}</p>
-      <div className="trajectory-path">
-        {stages.map((stage, index) => (
-          <div className={`trajectory-step${index === 1 ? ' is-next' : ''}`} key={`${stage}-${index}`}>
-            <div className="trajectory-step__num">0{index + 1}</div>
-            <div><span>{index === 0 ? 'Current level' : index === 1 ? 'Next step' : 'Development ceiling'}</span><strong>{stage}</strong></div>
-            {index < stages.length - 1 && <ChevronRight size={17}/>} 
-          </div>
-        ))}
-      </div>
-      <div className="trajectory-panel__metrics">
-        <div><span>Current rating</span><strong>{player.provisional ? 'Pending ingest' : player.rating}</strong></div>
-        <div><span>Potential band</span><strong>{player.provisional ? 'Model pending' : player.potential}</strong></div>
-        <div><span>Projected trajectory</span><strong>{player.provisional ? 'Awaiting stats' : player.trend}</strong></div>
-        <div><span>League context</span><strong>{player.league}</strong></div>
-      </div>
-    </section>
-  );
+// Human-readable axis labels for the read.
+const AXIS_LABEL = {
+  control: 'possession control',
+  transition: 'vertical transition',
+  pressing: 'pressing intensity',
+  width: 'natural width',
+  tempo: 'ball-circulation tempo',
+  defensiveLoad: 'defensive workload',
+};
+
+// Build strengths/risks from the real per-axis gaps, so two different
+// players (or the same player at two clubs) get genuinely different reads.
+function readFromGaps(player, team, gaps) {
+  // sort by where the player most exceeds the team (strengths) and most
+  // falls short (risks)
+  const sorted = [...gaps].sort((a, b) => b.gap - a.gap);
+  const aligned = [...gaps].sort((a, b) => Math.abs(a.gap) - Math.abs(b.gap));
+
+  const topStrength = sorted[0];
+  const matched = aligned[0];
+  const shortfall = sorted[sorted.length - 1];
+
+  const strengths = [];
+  if (topStrength.gap > 6) {
+    strengths.push(`${player.name} brings clearly more ${AXIS_LABEL[topStrength.axis]} than ${team.short} currently has — a dimension he upgrades on arrival.`);
+  } else {
+    strengths.push(`${player.name} matches ${team.short}'s level across the board without a single weak axis — a clean, low-friction profile fit.`);
+  }
+  strengths.push(`The tightest alignment is ${AXIS_LABEL[matched.axis]} (he sits ${Math.abs(matched.gap)} pts from the team baseline), so that part of the game needs no adjustment.`);
+
+  const risks = [];
+  if (shortfall.gap < -8) {
+    risks.push(`He trails ${team.short}'s demands on ${AXIS_LABEL[shortfall.axis]} by ${Math.abs(shortfall.gap)} pts — the system would have to cover that gap around him.`);
+  } else {
+    risks.push(`No axis is a serious mismatch; the main question is role design rather than profile.`);
+  }
+  if (player.traits.defensiveLoad < team.traits.defensiveLoad - 8) {
+    risks.push(`His defensive workload runs below what ${team.short} asks, so the surrounding structure must shield that.`);
+  } else if (player.traits.width < team.traits.width - 8) {
+    risks.push(`He shouldn't be asked to provide ${team.short}'s width by himself — pair him with an overlapping runner.`);
+  } else {
+    risks.push(`Against deep blocks his decisive actions need a clear, defined role rather than a roaming brief.`);
+  }
+
+  return { strengths, risks };
 }
 
-function TalentDetailModal({ player, onClose }) {
-  useEffect(() => {
-    function onKey(event) { if (event.key === 'Escape') onClose(); }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
-  const [showCommission, setShowCommission] = useState(false);
-  if (!player) return null;
-  const lime = '#c6ff3a';
-  const muted = '#9aa4b2';
-  const isReg = player.source === 'supabase-registry';
-  return (
-    <div onClick={onClose} style={{position:'fixed',inset:0,zIndex:1200,background:'rgba(3,5,7,0.82)',backdropFilter:'blur(6px)',WebkitBackdropFilter:'blur(6px)',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'24px',overflowY:'auto'}}>
-      <div onClick={event=>event.stopPropagation()} role="dialog" aria-modal="true" aria-label={`${player.name} talent detail`} style={{position:'relative',width:'min(720px,100%)',margin:'4vh 0 40px',background:'#0b0d0f',border:'1px solid #1d242d',borderRadius:18,boxShadow:'0 30px 80px rgba(0,0,0,0.6)',overflow:'hidden'}}>
-        <button type="button" onClick={onClose} aria-label="Close" style={{position:'absolute',top:14,right:14,zIndex:2,width:36,height:36,display:'grid',placeItems:'center',borderRadius:10,background:'rgba(255,255,255,0.06)',border:'1px solid #283039',color:muted,cursor:'pointer'}}><X size={18}/></button>
-        <div style={{display:'flex',gap:20,alignItems:'center',padding:'26px 26px 18px'}}>
-          <div style={{width:110,height:110,borderRadius:14,overflow:'hidden',flex:'0 0 auto',background:'#14181c',border:'1px solid #232b34'}}>
-            <ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
-          </div>
-          <div style={{minWidth:0}}>
-            <div style={{color:lime,fontSize:12,letterSpacing:'0.1em',textTransform:'uppercase',marginBottom:6}}>{player.flag} {player.nation}</div>
-            <h2 style={{margin:0,fontSize:30,lineHeight:1.05,color:'#f4f6f8'}}>{player.name}</h2>
-            <div style={{color:muted,marginTop:8,fontSize:15}}>{player.position} · {player.club} · {player.age} yrs</div>
-            <div style={{color:muted,marginTop:4,fontSize:13}}>{player.role}</div>
-          </div>
-          <div style={{marginLeft:'auto',textAlign:'right',flex:'0 0 auto'}}>
-            <div style={{fontSize:40,fontWeight:800,color:lime,lineHeight:1}}>{player.provisional ? 'LIVE' : player.rating}</div>
-            <div style={{fontSize:11,color:muted,letterSpacing:'0.08em',marginTop:4}}>{player.ratingProvisional ? 'INTERIM RATING' : player.provisional ? 'API PROFILE' : 'CALIBRE RATING'}</div>
-          </div>
-        </div>
-        {isReg && <div style={{display:'flex',flexWrap:'wrap',gap:'8px 18px',padding:'0 26px 20px',color:muted,fontSize:13}}>
-          <span>{numeric(player.minutes)} mins</span>
-          <span>{numeric(player.appearances)} apps</span>
-          <span>{numeric(player.starts)} starts</span>
-          <span>{numeric(player.goals)}G · {numeric(player.assists)}A</span>
-          <span>{numeric(player.apiRating) ? `API ${numeric(player.apiRating).toFixed(1)}` : 'rating pending'}</span>
-        </div>}
-        <div style={{padding:'0 18px 22px'}}>
-          <Pathway player={player}/>
-        </div>
+export function buildSystemFitReport(player, team) {
+  const detail = fitDetail(player, team, player?._hasStats !== false);
+  const score = detail.score;
 
-        {/* ── Link to full player bank profile ── */}
-        <div style={{padding:'0 26px 16px',display:'flex',gap:10}}>
-          <button
-            type="button"
-            className="btn btn--lime btn--sm"
-            style={{flex:1}}
-            onClick={() => {
-              const apiId = playerApiId(player);
-              if (apiId) {
-                navigateTo(`/players?playerId=${apiId}&player=${encodeURIComponent(player.name)}`);
-              } else {
-                navigateTo(`/players?player=${encodeURIComponent(player.name)}`);
-              }
-            }}
-          >
-            VIEW FULL PROFILE <ArrowRight size={13}/>
-          </button>
-          <button
-            type="button"
-            className="btn btn--outline btn--sm"
-            onClick={() => {
-              const name = encodeURIComponent(player.name);
-              navigateTo(`/system-fit?player=${name}`);
-            }}
-          >
-            RUN SYSTEM FIT <ArrowRight size={13}/>
-
-          </button>
-        </div>
-
-        {/* ── Discovery Dossier (quiet) ── */}
-        <div style={{padding:'0 26px 18px'}}>
-          <button type="button" onClick={() => setShowCommission(true)} style={{width:'100%',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,background:'transparent',color:'#9aa4b2',border:'1px solid #232b34',borderRadius:10,padding:'10px 14px',fontFamily:"'Barlow Condensed', sans-serif",fontSize:12,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer'}}><FileText size={13}/> Commission a Discovery Dossier · $499</button>
-          <div style={{textAlign:'center',fontSize:11,color:'#5f6976',marginTop:8,lineHeight:1.5}}>Should your club bet on him? A commissioned brief on the ceiling, the pathway and the risk.</div>
-        </div>
-
-        {/* ── Share bar ── */}
-        <div style={{padding:'0 26px 22px'}}>
-          <ShareBar
-            text={`${player.name} — ${Math.round(player.rating || 0)} Calibre rating, ${player.role || 'rising talent'}. Scouted on Calibre.`}
-            url={shareUrl('/talents')}
-            label={false}
-          />
-        </div>
-
-        {showCommission && <CommissionForm player={{ name: player.name, apiPlayerId: playerApiId(player), pos: player.position }} club={{ name: player.club }} dossierType="discovery" onClose={() => setShowCommission(false)} />}
-      </div>
-    </div>
-  );
-}
-
-export default function Talents() {
-  const [view, setView] = useState('discover');
-  const [region, setRegion] = useState('all');
-  const [age, setAge] = useState('all');
-  const [position, setPosition] = useState('all');
-  const [potential, setPotential] = useState('70');
-  const [minRating, setMinRating] = useState('all');
-  const [sort, setSort] = useState('readiness');
-  const [trajectory, setTrajectory] = useState('all');
-  const [query, setQuery] = useState('');
-  const [moreFilters, setMoreFilters] = useState(false);
-  const [selectedName, setSelectedName] = useState('');
-  const [detailPlayer, setDetailPlayer] = useState(null);
-  const [visibleCount, setVisibleCount] = useState(48);
-  const [shortlist, setShortlist] = useState([]);
-  const [liveTalents, setLiveTalents] = useState([]);
-  const [liveLoading, setLiveLoading] = useState(false);
-  const [liveSearched, setLiveSearched] = useState(false);
-  const [registryTalents, setRegistryTalents] = useState([]);
-  const [registryLoading, setRegistryLoading] = useState(true);
-  const resultsRef = useRef(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    getSupabaseTalentCandidates({ limit: 240 })
-      .then(rows => {
-        if (cancelled) return;
-
-        const candidates = rows
-          .map(registryTalentFromProfile)
-          .filter(player =>
-            Number.isFinite(Number(player.age))
-            && Number(player.age) >= 16
-            && Number(player.age) <= MAX_DISCOVERY_AGE
-            && (player.minutes >= 450 || player.appearances >= 8)
-          );
-
-        setRegistryTalents(candidates);
-        if (candidates[0]) {
-          setSelectedName(current =>
-            current === 'Ibrahim Musa' || !candidates.some(player => player.name === current)
-              ? candidates[0].name
-              : current
-          );
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setRegistryTalents([]);
-      })
-      .finally(() => {
-        if (!cancelled) setRegistryLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const search = query.trim();
-    if (search.length < 3) { setLiveTalents([]); setLiveSearched(false); setLiveLoading(false); return undefined; }
-    let cancelled = false;
-    const timer = window.setTimeout(() => {
-      setLiveLoading(true);
-      searchPlayerProfiles(search)
-        .then(rows => {
-          if (cancelled) return;
-          const talents = rows
-          .filter(row => {
-            const age = Number(row.age);
-            return Number.isFinite(age) && age >= 16 && age <= MAX_DISCOVERY_AGE;
-          })
-          .map(liveTalentFromProfile);
-          setLiveTalents(talents);
-          setLiveSearched(true);
+  // When we can't honestly score (thin player or unprofiled club), return a
+  // report that says so rather than inventing an elite verdict.
+  if (score == null) {
+    return {
+      generatedAt: new Date().toISOString(),
+      player, team,
+      score: null,
+      verdict: 'Insufficient data',
+      note: detail.note,
+      breakdown: [],
+      rolePulse: player?.roleMetrics ? Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })) : [],
+      alternativeFits: SYSTEM_TEAMS
+        .map(c => {
+          const d = fitDetail(player, c, player?._hasStats !== false);
+          return { ...c, score: d.score, verdict: d.score == null ? '—' : verdictFor(d.score) };
         })
-        .catch(() => { if (!cancelled) { setLiveTalents([]); setLiveSearched(true); } })
-        .finally(() => { if (!cancelled) setLiveLoading(false); });
-    }, 350);
-    return () => { cancelled = true; window.clearTimeout(timer); };
-  }, [query]);
-
-  const liveMode = query.trim().length >= 3;
-  const sourceTalents =
-    liveMode && liveSearched
-      ? liveTalents
-      : registryTalents;
-
-  const filtered = useMemo(() => sourceTalents
-    .filter(p => region === 'all' || p.region === region)
-    .filter(p => age === 'all' || !Number.isFinite(Number(p.age)) || (age === 'u18' ? Number(p.age) <= 18 : age === 'u21' ? Number(p.age) <= 21 : Number(p.age) <= 23))
-    .filter(p => position === 'all' || p.position === position)
-    .filter(p => p.provisional || numeric(p.potential) >= Number(potential))
-    .filter(p => minRating === 'all' || p.provisional || numeric(p.rating) >= Number(minRating))
-    .filter(p => p.provisional || trajectory === 'all' || p.trajectory === trajectory)
-    .filter(p => liveMode || `${p.name} ${p.club} ${p.league} ${p.role} ${p.nation}`.toLowerCase().includes(query.trim().toLowerCase()))
-    .sort((a,b) => sort === 'rating' ? numeric(b.rating) - numeric(a.rating) : sort === 'trend' ? trendValue(b.trend) - trendValue(a.trend) : sort === 'age' ? numeric(a.age,99) - numeric(b.age,99) : numeric(b.readiness) - numeric(a.readiness)),
-  [sourceTalents, region, age, position, potential, minRating, trajectory, query, sort, liveMode]);
-
-  useEffect(() => { setVisibleCount(48); }, [region, age, position, potential, minRating, trajectory, query, sort, liveMode]);
-
-  const selected = sourceTalents.find(player => player.name === selectedName) || filtered[0] || sourceTalents[0] || null;
-  const ranked = [...sourceTalents]
-    .sort((a,b) =>
-      numeric(b.minutes) - numeric(a.minutes)
-      || numeric(b.apiRating) - numeric(a.apiRating)
-      || numeric(b.appearances) - numeric(a.appearances)
-      || (numeric(b.goals) + numeric(b.assists)) - (numeric(a.goals) + numeric(a.assists))
-      || numeric(b.readiness) - numeric(a.readiness)
-    )
-    .slice(0,10);
-  const counts = Object.fromEntries(TALENT_REGIONS.map(item => [item.key, item.key === 'all' ? sourceTalents.length : sourceTalents.filter(p => p.region === item.key).length]));
-
-  function toggleShortlist(name) {
-    setShortlist(current => current.includes(name) ? current.filter(item => item !== name) : [...current, name]);
+        .filter(c => c.score != null)
+        .sort((a, b) => b.score - a.score),
+      primaryRoles: ROLE_MAP[player?.archetype] ?? ['Hybrid role', 'Flexible starter', 'Rotation option'],
+      strengths: [],
+      risks: [],
+      conclusion: detail.note,
+    };
   }
 
-  function resetFilters() {
-    setRegion('all'); setAge('all'); setPosition('all'); setPotential('70'); setMinRating('all'); setSort('readiness'); setTrajectory('all'); setQuery('');
+  const gaps = detail.gaps;
+  // Breakdown now reflects the REAL dimensional alignment, not score+4.
+  const breakdown = [
+    ['Role compatibility', score],
+    ['Possession value', 100 - Math.abs((player.traits.control ?? 70) - (team.traits.control ?? 70))],
+    ['Transition value', 100 - Math.abs((player.traits.transition ?? 70) - (team.traits.transition ?? 70))],
+    ['Pressing match', 100 - Math.abs((player.traits.pressing ?? 70) - (team.traits.pressing ?? 70))],
+    ['Width fit', 100 - Math.abs((player.traits.width ?? 70) - (team.traits.width ?? 70))],
+    ['Development ceiling', Math.min(96, player.age <= 23 ? player.rating + 3 : player.rating)],
+  ].map(([label, value]) => ({ label, value: Math.max(20, Math.min(99, Math.round(value))) }));
+
+  const alternativeFits = SYSTEM_TEAMS
+    .map(candidate => {
+      const d = fitDetail(player, candidate, player?._hasStats !== false);
+      return { ...candidate, score: d.score, verdict: d.score == null ? '—' : verdictFor(d.score) };
+    })
+    .filter(c => c.score != null)
+    .sort((a, b) => b.score - a.score);
+
+  const { strengths, risks } = readFromGaps(player, team, gaps);
+
+  const conclusion = score >= 76
+    ? `${player.name} improves ${team.short} because the profile changes the attack without breaking the structure — the decisive actions get the right platform.`
+    : score >= 64
+    ? `${player.name} can work at ${team.short}, but the system would have to bend around his best actions. The talent is clear; the role design is the real question.`
+    : `${player.name} is a poor structural fit for ${team.short} as currently set up — the tactical demands pull against his strengths rather than with them.`;
+
+  return {
+    generatedAt: new Date().toISOString(),
+    player, team, score,
+    verdict: verdictFor(score),
+    breakdown,
+    rolePulse: Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })),
+    alternativeFits,
+    primaryRoles: ROLE_MAP[player.archetype] ?? ['Hybrid role', 'Flexible starter', 'Rotation option'],
+    strengths,
+    risks,
+    conclusion,
+  };
+}
+
+// Build a comparison verdict specific to the two archetypes and how the swap
+// reshapes the side \u2014 not a generic "grades higher" line.
+function comparisonVerdict(primary, challenger, team, first, second) {
+  const DIMS = [
+    ['control', 'possession control'],
+    ['transition', 'vertical transition threat'],
+    ['pressing', 'press intensity'],
+    ['width', 'natural width'],
+    ['tempo', 'ball-circulation tempo'],
+    ['defensiveLoad', 'defensive coverage'],
+  ];
+  const teamName = team.short || team.name;
+  const list = arr => arr.map(d => d.phrase).join(' and ');
+
+  if (first.score === second.score) {
+    const d = DIMS
+      .map(([k, phrase]) => ({ phrase, diff: (challenger.traits[k] ?? 75) - (primary.traits[k] ?? 75) }))
+      .sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff))[0];
+    const leansChallenger = d.diff > 0;
+    return `${primary.name} (${primary.archetype}) and ${challenger.name} (${challenger.archetype}) both grade ${first.score}% for ${teamName} \u2014 level on the number, but not interchangeable. ${leansChallenger ? challenger.name : primary.name} pulls the side toward ${d.phrase}; pick the other and ${teamName} keeps its current shape. Same fit, different team.`;
   }
 
-  return (
-    <div className="page talents-page">
-      <div className="td-header">
-        <div className="td-title">
-          <div className="td-title-icon"><Zap size={20}/></div>
-          <div><h1>Talent <em>Discovery</em></h1><p>Find the players nobody is watching — and decide which ones are worth betting on.</p></div>
-        </div>
-        <div className="td-header-stats"><span><b>{liveMode ? liveTalents.length : sourceTalents.length}</b> {liveMode ? 'live matches' : 'indexed'}</span><span><b>{shortlist.length}</b> shortlisted</span></div>
-      </div>
+  const challengerWins = second.score > first.score;
+  const winner = challengerWins ? challenger : primary;
+  const loser = challengerWins ? primary : challenger;
+  const wScore = challengerWins ? second.score : first.score;
+  const lScore = challengerWins ? first.score : second.score;
 
-      <div className="talent-mode-tabs" role="tablist" aria-label="Talent discovery views">
-        {VIEW_TABS.map(({key,label,icon:Icon}) => <button type="button" role="tab" aria-selected={view === key} className={view === key ? 'is-active' : ''} key={key} onClick={() => setView(key)}><Icon size={15}/>{label}</button>)}
-      </div>
+  const deltas = DIMS.map(([k, phrase]) => ({ phrase, diff: (winner.traits[k] ?? 75) - (loser.traits[k] ?? 75) }));
+  const gains = deltas.filter(d => d.diff >= 4).sort((a, b) => b.diff - a.diff).slice(0, 2);
+  const losses = deltas.filter(d => d.diff <= -4).sort((a, b) => a.diff - b.diff).slice(0, 2);
 
-      <section className="talent-filter-shell">
-        <label className="talent-search"><Search size={16}/><input value={query} onChange={event => setQuery(event.target.value)} placeholder="Search player, club, role or league" /></label>
-        <div className="td-filters">
-          <select className="td-filter-select" aria-label="Age filter" value={age} onChange={event=>setAge(event.target.value)}><option value="all">All ages</option><option value="u18">U18</option><option value="u21">U21</option><option value="u23">U22</option></select>
-          <select className="td-filter-select" aria-label="Position filter" value={position} onChange={event=>setPosition(event.target.value)}>{POSITION_OPTIONS.map(item=><option key={item} value={item}>{item === 'all' ? 'All positions' : item}</option>)}</select>
-          <select className="td-filter-select" aria-label="Potential filter" value={potential} onChange={event=>setPotential(event.target.value)}><option value="70">Potential 70+</option><option value="80">Potential 80+</option><option value="85">Potential 85+</option><option value="90">Potential 90+</option></select>
-          <select className="td-filter-select" aria-label="Calibre rating filter" value={minRating} onChange={event=>setMinRating(event.target.value)}><option value="all">All ratings</option><option value="80">Calibre 80+</option><option value="75">Calibre 75+</option><option value="70">Calibre 70+</option></select>
-          <select className="td-filter-select" aria-label="Sort talents" value={sort} onChange={event=>setSort(event.target.value)}><option value="readiness">Sort: readiness</option><option value="rating">Sort: rating</option><option value="trend">Sort: trajectory</option><option value="age">Sort: youngest</option></select>
-          <button className={`btn btn--outline btn--sm${moreFilters ? ' is-active' : ''}`} type="button" onClick={()=>setMoreFilters(value=>!value)}><SlidersHorizontal size={14}/> MORE FILTERS</button>
-          <button className="talent-reset" type="button" onClick={resetFilters}>Reset</button>
-        </div>
-        {moreFilters && <div className="talent-advanced-filters"><Filter size={14}/><span>Trajectory</span>{['all','rising','stable','peak'].map(item=><button className={trajectory===item?'is-active':''} type="button" key={item} onClick={()=>setTrajectory(item)}>{item}</button>)}</div>}
-      </section>
+  let s = `${winner.name} (${winner.archetype}) fits ${teamName} better \u2014 ${wScore}% to ${lScore}%`;
+  if (gains.length) s += `, adding ${list(gains)}`;
+  s += `. `;
+  if (losses.length) {
+    s += `Picking him over ${loser.name} (${loser.archetype}) costs you ${list(losses)}, so ${teamName} becomes a different side \u2014 more ${gains.length ? gains[0].phrase : winner.archetype.toLowerCase()}, less ${losses[0].phrase}. It changes what the team becomes, not just who plays.`;
+  } else {
+    s += `He clears ${loser.name} (${loser.archetype}) with no real stylistic trade-off \u2014 a cleaner upgrade than a like-for-like swap.`;
+  }
+  return s;
+}
 
-      <div className={`talent-api-status${liveMode ? ' is-live' : ''}`}><span className="live-dot" />{liveLoading ? 'Searching API-Football U22 profiles…' : liveMode ? `${liveTalents.length} live U22 profile matches · identity and portraits from API-Football` : 'Curated launch pool · type at least 3 letters to search the live U22 directory'}</div>
+export function buildPlayerComparison(primary, challenger, team) {
+  const first = buildSystemFitReport(primary, team);
+  const second = buildSystemFitReport(challenger, team);
+  const labels = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
+  const dimensions = labels.map(label => ({
+    label: label === 'defensiveLoad' ? 'defensive load' : label,
+    primary: primary.traits[label],
+    challenger: challenger.traits[label],
+  }));
+  return {
+    generatedAt: new Date().toISOString(),
+    team,
+    primary,
+    challenger,
+    primaryScore: first.score,
+    challengerScore: second.score,
+    dimensions,
+    verdict: comparisonVerdict(primary, challenger, team, first, second),
+  };
+}
 
-      <div className="td-region-tabs">
-        {TALENT_REGIONS.map(item => <button key={item.key} type="button" className={`td-region-tab ${region===item.key?'active':''}`} onClick={()=>setRegion(item.key)}>{item.label}<span className="td-region-count">{counts[item.key] || 0}</span></button>)}
-      </div>
+export function searchLocalTeams(query = '') {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return SYSTEM_TEAMS.slice(0, 6);
+  return SYSTEM_TEAMS.filter(team => `${team.name} ${team.country} ${team.league}`.toLowerCase().includes(needle)).slice(0, 8);
+}
 
-      {view === 'discover' && <>
-        {selected && <Pathway player={selected}/>}
-        {selected && <div className="talent-share"><ShareBar text={`${selected.name} — Calibre rating ${Math.round(selected.rating)}, ${selected.role || 'rising talent'}. Scouted on Calibre.`} url={shareUrl('/talents')} label={false}/></div>}
-        <div className="talent-results-head" ref={resultsRef}><div><span>{liveMode ? 'API-Football U22 directory' : 'Curated discovery pool'}</span><strong>{filtered.length} talents match your filters</strong></div><button type="button" onClick={()=>setView('pathways')}>Open pathways <ArrowRight size={14}/></button></div>
-        <div className="talent-results-grid">
-          {filtered.length ? filtered.slice(0, visibleCount).map(player => <TalentCard key={playerKey(player)} player={player} selected={selected?.name===player.name} shortlisted={shortlist.includes(player.name)} onSelect={chosen=>{setSelectedName(chosen.name);setDetailPlayer(chosen);}} onToggleShortlist={toggleShortlist}/>) : <div className="talent-empty"><Search size={22}/><h3>No talents match those filters.</h3><button type="button" onClick={resetFilters}>Reset filters</button></div>}
-        </div>
-        {filtered.length > visibleCount && <div style={{display:'flex',justifyContent:'center',marginTop:18}}>
-          <button type="button" className="btn btn--lime" onClick={()=>setVisibleCount(count=>count+48)}>Load more ({filtered.length - visibleCount} remaining)</button>
-        </div>}
-      </>}
+export function searchLocalPlayers(query = '') {
+  const needle = query.trim().toLowerCase();
+  if (!needle) return SYSTEM_PLAYERS.slice(0, 6);
+  return SYSTEM_PLAYERS.filter(player => `${player.name} ${player.team} ${player.position} ${player.archetype}`.toLowerCase().includes(needle)).slice(0, 8);
+}
 
-      {view === 'pathways' && <div className="pathway-workspace">
-        <div className="pathway-list">
-          <div className="pathway-list__head"><span>Trajectory watchlist</span><strong>Select a talent to inspect the pathway model</strong></div>
-          {filtered.map(player=><button type="button" className={player.name===selected?.name?'is-active':''} key={playerKey(player)} onClick={()=>setSelectedName(player.name)}><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.club} · {player.role}</small></span><b>{player.provisional ? 'LIVE' : player.readiness}</b></button>)}
-        </div>
-        {selected && <Pathway player={selected}/>}
-        <div className="tier-explainer" style={{ marginTop:18, padding:'14px 18px', background:'rgba(198,255,58,.04)', border:'1px solid rgba(198,255,58,.12)', borderRadius:10 }}>
-          <strong style={{ fontSize:11, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--lime,#c6ff3a)' }}>League tier ladder</strong>
-          <p style={{ fontSize:13, opacity:.75, margin:'6px 0 10px', lineHeight:1.5 }}>Calibre grades leagues by competitive strength. The pathway model uses these tiers to recommend development moves — a Tier 2 standout rated 78+ is flagged for a Tier 1 step-up, while a Tier 3 prospect targets Tier 2 first.</p>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, fontSize:12 }}>
-            <div><strong style={{color:'var(--lime,#c6ff3a)'}}>Tier 1</strong><br/><span style={{opacity:.6}}>Premier League, La Liga, Bundesliga, Serie A, Ligue 1</span></div>
-            <div><strong style={{color:'var(--lime,#c6ff3a)'}}>Tier 2</strong><br/><span style={{opacity:.6}}>Primeira Liga, Eredivisie, Brasileirão, Pro League, Championship</span></div>
-            <div><strong style={{color:'var(--lime,#c6ff3a)'}}>Tier 3</strong><br/><span style={{opacity:.6}}>Liga Profesional, Süper Lig, MLS, Saudi Pro League, J1 League</span></div>
-          </div>
-        </div>
-      </div>}
 
-      {view === 'rankings' && <section className="talent-ranking-panel">
-        <div className="talent-ranking-panel__head"><div><span>Trajectory-adjusted ranking</span><h2>Players moving fastest</h2></div><p>Readiness, potential and recent movement combine to surface the most actionable prospects.</p></div>
-        {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
-      </section>}
+export const TRANSFER_SPOTLIGHTS = [
+  {
+    id: 'gordon-barcelona-scenario',
+    status: 'SCENARIO MODEL',
+    window: 'TRANSFER WINDOW SPOTLIGHT',
+    playerId: 9091,
+    teamId: 529,
+    headline: 'Anthony Gordon at Barcelona: where does the chaos fit?',
+    dek: 'A top-club move is not only a talent question. It is a role-design question. This spotlight shows how one player can solve different match states from more than one starting position.',
+    verdict: 'Gordon gives Barcelona a different kind of wide threat: less pause, more rupture. The cleanest use is from the left, attacking the space created when the ball is held on the opposite side. He can also start from the right or arrive as an inside-left presser when the game needs speed rather than control.',
+    sourceNote: 'Illustrative transfer-window scenario. The live transfer/news layer can replace this seed record when connected.',
+    lineup: [
+      { role: 'LW', label: 'PRIMARY', score: 92, x: 18, y: 20 },
+      { role: 'RW', label: 'SECONDARY', score: 84, x: 82, y: 20 },
+      { role: 'L8', label: 'GAME-STATE OPTION', score: 78, x: 34, y: 56 },
+    ],
+    talkingPoints: [
+      'Left wing: attacks the back line while the opposite flank holds width.',
+      'Right wing: gives the team a direct outlet when the game becomes stretched.',
+      'Inside-left role: useful as a pressing and transition option, not as the permanent controller.',
+    ],
+  },
+];
 
-      <div className="founder-strip" style={{marginTop:18}}>
-        <Crown size={22} className="founder-strip-icon"/>
-        <strong>Get World Cup Founder Pass</strong>
-        <span>Unlock premium insights, advanced filters &amp; exclusive World Cup content.</span>
-        <button type="button" className="btn btn--lime" onClick={()=>navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14}/></button>
-      </div>
+// ─────────────────────────────────────────────────────────────────────────
+// Transfer-window spotlight engine (v1)
+//
+// Seeded fit-scenario storylines. `buzz` is the interim selection signal.
+// Pass a live engagement map { [storylineId]: votes + comments } from
+// debate_votes / forum_posts to pickTransferStoryline() to rank the spotlight
+// by what's actually most-debated on Calibre. The card's analysis (verdict,
+// talking points, lineup) is GENERATED from buildSystemFitReport — never
+// hardcoded — and the player photo comes from the real registry row.
+// ─────────────────────────────────────────────────────────────────────────
+export const TRANSFER_STORYLINES = [
+  { id: 'olise-madrid', playerName: 'Michael Olise', query: 'Olise',   fromClub: 'Bayern München',        toTeamId: 541, window: 'TRANSFER WINDOW SPOTLIGHT', status: 'FIT SCENARIO', buzz: 88, signal: 'most-debated transfer on Calibre this week' },
+  { id: 'vitinha-city', playerName: 'Vitinha',       query: 'Vitinha', fromClub: 'Paris Saint-Germain',   toTeamId: 50,  window: 'TRANSFER WINDOW SPOTLIGHT', status: 'FIT SCENARIO', buzz: 82, signal: 'most-debated transfer on Calibre this week' },
+  { id: 'cubarsi-city', playerName: 'Pau Cubarsí',   query: 'Cubarsí', fromClub: 'FC Barcelona',          toTeamId: 50,  window: 'TRANSFER WINDOW SPOTLIGHT', status: 'FIT SCENARIO', buzz: 79, signal: 'most-debated transfer on Calibre this week' },
+];
 
-      <TalentDetailModal player={detailPlayer} onClose={()=>setDetailPlayer(null)}/>
-    </div>
-  );
+const WEEK_INDEX = () => { const d = new Date(); const j = new Date(d.getFullYear(), 0, 1); return Math.floor((d - j) / 604800000); };
+
+// Selection signal: pass live engagement to rank by Calibre's own debate volume;
+// otherwise rank by seeded buzz and rotate weekly across the top three.
+export function pickTransferStoryline(storylines = TRANSFER_STORYLINES, engagement = null) {
+  if (!storylines || !storylines.length) return null;
+  if (engagement && Object.keys(engagement).length) {
+    return [...storylines].sort((a, b) => (engagement[b.id] || 0) - (engagement[a.id] || 0))[0];
+  }
+  const byBuzz = [...storylines].sort((a, b) => (b.buzz || 0) - (a.buzz || 0));
+  const pool = byBuzz.slice(0, 3);
+  return pool[WEEK_INDEX() % pool.length] || byBuzz[0];
+}
+
+function lineupForPlayer(player, score) {
+  const t = `${player.position || ''} ${player.bucket || ''}`.toLowerCase();
+  const s = Math.round(score);
+  const tier = n => Math.max(58, s - n);
+  if (/gk|keeper/.test(t)) return [{ role: 'GK', label: 'PRIMARY', score: s, x: 50, y: 90 }];
+  if (/\bcb\b|centre|center|\bdef\b|back/.test(t)) return [
+    { role: 'CB', label: 'PRIMARY', score: s, x: 50, y: 80 },
+    { role: 'LCB', label: 'SECONDARY', score: tier(6), x: 34, y: 78 },
+    { role: 'DM', label: 'GAME-STATE OPTION', score: tier(12), x: 50, y: 62 }];
+  if (/\bdm\b|defensive mid/.test(t)) return [
+    { role: 'DM', label: 'PRIMARY', score: s, x: 50, y: 66 },
+    { role: 'CM', label: 'SECONDARY', score: tier(6), x: 50, y: 50 },
+    { role: 'CB', label: 'GAME-STATE OPTION', score: tier(12), x: 50, y: 80 }];
+  if (/\bam\b|attacking mid|\b10\b/.test(t)) return [
+    { role: 'AM', label: 'PRIMARY', score: s, x: 50, y: 34 },
+    { role: 'L8', label: 'SECONDARY', score: tier(6), x: 34, y: 50 },
+    { role: 'RW', label: 'GAME-STATE OPTION', score: tier(12), x: 80, y: 22 }];
+  if (/lw|rw|wing|wide/.test(t)) return [
+    { role: 'LW', label: 'PRIMARY', score: s, x: 18, y: 20 },
+    { role: 'RW', label: 'SECONDARY', score: tier(7), x: 82, y: 20 },
+    { role: 'L8', label: 'GAME-STATE OPTION', score: tier(13), x: 34, y: 54 }];
+  if (/st|cf|fwd|att|striker|forward/.test(t)) return [
+    { role: 'ST', label: 'PRIMARY', score: s, x: 50, y: 14 },
+    { role: 'SS', label: 'SECONDARY', score: tier(6), x: 50, y: 30 },
+    { role: 'LW', label: 'GAME-STATE OPTION', score: tier(12), x: 20, y: 22 }];
+  return [
+    { role: 'CM', label: 'PRIMARY', score: s, x: 50, y: 52 },
+    { role: 'AM', label: 'SECONDARY', score: tier(6), x: 50, y: 34 },
+    { role: 'L8', label: 'GAME-STATE OPTION', score: tier(12), x: 34, y: 50 }];
+}
+
+function cleanArchetype(player) {
+  const a = String(player.archetype || '');
+  if (a && !/registry profile|provisional/i.test(a)) return a;
+  const t = `${player.position || ''} ${player.bucket || ''}`.toLowerCase();
+  if (/gk|keeper/.test(t)) return 'Goalkeeper';
+  if (/\bcb\b|\bdef\b|back/.test(t)) return 'Defender';
+  if (/lw|rw|wing|wide/.test(t)) return 'Wide forward';
+  if (/st|cf|fwd|att|striker|forward/.test(t)) return 'Forward';
+  if (/\bdm\b|\b6\b/.test(t)) return 'Deep midfielder';
+  if (/\bam\b|\b10\b/.test(t)) return 'Attacking midfielder';
+  return 'Midfielder';
+}
+
+// Generate the full spotlight card from a real player + destination team.
+export function buildTransferSpotlight(player, team, storyline = {}) {
+  if (!player || !team) return null;
+  const archetype = cleanArchetype(player);
+  const p = { ...player, archetype };
+  const report = buildSystemFitReport(p, team);
+  const score = report.score;
+  const last = String(player.name || '').split(' ').slice(-1)[0];
+  const article = /^[aeiou]/i.test(report.verdict) ? 'An' : 'A';
+  const topSignal = [...report.breakdown].sort((a, b) => b.value - a.value)[0];
+  return {
+    window: storyline.window || 'TRANSFER WINDOW SPOTLIGHT',
+    status: storyline.status || 'FIT SCENARIO',
+    score,
+    headline: `${player.name} to ${team.short}: does ${team.philosophy.toLowerCase()} fit?`,
+    dek: `${article} ${report.verdict.toLowerCase()} on the model. ${team.philosophy} asks specific things of a ${archetype.toLowerCase()} — this is where ${last} would start and what it changes.`,
+    verdict: report.conclusion,
+    talkingPoints: [report.strengths[0], report.strengths[2], report.risks[0]].filter(Boolean),
+    lineup: lineupForPlayer(p, score),
+    sourceNote: `Auto-generated by Calibre System Fit · strongest signal: ${topSignal.label.toLowerCase()} (${topSignal.value}). Selected by ${storyline.signal || 'most-debated transfer on Calibre this week'}.`,
+  };
 }

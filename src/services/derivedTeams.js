@@ -1,31 +1,25 @@
 // ============================================================
-// derivedTeams.js  —  read derived tactical profiles
+// derivedTeams.js  —  read layer for derived_team_profiles
 // ------------------------------------------------------------
 // The System Fit page resolves a club in this order:
-//   1. curated SYSTEM_TEAMS (hand-authored, always wins)
-//   2. derived_team_profiles (this file — auto-generated breadth)
-//   3. generic fallback (neutral profile)
+//   1. SYSTEM_TEAMS (hand-authored 54)  — always wins
+//   2. derived_team_profiles (this file) — real traits from API-Football
+//   3. generic API normalize             — last-resort "pending" placeholder
 //
-// This module supplies layer 2: given an API-Football team id,
-// return a profile shaped exactly like a SYSTEM_TEAMS entry so
-// the fit engine can score it without any special-casing.
-//
-// A tiny in-memory cache avoids re-querying the same club within
-// a session.
+// This module fetches the derived rows once, caches them in memory,
+// and exposes a by-team-id lookup that returns a profile shaped
+// exactly like a SYSTEM_TEAMS entry (so the fit engine can score it
+// with no special-casing).
 // ============================================================
 
-import * as sbClient from './supabaseClient.js';
+import { supabase } from './supabaseClient.js';
 
-// supabaseClient.js may export the client as `supabase` (named) or default.
-const supabase = sbClient.supabase || sbClient.default || sbClient.client;
+let _cache = null;       // Map<team_id, profile>
+let _loading = null;     // in-flight promise (dedupe concurrent calls)
 
-const cache = new Map();        // team_id -> profile | null
-
-// Convert a derived_team_profiles row into the SYSTEM_TEAMS shape.
-function rowToProfile(row) {
-  if (!row) return null;
-  // traits is stored as jsonb; supabase-js returns it already parsed.
-  const traits = typeof row.traits === 'string' ? safeParse(row.traits) : row.traits;
+// Shape a derived DB row into the same object the fit engine expects
+// from a SYSTEM_TEAMS entry.
+function shapeRow(row) {
   return {
     id: row.team_id,
     name: row.name,
@@ -38,37 +32,54 @@ function rowToProfile(row) {
     lineHeight: row.line_height || 'Medium',
     crest: row.crest || (row.name || '').split(' ').slice(0, 2).map(w => w[0]).join('').slice(0, 3).toUpperCase(),
     crestUrl: row.logo || null,
-    traits: traits || { control: 72, transition: 72, pressing: 72, width: 72, tempo: 72, defensiveLoad: 72 },
+    traits: row.traits || { control: 75, transition: 75, pressing: 75, width: 75, tempo: 75, defensiveLoad: 75 },
     derived: true,
     source: 'derived',
   };
 }
 
-function safeParse(s) { try { return JSON.parse(s); } catch { return null; } }
+// Load all derived profiles once, cache as Map keyed by team_id.
+export async function loadDerivedTeams() {
+  if (_cache) return _cache;
+  if (_loading) return _loading;
 
-/**
- * Fetch a derived profile for one API-Football team id.
- * Returns a SYSTEM_TEAMS-shaped object, or null if none exists.
- */
-export async function getDerivedTeamProfile(teamId) {
-  const id = Number(teamId);
-  if (!Number.isInteger(id) || id <= 0) return null;
-  if (cache.has(id)) return cache.get(id);
+  _loading = (async () => {
+    try {
+      const { data, error } = await supabase
+        .from('derived_team_profiles')
+        .select('team_id,name,short,country,league,formation,philosophy,intensity,line_height,crest,logo,traits');
+      if (error) throw error;
+      const map = new Map();
+      for (const row of (data || [])) {
+        map.set(Number(row.team_id), shapeRow(row));
+      }
+      _cache = map;
+      return map;
+    } catch {
+      _cache = new Map();
+      return _cache;
+    } finally {
+      _loading = null;
+    }
+  })();
 
-  try {
-    const { data, error } = await supabase
-      .from('derived_team_profiles')
-      .select('*')
-      .eq('team_id', id)
-      .order('season', { ascending: false })   // newest season first
-      .limit(1)
-      .maybeSingle();
-    if (error) { cache.set(id, null); return null; }
-    const profile = rowToProfile(data);
-    cache.set(id, profile);
-    return profile;
-  } catch {
-    cache.set(id, null);
-    return null;
-  }
+  return _loading;
+}
+
+// Synchronous lookup against the in-memory cache (call loadDerivedTeams first).
+export function getDerivedTeam(teamId) {
+  if (!_cache) return null;
+  return _cache.get(Number(teamId)) || null;
+}
+
+// Convenience: given an API team object, return a derived-enriched profile if
+// we have one, else null. Used by normalizeApiTeam's enrichment path.
+export function enrichFromDerived(apiTeam) {
+  if (!apiTeam || !_cache) return null;
+  const hit = _cache.get(Number(apiTeam.id));
+  if (!hit) return null;
+  return {
+    ...hit,
+    crestUrl: apiTeam.crestUrl || hit.crestUrl || null,
+  };
 }

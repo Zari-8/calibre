@@ -52,6 +52,27 @@ const LEAGUE_LABEL = {
   144: 'Belgian Pro League',
   94:  'Primeira Liga',
   71:  'Brasileirão',
+  399: 'NPFL',
+  // D1s
+  253: 'MLS',
+  307: 'Saudi Pro League',
+  128: 'Liga Profesional Argentina',
+  // D2 / lower tiers of the majors
+  40:  'Championship',
+  141: 'Segunda División',
+  79:  '2. Bundesliga',
+  136: 'Serie B',
+  62:  'Ligue 2',
+  80:  '3. Liga',
+  41:  'League One',
+  129: 'Primera Nacional',
+  // Women's
+  44:  'FA WSL',
+  142: 'Liga F (W)',
+  82:  'Frauen-Bundesliga',
+  139: 'Serie A Women',
+  254: 'NWSL',
+  64:  "D1 Arkema (W)",
 };
 
 const API_BASE = 'https://v3.football.api-sports.io';
@@ -262,17 +283,33 @@ async function main() {
   if (DRY) { console.log('DRY RUN — nothing written.'); return; }
   if (!out.length) { console.log('Nothing to write.'); return; }
 
+  // Dedupe by (team_id, season) BEFORE writing. A club can appear in more
+  // than one league we queried (shared team_id across competitions), and
+  // Postgres rejects an upsert that touches the same conflict target twice
+  // in one batch ("cannot affect row a second time"). Last write wins.
+  const seen = new Map();
+  for (const row of out) {
+    seen.set(`${row.team_id}::${row.season}`, row);
+  }
+  const deduped = [...seen.values()];
+  const dropped = out.length - deduped.length;
+  if (dropped > 0) console.log(`Deduped ${dropped} duplicate club row(s) shared across leagues.`);
+
   // upsert in chunks on (team_id, season)
-  let written = 0;
-  for (let i = 0; i < out.length; i += 100) {
-    const chunk = out.slice(i, i + 100);
+  let written = 0, failed = 0;
+  for (let i = 0; i < deduped.length; i += 100) {
+    const chunk = deduped.slice(i, i + 100);
     const { error } = await sb
       .from('derived_team_profiles')
       .upsert(chunk, { onConflict: 'team_id,season' });
-    if (error) { console.error('Upsert error:', error.message); process.exit(1); }
+    if (error) {
+      console.error(`Upsert error on chunk ${i}-${i + chunk.length}:`, error.message);
+      failed += chunk.length;
+      continue;            // keep going; don't lose the whole run on one bad chunk
+    }
     written += chunk.length;
   }
-  console.log(`Wrote ${written} rows to derived_team_profiles.`);
+  console.log(`Wrote ${written} rows to derived_team_profiles.${failed ? ` (${failed} failed)` : ''}`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

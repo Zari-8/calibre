@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight, Bookmark, BookmarkCheck, ChevronRight, Crown, Filter,
-  FileText, Globe, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
+  FileText, Globe, GraduationCap, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
 } from 'lucide-react';
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
@@ -16,6 +16,7 @@ import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { deriveArchetype } from '../services/playerTraits.js';
 import { leagueContext, LEAGUES } from '../data/leagues.js';
+import { loadYouthProspects } from '../services/youthProspects.js';
 
 // Decode HTML entities that survive in stored/imported names ("O&apos;Reilly" → "O'Reilly").
 function cleanName(value){
@@ -78,6 +79,7 @@ const VIEW_TABS = [
   { key:'discover', label:'Discovery Pool', icon:Sparkles },
   { key:'pathways', label:'Trajectory Pathways', icon:Route },
   { key:'rankings', label:'Rising Rankings', icon:TrendingUp },
+  { key:'youth', label:'Youth Radar', icon:GraduationCap },
 ];
 const POSITION_OPTIONS = ['all','RW','LW','CM','DM','ST','FB'];
 
@@ -460,6 +462,15 @@ export default function Talents() {
   const [liveSearched, setLiveSearched] = useState(false);
   const [registryTalents, setRegistryTalents] = useState([]);
   const [registryLoading, setRegistryLoading] = useState(true);
+  // Youth Radar (academy prospect directory — identity + age only, no ratings)
+  const [youthProspects, setYouthProspects] = useState([]);
+  const [youthLoading, setYouthLoading] = useState(false);
+  const [youthLoaded, setYouthLoaded] = useState(false);
+  const [youthAge, setYouthAge] = useState('all');
+  const [youthPos, setYouthPos] = useState('all');
+  const [youthLeague, setYouthLeague] = useState('all');
+  const [youthQuery, setYouthQuery] = useState('');
+  const [youthPlayingUpOnly, setYouthPlayingUpOnly] = useState(false);
   const resultsRef = useRef(null);
 
   useEffect(() => {
@@ -562,6 +573,54 @@ export default function Talents() {
     setRegion('all'); setAge('all'); setPosition('all'); setPotential('70'); setMinRating('all'); setSort('readiness'); setTrajectory('all'); setQuery('');
   }
 
+  // Lazy-load the youth directory only when the Youth Radar tab is first opened.
+  useEffect(() => {
+    if (view !== 'youth' || youthLoaded || youthLoading) return;
+    setYouthLoading(true);
+    loadYouthProspects()
+      .then(rows => { setYouthProspects(rows || []); setYouthLoaded(true); })
+      .finally(() => setYouthLoading(false));
+  }, [view, youthLoaded, youthLoading]);
+
+  // Distinct leagues present, for the league filter chips.
+  const youthLeagueOptions = useMemo(() => {
+    const set = new Map();
+    for (const p of youthProspects) if (p.youth_league) set.set(p.youth_league, true);
+    return ['all', ...set.keys()];
+  }, [youthProspects]);
+
+  // Filtered + sorted youth list. Age is the PRIMARY axis (youngest first),
+  // so a 15yo anywhere surfaces above an 18yo regardless of league ceiling.
+  const youthFiltered = useMemo(() => {
+    const q = youthQuery.trim().toLowerCase();
+    return youthProspects
+      .filter(p => {
+        if (youthPlayingUpOnly && !(p.plays_up_years >= 3)) return false;
+        if (youthLeague !== 'all' && p.youth_league !== youthLeague) return false;
+        if (youthPos !== 'all' && (p.position || '').toLowerCase() !== youthPos.toLowerCase()) return false;
+        if (youthAge !== 'all') {
+          const a = Number(p.age);
+          if (youthAge === '15-16' && !(a <= 16)) return false;
+          if (youthAge === '17' && a !== 17) return false;
+          if (youthAge === '18' && a !== 18) return false;
+          if (youthAge === '19-20' && !(a >= 19)) return false;
+        }
+        if (q) {
+          const hay = `${p.name} ${p.club} ${p.nationality}`.toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      })
+      .sort((a, b) =>
+        (Number(a.age) || 99) - (Number(b.age) || 99)
+        || (Number(b.plays_up_years) || 0) - (Number(a.plays_up_years) || 0)
+        || String(a.name).localeCompare(String(b.name))
+      );
+  }, [youthProspects, youthQuery, youthAge, youthPos, youthLeague, youthPlayingUpOnly]);
+
+  const YOUTH_POSITIONS = ['all', 'Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
+  const YOUTH_AGE_BANDS = ['all', '15-16', '17', '18', '19-20'];
+
   return (
     <div className="page talents-page">
       <div className="td-header">
@@ -628,6 +687,61 @@ export default function Talents() {
       {view === 'rankings' && <section className="talent-ranking-panel">
         <div className="talent-ranking-panel__head"><div><span>Trajectory-adjusted ranking</span><h2>Players moving fastest</h2></div><p>Readiness, potential and recent movement combine to surface the most actionable prospects.</p></div>
         {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
+      </section>}
+
+      {view === 'youth' && <section className="youth-radar">
+        <div className="youth-radar__intro">
+          <div className="talent-ranking-panel__head">
+            <div><span>Academy &amp; reserve pipelines</span><h2>Youth Radar</h2></div>
+            <p>A discovery directory of young players in elite academy and U21 competitions — filter by age, position, nationality and league. This is a <strong>scouting surface, not a performance ranking</strong>: youth-level match data isn't published, so prospects are listed by profile and age, not rated. The <em>playing up</em> badge flags players competing well above their age for their level.</p>
+          </div>
+        </div>
+
+        <div className="youth-radar__filters">
+          <div className="youth-radar__search">
+            <Search size={15}/>
+            <input type="text" value={youthQuery} placeholder="Search name, club or nationality…" onChange={e=>setYouthQuery(e.target.value)} aria-label="Search prospects"/>
+            {youthQuery && <button type="button" onClick={()=>setYouthQuery('')} aria-label="Clear"><X size={14}/></button>}
+          </div>
+          <div className="youth-radar__chips" role="group" aria-label="Age band">
+            {YOUTH_AGE_BANDS.map(b => <button type="button" key={b} className={youthAge===b?'is-active':''} onClick={()=>setYouthAge(b)}>{b==='all'?'All ages':b}</button>)}
+          </div>
+          <div className="youth-radar__chips" role="group" aria-label="Position">
+            {YOUTH_POSITIONS.map(p => <button type="button" key={p} className={youthPos===p?'is-active':''} onClick={()=>setYouthPos(p)}>{p==='all'?'All positions':p}</button>)}
+          </div>
+          {youthLeagueOptions.length > 2 && <div className="youth-radar__chips" role="group" aria-label="League">
+            {youthLeagueOptions.map(l => <button type="button" key={l} className={youthLeague===l?'is-active':''} onClick={()=>setYouthLeague(l)}>{l==='all'?'All leagues':l}</button>)}
+          </div>}
+          <label className="youth-radar__toggle">
+            <input type="checkbox" checked={youthPlayingUpOnly} onChange={e=>setYouthPlayingUpOnly(e.target.checked)}/>
+            <span>Playing up only (3+ years)</span>
+          </label>
+        </div>
+
+        {youthLoading && <p className="youth-radar__status">Loading prospect directory…</p>}
+        {!youthLoading && youthLoaded && youthFiltered.length === 0 && <p className="youth-radar__status">No prospects match these filters.</p>}
+
+        {!youthLoading && youthFiltered.length > 0 && <>
+          <div className="youth-radar__count">{youthFiltered.length} prospect{youthFiltered.length===1?'':'s'}</div>
+          <div className="youth-radar__grid">
+            {youthFiltered.slice(0, 120).map(p => (
+              <article className="youth-card" key={`${p.api_player_id}-${p.season}`}>
+                <div className="youth-card__top">
+                  <ApiPlayerImage playerId={p.api_player_id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={p.name} loading="lazy"/>
+                  {p.plays_up_years >= 3 && <span className="youth-card__badge" title={`Competing ${p.plays_up_years} years above level`}>+{p.plays_up_years}y up</span>}
+                </div>
+                <div className="youth-card__body">
+                  <strong>{cleanName(p.name)}</strong>
+                  <small>{p.position || '—'} · age {p.age ?? '—'}</small>
+                  <span className="youth-card__meta">{p.nationality || '—'}{p.height_cm?` · ${p.height_cm}cm`:''}</span>
+                  <span className="youth-card__club">{p.club}</span>
+                  <span className="youth-card__league">{p.youth_league}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+          {youthFiltered.length > 120 && <p className="youth-radar__status">Showing first 120 — narrow the filters to see more.</p>}
+        </>}
       </section>}
 
       <div className="founder-strip" style={{marginTop:18}}>

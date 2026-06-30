@@ -1,0 +1,68 @@
+/* ============================================================
+   Youth Radar — academy prospect directory on the Talents page
+   Append to your global stylesheet. Matches the dark/lime theme.
+   ============================================================ */
+
+.youth-radar { margin-top: 18px; }
+
+.youth-radar__intro p { max-width: 760px; line-height: 1.55; color: var(--sf-muted, #9aa0a6); font-size: 13.5px; }
+.youth-radar__intro strong { color: #d7ff4f; }
+.youth-radar__intro em { color: #cfd3d8; font-style: italic; }
+
+.youth-radar__filters {
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+  margin: 18px 0 8px;
+}
+
+.youth-radar__search {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 10px; padding: 8px 12px; min-width: 260px;
+}
+.youth-radar__search input {
+  background: transparent; border: none; outline: none; color: #fff;
+  font-size: 13.5px; width: 100%;
+}
+.youth-radar__search svg { color: var(--sf-muted, #9aa0a6); flex: none; }
+.youth-radar__search button { background: none; border: none; color: var(--sf-muted, #9aa0a6); cursor: pointer; display: flex; }
+
+.youth-radar__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.youth-radar__chips button {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.10);
+  color: #cfd3d8; border-radius: 999px; padding: 6px 12px; font-size: 12.5px;
+  cursor: pointer; transition: all .12s ease;
+}
+.youth-radar__chips button:hover { border-color: rgba(215,255,79,0.4); }
+.youth-radar__chips button.is-active { background: #d7ff4f; color: #0b0d0a; border-color: #d7ff4f; font-weight: 600; }
+
+.youth-radar__toggle { display: flex; align-items: center; gap: 7px; color: #cfd3d8; font-size: 12.5px; cursor: pointer; user-select: none; }
+.youth-radar__toggle input { accent-color: #d7ff4f; width: 15px; height: 15px; }
+
+.youth-radar__count { color: var(--sf-muted, #9aa0a6); font-size: 12px; letter-spacing: .04em; text-transform: uppercase; margin: 6px 0 10px; }
+.youth-radar__status { color: var(--sf-muted, #9aa0a6); font-size: 13px; padding: 18px 2px; }
+
+.youth-radar__grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.youth-card {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; overflow: hidden; transition: border-color .12s ease, transform .12s ease;
+}
+.youth-card:hover { border-color: rgba(215,255,79,0.35); transform: translateY(-2px); }
+
+.youth-card__top { position: relative; aspect-ratio: 1/1; background: rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; }
+.youth-card__top img { width: 100%; height: 100%; object-fit: cover; }
+.youth-card__badge {
+  position: absolute; top: 8px; right: 8px;
+  background: #d7ff4f; color: #0b0d0a; font-size: 11px; font-weight: 700;
+  padding: 3px 8px; border-radius: 999px; letter-spacing: .02em;
+}
+
+.youth-card__body { padding: 10px 12px 13px; display: flex; flex-direction: column; gap: 2px; }
+.youth-card__body strong { color: #fff; font-size: 14px; line-height: 1.25; }
+.youth-card__body small { color: #d7ff4f; font-size: 12px; }
+.youth-card__meta { color: var(--sf-muted, #9aa0a6); font-size: 11.5px; }
+.youth-card__club { color: #cfd3d8; font-size: 12px; margin-top: 4px; }
+.youth-card__league { color: var(--sf-muted, #9aa0a6); font-size: 11px; }

@@ -506,6 +506,7 @@ export default function Talents() {
   const [youthLeague, setYouthLeague] = useState('all');
   const [youthQuery, setYouthQuery] = useState('');
   const [youthPlayingUpOnly, setYouthPlayingUpOnly] = useState(false);
+  const [youthShortlistOnly, setYouthShortlistOnly] = useState(false);
   const resultsRef = useRef(null);
 
   useEffect(() => {
@@ -630,6 +631,7 @@ export default function Talents() {
     const q = youthQuery.trim().toLowerCase();
     return youthProspects
       .filter(p => {
+        if (youthShortlistOnly && !shortlist.includes(p.name)) return false;
         if (youthPlayingUpOnly && !(p.plays_up_years >= 3)) return false;
         if (youthLeague !== 'all' && p.youth_league !== youthLeague) return false;
         if (youthPos !== 'all' && (p.position || '').toLowerCase() !== youthPos.toLowerCase()) return false;
@@ -651,7 +653,7 @@ export default function Talents() {
         || (Number(b.plays_up_years) || 0) - (Number(a.plays_up_years) || 0)
         || String(a.name).localeCompare(String(b.name))
       );
-  }, [youthProspects, youthQuery, youthAge, youthPos, youthLeague, youthPlayingUpOnly]);
+  }, [youthProspects, youthQuery, youthAge, youthPos, youthLeague, youthPlayingUpOnly, youthShortlistOnly, shortlist]);
 
   const YOUTH_POSITIONS = ['all', 'Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
   const YOUTH_AGE_BANDS = ['all', '15-16', '17', '18', '19-20'];
@@ -769,6 +771,10 @@ export default function Talents() {
           .yr-stat b { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 30px; line-height: 1; color: #fff; }
           .yr-stat span { display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--yr-muted); margin-top: 6px; }
           .yr-stat small { display: block; font-size: 10.5px; color: var(--yr-lime); margin-top: 3px; }
+          .yr-stat-btn { text-align: left; cursor: pointer; font: inherit; transition: border-color .12s, background .12s; }
+          .yr-stat-btn:hover { border-color: rgba(200,250,60,0.4); }
+          .yr-stat-btn.on { border-color: var(--yr-lime); background: rgba(200,250,60,0.08); }
+          .yr-stat-btn.on small { text-decoration: underline; }
           .yr-note { display: flex; gap: 10px; align-items: flex-start; background: rgba(200,250,60,0.05); border: 1px solid rgba(200,250,60,0.18); border-radius: 10px; padding: 11px 14px; margin-bottom: 18px; color: #c4c9ce; font-size: 12.5px; line-height: 1.45; }
           .yr-note svg { color: var(--yr-lime); flex: none; margin-top: 1px; }
           .yr-body { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
@@ -818,6 +824,7 @@ export default function Talents() {
           .yr-sig.notable { background: #4fe3a0; color: #033322; }
           .yr-sig.watch { background: rgba(255,255,255,0.12); color: #c4c9ce; }
           .yr-status { color: var(--yr-muted); font-size: 13px; padding: 30px 4px; }
+          .yr-inline-clear { background: none; border: none; color: var(--yr-lime); cursor: pointer; font: inherit; text-decoration: underline; padding: 0; }
           .yr-more { display: block; margin: 6px auto 0; background: var(--yr-card); border: 1px solid var(--yr-line); color: #fff; border-radius: 9px; padding: 10px 20px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
           @media (max-width: 880px) { .yr-head { grid-template-columns: 1fr; } .yr-stats { grid-template-columns: repeat(2, 1fr); } .yr-body { grid-template-columns: 1fr; } .yr-rail { border-right: none; border-bottom: 1px solid var(--yr-line); padding-right: 0; padding-bottom: 16px; } }
         `}</style>
@@ -833,7 +840,9 @@ export default function Talents() {
             <div className="yr-stat"><b>{youthStats.leagues}</b><span>Leagues tracked</span><small>Academy &amp; reserve</small></div>
             <div className="yr-stat"><b>{youthStats.extreme}</b><span>Extreme signals</span><small>+6 years up</small></div>
             <div className="yr-stat"><b>{youthStats.youngest}</b><span>Youngest age</span><small>Years old</small></div>
-            <div className="yr-stat"><b>{shortlist.length}</b><span>Shortlisted</span><small>Your watchlist</small></div>
+            <button type="button" className={`yr-stat yr-stat-btn${youthShortlistOnly?' on':''}`} onClick={()=>setYouthShortlistOnly(v=>!v)} title={shortlist.length ? 'Show only your shortlisted prospects' : 'Bookmark prospects to build a watchlist'}>
+              <b>{shortlist.length}</b><span>Shortlisted</span><small>{youthShortlistOnly ? 'Showing watchlist ·\u00A0clear' : 'Your watchlist'}</small>
+            </button>
           </div>
         </div>
 
@@ -876,7 +885,9 @@ export default function Talents() {
 
           <div className="yr-main">
             {youthLoading && <p className="yr-status">Loading prospect directory…</p>}
-            {!youthLoading && youthLoaded && youthFiltered.length === 0 && <p className="yr-status">No prospects match these filters. Try widening the age band or clearing the search.</p>}
+            {!youthLoading && youthShortlistOnly && shortlist.length === 0 && <p className="yr-status">Your watchlist is empty. Tap the bookmark on any prospect card to add them here.</p>}
+            {!youthLoading && youthLoaded && !youthShortlistOnly && youthFiltered.length === 0 && <p className="yr-status">No prospects match these filters. Try widening the age band or clearing the search.</p>}
+            {!youthLoading && youthShortlistOnly && shortlist.length > 0 && youthFiltered.length === 0 && <p className="yr-status">None of your shortlisted prospects match the current filters. <button type="button" className="yr-inline-clear" onClick={()=>{setYouthQuery('');setYouthAge('all');setYouthPos('all');setYouthLeague('all');setYouthPlayingUpOnly(false);}}>Clear filters</button></p>}
 
             {!youthLoading && youthByLeague.map(([league, players]) => (
               <div className="yr-league" key={league}>

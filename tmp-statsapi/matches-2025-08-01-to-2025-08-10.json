@@ -1,0 +1,1045 @@
+[
+  {
+    "id": "mt_198558889",
+    "competition_id": "comp_586572",
+    "season_id": "sn_3065526",
+    "matchday": 3,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T23:30:00.000Z",
+    "home_team": {
+      "id": "tm_97234",
+      "name": "CF Monterrey"
+    },
+    "away_team": {
+      "id": "tm_8670388",
+      "name": "Charlotte FC"
+    },
+    "score": {
+      "home": 0,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_837997708",
+    "competition_id": "comp_586572",
+    "season_id": "sn_3065526",
+    "matchday": 3,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T23:30:00.000Z",
+    "home_team": {
+      "id": "tm_64463",
+      "name": "New York Red Bulls"
+    },
+    "away_team": {
+      "id": "tm_0229389",
+      "name": "FC Juárez"
+    },
+    "score": {
+      "home": 1,
+      "away": 1,
+      "final_score": {
+        "home": 6,
+        "away": 4
+      }
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_191095658",
+    "competition_id": "comp_4540",
+    "season_id": "sn_6120504",
+    "matchday": 4,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T22:00:00.000Z",
+    "home_team": {
+      "id": "tm_26068",
+      "name": "San Lorenzo"
+    },
+    "away_team": {
+      "id": "tm_85905",
+      "name": "Vélez Sarsfield"
+    },
+    "score": {
+      "home": 1,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_838539090",
+    "competition_id": "comp_4540",
+    "season_id": "sn_6120504",
+    "matchday": 4,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T20:00:00.000Z",
+    "home_team": {
+      "id": "tm_00100",
+      "name": "Godoy Cruz"
+    },
+    "away_team": {
+      "id": "tm_47685",
+      "name": "Gimnasia y Esgrima"
+    },
+    "score": {
+      "home": 1,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_252103592",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_809996",
+      "name": "Raków Częstochowa"
+    },
+    "away_team": {
+      "id": "tm_34008",
+      "name": "Maccabi Haifa"
+    },
+    "score": {
+      "home": 0,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_626048214",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_62012",
+      "name": "HNK Hajduk Split"
+    },
+    "away_team": {
+      "id": "tm_34072",
+      "name": "Dinamo City"
+    },
+    "score": {
+      "home": 2,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_191854316",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_93021",
+      "name": "FK Partizan"
+    },
+    "away_team": {
+      "id": "tm_02173",
+      "name": "Hibernian"
+    },
+    "score": {
+      "home": 0,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_626048108",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_05877",
+      "name": "Larne FC"
+    },
+    "away_team": {
+      "id": "tm_26997",
+      "name": "Santa Clara"
+    },
+    "score": {
+      "home": 0,
+      "away": 3,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_838792464",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_40266",
+      "name": "SK Rapid Wien"
+    },
+    "away_team": {
+      "id": "tm_73411",
+      "name": "Dundee United"
+    },
+    "score": {
+      "home": 2,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_838544420",
+    "competition_id": "comp_0196",
+    "season_id": "sn_9673094",
+    "matchday": 2,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_4153",
+      "name": "Port Vale"
+    },
+    "away_team": {
+      "id": "tm_2814",
+      "name": "Cardiff City"
+    },
+    "score": {
+      "home": 0,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_404269050",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:45:00.000Z",
+    "home_team": {
+      "id": "tm_83002",
+      "name": "Víkingur Reykjavík"
+    },
+    "away_team": {
+      "id": "tm_29810",
+      "name": "Brøndby IF"
+    },
+    "score": {
+      "home": 3,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_979380693",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:45:00.000Z",
+    "home_team": {
+      "id": "tm_79322",
+      "name": "St. Patrick's Athletic"
+    },
+    "away_team": {
+      "id": "tm_10361",
+      "name": "Beşiktaş"
+    },
+    "score": {
+      "home": 1,
+      "away": 4,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_404269549",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:30:00.000Z",
+    "home_team": {
+      "id": "tm_3730513",
+      "name": "KF Ballkani"
+    },
+    "away_team": {
+      "id": "tm_38765",
+      "name": "Shamrock Rovers"
+    },
+    "score": {
+      "home": 1,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_585916799",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:30:00.000Z",
+    "home_team": {
+      "id": "tm_5753193",
+      "name": "Universitatea Craiova"
+    },
+    "away_team": {
+      "id": "tm_64254",
+      "name": "FC Spartak Trnava"
+    },
+    "score": {
+      "home": 3,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_252103986",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:30:00.000Z",
+    "home_team": {
+      "id": "tm_51172",
+      "name": "FC Lugano"
+    },
+    "away_team": {
+      "id": "tm_51897",
+      "name": "NK Celje"
+    },
+    "score": {
+      "home": 0,
+      "away": 5,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_404205989",
+    "competition_id": "comp_7739",
+    "season_id": "sn_0819325",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:30:00.000Z",
+    "home_team": {
+      "id": "tm_89932",
+      "name": "Servette FC"
+    },
+    "away_team": {
+      "id": "tm_85290",
+      "name": "FC Utrecht"
+    },
+    "score": {
+      "home": 1,
+      "away": 3,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_585987629",
+    "competition_id": "comp_7739",
+    "season_id": "sn_0819325",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:30:00.000Z",
+    "home_team": {
+      "id": "tm_26681",
+      "name": "FCSB"
+    },
+    "away_team": {
+      "id": "tm_4649576",
+      "name": "FC Drita"
+    },
+    "score": {
+      "home": 3,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_404269514",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:15:00.000Z",
+    "home_team": {
+      "id": "tm_64410",
+      "name": "FC Lausanne-Sport"
+    },
+    "away_team": {
+      "id": "tm_487860",
+      "name": "Astana"
+    },
+    "score": {
+      "home": 3,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_747753902",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:00:00.000Z",
+    "home_team": {
+      "id": "tm_89295",
+      "name": "AC Sparta Praha"
+    },
+    "away_team": {
+      "id": "tm_7937035",
+      "name": "FC Ararat-Armenia"
+    },
+    "score": {
+      "home": 4,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_747631415",
+    "competition_id": "comp_408698",
+    "season_id": "sn_1397633",
+    "matchday": 3,
+    "stage_name": "qualifying",
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-07T18:00:00.000Z",
+    "home_team": {
+      "id": "tm_455649",
+      "name": "Differdange FC 03"
+    },
+    "away_team": {
+      "id": "tm_91278",
+      "name": "FCI Levadia Tallinn"
+    },
+    "score": {
+      "home": 2,
+      "away": 3,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": false
+  },
+  {
+    "id": "mt_973861800",
+    "competition_id": "comp_4795",
+    "season_id": "sn_0880515",
+    "matchday": 19,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T23:30:00.000Z",
+    "home_team": {
+      "id": "tm_66113",
+      "name": "Grêmio"
+    },
+    "away_team": {
+      "id": "tm_74020",
+      "name": "Sport Recife"
+    },
+    "score": {
+      "home": 0,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_585281416",
+    "competition_id": "comp_4540",
+    "season_id": "sn_6120504",
+    "matchday": 4,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T23:00:00.000Z",
+    "home_team": {
+      "id": "tm_63454",
+      "name": "Argentinos Juniors"
+    },
+    "away_team": {
+      "id": "tm_04237",
+      "name": "Club Atlético Unión de Santa Fe"
+    },
+    "score": {
+      "home": 1,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_589747736",
+    "competition_id": "comp_1917",
+    "season_id": "sn_0885352",
+    "matchday": 24,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T23:00:00.000Z",
+    "home_team": {
+      "id": "tm_05855",
+      "name": "El Nacional"
+    },
+    "away_team": {
+      "id": "tm_18385",
+      "name": "Barcelona SC"
+    },
+    "score": {
+      "home": 1,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_362343718",
+    "competition_id": "comp_970794",
+    "season_id": "sn_0889248",
+    "matchday": null,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T23:00:00.000Z",
+    "home_team": {
+      "id": "tm_96946260",
+      "name": "Westchester SC"
+    },
+    "away_team": {
+      "id": "tm_3861118",
+      "name": "South Georgia Tormenta FC"
+    },
+    "score": {
+      "home": 3,
+      "away": 3,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_589672292",
+    "competition_id": "comp_9799",
+    "season_id": "sn_8446349",
+    "matchday": null,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T22:00:00.000Z",
+    "home_team": {
+      "id": "tm_64463",
+      "name": "New York Red Bulls"
+    },
+    "away_team": {
+      "id": "tm_59611",
+      "name": "Real Salt Lake"
+    },
+    "score": {
+      "home": 2,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_973061138",
+    "competition_id": "comp_9799",
+    "season_id": "sn_8446349",
+    "matchday": null,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T22:00:00.000Z",
+    "home_team": {
+      "id": "tm_869273",
+      "name": "Minnesota United"
+    },
+    "away_team": {
+      "id": "tm_15511",
+      "name": "Colorado Rapids"
+    },
+    "score": {
+      "home": 1,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_251396615",
+    "competition_id": "comp_9799",
+    "season_id": "sn_8446349",
+    "matchday": null,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T22:00:00.000Z",
+    "home_team": {
+      "id": "tm_3714078",
+      "name": "FC Cincinnati"
+    },
+    "away_team": {
+      "id": "tm_8670388",
+      "name": "Charlotte FC"
+    },
+    "score": {
+      "home": 0,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_364117502",
+    "competition_id": "comp_1085",
+    "season_id": "sn_5786416",
+    "matchday": 21,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T21:30:00.000Z",
+    "home_team": {
+      "id": "tm_088719",
+      "name": "Atlético Goianiense"
+    },
+    "away_team": {
+      "id": "tm_74037",
+      "name": "Botafogo-SP"
+    },
+    "score": {
+      "home": 2,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_251096522",
+    "competition_id": "comp_4795",
+    "season_id": "sn_0880515",
+    "matchday": 19,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T21:30:00.000Z",
+    "home_team": {
+      "id": "tm_01988",
+      "name": "Cruzeiro"
+    },
+    "away_team": {
+      "id": "tm_83636",
+      "name": "Santos"
+    },
+    "score": {
+      "home": 1,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_252869150",
+    "competition_id": "comp_6981",
+    "season_id": "sn_9663804",
+    "matchday": 5,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T20:30:00.000Z",
+    "home_team": {
+      "id": "tm_6696215",
+      "name": "ADC Juan Pablo II"
+    },
+    "away_team": {
+      "id": "tm_7901336",
+      "name": "Deportivo Binacional"
+    },
+    "score": {
+      "home": 0,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_837404460",
+    "competition_id": "comp_1917",
+    "season_id": "sn_0885352",
+    "matchday": 24,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T20:30:00.000Z",
+    "home_team": {
+      "id": "tm_22531",
+      "name": "Macará"
+    },
+    "away_team": {
+      "id": "tm_8900250",
+      "name": "Delfín"
+    },
+    "score": {
+      "home": 0,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_252650702",
+    "competition_id": "comp_4540",
+    "season_id": "sn_6120504",
+    "matchday": 4,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T20:00:00.000Z",
+    "home_team": {
+      "id": "tm_32231",
+      "name": "Instituto De Córdoba"
+    },
+    "away_team": {
+      "id": "tm_311845",
+      "name": "Platense"
+    },
+    "score": {
+      "home": 1,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_251921888",
+    "competition_id": "comp_19988",
+    "season_id": "sn_9663924",
+    "matchday": 15,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T20:00:00.000Z",
+    "home_team": {
+      "id": "tm_8302436",
+      "name": "Portland Thorns FC"
+    },
+    "away_team": {
+      "id": "tm_1964391",
+      "name": "Seattle Reign FC"
+    },
+    "score": {
+      "home": 4,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_585485826",
+    "competition_id": "comp_8385",
+    "season_id": "sn_6120591",
+    "matchday": 1,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T19:30:00.000Z",
+    "home_team": {
+      "id": "tm_04880",
+      "name": "Moreirense"
+    },
+    "away_team": {
+      "id": "tm_8932260",
+      "name": "FC Alverca"
+    },
+    "score": {
+      "home": 2,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_838038395",
+    "competition_id": "comp_8385",
+    "season_id": "sn_6120591",
+    "matchday": 1,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T19:30:00.000Z",
+    "home_team": {
+      "id": "tm_79214",
+      "name": "Sporting Braga"
+    },
+    "away_team": {
+      "id": "tm_690582",
+      "name": "Tondela"
+    },
+    "score": {
+      "home": 3,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_747393005",
+    "competition_id": "comp_1941",
+    "season_id": "sn_1397655",
+    "matchday": 2,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_62012",
+      "name": "HNK Hajduk Split"
+    },
+    "away_team": {
+      "id": "tm_322602",
+      "name": "HNK Gorica"
+    },
+    "score": {
+      "home": 2,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_746553127",
+    "competition_id": "comp_1085",
+    "season_id": "sn_5786416",
+    "matchday": 21,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_455902",
+      "name": "Avaí"
+    },
+    "away_team": {
+      "id": "tm_931189",
+      "name": "Cuiabá"
+    },
+    "score": {
+      "home": 2,
+      "away": 0,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_837945380",
+    "competition_id": "comp_4795",
+    "season_id": "sn_0880515",
+    "matchday": 19,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_58387",
+      "name": "Palmeiras"
+    },
+    "away_team": {
+      "id": "tm_25880",
+      "name": "Ceará"
+    },
+    "score": {
+      "home": 2,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_364708638",
+    "competition_id": "comp_4795",
+    "season_id": "sn_0880515",
+    "matchday": 19,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_01922",
+      "name": "Vasco da Gama"
+    },
+    "away_team": {
+      "id": "tm_36272",
+      "name": "Atlético Mineiro"
+    },
+    "score": {
+      "home": 1,
+      "away": 1,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  },
+  {
+    "id": "mt_620258803",
+    "competition_id": "comp_573599",
+    "season_id": "sn_2991796",
+    "matchday": 19,
+    "stage_name": null,
+    "group_label": null,
+    "status": "finished",
+    "utc_date": "2025-08-10T19:00:00.000Z",
+    "home_team": {
+      "id": "tm_38753",
+      "name": "Cobresal"
+    },
+    "away_team": {
+      "id": "tm_47691",
+      "name": "Coquimbo Unido"
+    },
+    "score": {
+      "home": 1,
+      "away": 2,
+      "final_score": null
+    },
+    "odds_available": true,
+    "live_odds_available": false,
+    "xg_available": true
+  }
+]

@@ -1,0 +1,51 @@
+provider,team_id,team_name,competition_id,season_id,matches,goals_for,goals_against,xg_for,xg_against,shots_for,shots_against,pressures,updated_at
+thestatsapi,tm_97234,CF Monterrey,comp_586572,sn_3065526,0,0,0,0,0,19,0,0,2026-06-30T16:20:07.633Z
+thestatsapi,tm_8670388,Charlotte FC,comp_586572,sn_3065526,0,2,0,0,0,4,0,0,2026-06-30T16:20:07.633Z
+thestatsapi,tm_0229389,FC Juárez,comp_586572,sn_3065526,0,4,0,0,0,21,0,0,2026-06-30T16:20:09.475Z
+thestatsapi,tm_64463,New York Red Bulls,comp_586572,sn_3065526,0,6,0,0,0,11,0,0,2026-06-30T16:20:09.475Z
+thestatsapi,tm_85905,Vélez Sarsfield,comp_4540,sn_6120504,0,0,0,0.62,0,6,0,0,2026-06-30T16:20:11.331Z
+thestatsapi,tm_26068,San Lorenzo,comp_4540,sn_6120504,0,1,0,1.83,0,22,0,0,2026-06-30T16:20:11.331Z
+thestatsapi,tm_00100,Godoy Cruz,comp_4540,sn_6120504,0,1,0,1.08,0,20,0,0,2026-06-30T16:20:13.267Z
+thestatsapi,tm_47685,Gimnasia y Esgrima,comp_4540,sn_6120504,0,2,0,1.38,0,5,0,0,2026-06-30T16:20:13.267Z
+thestatsapi,tm_4153,Port Vale,comp_0196,sn_9673094,0,0,0,0,0,16,0,0,2026-06-30T16:20:19.999Z
+thestatsapi,tm_2814,Cardiff City,comp_0196,sn_9673094,0,0,0,0,0,9,0,0,2026-06-30T16:20:19.999Z
+thestatsapi,tm_66113,Grêmio,comp_4795,sn_0880515,0,0,0,1.37,0,14,0,0,2026-06-30T16:20:30.613Z
+thestatsapi,tm_74020,Sport Recife,comp_4795,sn_0880515,0,1,0,1.52,0,11,0,0,2026-06-30T16:20:30.613Z
+thestatsapi,tm_63454,Argentinos Juniors,comp_4540,sn_6120504,0,1,0,0.56,0,9,0,0,2026-06-30T16:20:32.369Z
+thestatsapi,tm_04237,Club Atlético Unión de Santa Fe,comp_4540,sn_6120504,0,0,0,0.81,0,15,0,0,2026-06-30T16:20:32.369Z
+thestatsapi,tm_05855,El Nacional,comp_1917,sn_0885352,0,1,0,0.2,0,15,0,0,2026-06-30T16:20:34.148Z
+thestatsapi,tm_18385,Barcelona SC,comp_1917,sn_0885352,0,2,0,0.91,0,13,0,0,2026-06-30T16:20:34.148Z
+thestatsapi,tm_96946260,Westchester SC,comp_970794,sn_0889248,0,3,0,1.19,0,14,0,0,2026-06-30T16:20:35.895Z
+thestatsapi,tm_3861118,South Georgia Tormenta FC,comp_970794,sn_0889248,0,3,0,1.35,0,12,0,0,2026-06-30T16:20:35.895Z
+thestatsapi,tm_59611,Real Salt Lake,comp_9799,sn_8446349,0,1,0,1.13,0,7,0,0,2026-06-30T16:20:37.672Z
+thestatsapi,tm_64463,New York Red Bulls,comp_9799,sn_8446349,0,2,0,3.86,0,24,0,0,2026-06-30T16:20:37.672Z
+thestatsapi,tm_869273,Minnesota United,comp_9799,sn_8446349,0,1,0,2.23,0,22,0,0,2026-06-30T16:20:39.413Z
+thestatsapi,tm_15511,Colorado Rapids,comp_9799,sn_8446349,0,2,0,1.83,0,12,0,0,2026-06-30T16:20:39.413Z
+thestatsapi,tm_3714078,FC Cincinnati,comp_9799,sn_8446349,0,0,0,1.71,0,17,0,0,2026-06-30T16:20:41.167Z
+thestatsapi,tm_8670388,Charlotte FC,comp_9799,sn_8446349,0,1,0,0.57,0,8,0,0,2026-06-30T16:20:41.167Z
+thestatsapi,tm_74037,Botafogo-SP,comp_1085,sn_5786416,0,0,0,0,0,6,0,0,2026-06-30T16:20:42.972Z
+thestatsapi,tm_088719,Atlético Goianiense,comp_1085,sn_5786416,0,2,0,0,0,25,0,0,2026-06-30T16:20:42.972Z
+thestatsapi,tm_01988,Cruzeiro,comp_4795,sn_0880515,0,1,0,2.41,0,19,0,0,2026-06-30T16:20:45.007Z
+thestatsapi,tm_83636,Santos,comp_4795,sn_0880515,0,2,0,1.81,0,9,0,0,2026-06-30T16:20:45.007Z
+thestatsapi,tm_6696215,ADC Juan Pablo II,comp_6981,sn_9663804,0,0,0,0,0,13,0,0,2026-06-30T16:20:46.951Z
+thestatsapi,tm_7901336,Deportivo Binacional,comp_6981,sn_9663804,0,0,0,0,0,4,0,0,2026-06-30T16:20:46.952Z
+thestatsapi,tm_8900250,Delfín,comp_1917,sn_0885352,0,0,0,0.03,0,5,0,0,2026-06-30T16:20:48.895Z
+thestatsapi,tm_22531,Macará,comp_1917,sn_0885352,0,0,0,0.14,0,16,0,0,2026-06-30T16:20:48.895Z
+thestatsapi,tm_32231,Instituto De Córdoba,comp_4540,sn_6120504,0,1,0,1.29,0,13,0,0,2026-06-30T16:20:51.047Z
+thestatsapi,tm_311845,Platense,comp_4540,sn_6120504,0,1,0,1,0,12,0,0,2026-06-30T16:20:51.047Z
+thestatsapi,tm_1964391,Seattle Reign FC,comp_19988,sn_9663924,0,2,0,0.37,0,11,0,0,2026-06-30T16:20:52.992Z
+thestatsapi,tm_8302436,Portland Thorns FC,comp_19988,sn_9663924,0,4,0,1.51,0,23,0,0,2026-06-30T16:20:52.992Z
+thestatsapi,tm_04880,Moreirense,comp_8385,sn_6120591,0,2,0,0.9,0,10,0,0,2026-06-30T16:20:54.782Z
+thestatsapi,tm_8932260,FC Alverca,comp_8385,sn_6120591,0,1,0,1.01,0,7,0,0,2026-06-30T16:20:54.782Z
+thestatsapi,tm_690582,Tondela,comp_8385,sn_6120591,0,0,0,0.79,0,7,0,0,2026-06-30T16:20:56.680Z
+thestatsapi,tm_79214,Sporting Braga,comp_8385,sn_6120591,0,3,0,2.01,0,8,0,0,2026-06-30T16:20:56.681Z
+thestatsapi,tm_322602,HNK Gorica,comp_1941,sn_1397655,0,0,0,0.79,0,6,0,0,2026-06-30T16:20:58.441Z
+thestatsapi,tm_62012,HNK Hajduk Split,comp_1941,sn_1397655,0,2,0,2.96,0,23,0,0,2026-06-30T16:20:58.441Z
+thestatsapi,tm_931189,Cuiabá,comp_1085,sn_5786416,0,0,0,0,0,21,0,0,2026-06-30T16:21:00.370Z
+thestatsapi,tm_455902,Avaí,comp_1085,sn_5786416,0,2,0,0,0,9,0,0,2026-06-30T16:21:00.370Z
+thestatsapi,tm_58387,Palmeiras,comp_4795,sn_0880515,0,2,0,1.5,0,8,0,0,2026-06-30T16:21:02.550Z
+thestatsapi,tm_25880,Ceará,comp_4795,sn_0880515,0,1,0,0.34,0,7,0,0,2026-06-30T16:21:02.550Z
+thestatsapi,tm_36272,Atlético Mineiro,comp_4795,sn_0880515,0,1,0,0.97,0,17,0,0,2026-06-30T16:21:04.400Z
+thestatsapi,tm_01922,Vasco da Gama,comp_4795,sn_0880515,0,1,0,1.77,0,15,0,0,2026-06-30T16:21:04.400Z
+thestatsapi,tm_47691,Coquimbo Unido,comp_573599,sn_2991796,0,2,0,0,0,12,0,0,2026-06-30T16:21:06.200Z
+thestatsapi,tm_38753,Cobresal,comp_573599,sn_2991796,0,1,0,0,0,16,0,0,2026-06-30T16:21:06.200Z

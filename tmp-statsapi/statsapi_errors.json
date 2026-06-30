@@ -1,0 +1,42 @@
+[
+  {
+    "matchId": "mt_626048214",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  },
+  {
+    "matchId": "mt_191854316",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  },
+  {
+    "matchId": "mt_626048108",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  },
+  {
+    "matchId": "mt_404269549",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  },
+  {
+    "matchId": "mt_404205989",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  },
+  {
+    "matchId": "mt_585987629",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  },
+  {
+    "matchId": "mt_747753902",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  },
+  {
+    "matchId": "mt_747631415",
+    "endpoint": "player-stats",
+    "error": "404: {\"error\":{\"code\":\"NOT_FOUND\",\"message\":\"Player statistics not found for this match\",\"status_code\":404}}"
+  }
+]

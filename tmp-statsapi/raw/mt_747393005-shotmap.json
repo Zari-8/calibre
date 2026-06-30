@@ -1,0 +1,1052 @@
+{
+  "match_id": "mt_747393005",
+  "event": {
+    "id": "mt_747393005",
+    "home_team_id": "tm_62012",
+    "away_team_id": "tm_322602"
+  },
+  "data": [
+    {
+      "id": "sh_726031330",
+      "player_id": "pl_74170609",
+      "player_name": "Filip Čuić",
+      "team_id": "tm_322602",
+      "team_name": "HNK Gorica",
+      "x": 4,
+      "y": 44.4,
+      "minute": 3,
+      "result": "miss",
+      "expected_goals": 0.31,
+      "situation": "set-piece",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "high-left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 57.1,
+        "z": 76.4
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_3765048",
+        "name": "Ivica Ivušić"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_847692990",
+      "player_id": "pl_84774072",
+      "player_name": "Abdoulie Sanyang",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 24,
+      "y": 50,
+      "minute": 5,
+      "result": "miss",
+      "expected_goals": 0.03,
+      "situation": "assisted",
+      "body_part": "left-foot",
+      "goal_type": null,
+      "goal_mouth_location": "high",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 55.3,
+        "z": 61.1
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_304275778",
+      "player_id": "pl_01515444",
+      "player_name": "Luka Vrzić",
+      "team_id": "tm_322602",
+      "team_name": "HNK Gorica",
+      "x": 24.7,
+      "y": 55,
+      "minute": 9,
+      "result": "miss",
+      "expected_goals": 0.03,
+      "situation": "throw-in-set-piece",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 66.2,
+        "z": 19.4
+      },
+      "block_coordinates": {
+        "x": 7.5,
+        "y": 41.7,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_3765048",
+        "name": "Ivica Ivušić"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_610548444",
+      "player_id": "pl_74170609",
+      "player_name": "Filip Čuić",
+      "team_id": "tm_322602",
+      "team_name": "HNK Gorica",
+      "x": 7.9,
+      "y": 41.1,
+      "minute": 9,
+      "result": "save",
+      "expected_goals": 0.08,
+      "situation": "throw-in-set-piece",
+      "body_part": "head",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 48.4,
+        "z": 16.5
+      },
+      "block_coordinates": {
+        "x": 1,
+        "y": 48.2,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_3765048",
+        "name": "Ivica Ivušić"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": true,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_452169660",
+      "player_id": "pl_84774072",
+      "player_name": "Abdoulie Sanyang",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 9.5,
+      "y": 65.4,
+      "minute": 9,
+      "result": "save",
+      "expected_goals": 0.13,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 48.5,
+        "z": 2.5
+      },
+      "block_coordinates": {
+        "x": 8,
+        "y": 63.2,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_085927228",
+      "player_id": "pl_61962145",
+      "player_name": "Michele Šego",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 15.1,
+      "y": 57,
+      "minute": 10,
+      "result": "save",
+      "expected_goals": 0.1,
+      "situation": "fast-break",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 46.9,
+        "z": 18.4
+      },
+      "block_coordinates": {
+        "x": 1.5,
+        "y": 51.3,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_579316116",
+      "player_id": "pl_84774072",
+      "player_name": "Abdoulie Sanyang",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 10.8,
+      "y": 57.3,
+      "minute": 13,
+      "result": "miss",
+      "expected_goals": 0.17,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "close-right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 43.9,
+        "z": 8.3
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_963480879",
+      "player_id": "pl_45840568",
+      "player_name": "Jurica Pršir",
+      "team_id": "tm_322602",
+      "team_name": "HNK Gorica",
+      "x": 11,
+      "y": 51.9,
+      "minute": 29,
+      "result": "block",
+      "expected_goals": 0.09,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49.6,
+        "z": 19
+      },
+      "block_coordinates": {
+        "x": 9,
+        "y": 51.6,
+        "z": 0
+      },
+      "is_blocked_shot": true,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_3765048",
+        "name": "Ivica Ivušić"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_291803051",
+      "player_id": "pl_61655861",
+      "player_name": "Elvir Duraković",
+      "team_id": "tm_322602",
+      "team_name": "HNK Gorica",
+      "x": 6.9,
+      "y": 52.6,
+      "minute": 31,
+      "result": "miss",
+      "expected_goals": 0.26,
+      "situation": "set-piece",
+      "body_part": "head",
+      "goal_type": null,
+      "goal_mouth_location": "left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 65.2,
+        "z": 12.5
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_3765048",
+        "name": "Ivica Ivušić"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": true,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_138754597",
+      "player_id": "pl_61962145",
+      "player_name": "Michele Šego",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 24.8,
+      "y": 29.7,
+      "minute": 36,
+      "result": "block",
+      "expected_goals": 0.02,
+      "situation": "regular",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49.1,
+        "z": 19
+      },
+      "block_coordinates": {
+        "x": 17.7,
+        "y": 35.7,
+        "z": 0
+      },
+      "is_blocked_shot": true,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_726031345",
+      "player_id": "pl_3180680",
+      "player_name": "Filip Krovinović",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 31.9,
+      "y": 38.3,
+      "minute": 36,
+      "result": "save",
+      "expected_goals": 0.01,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "high-left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 54.2,
+        "z": 20.9
+      },
+      "block_coordinates": {
+        "x": 2.5,
+        "y": 50,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_847692935",
+      "player_id": "pl_96499604",
+      "player_name": "Yassine Benrahou",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 23.4,
+      "y": 48.7,
+      "minute": 40,
+      "result": "block",
+      "expected_goals": 0.04,
+      "situation": "assisted",
+      "body_part": "left-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49.9,
+        "z": 19
+      },
+      "block_coordinates": {
+        "x": 19.7,
+        "y": 48.9,
+        "z": 0
+      },
+      "is_blocked_shot": true,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_610548422",
+      "player_id": "pl_3180680",
+      "player_name": "Filip Krovinović",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 11.2,
+      "y": 39.1,
+      "minute": 42,
+      "result": "miss",
+      "expected_goals": 0.04,
+      "situation": "set-piece",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 34.8,
+        "z": 13.9
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_304275767",
+      "player_id": "pl_4765178",
+      "player_name": "Dario Melnjak",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 7.4,
+      "y": 59.7,
+      "minute": 42,
+      "result": "block",
+      "expected_goals": 0.05,
+      "situation": "set-piece",
+      "body_part": "head",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49,
+        "z": 19
+      },
+      "block_coordinates": {
+        "x": 2.5,
+        "y": 54,
+        "z": 0
+      },
+      "is_blocked_shot": true,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": true,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_452169605",
+      "player_id": "pl_83496640",
+      "player_name": "Rokas Pukštas",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 9.7,
+      "y": 45.4,
+      "minute": 45,
+      "result": "save",
+      "expected_goals": 0.02,
+      "situation": "throw-in-set-piece",
+      "body_part": "other",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49.8,
+        "z": 16.5
+      },
+      "block_coordinates": {
+        "x": 0.59999999999999,
+        "y": 48.9,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_085927217",
+      "player_id": "pl_83229392",
+      "player_name": "Adrion Pajaziti",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 15.1,
+      "y": 54,
+      "minute": 45,
+      "result": "block",
+      "expected_goals": 0.09,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49.6,
+        "z": 19
+      },
+      "block_coordinates": {
+        "x": 8.9,
+        "y": 52.5,
+        "z": 0
+      },
+      "is_blocked_shot": true,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_579316175",
+      "player_id": "pl_83496640",
+      "player_name": "Rokas Pukštas",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 4.8,
+      "y": 30.5,
+      "minute": 46,
+      "result": "block",
+      "expected_goals": 0.03,
+      "situation": "throw-in-set-piece",
+      "body_part": "left-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 53.4,
+        "z": 19
+      },
+      "block_coordinates": {
+        "x": 4,
+        "y": 33.1,
+        "z": 0
+      },
+      "is_blocked_shot": true,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_963480863",
+      "player_id": "pl_83496640",
+      "player_name": "Rokas Pukštas",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 6.7,
+      "y": 44.7,
+      "minute": 47,
+      "result": "miss",
+      "expected_goals": 0.09,
+      "situation": "corner",
+      "body_part": "head",
+      "goal_type": null,
+      "goal_mouth_location": "close-high-left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 57.6,
+        "z": 44.4
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": true,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_291803098",
+      "player_id": "pl_83496640",
+      "player_name": "Rokas Pukštas",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 20.9,
+      "y": 46.2,
+      "minute": 47,
+      "result": "block",
+      "expected_goals": 0.05,
+      "situation": "assisted",
+      "body_part": "left-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49.5,
+        "z": 19
+      },
+      "block_coordinates": {
+        "x": 16.4,
+        "y": 47.1,
+        "z": 0
+      },
+      "is_blocked_shot": true,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_138754536",
+      "player_id": "pl_3180680",
+      "player_name": "Filip Krovinović",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 14.4,
+      "y": 34.8,
+      "minute": 47,
+      "result": "save",
+      "expected_goals": 0.05,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 47.8,
+        "z": 4.4
+      },
+      "block_coordinates": {
+        "x": 2.4,
+        "y": 46.9,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_726031329",
+      "player_id": "pl_96499604",
+      "player_name": "Yassine Benrahou",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 11.5,
+      "y": 50,
+      "minute": 52,
+      "result": "goal",
+      "expected_goals": 0.82,
+      "situation": "penalty",
+      "body_part": "left-foot",
+      "goal_type": "penalty",
+      "goal_mouth_location": "low-right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 45.8,
+        "z": 6.3
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": true,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": true
+    },
+    {
+      "id": "sh_847692949",
+      "player_id": "pl_61962145",
+      "player_name": "Michele Šego",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 27.6,
+      "y": 44,
+      "minute": 55,
+      "result": "save",
+      "expected_goals": 0.01,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 50.2,
+        "z": 1.9
+      },
+      "block_coordinates": {
+        "x": 1.4,
+        "y": 49.8,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_304275706",
+      "player_id": "pl_61962145",
+      "player_name": "Michele Šego",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 11.5,
+      "y": 50,
+      "minute": 62,
+      "result": "goal",
+      "expected_goals": 0.82,
+      "situation": "penalty",
+      "body_part": "right-foot",
+      "goal_type": "penalty",
+      "goal_mouth_location": "low-centre",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 51,
+        "z": 3.8
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": true,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": true
+    },
+    {
+      "id": "sh_610548411",
+      "player_id": "pl_3180680",
+      "player_name": "Filip Krovinović",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 24.4,
+      "y": 43.6,
+      "minute": 66,
+      "result": "post",
+      "expected_goals": 0.02,
+      "situation": "assisted",
+      "body_part": "left-foot",
+      "goal_type": null,
+      "goal_mouth_location": "right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 44.8,
+        "z": 3.8
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_452169659",
+      "player_id": "pl_83496640",
+      "player_name": "Rokas Pukštas",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 9.9,
+      "y": 41.3,
+      "minute": 66,
+      "result": "miss",
+      "expected_goals": 0.26,
+      "situation": "regular",
+      "body_part": "left-foot",
+      "goal_type": null,
+      "goal_mouth_location": "left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 66.2,
+        "z": 16.7
+      },
+      "block_coordinates": {
+        "x": 1.9,
+        "y": 35.2,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_085927270",
+      "player_id": "pl_98007894",
+      "player_name": "Bruno Durdov",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 12.5,
+      "y": 69.1,
+      "minute": 87,
+      "result": "save",
+      "expected_goals": 0.05,
+      "situation": "fast-break",
+      "body_part": "left-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 46.8,
+        "z": 2.5
+      },
+      "block_coordinates": {
+        "x": 3.5,
+        "y": 55.1,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_579316169",
+      "player_id": "pl_3180680",
+      "player_name": "Filip Krovinović",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 26.7,
+      "y": 38.8,
+      "minute": 89,
+      "result": "save",
+      "expected_goals": 0.01,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "low-left",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 51.9,
+        "z": 4.4
+      },
+      "block_coordinates": {
+        "x": 2.5,
+        "y": 49.3,
+        "z": 0
+      },
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": true,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_963480804",
+      "player_id": "pl_25708926",
+      "player_name": "Vanja Pelko",
+      "team_id": "tm_322602",
+      "team_name": "HNK Gorica",
+      "x": 27.1,
+      "y": 36.2,
+      "minute": 90,
+      "result": "miss",
+      "expected_goals": 0.02,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "high",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 49.6,
+        "z": 87.5
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_3765048",
+        "name": "Ivica Ivušić"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    },
+    {
+      "id": "sh_291803037",
+      "player_id": "pl_72990603",
+      "player_name": "Fran Karačić",
+      "team_id": "tm_62012",
+      "team_name": "HNK Hajduk Split",
+      "x": 13.6,
+      "y": 58.7,
+      "minute": 90,
+      "result": "miss",
+      "expected_goals": 0.05,
+      "situation": "assisted",
+      "body_part": "right-foot",
+      "goal_type": null,
+      "goal_mouth_location": "close-right",
+      "goal_mouth_coordinates": {
+        "x": 0,
+        "y": 42.4,
+        "z": 27.8
+      },
+      "block_coordinates": null,
+      "is_blocked_shot": false,
+      "blocked_by_player_id": null,
+      "goalkeeper": {
+        "id": "pl_72977171",
+        "name": "Davor Matijaš"
+      },
+      "is_goal": false,
+      "is_on_target": false,
+      "is_headed": false,
+      "is_outside_box": true,
+      "is_penalty": false
+    }
+  ],
+  "np_xg_summary": {
+    "live": {
+      "home_team": 1.315,
+      "away_team": 0.8
+    },
+    "stored": {
+      "home_team": 1.32,
+      "away_team": 0.8
+    }
+  },
+  "meta": {
+    "is_final": true
+  }
+}

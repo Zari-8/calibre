@@ -803,8 +803,11 @@ export default function Talents() {
           .yr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 11px; }
           .yr-card { display: flex; gap: 11px; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 11px; padding: 12px; transition: border-color .12s, transform .12s; }
           .yr-card:hover { border-color: rgba(200,250,60,0.35); transform: translateY(-1px); }
+          .yr-card-media { display: flex; flex-direction: column; gap: 7px; flex: none; align-items: center; }
           .yr-card-img { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; flex: none; background: rgba(255,255,255,0.04); }
           .yr-card-img img { width: 100%; height: 100%; object-fit: cover; }
+          .yr-card-crest { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+          .yr-card-crest img { width: 100%; height: 100%; object-fit: contain; }
           .yr-card-body { min-width: 0; flex: 1; }
           .yr-card-body strong { display: block; color: #fff; font-size: 13.5px; line-height: 1.2; }
           .yr-card-body .yr-role { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--yr-muted); margin: 2px 0 7px; }
@@ -901,8 +904,11 @@ export default function Talents() {
                     const sig = youthSignal(p.plays_up_years);
                     return (
                       <article className="yr-card" key={`${p.api_player_id}-${p.season}`}>
-                        <div className="yr-card-img">
-                          <ApiPlayerImage playerId={p.api_player_id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={cleanName(p.name)} loading="lazy"/>
+                        <div className="yr-card-media">
+                          <div className="yr-card-img">
+                            <ApiPlayerImage playerId={p.api_player_id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={cleanName(p.name)} loading="lazy"/>
+                          </div>
+                          {p.logo && <div className="yr-card-crest"><img src={p.logo} alt="" loading="lazy"/></div>}
                         </div>
                         <div className="yr-card-body">
                           <strong>{cleanName(p.name)}</strong>

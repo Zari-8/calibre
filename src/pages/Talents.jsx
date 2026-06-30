@@ -499,11 +499,13 @@ export default function Talents() {
   useEffect(() => {
     let active = true;
     (async () => {
-      if (dossierUser?.id) await mergeLocalIntoAccount(dossierUser);
-      const saved = await loadWatchlist(dossierUser);
-      if (active && saved?.length) {
-        setShortlist(current => Array.from(new Set([...saved, ...current])));
-      }
+      try {
+        if (dossierUser?.id) await mergeLocalIntoAccount(dossierUser);
+        const saved = await loadWatchlist(dossierUser);
+        if (active && saved?.length) {
+          setShortlist(current => Array.from(new Set([...saved, ...current])));
+        }
+      } catch { /* watchlist table may not exist yet — fail soft */ }
     })();
     return () => { active = false; };
   }, [dossierUser?.id]);

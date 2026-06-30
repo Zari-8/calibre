@@ -21,7 +21,7 @@ export default function useAuth() {
     let active = true;
     const user = session?.user;
     if (!user?.id) { setUsername(null); return undefined; }
-    ensureProfile(user).then(name => { if (active) setUsername(name); });
+    ensureProfile(user).then(name => { if (active) setUsername(name); }).catch(() => { if (active) setUsername(null); });
     return () => { active = false; };
   }, [session?.user?.id]);
 

@@ -79,13 +79,15 @@ export async function isUsernameAvailable(username) {
 // username saved in auth metadata at sign-up time.
 export async function ensureProfile(user) {
   if (!supabase || !user?.id) return null;
-  const existing = await loadProfile(user.id);
-  if (existing) return existing;
-  const metaName = user.user_metadata?.username;
-  if (metaName) {
-    await writeProfile(user.id, metaName).catch(() => {});
-    return metaName;
-  }
+  try {
+    const existing = await loadProfile(user.id);
+    if (existing) return existing;
+    const metaName = user.user_metadata?.username;
+    if (metaName) {
+      await writeProfile(user.id, metaName).catch(() => {});
+      return metaName;
+    }
+  } catch { /* profiles table may not exist yet — fail soft, never crash */ }
   return null;
 }
 

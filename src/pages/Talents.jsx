@@ -85,6 +85,41 @@ const POSITION_OPTIONS = ['all','RW','LW','CM','DM','ST','FB'];
 
 function clamp(value, min, max) { return Math.max(min, Math.min(max, value)); }
 function trendValue(trend='0') { return Number.parseFloat(String(trend).replace('%','').replace('+','')) || 0; }
+
+// Nationality name -> flag emoji. Handles ISO countries plus the UK home
+// nations (England/Scotland/Wales need special subdivision tags), and common
+// football-data name variants. Unknown -> globe, never a broken box.
+const FLAG_SPECIAL = {
+  England: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0065}\u{E006E}\u{E0067}\u{E007F}',
+  Scotland: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0073}\u{E0063}\u{E0074}\u{E007F}',
+  Wales: '\u{1F3F4}\u{E0067}\u{E0062}\u{E0077}\u{E006C}\u{E0073}\u{E007F}',
+};
+const FLAG_ISO = {
+  Italy:'IT',France:'FR',Germany:'DE',Spain:'ES',Netherlands:'NL',Belgium:'BE',
+  Portugal:'PT',Nigeria:'NG',Brazil:'BR',Argentina:'AR',USA:'US','United States':'US',
+  'Saudi Arabia':'SA',Ireland:'IE','Northern Ireland':'GB',Switzerland:'CH',
+  Austria:'AT',Denmark:'DK',Sweden:'SE',Norway:'NO',Poland:'PL',Croatia:'HR',
+  Serbia:'RS',Turkey:'TR','Türkiye':'TR',Greece:'GR','Czech Republic':'CZ',Czechia:'CZ',
+  Ukraine:'UA',Russia:'RU',Morocco:'MA',Algeria:'DZ',Senegal:'SN',Ghana:'GH',
+  'Ivory Coast':'CI',"Cote d'Ivoire":'CI',Cameroon:'CM',Egypt:'EG',Tunisia:'TN',
+  Mali:'ML',Japan:'JP','South Korea':'KR','Korea Republic':'KR',Australia:'AU',
+  Mexico:'MX',Colombia:'CO',Uruguay:'UY',Chile:'CL',Peru:'PE',Ecuador:'EC',
+  Paraguay:'PY',Canada:'CA',Albania:'AL',Slovenia:'SI',Slovakia:'SK',Hungary:'HU',
+  Romania:'RO',Bulgaria:'BG',Finland:'FI',Iceland:'IS','Cape Verde':'CV',
+  'DR Congo':'CD','Congo DR':'CD',Gabon:'GA',Guinea:'GN',Angola:'AO',Zambia:'ZM',
+  Zimbabwe:'ZW','South Africa':'ZA',Kenya:'KE',Israel:'IL',Georgia:'GE',Armenia:'AM',
+  Montenegro:'ME',Kosovo:'XK','North Macedonia':'MK','Bosnia and Herzegovina':'BA',
+  Luxembourg:'LU',
+};
+function flagFor(nation) {
+  if (!nation) return '🌍';
+  const n = String(nation).trim();
+  if (FLAG_SPECIAL[n]) return FLAG_SPECIAL[n];
+  const iso = FLAG_ISO[n];
+  if (!iso || iso.length !== 2) return '🌍';
+  const A = 0x1F1E6;
+  return String.fromCodePoint(A + iso.charCodeAt(0) - 65) + String.fromCodePoint(A + iso.charCodeAt(1) - 65);
+}
 function imageFor(player) {
   return player.verifiedImage || player.apiImage || player.image || player.img || player.localImage || '';
 }
@@ -769,7 +804,11 @@ export default function Talents() {
           .yr-card-body .yr-role { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--yr-muted); margin: 2px 0 7px; }
           .yr-card-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #c4c9ce; }
           .yr-card-foot .yr-flag { color: var(--yr-muted); }
-          .yr-card-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; flex: none; }
+          .yr-card-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; flex: none; gap: 6px; }
+          .yr-bookmark { background: none; border: none; color: var(--yr-muted); cursor: pointer; padding: 0; display: flex; transition: color .12s, transform .12s; }
+          .yr-bookmark:hover { color: #fff; transform: scale(1.1); }
+          .yr-bookmark.on { color: var(--yr-lime); }
+          .yr-flagicon { font-size: 13px; line-height: 1; }
           .yr-up { text-align: right; }
           .yr-up b { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; line-height: 1; color: var(--yr-lime); }
           .yr-up span { display: block; font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--yr-muted); }
@@ -794,7 +833,7 @@ export default function Talents() {
             <div className="yr-stat"><b>{youthStats.leagues}</b><span>Leagues tracked</span><small>Academy &amp; reserve</small></div>
             <div className="yr-stat"><b>{youthStats.extreme}</b><span>Extreme signals</span><small>+6 years up</small></div>
             <div className="yr-stat"><b>{youthStats.youngest}</b><span>Youngest age</span><small>Years old</small></div>
-            <div className="yr-stat"><b style={{fontSize:'20px',color:'var(--yr-lime)'}}>LIVE</b><span>Data pipeline</span><small>Updated daily</small></div>
+            <div className="yr-stat"><b>{shortlist.length}</b><span>Shortlisted</span><small>Your watchlist</small></div>
           </div>
         </div>
 
@@ -858,9 +897,12 @@ export default function Talents() {
                           <strong>{cleanName(p.name)}</strong>
                           <div className="yr-role">{p.position || '—'}</div>
                           <div className="yr-card-foot">{p.club}</div>
-                          <div className="yr-card-foot"><span className="yr-flag">Age {p.age ?? '—'} · {p.nationality || '—'}</span></div>
+                          <div className="yr-card-foot"><span className="yr-flag"><span className="yr-flagicon">{flagFor(p.nationality)}</span> Age {p.age ?? '—'} · {p.nationality || '—'}</span></div>
                         </div>
                         <div className="yr-card-side">
+                          <button type="button" className={`yr-bookmark${shortlist.includes(p.name)?' on':''}`} aria-label={`${shortlist.includes(p.name)?'Remove from':'Add to'} shortlist`} onClick={()=>toggleShortlist(p.name)}>
+                            {shortlist.includes(p.name) ? <BookmarkCheck size={15}/> : <Bookmark size={15}/>}
+                          </button>
                           {p.plays_up_years >= 1 && <div className="yr-up"><b>+{p.plays_up_years}</b><span>yrs up</span></div>}
                           {sig && <span className={`yr-sig ${sig.cls}`}>{sig.label}</span>}
                         </div>

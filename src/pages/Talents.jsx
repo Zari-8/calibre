@@ -621,6 +621,37 @@ export default function Talents() {
   const YOUTH_POSITIONS = ['all', 'Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
   const YOUTH_AGE_BANDS = ['all', '15-16', '17', '18', '19-20'];
 
+  // Signal tier from plays_up_years — the honest "how far above level" read.
+  function youthSignal(years) {
+    if (years >= 6) return { label: 'Extreme', cls: 'extreme' };
+    if (years >= 5) return { label: 'Strong', cls: 'strong' };
+    if (years >= 4) return { label: 'Notable', cls: 'notable' };
+    if (years >= 3) return { label: 'Watchlist', cls: 'watch' };
+    return null;
+  }
+
+  // Header stats for the Youth Radar.
+  const youthStats = useMemo(() => {
+    const total = youthProspects.length;
+    const leagues = new Set(youthProspects.map(p => p.youth_league).filter(Boolean)).size;
+    const extreme = youthProspects.filter(p => p.plays_up_years >= 6).length;
+    const youngest = youthProspects.reduce((min, p) => {
+      const a = Number(p.age); return (a && a < min) ? a : min;
+    }, 99);
+    return { total, leagues, extreme, youngest: youngest === 99 ? '—' : youngest };
+  }, [youthProspects]);
+
+  // Group the filtered list by league for the sectioned layout.
+  const youthByLeague = useMemo(() => {
+    const groups = new Map();
+    for (const p of youthFiltered) {
+      const k = p.youth_league || 'Other';
+      if (!groups.has(k)) groups.set(k, []);
+      groups.get(k).push(p);
+    }
+    return [...groups.entries()];
+  }, [youthFiltered]);
+
   return (
     <div className="page talents-page">
       <div className="td-header">
@@ -689,59 +720,158 @@ export default function Talents() {
         {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
       </section>}
 
-      {view === 'youth' && <section className="youth-radar">
-        <div className="youth-radar__intro">
-          <div className="talent-ranking-panel__head">
-            <div><span>Academy &amp; reserve pipelines</span><h2>Youth Radar</h2></div>
-            <p>A discovery directory of young players in elite academy and U21 competitions — filter by age, position, nationality and league. This is a <strong>scouting surface, not a performance ranking</strong>: youth-level match data isn't published, so prospects are listed by profile and age, not rated. The <em>playing up</em> badge flags players competing well above their age for their level.</p>
+      {view === 'youth' && <section className="yr">
+        <style>{`
+          .yr { margin-top: 16px; --yr-line: rgba(255,255,255,0.09); --yr-card: rgba(255,255,255,0.025); --yr-muted: #8b9096; --yr-lime: #c8fa3c; }
+          .yr * { box-sizing: border-box; }
+          .yr-head { display: grid; grid-template-columns: minmax(220px, 1.1fr) 2fr; gap: 22px; align-items: start; margin-bottom: 18px; }
+          .yr-eyebrow { color: var(--yr-lime); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
+          .yr-title { font-family: 'Barlow Condensed', sans-serif; font-size: 38px; line-height: .98; letter-spacing: .01em; margin: 6px 0 10px; color: #fff; text-transform: uppercase; }
+          .yr-lede { color: var(--yr-muted); font-size: 13px; line-height: 1.5; max-width: 340px; }
+          .yr-lede a { color: var(--yr-lime); text-decoration: none; border-bottom: 1px solid rgba(200,250,60,0.3); }
+          .yr-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+          .yr-stat { background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 12px; padding: 14px 14px 12px; }
+          .yr-stat b { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 30px; line-height: 1; color: #fff; }
+          .yr-stat span { display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--yr-muted); margin-top: 6px; }
+          .yr-stat small { display: block; font-size: 10.5px; color: var(--yr-lime); margin-top: 3px; }
+          .yr-note { display: flex; gap: 10px; align-items: flex-start; background: rgba(200,250,60,0.05); border: 1px solid rgba(200,250,60,0.18); border-radius: 10px; padding: 11px 14px; margin-bottom: 18px; color: #c4c9ce; font-size: 12.5px; line-height: 1.45; }
+          .yr-note svg { color: var(--yr-lime); flex: none; margin-top: 1px; }
+          .yr-body { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+          .yr-rail { border-right: 1px solid var(--yr-line); padding-right: 18px; }
+          .yr-rail h4 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--yr-muted); margin: 0 0 10px; }
+          .yr-rail .yr-clear { float: right; color: var(--yr-lime); font-size: 11px; cursor: pointer; text-transform: none; letter-spacing: 0; background: none; border: none; }
+          .yr-search { display: flex; align-items: center; gap: 8px; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 9px; padding: 9px 11px; margin-bottom: 16px; }
+          .yr-search input { background: none; border: none; outline: none; color: #fff; font-size: 13px; width: 100%; }
+          .yr-search svg { color: var(--yr-muted); flex: none; }
+          .yr-field { margin-bottom: 15px; }
+          .yr-field label { display: block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--yr-muted); margin-bottom: 7px; }
+          .yr-field select { width: 100%; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 9px; padding: 9px 11px; color: #fff; font-size: 13px; }
+          .yr-bands { display: flex; flex-wrap: wrap; gap: 6px; }
+          .yr-bands button { background: var(--yr-card); border: 1px solid var(--yr-line); color: #c4c9ce; border-radius: 999px; padding: 6px 11px; font-size: 12px; cursor: pointer; }
+          .yr-bands button.on { background: var(--yr-lime); color: #0a0d08; border-color: var(--yr-lime); font-weight: 600; }
+          .yr-tiers { display: flex; flex-direction: column; gap: 8px; }
+          .yr-tier { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: #c4c9ce; cursor: pointer; }
+          .yr-tier input { accent-color: var(--yr-lime); width: 15px; height: 15px; }
+          .yr-tier i { margin-left: auto; font-style: normal; font-size: 11px; color: var(--yr-muted); background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 6px; padding: 1px 7px; }
+          .yr-main { min-width: 0; }
+          .yr-league { margin-bottom: 26px; }
+          .yr-league-head { display: flex; align-items: center; gap: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--yr-line); margin-bottom: 13px; }
+          .yr-league-head img { width: 22px; height: 22px; object-fit: contain; }
+          .yr-league-head strong { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; letter-spacing: .03em; text-transform: uppercase; color: #fff; }
+          .yr-league-head em { margin-left: auto; font-style: normal; font-size: 11.5px; color: var(--yr-muted); }
+          .yr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 11px; }
+          .yr-card { display: flex; gap: 11px; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 11px; padding: 12px; transition: border-color .12s, transform .12s; }
+          .yr-card:hover { border-color: rgba(200,250,60,0.35); transform: translateY(-1px); }
+          .yr-card-img { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; flex: none; background: rgba(255,255,255,0.04); }
+          .yr-card-img img { width: 100%; height: 100%; object-fit: cover; }
+          .yr-card-body { min-width: 0; flex: 1; }
+          .yr-card-body strong { display: block; color: #fff; font-size: 13.5px; line-height: 1.2; }
+          .yr-card-body .yr-role { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--yr-muted); margin: 2px 0 7px; }
+          .yr-card-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #c4c9ce; }
+          .yr-card-foot .yr-flag { color: var(--yr-muted); }
+          .yr-card-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; flex: none; }
+          .yr-up { text-align: right; }
+          .yr-up b { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; line-height: 1; color: var(--yr-lime); }
+          .yr-up span { display: block; font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--yr-muted); }
+          .yr-sig { font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
+          .yr-sig.extreme { background: #b388ff; color: #1a0a2e; }
+          .yr-sig.strong { background: #5ec8ff; color: #042033; }
+          .yr-sig.notable { background: #4fe3a0; color: #033322; }
+          .yr-sig.watch { background: rgba(255,255,255,0.12); color: #c4c9ce; }
+          .yr-status { color: var(--yr-muted); font-size: 13px; padding: 30px 4px; }
+          .yr-more { display: block; margin: 6px auto 0; background: var(--yr-card); border: 1px solid var(--yr-line); color: #fff; border-radius: 9px; padding: 10px 20px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+          @media (max-width: 880px) { .yr-head { grid-template-columns: 1fr; } .yr-stats { grid-template-columns: repeat(2, 1fr); } .yr-body { grid-template-columns: 1fr; } .yr-rail { border-right: none; border-bottom: 1px solid var(--yr-line); padding-right: 0; padding-bottom: 16px; } }
+        `}</style>
+
+        <div className="yr-head">
+          <div>
+            <div className="yr-eyebrow">Academy &amp; reserve pipelines</div>
+            <h2 className="yr-title">Prospect Signals</h2>
+            <p className="yr-lede">Young players flagged by how far above their age group they're competing. A discovery surface, <strong style={{color:'#c4c9ce'}}>not a performance ranking</strong>.</p>
+          </div>
+          <div className="yr-stats">
+            <div className="yr-stat"><b>{youthStats.total.toLocaleString()}</b><span>Prospects</span><small>Across all leagues</small></div>
+            <div className="yr-stat"><b>{youthStats.leagues}</b><span>Leagues tracked</span><small>Academy &amp; reserve</small></div>
+            <div className="yr-stat"><b>{youthStats.extreme}</b><span>Extreme signals</span><small>+6 years up</small></div>
+            <div className="yr-stat"><b>{youthStats.youngest}</b><span>Youngest age</span><small>Years old</small></div>
+            <div className="yr-stat"><b style={{fontSize:'20px',color:'var(--yr-lime)'}}>LIVE</b><span>Data pipeline</span><small>Updated daily</small></div>
           </div>
         </div>
 
-        <div className="youth-radar__filters">
-          <div className="youth-radar__search">
-            <Search size={15}/>
-            <input type="text" value={youthQuery} placeholder="Search name, club or nationality…" onChange={e=>setYouthQuery(e.target.value)} aria-label="Search prospects"/>
-            {youthQuery && <button type="button" onClick={()=>setYouthQuery('')} aria-label="Clear"><X size={14}/></button>}
-          </div>
-          <div className="youth-radar__chips" role="group" aria-label="Age band">
-            {YOUTH_AGE_BANDS.map(b => <button type="button" key={b} className={youthAge===b?'is-active':''} onClick={()=>setYouthAge(b)}>{b==='all'?'All ages':b}</button>)}
-          </div>
-          <div className="youth-radar__chips" role="group" aria-label="Position">
-            {YOUTH_POSITIONS.map(p => <button type="button" key={p} className={youthPos===p?'is-active':''} onClick={()=>setYouthPos(p)}>{p==='all'?'All positions':p}</button>)}
-          </div>
-          {youthLeagueOptions.length > 2 && <div className="youth-radar__chips" role="group" aria-label="League">
-            {youthLeagueOptions.map(l => <button type="button" key={l} className={youthLeague===l?'is-active':''} onClick={()=>setYouthLeague(l)}>{l==='all'?'All leagues':l}</button>)}
-          </div>}
-          <label className="youth-radar__toggle">
-            <input type="checkbox" checked={youthPlayingUpOnly} onChange={e=>setYouthPlayingUpOnly(e.target.checked)}/>
-            <span>Playing up only (3+ years)</span>
-          </label>
+        <div className="yr-note">
+          <Filter size={15}/>
+          <span>Signal strength is the age-level gap: a 16-year-old in U21 football reads +5 years up. Youth match data isn't published, so use these as discovery signals, not performance ratings.</span>
         </div>
 
-        {youthLoading && <p className="youth-radar__status">Loading prospect directory…</p>}
-        {!youthLoading && youthLoaded && youthFiltered.length === 0 && <p className="youth-radar__status">No prospects match these filters.</p>}
+        <div className="yr-body">
+          <aside className="yr-rail">
+            <h4>Filters <button type="button" className="yr-clear" onClick={()=>{setYouthQuery('');setYouthAge('all');setYouthPos('all');setYouthLeague('all');setYouthPlayingUpOnly(false);}}>Clear all</button></h4>
+            <div className="yr-search">
+              <Search size={14}/>
+              <input type="text" value={youthQuery} placeholder="Search prospect, club, nation…" onChange={e=>setYouthQuery(e.target.value)}/>
+              {youthQuery && <button type="button" style={{background:'none',border:'none',color:'var(--yr-muted)',cursor:'pointer',display:'flex'}} onClick={()=>setYouthQuery('')}><X size={13}/></button>}
+            </div>
+            <div className="yr-field">
+              <label>Age band</label>
+              <div className="yr-bands">
+                {YOUTH_AGE_BANDS.map(b => <button type="button" key={b} className={youthAge===b?'on':''} onClick={()=>setYouthAge(b)}>{b==='all'?'All':b}</button>)}
+              </div>
+            </div>
+            <div className="yr-field">
+              <label>Position</label>
+              <select value={youthPos} onChange={e=>setYouthPos(e.target.value)}>
+                {YOUTH_POSITIONS.map(p => <option key={p} value={p}>{p==='all'?'All positions':p}</option>)}
+              </select>
+            </div>
+            <div className="yr-field">
+              <label>League / competition</label>
+              <select value={youthLeague} onChange={e=>setYouthLeague(e.target.value)}>
+                {youthLeagueOptions.map(l => <option key={l} value={l}>{l==='all'?'All leagues':l}</option>)}
+              </select>
+            </div>
+            <div className="yr-field">
+              <label>Playing up (years)</label>
+              <label className="yr-tier"><input type="checkbox" checked={youthPlayingUpOnly} onChange={e=>setYouthPlayingUpOnly(e.target.checked)}/> 3+ years up only <i>{youthProspects.filter(p=>p.plays_up_years>=3).length}</i></label>
+            </div>
+          </aside>
 
-        {!youthLoading && youthFiltered.length > 0 && <>
-          <div className="youth-radar__count">{youthFiltered.length} prospect{youthFiltered.length===1?'':'s'}</div>
-          <div className="youth-radar__grid">
-            {youthFiltered.slice(0, 120).map(p => (
-              <article className="youth-card" key={`${p.api_player_id}-${p.season}`}>
-                <div className="youth-card__top">
-                  <ApiPlayerImage playerId={p.api_player_id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={p.name} loading="lazy"/>
-                  {p.plays_up_years >= 3 && <span className="youth-card__badge" title={`Competing ${p.plays_up_years} years above level`}>+{p.plays_up_years}y up</span>}
+          <div className="yr-main">
+            {youthLoading && <p className="yr-status">Loading prospect directory…</p>}
+            {!youthLoading && youthLoaded && youthFiltered.length === 0 && <p className="yr-status">No prospects match these filters. Try widening the age band or clearing the search.</p>}
+
+            {!youthLoading && youthByLeague.map(([league, players]) => (
+              <div className="yr-league" key={league}>
+                <div className="yr-league-head">
+                  {players[0]?.logo && <img src={players[0].logo} alt="" loading="lazy"/>}
+                  <strong>{league}</strong>
+                  <em>{players.length} prospect{players.length===1?'':'s'}</em>
                 </div>
-                <div className="youth-card__body">
-                  <strong>{cleanName(p.name)}</strong>
-                  <small>{p.position || '—'} · age {p.age ?? '—'}</small>
-                  <span className="youth-card__meta">{p.nationality || '—'}{p.height_cm?` · ${p.height_cm}cm`:''}</span>
-                  <span className="youth-card__club">{p.club}</span>
-                  <span className="youth-card__league">{p.youth_league}</span>
+                <div className="yr-grid">
+                  {players.slice(0, league === youthLeague || youthLeague !== 'all' ? 200 : 10).map(p => {
+                    const sig = youthSignal(p.plays_up_years);
+                    return (
+                      <article className="yr-card" key={`${p.api_player_id}-${p.season}`}>
+                        <div className="yr-card-img">
+                          <ApiPlayerImage playerId={p.api_player_id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={cleanName(p.name)} loading="lazy"/>
+                        </div>
+                        <div className="yr-card-body">
+                          <strong>{cleanName(p.name)}</strong>
+                          <div className="yr-role">{p.position || '—'}</div>
+                          <div className="yr-card-foot">{p.club}</div>
+                          <div className="yr-card-foot"><span className="yr-flag">Age {p.age ?? '—'} · {p.nationality || '—'}</span></div>
+                        </div>
+                        <div className="yr-card-side">
+                          {p.plays_up_years >= 1 && <div className="yr-up"><b>+{p.plays_up_years}</b><span>yrs up</span></div>}
+                          {sig && <span className={`yr-sig ${sig.cls}`}>{sig.label}</span>}
+                        </div>
+                      </article>
+                    );
+                  })}
                 </div>
-              </article>
+              </div>
             ))}
           </div>
-          {youthFiltered.length > 120 && <p className="youth-radar__status">Showing first 120 — narrow the filters to see more.</p>}
-        </>}
+        </div>
       </section>}
 
       <div className="founder-strip" style={{marginTop:18}}>

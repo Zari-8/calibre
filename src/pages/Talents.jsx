@@ -493,6 +493,7 @@ export default function Talents() {
   const [detailPlayer, setDetailPlayer] = useState(null);
   const [visibleCount, setVisibleCount] = useState(48);
   const [shortlist, setShortlist] = useState([]);
+  const { user: watchUser } = useAuth();
   // Hydrate the shortlist from the user's saved watchlist (Supabase if logged
   // in, localStorage otherwise). On login, merge any anonymous local picks up
   // into the account first so nothing is lost.
@@ -500,15 +501,15 @@ export default function Talents() {
     let active = true;
     (async () => {
       try {
-        if (dossierUser?.id) await mergeLocalIntoAccount(dossierUser);
-        const saved = await loadWatchlist(dossierUser);
+        if (watchUser?.id) await mergeLocalIntoAccount(watchUser);
+        const saved = await loadWatchlist(watchUser);
         if (active && saved?.length) {
           setShortlist(current => Array.from(new Set([...saved, ...current])));
         }
       } catch { /* watchlist table may not exist yet — fail soft */ }
     })();
     return () => { active = false; };
-  }, [dossierUser?.id]);
+  }, [watchUser?.id]);
   const [liveTalents, setLiveTalents] = useState([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveSearched, setLiveSearched] = useState(false);
@@ -624,8 +625,8 @@ export default function Talents() {
     setShortlist(current => isSaved ? current.filter(item => item !== name) : [...current, name]);
     // Persist in the background (Supabase if logged in, localStorage otherwise).
     const op = isSaved
-      ? removeFromWatchlist({ name }, dossierUser)
-      : addToWatchlist({ name, apiPlayerId: meta.apiPlayerId ?? null, context: meta.context ?? null }, dossierUser);
+      ? removeFromWatchlist({ name }, watchUser)
+      : addToWatchlist({ name, apiPlayerId: meta.apiPlayerId ?? null, context: meta.context ?? null }, watchUser);
     Promise.resolve(op).catch(() => {
       // On failure, roll the optimistic change back so UI matches reality.
       setShortlist(current => isSaved ? [...current, name] : current.filter(item => item !== name));

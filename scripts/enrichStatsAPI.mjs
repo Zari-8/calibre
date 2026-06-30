@@ -591,7 +591,14 @@ async function main() {
   let errors = 0;
   const droppedColumns = new Map();
 
+  let updateIndex = 0;
+
   for (const player of players) {
+    updateIndex++;
+    if (updateIndex % 25 === 0 || updateIndex === 1) {
+      console.log(`Updating player ${updateIndex}/${players.length}: ${player.player_name}`);
+    }
+
     const row = await findPlayer({
       statsapiPlayerId: player.statsapi_player_id,
       playerName: player.player_name,

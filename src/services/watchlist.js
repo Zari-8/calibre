@@ -1,70 +1,78 @@
-// src/services/watchlist.js
-// ─────────────────────────────────────────────────────────────────────────────
-// "Watchlist" — a personal saved-players list (advertised as a Pro feature).
+import { supabase, supabaseConfigured } from './supabaseClient.js';
+
+// ─────────────────────────────────────────────────────────────────────────
+// WATCHLIST — per-account saved players.
 //
-// localStorage-backed for now, so it works instantly for everyone without any
-// backend. A per-account Supabase sync can layer on top once auth + ContiPay
-// subscriptions are wired (store the same shape in a `watchlists` table keyed by
-// user_id, and hydrate this list from it on login).
+// Mirrors the community.js pattern: when a user is logged in, the watchlist
+// persists to Supabase (user_watchlist table) and follows them across devices.
+// When not logged in, it falls back to localStorage so the feature still works
+// for anonymous browsing — those local picks are merged up to the account on
+// first login (mergeLocalIntoAccount).
 //
-// Reactivity: every write dispatches a `calibre:watchlist-change` window event,
-// so any component can re-read getWatchlist() and stay in sync across the page.
-// ─────────────────────────────────────────────────────────────────────────────
+// The UI stores the shortlist as an array of player NAMES (matching the
+// existing Talents `shortlist` state), so these helpers speak names too, with
+// an optional apiPlayerId/context carried through for richer rows.
+// ─────────────────────────────────────────────────────────────────────────
 
-const KEY = 'calibre:watchlist';
-export const WATCHLIST_EVENT = 'calibre:watchlist-change';
+const LOCAL_KEY = 'calibre:watchlist:device';
 
-function read() {
-  try {
-    const raw = localStorage.getItem(KEY);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch {
-    return [];
+function localRead() {
+  try { return JSON.parse(window.localStorage.getItem(LOCAL_KEY)) || []; }
+  catch { return []; }
+}
+function localWrite(names) {
+  try { window.localStorage.setItem(LOCAL_KEY, JSON.stringify(names)); } catch {}
+}
+
+// Load the user's watchlist as an array of player names.
+export async function loadWatchlist(user) {
+  if (supabaseConfigured && user?.id) {
+    const { data, error } = await supabase
+      .from('user_watchlist')
+      .select('player_name')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+    if (!error && data) return data.map(r => r.player_name);
   }
+  return localRead();
 }
 
-function write(list) {
-  try { localStorage.setItem(KEY, JSON.stringify(list)); } catch { /* storage full / blocked */ }
-  try { window.dispatchEvent(new CustomEvent(WATCHLIST_EVENT)); } catch { /* SSR / no window */ }
-  return list;
-}
-
-function apiIdOf(player) {
-  return player?.apiPlayerId ?? player?.api_player_id ?? player?.id ?? null;
-}
-
-export function getWatchlist() {
-  return read();
-}
-
-export function isWatched(apiId) {
-  if (apiId == null) return false;
-  return read().some(p => String(p.apiPlayerId) === String(apiId));
-}
-
-export function toggleWatch(player) {
-  const apiId = apiIdOf(player);
-  if (apiId == null) return read();
-  const list = read();
-  const idx = list.findIndex(p => String(p.apiPlayerId) === String(apiId));
-  if (idx >= 0) {
-    list.splice(idx, 1);
-  } else {
-    list.unshift({
-      apiPlayerId: apiId,
-      name: player.full_name || player.name || 'Player',
-      position: player.position || player.pos || '',
-      team: player.team || player.club || '',
-      rating: player.rating ?? null,
-      img: player.img || player.image || null,
-      addedAt: Date.now(),
-    });
+// Add a player. Logged in → Supabase; otherwise localStorage.
+export async function addToWatchlist({ name, apiPlayerId = null, context = null }, user) {
+  if (supabaseConfigured && user?.id) {
+    const { error } = await supabase
+      .from('user_watchlist')
+      .insert({ user_id: user.id, player_name: name, api_player_id: apiPlayerId, context });
+    // 23505 = unique violation (already saved) — treat as success, not error.
+    if (error && error.code !== '23505') throw error;
+    return;
   }
-  return write(list);
+  const names = localRead();
+  if (!names.includes(name)) localWrite([name, ...names]);
 }
 
-export function removeWatch(apiId) {
-  if (apiId == null) return read();
-  return write(read().filter(p => String(p.apiPlayerId) !== String(apiId)));
+// Remove a player. Logged in → Supabase; otherwise localStorage.
+export async function removeFromWatchlist({ name }, user) {
+  if (supabaseConfigured && user?.id) {
+    const { error } = await supabase
+      .from('user_watchlist')
+      .delete()
+      .eq('user_id', user.id)
+      .eq('player_name', name);
+    if (error) throw error;
+    return;
+  }
+  localWrite(localRead().filter(n => n !== name));
+}
+
+// On first login, push any anonymous local picks up to the account, then clear
+// the local cache so the account becomes the single source of truth.
+export async function mergeLocalIntoAccount(user) {
+  if (!supabaseConfigured || !user?.id) return;
+  const local = localRead();
+  if (!local.length) return;
+  // Insert all; ignore unique-violation duplicates.
+  const rows = local.map(name => ({ user_id: user.id, player_name: name }));
+  const { error } = await supabase.from('user_watchlist').insert(rows);
+  if (!error || error.code === '23505') localWrite([]);
 }

@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { LockKeyhole, Mail, ShieldCheck, X } from 'lucide-react';
-import { signInWithEmail, signUpWithEmail, supabaseConfigured } from '../services/supabaseClient.js';
+import { LockKeyhole, Mail, ShieldCheck, User, X } from 'lucide-react';
+import { signInWithEmail, signUpWithEmail, isUsernameAvailable, supabaseConfigured } from '../services/supabaseClient.js';
 
 export default function AuthModal({ open, onClose, returnTo = '' }) {
   const [mode, setMode] = useState('signup');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [status, setStatus] = useState('');
   const [error, setError] = useState('');
@@ -18,7 +19,15 @@ export default function AuthModal({ open, onClose, returnTo = '' }) {
     try {
       if (!supabaseConfigured) throw new Error('Account service is not connected yet. Add the Supabase public URL and anon key in Vercel before testing sign-up.');
       if (mode === 'signup') {
-        const data = await signUpWithEmail(email.trim(), password);
+        const handle = username.trim();
+        // Username rules: 3–20 chars, letters/numbers/underscore only. This is
+        // your public handle — pick anything, your email stays private.
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(handle)) {
+          throw new Error('Username must be 3–20 characters: letters, numbers or underscore only.');
+        }
+        const free = await isUsernameAvailable(handle);
+        if (!free) throw new Error('That username is taken. Try another.');
+        const data = await signUpWithEmail(email.trim(), password, handle);
         if (data?.session) {
           setStatus('Account created and signed in.');
           window.setTimeout(() => { onClose(); if (returnTo) window.location.assign(returnTo); }, 700);
@@ -41,12 +50,16 @@ export default function AuthModal({ open, onClose, returnTo = '' }) {
         <button type="button" className="account-access-modal__close" aria-label="Close account access" onClick={onClose}><X size={18}/></button>
         <span className="account-access-modal__kicker"><LockKeyhole size={14}/>Calibre account</span>
         <h2 id="account-access-title">Join the argument.</h2>
-        <p>Use a verified account to post in rate-battle forums, nominate debates and keep your votes attached to your profile.</p>
+        <p>Use a verified account to post in rate-battle forums, nominate debates and keep your votes attached to your profile. {mode==='signup' && <strong>Pick a username — your email stays private, you post under your handle.</strong>}</p>
         <div className="auth-mode-row">
           <button type="button" className={mode==='signup'?'is-active':''} onClick={()=>setMode('signup')}>Create account</button>
           <button type="button" className={mode==='login'?'is-active':''} onClick={()=>setMode('login')}>Log in</button>
         </div>
         <form onSubmit={submit}>
+          {mode==='signup' && <>
+            <label htmlFor="calibre-account-username">Username</label>
+            <div className="account-access-modal__field"><User size={16}/><input id="calibre-account-username" value={username} onChange={event=>setUsername(event.target.value)} type="text" autoComplete="username" placeholder="your_handle" minLength="3" maxLength="20" required /></div>
+          </>}
           <label htmlFor="calibre-account-email">Email address</label>
           <div className="account-access-modal__field"><Mail size={16}/><input id="calibre-account-email" value={email} onChange={event=>setEmail(event.target.value)} type="email" autoComplete="email" placeholder="you@example.com" required /></div>
           <label htmlFor="calibre-account-password">Password</label>

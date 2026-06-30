@@ -10,6 +10,7 @@ import ShareBar, { shareUrl } from '../components/Share.jsx';
 import CommissionForm from '../components/CommissionForm.jsx';
 import DiscoveryDossier from '../components/DiscoveryDossier.jsx';
 import useAuth from '../hooks/useAuth.js';
+import { loadWatchlist, addToWatchlist, removeFromWatchlist, mergeLocalIntoAccount } from '../services/watchlist.js';
 import { resolveTier, can } from '../services/access.js';
 import { searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
@@ -492,6 +493,20 @@ export default function Talents() {
   const [detailPlayer, setDetailPlayer] = useState(null);
   const [visibleCount, setVisibleCount] = useState(48);
   const [shortlist, setShortlist] = useState([]);
+  // Hydrate the shortlist from the user's saved watchlist (Supabase if logged
+  // in, localStorage otherwise). On login, merge any anonymous local picks up
+  // into the account first so nothing is lost.
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      if (dossierUser?.id) await mergeLocalIntoAccount(dossierUser);
+      const saved = await loadWatchlist(dossierUser);
+      if (active && saved?.length) {
+        setShortlist(current => Array.from(new Set([...saved, ...current])));
+      }
+    })();
+    return () => { active = false; };
+  }, [dossierUser?.id]);
   const [liveTalents, setLiveTalents] = useState([]);
   const [liveLoading, setLiveLoading] = useState(false);
   const [liveSearched, setLiveSearched] = useState(false);
@@ -601,8 +616,18 @@ export default function Talents() {
     .slice(0,10);
   const counts = Object.fromEntries(TALENT_REGIONS.map(item => [item.key, item.key === 'all' ? sourceTalents.length : sourceTalents.filter(p => p.region === item.key).length]));
 
-  function toggleShortlist(name) {
-    setShortlist(current => current.includes(name) ? current.filter(item => item !== name) : [...current, name]);
+  function toggleShortlist(name, meta = {}) {
+    const isSaved = shortlist.includes(name);
+    // Optimistic UI update — instant toggle.
+    setShortlist(current => isSaved ? current.filter(item => item !== name) : [...current, name]);
+    // Persist in the background (Supabase if logged in, localStorage otherwise).
+    const op = isSaved
+      ? removeFromWatchlist({ name }, dossierUser)
+      : addToWatchlist({ name, apiPlayerId: meta.apiPlayerId ?? null, context: meta.context ?? null }, dossierUser);
+    Promise.resolve(op).catch(() => {
+      // On failure, roll the optimistic change back so UI matches reality.
+      setShortlist(current => isSaved ? [...current, name] : current.filter(item => item !== name));
+    });
   }
 
   function resetFilters() {
@@ -917,7 +942,7 @@ export default function Talents() {
                           <div className="yr-card-foot"><span className="yr-flag"><span className="yr-flagicon">{flagFor(p.nationality)}</span> Age {p.age ?? '—'} · {p.nationality || '—'}</span></div>
                         </div>
                         <div className="yr-card-side">
-                          <button type="button" className={`yr-bookmark${shortlist.includes(p.name)?' on':''}`} aria-label={`${shortlist.includes(p.name)?'Remove from':'Add to'} shortlist`} onClick={()=>toggleShortlist(p.name)}>
+                          <button type="button" className={`yr-bookmark${shortlist.includes(p.name)?' on':''}`} aria-label={`${shortlist.includes(p.name)?'Remove from':'Add to'} shortlist`} onClick={()=>toggleShortlist(p.name, {apiPlayerId: p.api_player_id, context: 'youth'})}>
                             {shortlist.includes(p.name) ? <BookmarkCheck size={15}/> : <Bookmark size={15}/>}
                           </button>
                           {p.plays_up_years >= 1 && <div className="yr-up"><b>+{p.plays_up_years}</b><span>yrs up</span></div>}

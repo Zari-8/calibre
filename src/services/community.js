@@ -115,8 +115,8 @@ export async function submitDebateNomination({ title, reason, userId, email }) {
   return { source:'browser-beta' };
 }
 
-export async function submitForumPost({ threadSlug, body, user }) {
-  const payload = { thread_slug:threadSlug, body, user_id:user?.id || null, author_email:user?.email || null, created_at:new Date().toISOString() };
+export async function submitForumPost({ threadSlug, body, user, username }) {
+  const payload = { thread_slug:threadSlug, body, user_id:user?.id || null, author_name:username || null, author_email:user?.email || null, created_at:new Date().toISOString() };
   if (supabaseConfigured && user?.id) {
     const { error } = await supabase.from('forum_posts').insert(payload);
     if (error) throw error;

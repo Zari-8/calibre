@@ -21,7 +21,7 @@ export default function Shell({ children, currentPath }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [returnTo, setReturnTo] = useState('');
-  const { user, configured } = useAuth();
+  const { user, displayName, configured } = useAuth();
 
   useEffect(() => {
     const openAuth = (event) => {
@@ -55,7 +55,7 @@ export default function Shell({ children, currentPath }) {
             <LanguageSelector />
             <button className="site-header__icon" type="button" aria-label="Search players and debates" onClick={() => go('/players')}><Search size={18} /></button>
             {user ? (
-              <button className="site-header__login" type="button" onClick={logout} title={user.email || 'Signed in'}>Log out</button>
+              <button className="site-header__login" type="button" onClick={logout} title={displayName || 'Signed in'}>Log out</button>
             ) : (
               <button className="site-header__login" type="button" onClick={openAuth}>{configured ? 'Log in' : 'Account setup'}</button>
             )}
@@ -68,7 +68,7 @@ export default function Shell({ children, currentPath }) {
           <div className="mobile-nav">
             {navItems.map(item => <button key={item.href} type="button" className="mobile-nav__link" onClick={() => go(item.href)}>{item.label}</button>)}
             {showWC && <button type="button" className="mobile-nav__link" onClick={() => go('/world-cup')}>World Cup</button>}
-            {user ? <button type="button" className="mobile-nav__link" onClick={logout}>Log out {user.email}</button> : <button type="button" className="mobile-nav__link" onClick={openAuth}>Log in or create account</button>}
+            {user ? <button type="button" className="mobile-nav__link" onClick={logout}>Log out {displayName}</button> : <button type="button" className="mobile-nav__link" onClick={openAuth}>Log in or create account</button>}
             <button type="button" className="mobile-nav__pass" onClick={() => go('/pricing')}>Get World Cup Founder Pass</button>
           </div>
         )}

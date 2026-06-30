@@ -144,14 +144,26 @@ async function fetchMatches(from, to) {
     const windowEnd = end > to ? to : end;
 
     console.log(`Fetching matches ${cursor} → ${windowEnd}`);
-    const json = await api(`/matches?date_from=${cursor}&date_to=${windowEnd}`);
 
-    const batch = rows(json)
-      .filter(m => TARGET_COMP_IDS.has(m.competition_id));
+    let page = 1;
+    let windowTotal = 0;
 
-    console.log(`  ${batch.length} target matches`);
-    all.push(...batch);
+    while (true) {
+      const compParam = ONLY_COMP ? `&competition_id=${ONLY_COMP}` : '';
+      const json = await api(`/matches?date_from=${cursor}&date_to=${windowEnd}${compParam}&page=${page}`);
 
+      const batch = rows(json)
+        .filter(m => TARGET_COMP_IDS.has(m.competition_id));
+
+      windowTotal += batch.length;
+      all.push(...batch);
+
+      const totalPages = json.meta?.total_pages || 1;
+      if (page >= totalPages) break;
+      page++;
+    }
+
+    console.log(`  ${windowTotal} target matches`);
     cursor = addDays(windowEnd, 1);
   }
 

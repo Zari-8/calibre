@@ -8,7 +8,7 @@ import { getSupabasePlayerCount, getSupabasePlayers, getSupabasePlayersByApiIds,
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
-import { getWatchlist, isWatched, toggleWatch, removeWatch, WATCHLIST_EVENT } from '../services/watchlist.js';
+import { getWatchlist, isWatched, toggleWatch, removeWatch, WATCHLIST_EVENT, bindWatchlistUser, mergeLocalIntoAccount, loadWatchlist } from '../services/watchlist.js';
 
 const CURATED_PLAYERS = [
   { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
@@ -424,6 +424,9 @@ export default function Players(){
   const [watchlist,setWatchlist] = useState(()=>getWatchlist());
   const [watchlistOpen,setWatchlistOpen] = useState(false);
   useEffect(()=>{ const sync=()=>setWatchlist(getWatchlist()); window.addEventListener(WATCHLIST_EVENT,sync); return ()=>window.removeEventListener(WATCHLIST_EVENT,sync); },[]);
+  // Bind the logged-in user so watchlist changes persist to their account, and
+  // merge any anonymous local picks up on login.
+  useEffect(()=>{ bindWatchlistUser(user); if(user?.id){ mergeLocalIntoAccount(user).catch(()=>{}); } },[user?.id]);
   const handleToggleWatch=(pl)=>{ if(!canWatch){ navigateTo('/pricing'); return; } toggleWatch(pl); };
   const [profileLoading,setProfileLoading] = useState(false);
 

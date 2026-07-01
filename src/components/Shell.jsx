@@ -38,6 +38,15 @@ export default function Shell({ children, currentPath }) {
 
   return (
     <div className="app-shell">
+      <style>{`
+        /* Header alignment: logo hard-left, nav packed left right after it,
+           actions grouped tight on the far right. Inlined so it can never
+           fail to load regardless of the external stylesheet. */
+        .site-header__inner { display: flex !important; align-items: center !important; justify-content: flex-start !important; gap: 28px; padding-left: 0 !important; }
+        .site-brand { margin-right: 0 !important; flex: none; }
+        .site-nav { display: flex; gap: 18px; margin-right: auto; }
+        .site-header__actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+      `}</style>
       <header className="site-header">
         <div className="site-header__inner">
           <button className="site-brand" type="button" onClick={() => go('/')} aria-label="Calibre home">

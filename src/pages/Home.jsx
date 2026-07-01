@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ArrowRight, BarChart3, ChevronRight, Compass, Flame, Gauge, Search, ShieldCheck, Sparkles, Target, TrendingUp, Users, Zap } from 'lucide-react';
+import { ArrowRight, BarChart3, ChevronRight, Compass, Flame, Gauge, Mail, MessageSquare, Search, ShieldCheck, Sparkles, Target, TrendingUp, Users, Zap } from 'lucide-react';
 import BattleHero from '../components/BattleHero.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
@@ -316,6 +316,35 @@ export default function Home() {
             <h2>Get the full intelligence layer before the biggest arguments begin.</h2>
           </div>
           <button className="button button--primary" type="button" onClick={() => navigateTo('/pricing')}>Get World Cup Founder Pass <ArrowRight size={16} /></button>
+        </div>
+      </section>
+
+      <style>{`
+        .home-about { padding: 56px 0 64px; border-top: 1px solid rgba(255,255,255,0.08); }
+        .home-about__grid { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 40px; align-items: start; }
+        .home-about__grid p { color: #9aa0a6; font-size: 14px; line-height: 1.65; max-width: 520px; margin: 0 0 12px; }
+        .home-contact { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 26px 28px; }
+        .home-contact h3 { color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; text-transform: uppercase; margin: 0 0 12px; }
+        .home-contact a { color: #c8ff00; text-decoration: none; font-weight: 600; }
+        .home-contact a:hover { text-decoration: underline; }
+        .home-contact__row { display: flex; align-items: center; gap: 10px; color: #c4c9ce; font-size: 13.5px; margin-bottom: 10px; }
+        .home-contact__row svg { color: #c8ff00; flex: none; }
+        @media (max-width: 860px) { .home-about__grid { grid-template-columns: 1fr; } }
+      `}</style>
+      <section className="home-section home-about">
+        <div className="home-container home-about__grid">
+          <div>
+            <span className="section-kicker"><Compass size={13} />About Calibre</span>
+            <h2>Football intelligence built for the arguments that matter.</h2>
+            <p>Calibre is a football analytics platform combining a live player-rating engine, tactical System Fit modelling, and a talent-discovery pipeline spanning senior and academy football across dozens of leagues. Every valuation, verdict, and prospect signal on this site traces back to real data — and where the data isn't there yet, we say so rather than fake it.</p>
+            <p>Built for scouts, analysts, creators, and fans who want the same depth of insight a club's recruitment desk works with, without needing the desk.</p>
+          </div>
+          <div className="home-contact">
+            <h3>Get in touch</h3>
+            <div className="home-contact__row"><Mail size={15} /><a href="mailto:team@calibrefootball.com">team@calibrefootball.com</a></div>
+            <div className="home-contact__row"><MessageSquare size={15} />Press &amp; partnerships: same address, mark the subject line.</div>
+            <div className="home-contact__row"><ShieldCheck size={15} />Calibre is an 18+ platform. See our <a href="/terms" onClick={e=>{e.preventDefault();navigateTo('/terms');}}>Terms of Service</a>.</div>
+          </div>
         </div>
       </section>
     </div>

@@ -1,0 +1,11 @@
+LIVE RUN
+
+Date range: 2025-08-15 → 2026-05-31
+Competition: comp_5422
+
+Fetching matches 2025-08-15 → 2025-08-21
+Error: HTTP 400 — /matches?date_from=2025-08-15&date_to=2025-08-21&competition_id=comp_5422&page=1 — Invalid competition_id
+    at api (file:///Users/mac/Desktop/calibre-github/scripts/enrichStatsAPI.mjs:131:11)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async fetchMatches (file:///Users/mac/Desktop/calibre-github/scripts/enrichStatsAPI.mjs:153:20)
+    at async main (file:///Users/mac/Desktop/calibre-github/scripts/enrichStatsAPI.mjs:539:19)

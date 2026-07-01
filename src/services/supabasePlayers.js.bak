@@ -10,6 +10,7 @@ const PLAYER_SELECT = [
   'season',
   'slug',
   'name',
+  'full_name',
   'firstname',
   'lastname',
   'age',
@@ -20,6 +21,7 @@ const PLAYER_SELECT = [
   'pos',
   'position',
   'raw_position',
+  'primary_role',
   'shirt_number',
   'rating',
   'archetype',
@@ -31,16 +33,43 @@ const PLAYER_SELECT = [
   'goals',
   'assists',
   'api_average_rating',
+  // ── event stats (required by the v6 rating engine) ──
+  'stats_minutes',
+  'passes',
+  'pass_accuracy',
+  'key_passes',
+  'dribbles_success',
+  'dribbles_attempts',
+  'tackles',
+  'interceptions',
+  'duels_won',
+  'shots',
+  'competition_splits',
   'source',
   'last_synced_at',
   'profile_enriched_at',
+  // ── TheStatsAPI enriched event stats (v8.1) ──
+  'statsapi_player_id',
+  'big_chances_created',
+  'big_chances_missed',
+  'total_shots',
+  'shots_on_target',
+  'shot_accuracy',
+  'final_third_passes',
+  'opp_half_passes',
+  'own_half_passes',
+  'accurate_crosses',
+  'cross_accuracy',
+  'ground_duel_win_pct',
+  'aerial_duel_win_pct',
+  'dribble_success_pct',
+  'successful_dribbles',
 ].join(',');
 
 function requireSupabase(){
   if(!supabaseConfigured || !supabase){
     throw new Error('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel.');
   }
-
   return supabase;
 }
 
@@ -68,16 +97,44 @@ function normalizePlayer(row){
     minutes:Number(row.minutes || 0),
     goals:Number(row.goals || 0),
     assists:Number(row.assists || 0),
+    // full_name for search display
+    full_name:row.full_name ?? null,
+    // event stats pass through
+    stats_minutes:row.stats_minutes ?? null,
+    passes:row.passes ?? null,
+    pass_accuracy:row.pass_accuracy ?? null,
+    key_passes:row.key_passes ?? null,
+    dribbles_success:row.dribbles_success ?? null,
+    dribbles_attempts:row.dribbles_attempts ?? null,
+    tackles:row.tackles ?? null,
+    interceptions:row.interceptions ?? null,
+    duels_won:row.duels_won ?? null,
+    shots:row.shots ?? null,
+    competition_splits:row.competition_splits ?? null,
+    // TheStatsAPI enriched signals (v8.1)
+    statsapi_player_id:row.statsapi_player_id ?? null,
+    big_chances_created:row.big_chances_created ?? null,
+    big_chances_missed:row.big_chances_missed ?? null,
+    total_shots:row.total_shots ?? null,
+    shots_on_target:row.shots_on_target ?? null,
+    shot_accuracy:row.shot_accuracy ?? null,
+    final_third_passes:row.final_third_passes ?? null,
+    opp_half_passes:row.opp_half_passes ?? null,
+    own_half_passes:row.own_half_passes ?? null,
+    accurate_crosses:row.accurate_crosses ?? null,
+    cross_accuracy:row.cross_accuracy ?? null,
+    ground_duel_win_pct:row.ground_duel_win_pct ?? null,
+    aerial_duel_win_pct:row.aerial_duel_win_pct ?? null,
+    dribble_success_pct:row.dribble_success_pct ?? null,
+    successful_dribbles:row.successful_dribbles ?? null,
   };
 }
 
 export async function getSupabasePlayerCount(){
   const client = requireSupabase();
-
   const { count, error } = await client
     .from('players')
     .select('*',{count:'exact',head:true});
-
   if(error) throw error;
   return count || 0;
 }
@@ -95,9 +152,13 @@ export async function getSupabasePlayers({
     leagueId !== undefined &&
     leagueId !== '';
 
+  const selectCols = hasLeagueFilter
+    ? PLAYER_SELECT.split(',').filter(col => col !== 'competition_splits').join(',')
+    : PLAYER_SELECT;
+
   let query = client
     .from(hasLeagueFilter ? 'player_competition_profiles' : 'players')
-    .select(PLAYER_SELECT)
+    .select(selectCols)
     .range(offset,offset+limit-1);
 
   if(Array.isArray(names) && names.length){
@@ -109,14 +170,12 @@ export async function getSupabasePlayers({
   }
 
   const { data, error } = await query.order('name',{ascending:true});
-
   if(error) throw error;
   return (data || []).map(normalizePlayer);
 }
 
 export async function getSupabaseTalentCandidates({limit=240}={}){
   const client = requireSupabase();
-
   const { data, error } = await client
     .from('players')
     .select(PLAYER_SELECT)
@@ -125,24 +184,94 @@ export async function getSupabaseTalentCandidates({limit=240}={}){
     .lte('age',22)
     .order('minutes',{ascending:false,nullsFirst:false})
     .limit(limit);
-
   if(error) throw error;
   return (data || []).map(normalizePlayer);
 }
 
+// Resolve players by api_player_id — used by WC breakout stars, player modals,
+// and any surface that knows the numeric API id.
+// Tries the primary row first (best stats), then falls back to any row for that id.
+export async function getSupabasePlayersByApiIds(apiIds=[]){
+  const client = requireSupabase();
+  const ids = (Array.isArray(apiIds)?apiIds:[apiIds])
+    .map(Number)
+    .filter(n=>Number.isInteger(n)&&n>0);
+  if(!ids.length) return [];
+
+  // First pass: rows that have a rating and appearances (real enriched data)
+  const { data: enriched, error: e1 } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .in('api_player_id',ids)
+    .not('rating','is',null)
+    .order('appearances',{ascending:false,nullsFirst:false});
+
+  if(e1) throw e1;
+
+  // Deduplicate — keep the best row per api_player_id
+  const seen = new Set();
+  const best = [];
+  for(const row of (enriched||[])){
+    const aid = row.api_player_id;
+    if(!seen.has(aid)){ seen.add(aid); best.push(row); }
+  }
+
+  // Second pass: any ids not yet resolved (no enriched row exists yet)
+  const missing = ids.filter(id => !seen.has(id));
+  if(missing.length){
+    const { data: fallback, error: e2 } = await client
+      .from('players')
+      .select(PLAYER_SELECT)
+      .in('api_player_id',missing);
+    if(e2) throw e2;
+    for(const row of (fallback||[])){
+      const aid = row.api_player_id;
+      if(!seen.has(aid)){ seen.add(aid); best.push(row); }
+    }
+  }
+
+  return best.map(normalizePlayer);
+}
+
+// Full search: matches on abbreviated name (L. Messi), full_name (Lionel Messi),
+// or unaccented variants. Falls through three layers for max coverage.
 export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
   const client = requireSupabase();
   const query = String(search || '').trim();
+  if(query.length<2) return [];
 
-  if(query.length<3) return [];
+  // Layer 1 — accent-insensitive RPC (best results, requires DB function)
+  try {
+    const { data, error } = await client.rpc('search_players_unaccent', {
+      search_term: query,
+      max_results: limit,
+    });
+    if(!error && data && data.length) return (data||[]).map(normalizePlayer);
+  } catch { /* RPC not available — fall through */ }
 
-  const { data, error } = await client
+  // Layer 2 — search both name and full_name columns simultaneously
+  // This handles "Lionel Messi" → finds row stored as "L. Messi" via full_name,
+  // and "Güler" → finds "Arda Güler" via name ilike
+  const { data: nameData, error: nameError } = await client
     .from('players')
     .select(PLAYER_SELECT)
-    .ilike('name',`%${query}%`)
-    .order('name',{ascending:true})
+    .or(`name.ilike.%${query}%,full_name.ilike.%${query}%`)
+    .order('appearances',{ascending:false,nullsFirst:false})
     .limit(limit);
 
-  if(error) throw error;
-  return (data || []).map(normalizePlayer);
+  if(!nameError && nameData && nameData.length){
+    return nameData.map(normalizePlayer);
+  }
+
+  // Layer 3 — firstname/lastname fallback for partial matches
+  // "Lionel" alone hits firstname, "Junior" hits name directly
+  const { data: namePartial, error: e3 } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .or(`firstname.ilike.%${query}%,lastname.ilike.%${query}%`)
+    .order('appearances',{ascending:false,nullsFirst:false})
+    .limit(limit);
+
+  if(e3) throw e3;
+  return (namePartial||[]).map(normalizePlayer);
 }

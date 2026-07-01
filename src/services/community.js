@@ -147,3 +147,51 @@ export async function castGoatVote(choice, user) {
   localWrite(localKey, choice);
   return choice;
 }
+
+// ── Rate-battle votes (left/right split, anyone can vote) ─────────────────
+// Uses the existing debate_votes schema: debate_key, choice, voter_id (logged
+// in) / voter_session (anonymous), weight. localStorage blocks re-voting on the
+// same device; the DB unique indexes are the real guard.
+
+// A stable anonymous device id, reused across sessions (matches voter_session).
+function anonSession() {
+  const KEY = 'calibre:voter-session';
+  let s = localRead(KEY, null);
+  if (!s) { s = 'sess_' + Math.random().toString(36).slice(2) + Date.now().toString(36); localWrite(KEY, s); }
+  return s;
+}
+
+export async function castBattleVote(slug, choice, user) {
+  if (choice !== 'left' && choice !== 'right') throw new Error('Invalid vote.');
+  const localKey = `calibre:battle-vote:${slug}`;
+  if (localRead(localKey, null)) throw new Error('You have already voted on this battle.');
+  if (supabaseConfigured) {
+    const row = {
+      debate_key: slug, choice, weight: 1,
+      voter_id: user?.id || null,
+      voter_session: user?.id ? null : anonSession(),
+    };
+    const { error } = await supabase.from('debate_votes').insert(row);
+    if (error) throw error;
+  }
+  localWrite(localKey, choice);
+  return choice;
+}
+
+// Read the live left/right counts for all debates, keyed by debate_key.
+// Returns { [key]: { left, right } }.
+export async function loadDebateVoteCounts() {
+  if (!supabaseConfigured) return {};
+  const { data, error } = await supabase.rpc('get_debate_vote_counts');
+  if (error || !data) return {};
+  const map = {};
+  for (const row of data) {
+    map[row.debate_key] = { left: Number(row.left_count) || 0, right: Number(row.right_count) || 0 };
+  }
+  return map;
+}
+
+// Which side, if any, this device has already voted for a battle.
+export function myBattleVote(slug) {
+  return localRead(`calibre:battle-vote:${slug}`, null);
+}

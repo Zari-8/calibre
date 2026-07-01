@@ -1,0 +1,451 @@
+LIVE RUN
+
+Date range: 2025-08-15 → 2026-05-31
+Competition: comp_3809
+
+Fetching matches 2025-08-15 → 2025-08-21
+  9 target matches
+Fetching matches 2025-08-22 → 2025-08-28
+  7 target matches
+Fetching matches 2025-08-29 → 2025-09-04
+  9 target matches
+Fetching matches 2025-09-05 → 2025-09-11
+  0 target matches
+Fetching matches 2025-09-12 → 2025-09-18
+  10 target matches
+Fetching matches 2025-09-19 → 2025-09-25
+  10 target matches
+Fetching matches 2025-09-26 → 2025-10-02
+  9 target matches
+Fetching matches 2025-10-03 → 2025-10-09
+  9 target matches
+Fetching matches 2025-10-10 → 2025-10-16
+  0 target matches
+Fetching matches 2025-10-17 → 2025-10-23
+  9 target matches
+Fetching matches 2025-10-24 → 2025-10-30
+  9 target matches
+Fetching matches 2025-10-31 → 2025-11-06
+  9 target matches
+Fetching matches 2025-11-07 → 2025-11-13
+  9 target matches
+Fetching matches 2025-11-14 → 2025-11-20
+  0 target matches
+Fetching matches 2025-11-21 → 2025-11-27
+  9 target matches
+Fetching matches 2025-11-28 → 2025-12-04
+  9 target matches
+Fetching matches 2025-12-05 → 2025-12-11
+  9 target matches
+Fetching matches 2025-12-12 → 2025-12-18
+  8 target matches
+Fetching matches 2025-12-19 → 2025-12-25
+  9 target matches
+Fetching matches 2025-12-26 → 2026-01-01
+  0 target matches
+Fetching matches 2026-01-02 → 2026-01-08
+  0 target matches
+Fetching matches 2026-01-09 → 2026-01-15
+  8 target matches
+Fetching matches 2026-01-16 → 2026-01-22
+  10 target matches
+Fetching matches 2026-01-23 → 2026-01-29
+  8 target matches
+Fetching matches 2026-01-30 → 2026-02-05
+  9 target matches
+Fetching matches 2026-02-06 → 2026-02-12
+  11 target matches
+Fetching matches 2026-02-13 → 2026-02-19
+  9 target matches
+Fetching matches 2026-02-20 → 2026-02-26
+  9 target matches
+Fetching matches 2026-02-27 → 2026-03-05
+  9 target matches
+Fetching matches 2026-03-06 → 2026-03-12
+  9 target matches
+Fetching matches 2026-03-13 → 2026-03-19
+  9 target matches
+Fetching matches 2026-03-20 → 2026-03-26
+  9 target matches
+Fetching matches 2026-03-27 → 2026-04-02
+  0 target matches
+Fetching matches 2026-04-03 → 2026-04-09
+  9 target matches
+Fetching matches 2026-04-10 → 2026-04-16
+  9 target matches
+Fetching matches 2026-04-17 → 2026-04-23
+  3 target matches
+Fetching matches 2026-04-24 → 2026-04-30
+  8 target matches
+Fetching matches 2026-05-01 → 2026-05-07
+  13 target matches
+Fetching matches 2026-05-08 → 2026-05-14
+  12 target matches
+Fetching matches 2026-05-15 → 2026-05-21
+  13 target matches
+Fetching matches 2026-05-22 → 2026-05-28
+  2 target matches
+Fetching matches 2026-05-29 → 2026-05-31
+  0 target matches
+
+Unique target matches: 312
+xG available matches : 312
+
+Fetching enrichment for mt_747377732
+Fetching enrichment for mt_626466620
+Fetching enrichment for mt_585155582
+Fetching enrichment for mt_252022255
+Fetching enrichment for mt_838988848
+Fetching enrichment for mt_191588061
+Fetching enrichment for mt_747366956
+Fetching enrichment for mt_010200084
+Fetching enrichment for mt_979899967
+Fetching enrichment for mt_979899924
+Fetching enrichment for mt_747377753
+Fetching enrichment for mt_626466698
+Fetching enrichment for mt_252022266
+Fetching enrichment for mt_838988854
+Fetching enrichment for mt_404644462
+Fetching enrichment for mt_979899981
+Fetching enrichment for mt_363733338
+Fetching enrichment for mt_010200008
+Fetching enrichment for mt_252022211
+Fetching enrichment for mt_838988875
+Fetching enrichment for mt_626466602
+Fetching enrichment for mt_585155535
+Fetching enrichment for mt_191511176
+Fetching enrichment for mt_363733326
+Fetching enrichment for mt_010200030
+Fetching enrichment for mt_404799908
+Fetching enrichment for mt_979100077
+Fetching enrichment for mt_747911127
+Fetching enrichment for mt_363855502
+Fetching enrichment for mt_010477782
+Fetching enrichment for mt_252633393
+Fetching enrichment for mt_838522226
+Fetching enrichment for mt_404799996
+Fetching enrichment for mt_979100000
+Fetching enrichment for mt_191511118
+Fetching enrichment for mt_892324087
+Fetching enrichment for mt_191044465
+Fetching enrichment for mt_363855515
+Fetching enrichment for mt_404799972
+Fetching enrichment for mt_979100011
+Fetching enrichment for mt_747911192
+Fetching enrichment for mt_626388840
+Fetching enrichment for mt_585266612
+Fetching enrichment for mt_191044453
+Fetching enrichment for mt_838522238
+Fetching enrichment for mt_404799945
+Fetching enrichment for mt_585266695
+Fetching enrichment for mt_404799984
+Fetching enrichment for mt_363855546
+Fetching enrichment for mt_191044486
+Fetching enrichment for mt_010477790
+Fetching enrichment for mt_252633387
+Fetching enrichment for mt_838522263
+Fetching enrichment for mt_585266643
+Fetching enrichment for mt_191044331
+Fetching enrichment for mt_363855001
+Fetching enrichment for mt_404799556
+Fetching enrichment for mt_979100660
+Fetching enrichment for mt_747911210
+Fetching enrichment for mt_626388184
+Fetching enrichment for mt_585266766
+Fetching enrichment for mt_191044417
+Fetching enrichment for mt_363855537
+Fetching enrichment for mt_979100676
+Fetching enrichment for mt_363855074
+Fetching enrichment for mt_363744811
+Fetching enrichment for mt_838977506
+Fetching enrichment for mt_585266711
+Fetching enrichment for mt_252633909
+Fetching enrichment for mt_838522437
+Fetching enrichment for mt_404799507
+Fetching enrichment for mt_191044303
+Fetching enrichment for mt_191044375
+Fetching enrichment for mt_404799514
+Fetching enrichment for mt_585266733
+Fetching enrichment for mt_363855025
+Fetching enrichment for mt_010477839
+Fetching enrichment for mt_838522402
+Fetching enrichment for mt_252633970
+Fetching enrichment for mt_626388130
+Fetching enrichment for mt_585266722
+Fetching enrichment for mt_585266755
+Fetching enrichment for mt_252633928
+Fetching enrichment for mt_191044316
+Fetching enrichment for mt_838522489
+Fetching enrichment for mt_010477850
+Fetching enrichment for mt_191044380
+Fetching enrichment for mt_979100634
+Fetching enrichment for mt_626388161
+Fetching enrichment for mt_838522473
+Fetching enrichment for mt_979899978
+Fetching enrichment for mt_626466615
+Fetching enrichment for mt_747377741
+Fetching enrichment for mt_585155571
+Fetching enrichment for mt_252022299
+Fetching enrichment for mt_838988827
+Fetching enrichment for mt_626466689
+Fetching enrichment for mt_979899906
+Fetching enrichment for mt_404799095
+Fetching enrichment for mt_252022200
+Fetching enrichment for mt_010200045
+Fetching enrichment for mt_838988892
+Fetching enrichment for mt_010200029
+Fetching enrichment for mt_191511105
+Fetching enrichment for mt_363733385
+Fetching enrichment for mt_363733310
+Fetching enrichment for mt_404644401
+Fetching enrichment for mt_191511160
+Fetching enrichment for mt_979899943
+Fetching enrichment for mt_626466651
+Fetching enrichment for mt_404644440
+Fetching enrichment for mt_747377765
+Fetching enrichment for mt_747377709
+Fetching enrichment for mt_404644425
+Fetching enrichment for mt_979899939
+Fetching enrichment for mt_585155549
+Fetching enrichment for mt_838988880
+Fetching enrichment for mt_585266678
+Fetching enrichment for mt_585266681
+Fetching enrichment for mt_363855551
+Fetching enrichment for mt_626388819
+Fetching enrichment for mt_010477771
+Fetching enrichment for mt_626388825
+Fetching enrichment for mt_191044494
+Fetching enrichment for mt_191044441
+Fetching enrichment for mt_252022222
+Fetching enrichment for mt_252633376
+Fetching enrichment for mt_838522204
+Fetching enrichment for mt_979100088
+Fetching enrichment for mt_010477749
+Fetching enrichment for mt_404799961
+  shotmap: fetch failed
+Fetching enrichment for mt_010477735
+Fetching enrichment for mt_252633360
+Fetching enrichment for mt_838522252
+Fetching enrichment for mt_979100033
+Fetching enrichment for mt_191044470
+Fetching enrichment for mt_747911175
+Fetching enrichment for mt_626388862
+Fetching enrichment for mt_979100099
+Fetching enrichment for mt_747911169
+Fetching enrichment for mt_626388801
+Fetching enrichment for mt_363855520
+Fetching enrichment for mt_585266639
+Fetching enrichment for mt_363855058
+Fetching enrichment for mt_626388113
+Fetching enrichment for mt_191044348
+Fetching enrichment for mt_747911247
+Fetching enrichment for mt_626388129
+Fetching enrichment for mt_404799590
+Fetching enrichment for mt_585266788
+Fetching enrichment for mt_747911226
+Fetching enrichment for mt_986428009
+Fetching enrichment for mt_363855083
+Fetching enrichment for mt_252633965
+Fetching enrichment for mt_838522498
+Fetching enrichment for mt_191044369
+Fetching enrichment for mt_626388196
+Fetching enrichment for mt_404799568
+Fetching enrichment for mt_979100687
+Fetching enrichment for mt_010477843
+Fetching enrichment for mt_585266744
+Fetching enrichment for mt_363855036
+Fetching enrichment for mt_404799549
+Fetching enrichment for mt_747911279
+Fetching enrichment for mt_747911263
+Fetching enrichment for mt_747911204
+Fetching enrichment for mt_979100642
+Fetching enrichment for mt_626388108
+Fetching enrichment for mt_252633917
+Fetching enrichment for mt_252633531
+Fetching enrichment for mt_626388282
+Fetching enrichment for mt_979100709
+Fetching enrichment for mt_010477177
+Fetching enrichment for mt_979100693
+Fetching enrichment for mt_363855657
+Fetching enrichment for mt_191044947
+Fetching enrichment for mt_838522325
+Fetching enrichment for mt_747911415
+Fetching enrichment for mt_028035851
+Fetching enrichment for mt_986306491
+Fetching enrichment for mt_747911420
+Fetching enrichment for mt_626388214
+Fetching enrichment for mt_404799050
+Fetching enrichment for mt_363855608
+Fetching enrichment for mt_252633592
+Fetching enrichment for mt_010477188
+Fetching enrichment for mt_838522340
+Fetching enrichment for mt_191044938
+Fetching enrichment for mt_585266876
+Fetching enrichment for mt_747377717
+Fetching enrichment for mt_191511159
+Fetching enrichment for mt_404644458
+Fetching enrichment for mt_363733363
+Fetching enrichment for mt_191511193
+Fetching enrichment for mt_585266887
+Fetching enrichment for mt_979100770
+Fetching enrichment for mt_363733304
+Fetching enrichment for mt_010200013
+Fetching enrichment for mt_747377794
+Fetching enrichment for mt_979899912
+Fetching enrichment for mt_404644419
+Fetching enrichment for mt_838988803
+Fetching enrichment for mt_626466646
+Fetching enrichment for mt_404644474
+Fetching enrichment for mt_252022277
+Fetching enrichment for mt_838988869
+Fetching enrichment for mt_585155514
+Fetching enrichment for mt_252022288
+Fetching enrichment for mt_363733347
+Fetching enrichment for mt_626388883
+Fetching enrichment for mt_585266667
+Fetching enrichment for mt_191511187
+Fetching enrichment for mt_585155556
+Fetching enrichment for mt_010200057
+Fetching enrichment for mt_747377770
+Fetching enrichment for mt_626466664
+Fetching enrichment for mt_979100066
+Fetching enrichment for mt_010477714
+Fetching enrichment for mt_010477723
+Fetching enrichment for mt_404799957
+Fetching enrichment for mt_252633359
+Fetching enrichment for mt_747911116
+Fetching enrichment for mt_252633305
+Fetching enrichment for mt_838522247
+Fetching enrichment for mt_363855564
+Fetching enrichment for mt_979100022
+Fetching enrichment for mt_191044409
+Fetching enrichment for mt_363855573
+Fetching enrichment for mt_747911154
+Fetching enrichment for mt_626388836
+Fetching enrichment for mt_979100044
+Fetching enrichment for mt_626388858
+Fetching enrichment for mt_585266624
+Fetching enrichment for mt_747911103
+Fetching enrichment for mt_252633932
+Fetching enrichment for mt_252633318
+Fetching enrichment for mt_838522285
+Fetching enrichment for mt_010477707
+Fetching enrichment for mt_838522420
+Fetching enrichment for mt_838522279
+Fetching enrichment for mt_010477878
+Fetching enrichment for mt_252633321
+Fetching enrichment for mt_404799929
+Fetching enrichment for mt_626388145
+Fetching enrichment for mt_363855062
+Fetching enrichment for mt_252633953
+Fetching enrichment for mt_010477824
+Fetching enrichment for mt_747911291
+Fetching enrichment for mt_010477881
+Fetching enrichment for mt_838522446
+Fetching enrichment for mt_191044354
+Fetching enrichment for mt_010477812
+Fetching enrichment for mt_010477895
+Fetching enrichment for mt_252633986
+Fetching enrichment for mt_979100618
+Fetching enrichment for mt_838522464
+Fetching enrichment for mt_404799571
+Fetching enrichment for mt_979100621
+Fetching enrichment for mt_747911252
+Fetching enrichment for mt_404799582
+Fetching enrichment for mt_363855040
+Fetching enrichment for mt_252079622
+Fetching enrichment for mt_585147256
+Fetching enrichment for mt_626491302
+Fetching enrichment for mt_733420621
+Fetching enrichment for mt_733420033
+Fetching enrichment for mt_404685725
+Fetching enrichment for mt_363710838
+Fetching enrichment for mt_838904575
+Fetching enrichment for mt_363710826
+Fetching enrichment for mt_979826139
+Fetching enrichment for mt_979826143
+Fetching enrichment for mt_022101925
+Fetching enrichment for mt_899383588
+Fetching enrichment for mt_191563018
+Fetching enrichment for mt_252079611
+Fetching enrichment for mt_585147467
+Fetching enrichment for mt_404685740
+Fetching enrichment for mt_979826200
+Fetching enrichment for mt_363710847
+Fetching enrichment for mt_747352965
+Fetching enrichment for mt_191563087
+Fetching enrichment for mt_747352970
+Fetching enrichment for mt_200592819
+Fetching enrichment for mt_377602454
+Fetching enrichment for mt_988822143
+Fetching enrichment for mt_404685896
+Fetching enrichment for mt_838904026
+Fetching enrichment for mt_626491983
+Fetching enrichment for mt_010238371
+Fetching enrichment for mt_838904580
+Fetching enrichment for mt_626491364
+Fetching enrichment for mt_010238408
+Fetching enrichment for mt_010238457
+Fetching enrichment for mt_585147235
+Fetching enrichment for mt_644262538
+Fetching enrichment for mt_377636280
+Fetching enrichment for mt_644329206
+Fetching enrichment for mt_511284894
+Fetching enrichment for mt_022414337
+Fetching enrichment for mt_252079793
+Fetching enrichment for mt_747352516
+Fetching enrichment for mt_363710151
+Fetching enrichment for mt_252079688
+Fetching enrichment for mt_191563076
+Fetching enrichment for mt_747352909
+Fetching enrichment for mt_838904569
+Fetching enrichment for mt_626491351
+Fetching enrichment for mt_404685719
+Fetching enrichment for mt_511144235
+Fetching enrichment for mt_466788825
+Fetching enrichment for mt_644323992
+
+Aggregated players: 788
+Aggregated teams  : 24
+player-stats OK   : 312
+shotmap OK        : 311
+Match errors      : 1
+Updating player 1/788: Sydney van Hooijdonk
+Updating player 25/788: Iván Márquez
+Updating player 50/788: Rome Jayden Owusu-Oduro
+Updating player 75/788: Alex Plat
+Updating player 100/788: Jerdy Schouten
+Updating player 125/788: Dennis Man
+Updating player 150/788: Jens Toornstra
+Updating player 175/788: Tijs Velthuis
+Updating player 200/788: Lucas Rosa
+Updating player 225/788: Jorg Schreuders
+Updating player 250/788: Eser Gürbüz
+Updating player 275/788: Gonzalo Crettaz
+Updating player 300/788: Jetro Willems
+Updating player 325/788: Mike van Duinen
+Updating player 350/788: Casper Tengstedt
+Updating player 375/788: Eliano Reijnders
+Updating player 400/788: Gerald Alders
+Updating player 425/788: Mitchell van Bergen
+Updating player 450/788: Silvinho Esajas
+Updating player 475/788: Myron Boadu
+Updating player 500/788: Pharrel Nash
+Updating player 525/788: Shaqueel van Persie
+Updating player 550/788: Tay Abed Kassus
+Updating player 575/788: Yannick Gerritsen
+Updating player 600/788: Rion Ichihara
+Updating player 625/788: Bendegúz Kovács
+Updating player 650/788: Marley Dors
+Updating player 675/788: Teun Bijleveld
+Updating player 700/788: Loek Postma
+Updating player 725/788: Ryan van de Pavert
+Updating player 750/788: Thomas Didillon
+Updating player 775/788: Danny Verbeek
+
+── Summary ──────────────────
+Enriched players : 494
+No Supabase match: 294
+Update errors    : 0
+Team aggregates  : 24 not written yet
+Dry run          : no

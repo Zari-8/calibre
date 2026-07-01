@@ -3684,239 +3684,362 @@ html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
 .wc-facts-pageinfo { font-family:'Barlow',sans-serif; font-size:.85rem; color:var(--text-muted); min-width:10ch; text-align:center; }
 
 
-/* ============================================================
-   HOMEPAGE HERO  —  isolated block: .home-hero-v2
-   Appended by hand. Self-contained: every selector is scoped
-   under .home-hero-v2 so it cannot touch the rest of the site,
-   and the rest of the site cannot touch it. Relies on the
-   already-defined var(--lime) and the existing .button /
-   .battle-hero / .proof-strip rules above.
-   ============================================================ */
+/* ════════════════════════════════════════════════════════════════
+   CALIBRE CINEMATIC STADIUM HERO OVERRIDE
+   Added by ChatGPT patch script
+   ════════════════════════════════════════════════════════════════ */
 
-.home-hero-v2 {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
-  padding: 34px 0 34px;
-  background: #030405;
-  border-bottom: 1px solid rgba(170,255,0,.18);
-}
-
-.home-hero-v2__bg {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 30% center;
-  z-index: -3;
-}
-
-.home-hero-v2__shade {
-  position: absolute;
-  inset: 0;
-  z-index: -2;
-  pointer-events: none;
+body {
   background:
-    linear-gradient(90deg, rgba(3,4,5,.20) 0%, rgba(3,4,5,.55) 40%, rgba(3,4,5,.90) 100%),
-    radial-gradient(ellipse 60% 42% at 50% 100%, rgba(170,255,0,.16), transparent 60%),
-    linear-gradient(180deg, rgba(3,4,5,.10) 0%, rgba(3,4,5,.22) 46%, rgba(3,4,5,.96) 100%);
+    radial-gradient(circle at 18% 4%, rgba(166,255,0,.105), transparent 31%),
+    radial-gradient(circle at 78% 0%, rgba(255,255,255,.055), transparent 28%),
+    linear-gradient(180deg, #081012 0%, #050607 42%, #030405 100%);
 }
 
-.home-hero-v2::before {
+body::before {
+  background:
+    radial-gradient(ellipse 50% 40% at 12% 5%, rgba(166,255,0,.09), transparent 62%),
+    radial-gradient(ellipse 42% 36% at 85% 0%, rgba(255,255,255,.06), transparent 60%),
+    linear-gradient(180deg, rgba(20,28,30,.42), rgba(3,4,5,.94));
+}
+
+.home-container {
+  width: min(1380px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.home-hero--stadium {
+  position: relative;
+  min-height: calc(100vh - 94px);
+  padding: 34px 0 34px;
+  overflow: hidden;
+  background:
+    linear-gradient(90deg, rgba(3,4,5,.72) 0%, rgba(3,4,5,.32) 42%, rgba(3,4,5,.78) 100%),
+    radial-gradient(circle at 18% 22%, rgba(255,255,255,.20), transparent 9%),
+    radial-gradient(circle at 86% 18%, rgba(255,255,255,.18), transparent 10%),
+    linear-gradient(180deg, #1b2427 0%, #101719 38%, #050607 100%);
+  border-bottom: 1px solid rgba(166,255,0,.16);
+  isolation: isolate;
+}
+
+.home-hero--stadium::before {
   content: "";
   position: absolute;
   inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background-image:
-    linear-gradient(rgba(255,255,255,.022) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  z-index: -4;
+  background:
+    linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
   background-size: 72px 72px;
-  opacity: .5;
+  opacity: .24;
 }
 
-.home-hero-v2__inner {
-  position: relative;
-  z-index: 1;
-  width: min(1420px, calc(100% - 48px));
+.home-hero--stadium::after {
+  content: "";
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  bottom: -18%;
+  height: 48%;
+  z-index: -3;
+  background:
+    radial-gradient(ellipse at center, rgba(166,255,0,.18), transparent 58%),
+    linear-gradient(180deg, transparent, rgba(15,80,22,.40) 42%, rgba(3,4,5,.92));
+  filter: blur(2px);
+}
+
+.home-hero__atmosphere {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.home-hero__floodlights {
+  position: absolute;
+  top: 50px;
+  width: 320px;
+  height: 220px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(255,255,255,.88), rgba(255,255,255,.22) 12%, transparent 44%);
+  filter: blur(1px);
+  opacity: .82;
+}
+
+.home-hero__floodlights--left {
+  left: -90px;
+  transform: rotate(-16deg);
+}
+
+.home-hero__floodlights--right {
+  right: -90px;
+  transform: rotate(16deg);
+}
+
+.home-hero__backview-player {
+  position: absolute;
+  left: clamp(0px, 4vw, 60px);
+  bottom: 44px;
+  width: min(37vw, 500px);
+  height: min(72vh, 740px);
+  z-index: -1;
+  opacity: .96;
+  filter: drop-shadow(0 42px 70px rgba(0,0,0,.72));
+}
+
+.home-hero__backview-player::before {
+  content: "";
+  position: absolute;
+  left: 22%;
+  right: 18%;
+  top: 6%;
+  bottom: 0;
+  background:
+    radial-gradient(circle at 50% 2%, #182024 0 6%, transparent 7%),
+    linear-gradient(90deg, transparent 0 12%, #151b1d 13% 23%, #0b0f10 24% 76%, #151b1d 77% 87%, transparent 88%),
+    linear-gradient(180deg, #222a2c 0%, #111719 38%, #050708 100%);
+  clip-path: polygon(38% 0, 62% 0, 72% 10%, 96% 20%, 88% 42%, 76% 34%, 74% 100%, 26% 100%, 24% 34%, 12% 42%, 4% 20%, 28% 10%);
+  border-radius: 35% 35% 10% 10%;
+  box-shadow: inset 0 0 0 1px rgba(166,255,0,.11), inset 0 -60px 90px rgba(166,255,0,.055);
+}
+
+.home-hero__backview-player::after {
+  content: "";
+  position: absolute;
+  left: 31%;
+  right: 28%;
+  top: 0;
+  height: 16%;
+  background: linear-gradient(180deg, #121619, #050607);
+  border-radius: 48% 48% 35% 35%;
+  box-shadow: 0 10px 25px rgba(0,0,0,.75);
+}
+
+.home-hero__shirt-mark {
+  position: absolute;
+  top: 22.5%;
+  left: 48%;
+  transform: translateX(-50%);
+  color: rgba(166,255,0,.65);
+  font: 900 22px/1 "Space Grotesk", "Inter", sans-serif;
+  z-index: 2;
+}
+
+.home-hero__shirt-number {
+  position: absolute;
+  top: 30%;
+  left: 49%;
+  transform: translateX(-50%);
+  color: rgba(166,255,0,.20);
+  -webkit-text-stroke: 2px rgba(166,255,0,.28);
+  font: 900 clamp(118px, 12vw, 210px)/.8 "Space Grotesk", "Inter", sans-serif;
+  letter-spacing: -.08em;
+  z-index: 2;
+}
+
+.home-hero__inner--stadium {
+  width: min(1380px, calc(100% - 48px));
   margin: 0 auto;
-  min-height: 600px;
+  min-height: 620px;
   display: grid;
-  grid-template-columns: minmax(40px, 0.30fr) minmax(300px, 0.86fr) minmax(440px, 1.04fr);
+  grid-template-columns: minmax(360px, 0.82fr) minmax(560px, 1.18fr);
   align-items: center;
-  gap: clamp(24px, 3vw, 56px);
-  padding: 44px 0;
+  gap: clamp(36px, 5vw, 78px);
+  position: relative;
+  z-index: 2;
 }
 
-.home-hero-v2__copy {
-  grid-column: 2;
-  max-width: 560px;
+.home-hero__copy {
+  max-width: 610px;
+  padding-top: 28px;
+  margin-left: clamp(140px, 18vw, 270px);
 }
 
-.home-hero-v2__eyebrow {
+.home-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  max-width: 340px;
-  margin-bottom: 16px;
   color: var(--lime);
   font: 800 11px/1.35 "Space Grotesk", "Inter", sans-serif;
-  letter-spacing: .17em;
+  letter-spacing: .18em;
   text-transform: uppercase;
-  text-shadow: 0 10px 30px rgba(0,0,0,.9);
+  margin-bottom: 18px;
 }
 
-.home-hero-v2__eyebrow i {
+.home-eyebrow span {
   width: 32px;
   height: 2px;
-  display: inline-block;
   background: var(--lime);
-  box-shadow: 0 0 18px rgba(170,255,0,.65);
+  display: inline-block;
+  box-shadow: 0 0 18px rgba(166,255,0,.7);
 }
 
-.home-hero-v2__copy h1 {
+.home-hero__copy h1 {
   margin: 0;
   color: #fff;
-  font: 900 clamp(58px, 5.3vw, 84px)/.88 "Barlow Condensed", "Space Grotesk", sans-serif;
+  font: 900 clamp(54px, 6vw, 96px)/.9 "Barlow Condensed", "Space Grotesk", sans-serif;
   letter-spacing: -.025em;
   text-transform: uppercase;
-  text-shadow: 0 20px 64px rgba(0,0,0,.88);
+  text-shadow: 0 18px 60px rgba(0,0,0,.75);
 }
 
-.home-hero-v2__copy h1 span {
-  display: block;
-  white-space: nowrap;
-}
-
-.home-hero-v2__copy h1 em {
+.home-hero__copy h1 em {
   color: var(--lime);
   font-style: normal;
 }
 
-.home-hero-v2__copy p {
-  max-width: 380px;
-  margin-top: 20px;
-  color: rgba(237,238,240,.90);
-  font: 500 15px/1.5 "Inter", sans-serif;
-  text-shadow: 0 10px 34px rgba(0,0,0,.92);
+.home-hero__copy p {
+  max-width: 430px;
+  margin: 22px 0 0;
+  color: rgba(237,238,240,.86);
+  font: 500 16px/1.55 "Inter", sans-serif;
 }
 
-.home-hero-v2__actions {
+.home-hero__actions {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 26px;
+  margin-top: 28px;
   flex-wrap: wrap;
 }
 
-.home-hero-v2__metrics {
-  display: grid;
-  grid-template-columns: repeat(4, max-content);
-  gap: 24px;
-  margin-top: 36px;
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  height: 46px;
+  padding: 0 20px;
+  border-radius: 6px;
+  font: 900 12px/1 "Space Grotesk", "Inter", sans-serif;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease;
 }
 
-.home-hero-v2__metrics div {
+.button:hover {
+  transform: translateY(-1px);
+}
+
+.button--primary {
+  background: var(--lime);
+  color: #061000;
+  box-shadow: 0 12px 40px rgba(166,255,0,.18);
+}
+
+.button--quiet {
+  border: 1px solid rgba(255,255,255,.24);
+  color: #fff;
+  background: rgba(3,4,5,.32);
+  backdrop-filter: blur(10px);
+}
+
+.button--quiet:hover {
+  border-color: rgba(166,255,0,.45);
+}
+
+.home-hero__metrics {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  gap: 22px;
+  margin-top: 44px;
+}
+
+.home-metric {
   display: grid;
   gap: 4px;
 }
 
-.home-hero-v2__metrics strong {
+.home-metric strong {
   color: #fff;
-  font: 900 24px/1 "Space Grotesk", "Inter", sans-serif;
+  font: 900 25px/1 "Space Grotesk", "Inter", sans-serif;
 }
 
-.home-hero-v2__metrics span {
-  color: rgba(237,238,240,.70);
-  font: 800 9px/1 "Inter", sans-serif;
+.home-metric span {
+  color: rgba(237,238,240,.58);
+  font: 800 10px/1 "Inter", sans-serif;
   letter-spacing: .16em;
   text-transform: uppercase;
 }
 
-.home-hero-v2__battle {
-  grid-column: 3;
-  justify-self: end;
+.home-hero__battle-card {
+  position: relative;
   width: 100%;
-  max-width: 700px;
-  max-height: 580px;
-  overflow: hidden;
-  border: 1px solid rgba(170,255,0,.26);
+  max-width: 720px;
+  justify-self: end;
   border-radius: 12px;
-  background: rgba(3,7,8,.78);
-  box-shadow: 0 34px 90px rgba(0,0,0,.78);
-  backdrop-filter: blur(16px);
+  border: 1px solid rgba(166,255,0,.20);
+  background: rgba(3,7,8,.72);
+  box-shadow: 0 34px 90px rgba(0,0,0,.74);
+  backdrop-filter: blur(20px);
+  overflow: hidden;
 }
 
-.home-hero-v2__battle .battle-hero {
+.home-hero__battle-card .battle-hero {
   margin: 0;
   min-height: 0;
+  border-radius: 12px;
   background: transparent;
+  transform-origin: top right;
 }
 
-.home-hero-v2__battle .proof-strip {
+.home-hero__battle-card .proof-strip {
   display: none;
 }
 
-.home-hero-v2__dock {
+.home-hero__feature-dock {
   position: relative;
-  z-index: 1;
-  width: min(1420px, calc(100% - 48px));
-  margin: 18px auto 0;
+  z-index: 3;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 14px;
+  margin-top: 14px;
 }
 
-.home-hero-v2__card {
-  min-height: 128px;
+.home-feature-card {
+  min-height: 136px;
   text-align: left;
-  padding: 20px 22px;
+  padding: 22px 24px;
   border: 1px solid rgba(255,255,255,.10);
   border-radius: 10px;
-  background: linear-gradient(145deg, rgba(10,15,16,.86), rgba(5,8,9,.78));
-  box-shadow: 0 18px 46px rgba(0,0,0,.32);
-  backdrop-filter: blur(14px);
-  transition: transform .15s ease, border-color .15s ease;
+  background: linear-gradient(145deg, rgba(11,17,18,.82), rgba(6,9,10,.72));
+  box-shadow: 0 20px 50px rgba(0,0,0,.30);
+  backdrop-filter: blur(16px);
 }
 
-.home-hero-v2__card:hover {
-  transform: translateY(-2px);
-  border-color: rgba(170,255,0,.28);
-}
-
-.home-hero-v2__card span {
-  width: 42px;
-  height: 42px;
+.home-feature-card span {
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
   color: var(--lime);
-  border: 1px solid rgba(170,255,0,.22);
+  border: 1px solid rgba(166,255,0,.20);
   border-radius: 50%;
-  background: rgba(170,255,0,.06);
-  margin-bottom: 12px;
+  background: rgba(166,255,0,.055);
+  margin-bottom: 14px;
 }
 
-.home-hero-v2__card strong {
+.home-feature-card strong {
   display: block;
   color: #fff;
-  font: 900 17px/1 "Barlow Condensed", "Space Grotesk", sans-serif;
+  font: 900 18px/1 "Barlow Condensed", "Space Grotesk", sans-serif;
   text-transform: uppercase;
   letter-spacing: .04em;
 }
 
-.home-hero-v2__card small {
+.home-feature-card small {
   display: block;
   margin-top: 7px;
-  color: rgba(237,238,240,.66);
+  color: rgba(237,238,240,.64);
   font: 500 13px/1.35 "Inter", sans-serif;
 }
 
-.home-hero-v2__card em {
+.home-feature-card em {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 12px;
+  margin-top: 14px;
   color: var(--lime);
   font: 900 10px/1 "Space Grotesk", "Inter", sans-serif;
   letter-spacing: .12em;
@@ -3925,57 +4048,352 @@ html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
 }
 
 @media (max-width: 1180px) {
-  .home-hero-v2__inner {
+  .home-hero__inner--stadium {
     grid-template-columns: 1fr;
-    min-height: auto;
-    gap: 26px;
+    gap: 28px;
   }
-  .home-hero-v2__copy,
-  .home-hero-v2__battle {
-    grid-column: 1;
+
+  .home-hero__copy {
+    margin-left: min(24vw, 220px);
+  }
+
+  .home-hero__battle-card {
     justify-self: stretch;
     max-width: none;
   }
-  .home-hero-v2__copy {
-    padding-top: 26px;
-    padding-left: clamp(150px, 22vw, 260px);
-  }
-  .home-hero-v2__bg {
-    object-position: 34% center;
-    opacity: .78;
-  }
-  .home-hero-v2__dock {
+
+  .home-hero__feature-dock {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .home-hero__backview-player {
+    opacity: .44;
   }
 }
 
 @media (max-width: 760px) {
-  .home-hero-v2 {
-    padding: 24px 0;
+  .home-container,
+  .home-hero__inner--stadium {
+    width: min(100% - 28px, 1380px);
   }
-  .home-hero-v2__inner,
-  .home-hero-v2__dock {
-    width: min(100% - 28px, 1420px);
+
+  .home-hero--stadium {
+    min-height: auto;
+    padding-top: 24px;
   }
-  .home-hero-v2__copy {
-    padding-top: 16px;
-    padding-left: 0;
+
+  .home-hero__inner--stadium {
+    min-height: 0;
   }
-  .home-hero-v2__copy h1 {
-    font-size: clamp(46px, 14vw, 68px);
+
+  .home-hero__copy {
+    margin-left: 0;
+    padding-top: 36px;
   }
-  .home-hero-v2__copy h1 span {
-    white-space: normal;
+
+  .home-hero__copy h1 {
+    font-size: clamp(48px, 15vw, 72px);
   }
-  .home-hero-v2__metrics {
+
+  .home-hero__copy p {
+    font-size: 14px;
+  }
+
+  .home-hero__metrics {
     grid-template-columns: repeat(2, 1fr);
-    gap: 14px;
+    gap: 16px;
   }
-  .home-hero-v2__bg {
-    object-position: 40% center;
-    opacity: .85;
+
+  .home-hero__backview-player {
+    left: auto;
+    right: -150px;
+    bottom: 380px;
+    width: 420px;
+    height: 620px;
+    opacity: .24;
   }
-  .home-hero-v2__dock {
+
+  .home-hero__battle-card {
+    border-radius: 10px;
+  }
+
+  .home-hero__feature-dock {
     grid-template-columns: 1fr;
   }
+
+  .home-feature-card {
+    min-height: auto;
+  }
 }
+
+@media (max-width: 520px) {
+  .home-hero__battle-card .battle-hero {
+    transform: scale(.92);
+    width: 108.7%;
+  }
+}
+
+
+/* ════════════════════════════════════════════════════════════════
+   CALIBRE CINEMATIC HERO FIX v2
+   Fixes first attempt: cleaner layout, no toy silhouette, better viewport fit
+   ════════════════════════════════════════════════════════════════ */
+
+.home-hero--stadium {
+  min-height: 720px !important;
+  padding: 44px 0 28px !important;
+  background:
+    linear-gradient(90deg, rgba(3,4,5,.96) 0%, rgba(3,4,5,.74) 36%, rgba(3,4,5,.82) 100%),
+    radial-gradient(circle at 9% 30%, rgba(255,255,255,.36), transparent 7%),
+    radial-gradient(circle at 91% 30%, rgba(255,255,255,.32), transparent 7%),
+    radial-gradient(ellipse at 50% 100%, rgba(166,255,0,.16), transparent 48%),
+    linear-gradient(180deg, #20292b 0%, #111819 34%, #050607 100%) !important;
+}
+
+.home-hero--stadium::before {
+  opacity: .17 !important;
+  background-size: 84px 84px !important;
+}
+
+.home-hero--stadium::after {
+  bottom: -24% !important;
+  height: 54% !important;
+  opacity: .88 !important;
+}
+
+/* remove the weak CSS-drawn footballer */
+.home-hero__backview-player {
+  display: none !important;
+}
+
+/* replace with a much cleaner cinematic player silhouette */
+.home-hero__atmosphere::before {
+  content: "";
+  position: absolute;
+  left: clamp(18px, 4vw, 76px);
+  bottom: 0;
+  width: clamp(300px, 32vw, 500px);
+  height: clamp(430px, 62vh, 660px);
+  background:
+    radial-gradient(ellipse at 50% 10%, rgba(255,255,255,.09), transparent 20%),
+    linear-gradient(180deg, rgba(20,27,29,.86), rgba(4,6,7,.98));
+  clip-path: polygon(
+    43% 0%, 57% 0%, 63% 8%, 70% 14%, 91% 25%, 82% 47%,
+    72% 41%, 70% 100%, 30% 100%, 28% 41%, 18% 47%, 9% 25%,
+    30% 14%, 37% 8%
+  );
+  opacity: .72;
+  filter: drop-shadow(0 34px 70px rgba(0,0,0,.85));
+  z-index: -1;
+}
+
+.home-hero__atmosphere::after {
+  content: "10";
+  position: absolute;
+  left: clamp(95px, 12vw, 225px);
+  bottom: clamp(135px, 19vh, 225px);
+  color: rgba(166,255,0,.11);
+  -webkit-text-stroke: 2px rgba(166,255,0,.22);
+  font: 900 clamp(118px, 14vw, 220px)/.8 "Space Grotesk", "Inter", sans-serif;
+  letter-spacing: -.08em;
+  z-index: -1;
+  opacity: .86;
+}
+
+/* tighter, more premium first-screen layout */
+.home-hero__inner--stadium {
+  min-height: 555px !important;
+  grid-template-columns: minmax(430px, .86fr) minmax(520px, 1.14fr) !important;
+  gap: clamp(24px, 3.4vw, 56px) !important;
+  align-items: center !important;
+}
+
+.home-hero__copy {
+  margin-left: clamp(260px, 28vw, 390px) !important;
+  max-width: 520px !important;
+  padding-top: 0 !important;
+}
+
+.home-eyebrow {
+  margin-bottom: 14px !important;
+  font-size: 10px !important;
+  letter-spacing: .18em !important;
+  max-width: 360px;
+}
+
+.home-hero__copy h1 {
+  max-width: 560px !important;
+  font-size: clamp(54px, 5.2vw, 82px) !important;
+  line-height: .88 !important;
+  letter-spacing: -.035em !important;
+}
+
+.home-hero__copy h1 br {
+  display: block;
+}
+
+.home-hero__copy p {
+  max-width: 395px !important;
+  margin-top: 18px !important;
+  font-size: 15px !important;
+  line-height: 1.45 !important;
+}
+
+.home-hero__actions {
+  margin-top: 24px !important;
+}
+
+.home-hero__metrics {
+  margin-top: 34px !important;
+  gap: 24px !important;
+  grid-template-columns: repeat(4, max-content) !important;
+}
+
+.home-metric strong {
+  font-size: 23px !important;
+}
+
+.home-metric span {
+  font-size: 9px !important;
+}
+
+/* make the battle card feel like the mockup instead of swallowing the page */
+.home-hero__battle-card {
+  max-width: 690px !important;
+  justify-self: end !important;
+  align-self: center !important;
+  max-height: 560px !important;
+  overflow: hidden !important;
+  border-color: rgba(166,255,0,.28) !important;
+  box-shadow: 0 30px 90px rgba(0,0,0,.78) !important;
+}
+
+.home-hero__battle-card .battle-hero {
+  transform: scale(.88) !important;
+  width: 113.7% !important;
+  transform-origin: top left !important;
+}
+
+.home-hero__battle-card .battle-topline {
+  padding-top: 12px !important;
+}
+
+.home-hero__battle-card .fighter-img {
+  height: 275px !important;
+}
+
+.home-hero__battle-card .battle-title-row h1 {
+  font-size: 40px !important;
+}
+
+.home-hero__battle-card .question-box {
+  padding: 12px !important;
+}
+
+.home-hero__battle-card .proof-strip {
+  display: none !important;
+}
+
+/* cards should appear just below the fold / not fight the hero */
+.home-hero__feature-dock {
+  margin-top: 22px !important;
+  gap: 14px !important;
+}
+
+.home-feature-card {
+  min-height: 118px !important;
+  padding: 18px 20px !important;
+}
+
+.home-feature-card span {
+  width: 40px !important;
+  height: 40px !important;
+  margin-bottom: 12px !important;
+}
+
+.home-feature-card strong {
+  font-size: 16px !important;
+}
+
+/* softer global atmospheric effect on the rest of the site */
+body {
+  background:
+    radial-gradient(circle at 15% 0%, rgba(166,255,0,.075), transparent 30%),
+    radial-gradient(circle at 86% 0%, rgba(255,255,255,.035), transparent 28%),
+    linear-gradient(180deg, #070b0c 0%, #030405 42%, #030405 100%) !important;
+}
+
+/* tablet */
+@media (max-width: 1180px) {
+  .home-hero--stadium {
+    min-height: auto !important;
+  }
+
+  .home-hero__inner--stadium {
+    grid-template-columns: 1fr !important;
+    min-height: auto !important;
+  }
+
+  .home-hero__copy {
+    margin-left: clamp(170px, 25vw, 300px) !important;
+    max-width: 620px !important;
+    padding-top: 30px !important;
+  }
+
+  .home-hero__atmosphere::before {
+    opacity: .38;
+  }
+
+  .home-hero__atmosphere::after {
+    opacity: .42;
+  }
+
+  .home-hero__battle-card {
+    justify-self: stretch !important;
+    max-width: none !important;
+    max-height: 540px !important;
+  }
+}
+
+/* mobile */
+@media (max-width: 760px) {
+  .home-hero--stadium {
+    padding-top: 26px !important;
+  }
+
+  .home-hero__copy {
+    margin-left: 0 !important;
+    padding-top: 20px !important;
+  }
+
+  .home-hero__copy h1 {
+    font-size: clamp(46px, 15vw, 68px) !important;
+  }
+
+  .home-hero__copy p {
+    max-width: 100% !important;
+  }
+
+  .home-hero__metrics {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .home-hero__atmosphere::before,
+  .home-hero__atmosphere::after {
+    display: none !important;
+  }
+
+  .home-hero__battle-card {
+    max-height: 520px !important;
+  }
+
+  .home-hero__battle-card .battle-hero {
+    transform: scale(.82) !important;
+    width: 122% !important;
+  }
+
+  .home-hero__feature-dock {
+    grid-template-columns: 1fr !important;
+  }
+}
+

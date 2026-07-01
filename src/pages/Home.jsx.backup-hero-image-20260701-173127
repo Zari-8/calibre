@@ -162,82 +162,71 @@ export default function Home() {
 
   return (
     <div className="home-page">
-      <section className="home-hero-v2">
-        <img
-          className="home-hero-v2__bg"
-          src="/assets/hero-backview-footballer.png"
-          alt=""
-          aria-hidden="true"
-        />
-        <div className="home-hero-v2__shade" aria-hidden="true" />
+      <section className="home-hero home-hero--stadium">
+        <div className="home-hero__atmosphere" aria-hidden="true">
+          <div className="home-hero__floodlights home-hero__floodlights--left" />
+          <div className="home-hero__floodlights home-hero__floodlights--right" />
+          <div className="home-hero__backview-player">
+            <div className="home-hero__shirt-mark">C</div>
+            <div className="home-hero__shirt-number">10</div>
+          </div>
+        </div>
 
-        <div className="home-hero-v2__inner">
-          <div className="home-hero-v2__copy">
-            <span className="home-hero-v2__eyebrow">
-              <i /> Football intelligence for the arguments that matter
-            </span>
+        <div className="home-hero__inner home-hero__inner--stadium">
+          <div className="home-hero__copy">
+            <span className="home-eyebrow"><span />Football intelligence for the arguments that matter</span>
+            <h1>Who is <em>really</em> better?<br />Calibre has the answer.</h1>
+            <p>Rate players. Join live debates. Get system-fit verdicts. Discover the next stars before the world does.</p>
 
-            <h1>
-              <span>Who is</span>
-              <span><em>really</em> better?</span>
-              <span>Calibre has</span>
-              <span>the answer.</span>
-            </h1>
-
-            <p>
-              Rate players. Join live debates. Get system-fit verdicts.
-              Discover the next stars before the world does.
-            </p>
-
-            <div className="home-hero-v2__actions">
-              <button className="button button--primary" type="button" onClick={() => navigateTo('/talents')}>
-                Explore talents <ArrowRight size={16} />
+            <div className="home-hero__actions">
+              <button className="button button--primary" type="button" onClick={() => navigateTo('/players')}>
+                Explore players <ArrowRight size={16} />
               </button>
               <button className="button button--quiet" type="button" onClick={() => navigateTo('/system-fit')}>
                 See system fit <Target size={16} />
               </button>
             </div>
 
-            <div className="home-hero-v2__metrics">
-              <div><strong>196K+</strong><span>Players</span></div>
-              <div><strong>63</strong><span>Leagues</span></div>
-              <div><strong>Live</strong><span>Debates</span></div>
-              <div><strong>12K+</strong><span>Votes today</span></div>
+            <div className="home-hero__metrics">
+              <div className="home-metric"><strong>196K+</strong><span>players</span></div>
+              <div className="home-metric"><strong>63</strong><span>leagues</span></div>
+              <div className="home-metric"><strong>Live</strong><span>debates</span></div>
+              <div className="home-metric"><strong>12K+</strong><span>votes today</span></div>
             </div>
           </div>
 
-          <div className="home-hero-v2__battle">
+          <div className="home-hero__battle-card">
             <BattleHero />
           </div>
         </div>
 
-        <div className="home-hero-v2__dock">
-          <button className="home-hero-v2__card" type="button" onClick={() => navigateTo('/debates')}>
+        <div className="home-hero__feature-dock home-container">
+          <button className="home-feature-card" type="button" onClick={() => navigateTo('/debates')}>
             <span><Zap size={24} /></span>
             <strong>Live debates</strong>
             <small>Hot takes. Real fans. Real football.</small>
             <em>Join the debate <ArrowRight size={14} /></em>
           </button>
 
-          <button className="home-hero-v2__card" type="button" onClick={() => navigateTo('/system-fit')}>
+          <button className="home-feature-card" type="button" onClick={() => navigateTo('/system-fit')}>
             <span><Target size={24} /></span>
             <strong>System fit</strong>
             <small>Does this player fit your system?</small>
             <em>Check fit <ArrowRight size={14} /></em>
           </button>
 
-          <button className="home-hero-v2__card" type="button" onClick={() => navigateTo('/talents')}>
+          <button className="home-feature-card" type="button" onClick={() => navigateTo('/talents')}>
             <span><Sparkles size={24} /></span>
             <strong>Talent discovery</strong>
             <small>Find tomorrow's stars today.</small>
             <em>Explore talents <ArrowRight size={14} /></em>
           </button>
 
-          <button className="home-hero-v2__card" type="button" onClick={() => navigateTo('/transfers')}>
-            <span><TrendingUp size={24} /></span>
-            <strong>Transfer Intelligence</strong>
-            <small>Track the moves before they happen.</small>
-            <em>See transfers <ArrowRight size={14} /></em>
+          <button className="home-feature-card" type="button" onClick={() => navigateTo('/world-cup')}>
+            <span><Compass size={24} /></span>
+            <strong>World Cup hub</strong>
+            <small>Stats. Fixtures. Insights. All in one place.</small>
+            <em>Explore World Cup <ArrowRight size={14} /></em>
           </button>
         </div>
       </section>

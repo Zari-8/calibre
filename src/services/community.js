@@ -166,8 +166,11 @@ export async function castBattleVote(slug, choice, user) {
   const localKey = `calibre:battle-vote:${slug}`;
   if (localRead(localKey, null)) throw new Error('You have already voted on this battle.');
   if (supabaseConfigured) {
+    // debate_votes.choice only accepts 'for' | 'against' | 'skip'.
+    // 'left' side of the card = 'for', 'right' side = 'against'.
+    const dbChoice = choice === 'left' ? 'for' : 'against';
     const row = {
-      debate_key: slug, choice, weight: 1,
+      debate_key: slug, choice: dbChoice, weight: 1,
       voter_id: user?.id || null,
       voter_session: user?.id ? null : anonSession(),
     };

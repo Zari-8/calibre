@@ -1,16 +1,41 @@
 /* ============================================================
-   Rate-battle vote buttons — append to your global stylesheet.
+   Rate-battle + GOAT + hot-potato voting — append to global CSS.
+   Click a player portrait to vote; the neon % appears beside the
+   name of each side. Matches the hot-potato neon-green treatment.
    ============================================================ */
-.battle-vote-row { display: flex; gap: 8px; margin: 10px 0 4px; }
-.battle-vote {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 9px; padding: 8px 10px; cursor: pointer; transition: all .12s ease;
+
+/* Player as a vote button (battle cards + GOAT) */
+.battle-preview__players, .goat-grid { display: flex; align-items: center; gap: 10px; }
+.battle-player {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+  background: none; border: 1px solid transparent; border-radius: 12px;
+  padding: 10px 8px; cursor: pointer; transition: all .14s ease; min-width: 0;
 }
-.battle-vote:hover:not(:disabled) { border-color: rgba(200,255,0,0.5); background: rgba(200,255,0,0.06); }
-.battle-vote span { font-size: 11px; color: #c4c9ce; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.battle-vote b { font-size: 17px; font-weight: 800; color: #fff; font-family: 'Barlow Condensed', sans-serif; }
-.battle-vote.is-mine { border-color: #c8ff00; background: rgba(200,255,0,0.10); }
-.battle-vote.is-mine b { color: #c8ff00; }
-.battle-vote:disabled { cursor: default; }
-.battle-vote-note { display: block; font-size: 10.5px; letter-spacing: .04em; text-transform: uppercase; color: #8b9096; margin-bottom: 6px; }
+.battle-player:hover { border-color: rgba(200,255,0,0.4); background: rgba(200,255,0,0.05); }
+.battle-player img { width: 84px; height: 84px; border-radius: 50%; object-fit: cover; }
+.battle-player strong { color: #fff; font-size: 14px; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.battle-player.is-voted { border-color: #c8ff00; background: rgba(200,255,0,0.08); }
+/* the neon % beside the name — small, green, no repeated name */
+.battle-pct { font-style: normal; font-size: 13px; font-weight: 800; color: #c8ff00; letter-spacing: .02em; }
+.battle-vs { color: #6b7075; font-size: 12px; font-weight: 700; flex: none; }
+
+/* forum-open title link under the players */
+.battle-preview__title {
+  display: block; width: 100%; background: none; border: none; cursor: pointer;
+  color: #c4c9ce; font-size: 13px; line-height: 1.4; text-align: center;
+  padding: 8px 4px 4px; transition: color .12s;
+}
+.battle-preview__title:hover { color: #fff; }
+
+/* GOAT vote count line */
+.goat-count { color: #8b9096; font-size: 12px; letter-spacing: .04em; text-align: center; margin-bottom: 4px; }
+
+/* Hot-potato YES/NO voting */
+.hot-potato-vote { display: flex; gap: 8px; justify-content: center; margin: 4px 0 8px; }
+.hp-vote {
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14);
+  color: #fff; border-radius: 8px; padding: 7px 22px; font-size: 12px; font-weight: 700;
+  letter-spacing: .08em; cursor: pointer; transition: all .12s;
+}
+.hp-vote:hover { border-color: #c8ff00; background: rgba(200,255,0,0.08); color: #c8ff00; }
+.hot-potato-result { color: #c8ff00; font-size: 13px; font-weight: 800; letter-spacing: .04em; }

@@ -195,3 +195,13 @@ export async function loadDebateVoteCounts() {
 export function myBattleVote(slug) {
   return localRead(`calibre:battle-vote:${slug}`, null);
 }
+
+// GOAT vote counts (Messi vs Ronaldo). Returns { Messi, Ronaldo, total }.
+export async function loadGoatVoteCounts() {
+  if (!supabaseConfigured) return { Messi: 0, Ronaldo: 0, total: 0 };
+  const { data, error } = await supabase.from('goat_votes').select('choice');
+  if (error || !data) return { Messi: 0, Ronaldo: 0, total: 0 };
+  let m = 0, r = 0;
+  for (const row of data) { if (row.choice === 'Messi') m++; else if (row.choice === 'Ronaldo') r++; }
+  return { Messi: m, Ronaldo: r, total: m + r };
+}

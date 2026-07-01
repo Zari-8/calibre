@@ -105,45 +105,117 @@ function spine(vals, w) { const s = [...vals].sort((a,b)=>b-a); let p=0; s.forEa
 function productionComponents(player, bucket) {
   const m = num(player.minutes ?? player.mins);
   const sm = num(player.stats_minutes) || m;
-  const ev = sm > 0 && num(player.passes) > 0;
-  const g90=per(player.goals,m), a90=per(player.assists,m);
-  const pass90=per(player.passes,sm), acc=num(player.pass_accuracy);
-  const key90=per(player.key_passes,sm);
-  const tk90=per(player.tackles,sm), in90=per(player.interceptions,sm);
-  const du90=per(player.duels_won,sm), sh90=per(player.shots,sm);
 
-  // v8.1 — TheStatsAPI enhanced signals (fire only when populated)
+  // API-Football remains the baseline.
+  // TheStatsAPI fields only fill/enhance where available.
+  const passesRaw = player.passes ?? player.total_passes;
+  const shotsRaw = player.shots ?? player.total_shots;
+  const keyRaw = player.key_passes;
+  const tacklesRaw = player.tackles;
+  const interceptionsRaw = player.interceptions;
+  const duelsRaw = player.duels_won ?? player.aerial_duels_won;
+
+  const ev = sm > 0 && num(passesRaw) > 0;
+
+  const g90 = per(player.goals, m);
+  const a90 = per(player.assists, m);
+
+  const xg = num(player.xg ?? player.expected_goals, -1);
+  const xa = num(player.xa ?? player.expected_assists, -1);
+  const npxg = num(player.npxg ?? player.np_expected_goals, -1);
+
+  const xg90 = xg >= 0 ? per(xg, sm) : null;
+  const xa90 = xa >= 0 ? per(xa, sm) : null;
+  const npxg90 = npxg >= 0 ? per(npxg, sm) : null;
+
+  const pass90 = per(passesRaw, sm);
+  const acc = num(player.pass_accuracy);
+  const key90 = per(keyRaw, sm);
+  const tk90 = per(tacklesRaw, sm);
+  const in90 = per(interceptionsRaw, sm);
+  const du90 = per(duelsRaw, sm);
+  const sh90 = per(shotsRaw, sm);
+
+  const possessionLost90 = per(player.possession_lost, sm);
+  const clear90 = per(player.clearances, sm);
+  const touch90 = per(player.touches, sm);
+
+  // v8.2 — StatsAPI advanced signals
   const { dr90, bonus: dribBonus } = dribbleScore(player, sm);
-  const sqNudge   = shotQualityNudge(player);
-  const bccBoost  = chanceCreationBoost(player, sm);
+  const sqNudge = shotQualityNudge(player);
+  const bccBoost = chanceCreationBoost(player, sm);
   const duelScore = duelQualityScore(player, du90);
-  const terr      = territorialIndex(player);
+  const terr = territorialIndex(player);
+
+  const shotQuality = num(player.shot_quality, -1);
+  const shotQualityBonus = shotQuality >= 0
+    ? clamp((shotQuality - 0.10) / 0.12 * 6, -3, 6)
+    : 0;
+
+  // Possession loss should not destroy attackers, but it should slightly punish
+  // midfielders/controllers who lose the ball too often.
+  const lossPenalty = possessionLost90 > 0
+    ? clamp((possessionLost90 - 8) / 8 * 4, 0, 5)
+    : 0;
+
+  // Touch involvement helps controllers/defenders; it is not a goal-output stat.
+  const touchBonus = touch90 > 0 ? clamp((touch90 - 45) / 40 * 5, -2, 5) : 0;
 
   const volTarget = num(player._volTarget, 34) || 34;
-  const ratePts=clamp(g90/0.92*100,0,140), volPts=clamp(num(player.goals)/volTarget*100,0,140);
-  const goalScore=clamp(ratePts*0.5+volPts*0.5+sqNudge,0,140);
 
-  if (bucket==='ATT') {
-    const create=clamp(a90/0.30*80+key90/2.5*30+bccBoost,0,116);
-    const carry=clamp(dr90/2.1*40+dribBonus+sh90/4.0*28,0,92);
-    return { vals:[goalScore,create,carry], w:[0.80,0.13,0.07], ev };
+  const ratePts = clamp(g90 / 0.92 * 100, 0, 140);
+  const volPts = clamp(num(player.goals) / volTarget * 100, 0, 140);
+
+  // xG makes goal threat fairer: a player getting good chances is credited even
+  // before goals arrive; over/under finishing still matters through actual goals.
+  const xgPts = xg90 != null ? clamp(xg90 / 0.55 * 100, 0, 140) : null;
+  const npxgPts = npxg90 != null ? clamp(npxg90 / 0.48 * 100, 0, 130) : null;
+
+  let goalScore = xgPts != null
+    ? clamp(ratePts * 0.34 + volPts * 0.26 + xgPts * 0.28 + (npxgPts ?? xgPts) * 0.12 + sqNudge + shotQualityBonus, 0, 145)
+    : clamp(ratePts * 0.5 + volPts * 0.5 + sqNudge + shotQualityBonus, 0, 140);
+
+  // xA upgrades creation beyond raw assists.
+  const assistSignal = xa90 != null
+    ? Math.max(a90 / 0.30 * 80, xa90 / 0.30 * 80)
+    : a90 / 0.30 * 80;
+
+  if (bucket === 'ATT') {
+    const create = clamp(assistSignal + key90 / 2.5 * 30 + bccBoost, 0, 120);
+    const carry = clamp(dr90 / 2.1 * 40 + dribBonus + sh90 / 4.0 * 28, 0, 95);
+    return { vals: [goalScore, create, carry], w: [0.76, 0.16, 0.08], ev };
   }
-  if (bucket==='DEF') {
-    const rawDuel=clamp(tk90/2.1*40+in90/1.7*38+du90/5.2*40,0,110);
-    const defend = duelScore !== null ? clamp(duelScore*1.1,0,110) : rawDuel;
-    const build=ev?clamp((acc-76)/(93-76)*52+pass90/78*48+(terr!=null?(terr-40)*0.15:0),0,108):56;
-    const prog=clamp(key90/1.0*42+dr90/0.9*28+dribBonus,0,88);
-    const att=clamp(g90/0.14*55+a90/0.18*45,0,90);
-    return { vals:[defend,build,prog,att], w:[0.66,0.20,0.09,0.05], ev };
+
+  if (bucket === 'DEF') {
+    const rawDuel = clamp(tk90 / 2.1 * 40 + in90 / 1.7 * 38 + du90 / 5.2 * 40 + clear90 / 4.5 * 16, 0, 118);
+    const defend = duelScore !== null ? clamp(duelScore * 1.05 + clear90 / 4.5 * 12, 0, 118) : rawDuel;
+    const build = ev
+      ? clamp((acc - 76) / (93 - 76) * 52 + pass90 / 78 * 48 + touchBonus + (terr != null ? (terr - 40) * 0.15 : 0), 0, 112)
+      : 56;
+    const prog = clamp(key90 / 1.0 * 42 + dr90 / 0.9 * 28 + dribBonus, 0, 88);
+    const att = clamp(g90 / 0.14 * 55 + a90 / 0.18 * 45 + (xg90 != null ? xg90 / 0.10 * 18 : 0), 0, 95);
+    return { vals: [defend, build, prog, att], w: [0.66, 0.21, 0.08, 0.05], ev };
   }
+
   // MID
-  const progress=ev?clamp(pass90/68*60+(acc-75)/(93-75)*56+(terr!=null?(terr-50)*0.10:0),0,124):clamp(48+a90/0.35*25,0,86);
-  const create=clamp(key90/1.9*56+a90/0.46*52+bccBoost,0,116);
-  const goal=clamp(g90/0.42*85+sqNudge,0,120);
-  const carry=clamp(dr90/1.5*64+dribBonus,0,104);
-  const duelRaw=clamp(tk90/2.1*48+in90/1.4*42,0,100);
-  const defend=duelScore!==null?clamp(duelScore*0.90,0,100):duelRaw;
-  return { vals:[progress,create,goal,carry,defend], w:[0.62,0.23,0.09,0.04,0.02], ev };
+  const progress = ev
+    ? clamp(pass90 / 68 * 60 + (acc - 75) / (93 - 75) * 56 + touchBonus - lossPenalty + (terr != null ? (terr - 50) * 0.10 : 0), 0, 126)
+    : clamp(48 + a90 / 0.35 * 25, 0, 86);
+
+  const create = clamp(
+    key90 / 1.9 * 52 +
+    (xa90 != null ? xa90 / 0.32 * 52 : a90 / 0.46 * 52) +
+    bccBoost,
+    0,
+    120
+  );
+
+  const goal = clamp(g90 / 0.42 * 70 + (xg90 != null ? xg90 / 0.32 * 38 : 0) + sqNudge + shotQualityBonus, 0, 122);
+  const carry = clamp(dr90 / 1.5 * 64 + dribBonus - lossPenalty * 0.5, 0, 104);
+  const duelRaw = clamp(tk90 / 2.1 * 48 + in90 / 1.4 * 42 + clear90 / 3.0 * 8, 0, 104);
+  const defend = duelScore !== null ? clamp(duelScore * 0.86 + tk90 / 2.1 * 10 + in90 / 1.4 * 10, 0, 104) : duelRaw;
+
+  return { vals: [progress, create, goal, carry, defend], w: [0.58, 0.24, 0.09, 0.04, 0.05], ev };
 }
 
 // ── Core scorer: rate ONE body of work. ─────────────────────────────────

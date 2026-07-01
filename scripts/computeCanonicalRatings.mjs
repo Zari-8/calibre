@@ -78,12 +78,28 @@ async function withRetry(fn, label, tries = 6) {
 function evidenceScore(r) {
   const splits = r.competition_splits && typeof r.competition_splits === 'object'
     && Object.keys(r.competition_splits).length ? 1 : 0;
+
+  // Prefer rows enriched by TheStatsAPI, because the new rating engine can now
+  // use xG, xA, shot quality, passes, touches, duels and defensive actions.
+  const hasStatsApi =
+    r.statsapi_enriched_at ||
+    r.statsapi_player_id ||
+    r.xg != null ||
+    r.xa != null ||
+    r.npxg != null ||
+    r.total_passes != null ||
+    r.touches != null ||
+    r.tackles != null ||
+    r.interceptions != null ||
+    r.clearances != null;
+
   return splits * 1e6
+    + (hasStatsApi ? 8e5 : 0)
     + (num(r.api_average_rating) > 0 ? 5e4 : 0)
     + (r.age ? 2e4 : 0)
     + num(r.appearances) * 100
     + num(r.minutes)
-    + num(r.stats_minutes) * 0.1;
+    + num(r.stats_minutes);
 }
 
 // Paginated fetch with retry. `filter` is an optional PostgREST .or() string.
@@ -132,7 +148,7 @@ async function run() {
   // ── 2. EVIDENCE rows only: the smaller set worth scoring. Full columns. ──
   const evidence = await fetchAllPaged(
     '*',
-    'minutes.gt.0,appearances.gt.0,api_average_rating.gt.0,stats_minutes.gt.0',
+    'minutes.gt.0,appearances.gt.0,api_average_rating.gt.0,stats_minutes.gt.0,statsapi_enriched_at.not.is.null,xg.not.is.null,xa.not.is.null,total_passes.not.is.null,touches.not.is.null',
     'evidence'
   );
 

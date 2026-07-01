@@ -397,16 +397,12 @@ function buildPlayerUpdate(player) {
   const xg = player.expected_goals > 0 ? player.expected_goals : player.shotmap_xg;
   const npxg = player.np_expected_goals > 0 ? player.np_expected_goals : Math.max(0, xg - player.penalty_xg);
 
-  const per90 = (v) => minutes ? round((v / minutes) * 90) : null;
-
   return {
-    // Identity / join keys only. These are safe.
     statsapi_player_id: player.statsapi_player_id,
     statsapi_season_id: player.statsapi_season_id,
     statsapi_competition_id: player.statsapi_competition_id,
     statsapi_enriched_at: new Date().toISOString(),
 
-    // xG/xA layer. API-Football does not provide this baseline, so these can stay unprefixed.
     xg: round(xg),
     npxg: round(npxg),
     xa: round(player.expected_assists),
@@ -418,61 +414,39 @@ function buildPlayerUpdate(player) {
     penalty_xg: round(player.penalty_xg),
     headed_xg: round(player.headed_xg),
     outside_box_xg: round(player.outside_box_xg),
-    xg_per_90: per90(xg),
-    xa_per_90: per90(player.expected_assists),
+    xg_per_90: minutes ? round((xg / minutes) * 90) : null,
+    xa_per_90: minutes ? round((player.expected_assists / minutes) * 90) : null,
     shot_quality: shots ? round(xg / shots) : null,
 
-    // StatsAPI advanced layer — prefixed so it never overwrites API-Football baseline.
-    statsapi_total_shots: player.total_shots || null,
-    statsapi_shots_on_target: player.shots_on_target || null,
-    statsapi_shots_off_target: player.shots_off_target || null,
-    statsapi_blocked_shots: player.blocked_shots || null,
-    statsapi_shot_accuracy: shots ? Math.round((player.shots_on_target / shots) * 100) : null,
-    statsapi_shots_per90: per90(player.total_shots),
+    big_chances_created: player.big_chances_created || null,
+    total_shots: player.total_shots || null,
+    shots_on_target: player.shots_on_target || null,
+    shots_off_target: player.shots_off_target || null,
+    blocked_shots: player.blocked_shots || null,
+    shot_accuracy: shots ? Math.round((player.shots_on_target / shots) * 100) : null,
 
-    statsapi_total_passes: player.total_passes || null,
-    statsapi_accurate_passes: player.accurate_passes || null,
-    statsapi_pass_accuracy: passes ? Math.round((player.accurate_passes / passes) * 100) : null,
-    statsapi_passes_per90: per90(player.total_passes),
+    total_passes: player.total_passes || null,
+    accurate_passes: player.accurate_passes || null,
+    pass_accuracy: passes ? Math.round((player.accurate_passes / passes) * 100) : null,
+    key_passes: player.key_passes || null,
+    total_crosses: player.total_crosses || null,
+    accurate_crosses: player.accurate_crosses || null,
+    cross_accuracy: crosses ? Math.round((player.accurate_crosses / crosses) * 100) : null,
+    total_long_balls: player.total_long_balls || null,
+    accurate_long_balls: player.accurate_long_balls || null,
+    long_ball_accuracy: longBalls ? Math.round((player.accurate_long_balls / longBalls) * 100) : null,
 
-    statsapi_key_passes: player.key_passes || null,
-    statsapi_key_passes_per90: per90(player.key_passes),
+    ground_duel_win_pct: duels ? Math.round((player.duel_won / duels) * 100) : null,
+    aerial_duels_won: player.aerial_won || null,
+    successful_dribbles: player.won_contest || null,
+    dispossessed: player.dispossessed || null,
+    possession_lost: player.possession_lost || null,
+    touches: player.touches || null,
+    was_fouled: player.was_fouled || null,
 
-    statsapi_total_crosses: player.total_crosses || null,
-    statsapi_accurate_crosses: player.accurate_crosses || null,
-    statsapi_cross_accuracy: crosses ? Math.round((player.accurate_crosses / crosses) * 100) : null,
-
-    statsapi_total_long_balls: player.total_long_balls || null,
-    statsapi_accurate_long_balls: player.accurate_long_balls || null,
-    statsapi_long_ball_accuracy: longBalls ? Math.round((player.accurate_long_balls / longBalls) * 100) : null,
-
-    statsapi_ground_duel_win_pct: duels ? Math.round((player.duel_won / duels) * 100) : null,
-    statsapi_aerial_duels_won: player.aerial_won || null,
-    statsapi_aerial_duels_won_per90: per90(player.aerial_won),
-
-    statsapi_successful_dribbles: player.won_contest || null,
-    statsapi_successful_dribbles_per90: per90(player.won_contest),
-
-    statsapi_dispossessed: player.dispossessed || null,
-    statsapi_dispossessed_per90: per90(player.dispossessed),
-
-    statsapi_possession_lost: player.possession_lost || null,
-    statsapi_possession_lost_per90: per90(player.possession_lost),
-
-    statsapi_touches: player.touches || null,
-    statsapi_touches_per90: per90(player.touches),
-
-    statsapi_was_fouled: player.was_fouled || null,
-    statsapi_was_fouled_per90: per90(player.was_fouled),
-
-    statsapi_tackles: player.tackles || null,
-    statsapi_tackles_per90: per90(player.tackles),
-
-    statsapi_interceptions: player.interceptions || null,
-    statsapi_interceptions_per90: per90(player.interceptions),
-
-    statsapi_clearances: player.clearances || null,
-    statsapi_clearances_per90: per90(player.clearances),
+    tackles: player.tackles || null,
+    interceptions: player.interceptions || null,
+    clearances: player.clearances || null,
 
     progressive_carries: null,
     pressures: null,

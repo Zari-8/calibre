@@ -15,7 +15,7 @@ import { supabase, supabaseConfigured } from './supabaseClient.js';
 //     Flip it to true AFTER you have run the table SQL — that single edit
 //     switches the bell on. Nothing else changes.
 // ─────────────────────────────────────────────────────────────────────────
-const NOTIFICATIONS_READY = false;
+const NOTIFICATIONS_READY = true;
 
 // Recent notifications for this account, newest first.
 export async function loadNotifications(user, limit = 20) {

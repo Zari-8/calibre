@@ -342,6 +342,7 @@ export default function Home() {
           <div className="home-contact">
             <h3>Get in touch</h3>
             <div className="home-contact__row"><Mail size={15} /><a href="mailto:team@calibrefootball.com">team@calibrefootball.com</a></div>
+            <div className="home-contact__row"><Zap size={15} /><a href="https://x.com/calibrefooty" target="_blank" rel="noopener noreferrer">@calibrefooty</a> on X</div>
             <div className="home-contact__row"><MessageSquare size={15} />Press &amp; partnerships: same address, mark the subject line.</div>
             <div className="home-contact__row"><ShieldCheck size={15} />Calibre is an 18+ platform. See our <a href="/terms" onClick={e=>{e.preventDefault();navigateTo('/terms');}}>Terms of Service</a>.</div>
           </div>

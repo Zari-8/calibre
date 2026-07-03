@@ -3377,8 +3377,14 @@ body::after { opacity: .22; background-size: 72px 72px; }
 /* ════════════════════════════════════════════════════════════════
    SYSTEM FIT ENGINE V7 - functional report workspace
    ════════════════════════════════════════════════════════════════ */
-.sf-page{display:grid;grid-template-columns:244px minmax(0,1fr);gap:0;padding:0;max-width:1500px;border-left:1px solid var(--thin);border-right:1px solid var(--thin);min-height:calc(100vh - 60px);background:rgba(4,5,6,.78)}
-.sf-sidebar{border-right:1px solid var(--thin);background:rgba(8,8,10,.82);min-height:100%;padding-bottom:18px}
+.sf-page{position:relative;isolation:isolate;display:grid;grid-template-columns:244px minmax(0,1fr);gap:0;padding:0;max-width:1500px;border-left:1px solid var(--thin);border-right:1px solid var(--thin);min-height:calc(100vh - 60px);background:transparent}
+/* FULL-BLEED pitch behind System Fit — fixed to the viewport so it fills the whole
+   screen and never ends in a dark shelf. Swap the image path on the next line to
+   /assets/hero-backview-footballer.png if you want a System-Fit-specific shot. */
+.sf-page::before{content:"";position:fixed;inset:0;z-index:-2;background:url("/assets/debates-bg.png") center/cover no-repeat;pointer-events:none}
+/* Softer scrim — lime bloom up top, even semi-dark wash, vignette. No hard flip to solid. */
+.sf-page::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.42),transparent 62%),radial-gradient(ellipse 100% 100% at 50% 45%,transparent 40%,rgba(4,7,10,.42) 100%),linear-gradient(180deg,rgba(5,8,11,.28) 0%,rgba(5,8,11,.58) 42%,rgba(5,8,11,.68) 100%)}
+.sf-sidebar{border-right:1px solid var(--thin);background:rgba(9,13,16,.52);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);min-height:100%;padding-bottom:18px}
 .sf-search-tabs{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--thin)}
 .sf-search-tabs button{height:43px;font:800 10px/1 "Barlow";letter-spacing:.11em;color:var(--text3);border-bottom:2px solid transparent}
 .sf-search-tabs button.active{color:var(--lime);border-bottom-color:var(--lime)}
@@ -3394,7 +3400,7 @@ body::after { opacity: .22; background-size: 72px 72px; }
 .sf-crest,.sf-crest-img{display:grid;place-items:center;border-radius:50%;object-fit:contain;border:1px solid rgba(255,255,255,.16);flex:none;font:900 9px/1 "Barlow Condensed";letter-spacing:.04em}
 .sf-main{min-width:0;padding:18px;display:flex;flex-direction:column;gap:13px}.sf-pagebar{display:flex;align-items:flex-end;justify-content:space-between;gap:18px}.sf-pagebar h1{margin-top:5px;font:900 27px/1 "Barlow Condensed";letter-spacing:.06em;color:#fff}.sf-pagebar-actions,.sf-export-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.sf-pro-chip{padding:2px 4px;margin-left:2px;border-radius:2px;background:var(--lime-dim);color:var(--lime);font:800 8px/1 "IBM Plex Mono"}
 .sf-mode-tabs{display:flex;gap:4px;border-bottom:1px solid var(--thin)}.sf-mode-tabs button{padding:10px 14px 9px;border-bottom:2px solid transparent;font:800 11px/1 "Barlow";letter-spacing:.1em;color:var(--text3)}.sf-mode-tabs button:hover{color:var(--text)}.sf-mode-tabs button.active{color:var(--lime);border-bottom-color:var(--lime)}
-.sf-hero-card,.sf-panel{border:1px solid var(--thin);background:rgba(13,13,16,.9);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.sf-hero-card,.sf-panel{border:1px solid rgba(255,255,255,.08);background:rgba(9,13,16,.46);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 12px 34px rgba(0,0,0,.30)}
 .sf-hero-topline{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 13px;border-bottom:1px solid var(--thin);background:rgba(255,255,255,.012)}.sf-hero-topline span,.sf-hero-topline b{display:block}.sf-hero-topline span{font:800 9px/1 "IBM Plex Mono";letter-spacing:.16em;color:var(--lime)}.sf-hero-topline b{margin-top:4px;font:700 9px/1 "Barlow";letter-spacing:.07em;color:var(--text3)}.sf-live{display:flex;align-items:center;gap:6px;font:800 9px/1 "IBM Plex Mono";letter-spacing:.07em;color:var(--green)}.sf-live i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px rgba(61,186,111,.12)}
 .sf-hero-grid{display:grid;grid-template-columns:210px minmax(270px,1fr) minmax(245px,.8fr);min-height:232px}.sf-player-portrait{position:relative;overflow:hidden;background:#050607}.sf-player-portrait img{width:100%;height:100%;object-fit:cover;object-position:50% 15%;filter:saturate(.9) contrast(1.05)}.sf-player-portrait-fade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.02) 36%,rgba(5,5,7,.94) 100%)}.sf-player-portrait-label{position:absolute;left:13px;right:13px;bottom:12px}.sf-player-portrait-label small,.sf-player-portrait-label strong,.sf-player-portrait-label span{display:block}.sf-player-portrait-label small{font:800 9px/1 "IBM Plex Mono";letter-spacing:.12em;color:var(--lime);text-transform:uppercase}.sf-player-portrait-label strong{margin-top:5px;font:900 23px/.95 "Barlow Condensed";letter-spacing:.04em;text-transform:uppercase;color:#fff}.sf-player-portrait-label span{margin-top:5px;font:600 10px/1 "Barlow";color:var(--text2)}
 .sf-score-summary{padding:19px;border-right:1px solid var(--thin)}.sf-score-main{display:flex;align-items:center;gap:15px;margin-top:13px}.sf-score-main h2{font:900 24px/1 "Barlow Condensed";letter-spacing:.04em;text-transform:uppercase;color:var(--lime)}.sf-score-main p{max-width:530px;margin-top:7px;font:500 12px/1.55 "Barlow";color:var(--text2)}.sf-score-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:14px}.sf-score-chips span{padding:5px 7px;border:1px solid var(--thin);border-radius:3px;background:rgba(255,255,255,.018);font:700 9px/1 "IBM Plex Mono";letter-spacing:.04em;color:var(--text2);text-transform:uppercase}
@@ -3979,3 +3985,58 @@ html[dir="rtl"] .lang-dropdown { right: auto; left: 0; }
     grid-template-columns: 1fr;
   }
 }
+
+/* ================================================================== *
+ * COMPETITIONS — full-bleed pitch + glass (matches System Fit / Debates).
+ * Covers both the .competitions-page and legacy .comp-page roots and
+ * every panel class either layout uses, so whichever renders gets it.
+ * ================================================================== */
+.competitions-page, .comp-page { position: relative; isolation: isolate; background: transparent; }
+/* swap the image path on the next line for a competitions-specific shot */
+.competitions-page::before, .comp-page::before {
+  content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+  background: url("/assets/debates-bg.png") center/cover no-repeat;
+}
+.competitions-page::after, .comp-page::after {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(ellipse 90% 40% at 50% -6%, rgba(166,255,0,.045), transparent 60%),
+    linear-gradient(180deg, rgba(4,6,9,.90) 0%, rgba(3,5,7,.93) 50%, rgba(3,5,7,.95) 100%);
+}
+/* glass on every competitions surface */
+.competitions-page .comp-sidebar, .comp-page .comp-sidebar,
+.competitions-page .comp-banner, .comp-page .comp-hero,
+.competitions-page .league-tab,
+.competitions-page .comp-league-card,
+.competitions-page .comp-data-card,
+.competitions-page .matchroom-card,
+.competitions-page .comp-bottom > *,
+.competitions-page .comp-sidebar-login-cta, .comp-page .comp-login-box {
+  background: rgba(9, 13, 16, 0.46) !important;
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.30);
+}
+/* banner/hero keep their accent glow layered on top of the glass */
+.competitions-page .comp-banner, .comp-page .comp-hero { position: relative; overflow: hidden; }
+/* preserve the lime active states + sidebar divider */
+.competitions-page .league-tab.active { background: rgba(166, 255, 0, 0.06) !important; border-color: var(--line-lime); }
+.competitions-page .comp-sidebar, .comp-page .comp-sidebar { border-right: 1px solid var(--thin); }
+
+/* ------------------------------------------------------------------ *
+ * Competitions banner: darker panel so the league title reads clearly,
+ * lime eyebrow accent, faded league-logo watermark, and a MUTED data-
+ * status badge so "SNAPSHOT READY" stops overpowering the banner.
+ * ------------------------------------------------------------------ */
+.competitions-page .comp-hero, .comp-page .comp-hero {
+  background: rgba(6,9,13,.74) !important;
+  border: 1px solid rgba(255,255,255,.08) !important;
+}
+.competitions-page .comp-hero-title, .comp-page .comp-hero-title {
+  color: #fff; font-size: 32px; text-shadow: 0 2px 14px rgba(0,0,0,.55);
+}
+.competitions-page .comp-hero-eyebrow, .comp-page .comp-hero-eyebrow { color: #a6ff00; }
+.competitions-page .comp-hero-bg, .comp-page .comp-hero-bg { opacity: .85; }
+.competitions-page .comp-status-card, .comp-page .comp-status-card { color: #6b7075 !important; }
+.competitions-page .comp-status-card b, .comp-page .comp-status-card b { color: #8d929b !important; font-size: 11px !important; }
+.competitions-page .comp-status-card span, .comp-page .comp-status-card span { color: #5a6068 !important; }

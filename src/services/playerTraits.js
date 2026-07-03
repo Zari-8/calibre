@@ -158,13 +158,13 @@ export function playerTraits(player = {}) {
 // Map a player's standout trait (vs their position baseline) to an individual
 // archetype label, so registry players stop sharing one label per position.
 const ARCHETYPE_LABELS = {
-  GK:   { map: { control: 'Sweeper Keeper' }, default: 'Shot Stopper' },
-  DEF:  { map: { control: 'Ball-Playing Defender', transition: 'Stepping-Out Defender', pressing: 'Front-Foot Stopper', defensiveLoad: 'Anchor Defender' }, default: 'Stopper' },
-  FB:   { map: { width: 'Overlapping Full-Back', transition: 'Flying Full-Back', control: 'Inverted Full-Back', defensiveLoad: 'Defensive Full-Back', pressing: 'Pressing Full-Back' }, default: 'Full-Back' },
-  DM:   { map: { control: 'Deep-Lying Playmaker', tempo: 'Tempo Controller', defensiveLoad: 'Anchor', pressing: 'Ball-Winner' }, default: 'Holding Midfielder' },
-  MID:  { map: { control: 'Tempo Controller', transition: 'Box-to-Box', pressing: 'Ball-Winner', width: 'Wide Mover', tempo: 'Playmaker' }, default: 'Central Midfielder' },
-  WIDE: { map: { width: 'Touchline Winger', transition: 'Direct Winger', control: 'Inside Creator', pressing: 'Pressing Winger', tempo: 'Roaming Winger' }, default: 'Wide Outlet' },
-  ATT:  { map: { transition: 'Transition Forward', width: 'Wide Forward', control: 'Link Forward', tempo: 'Movement Forward', pressing: 'Pressing Forward' }, default: 'Poacher' },
+  GK:   { map: { control: 'Sweeper Keeper' }, default: 'Shot-Stopper' },
+  DEF:  { map: { control: 'Ball-Playing Defender', transition: 'Ball-Playing Defender', pressing: 'Stopper', defensiveLoad: 'Stopper' }, default: 'Stopper' },
+  FB:   { map: { width: 'Wing-Back', transition: 'Wing-Back', control: 'Inverted Full-Back', tempo: 'Inverted Full-Back', defensiveLoad: 'Full-Back', pressing: 'Full-Back' }, default: 'Full-Back' },
+  DM:   { map: { control: 'Deep-Lying Playmaker', tempo: 'Deep-Lying Playmaker', defensiveLoad: 'Anchor', pressing: 'Ball-Winning Midfielder' }, default: 'Holding Midfielder' },
+  MID:  { map: { control: 'Deep-Lying Playmaker', transition: 'Box-to-Box Midfielder', pressing: 'Ball-Winning Midfielder', width: 'Mezzala', tempo: 'Advanced Playmaker' }, default: 'Central Midfielder' },
+  WIDE: { map: { width: 'Winger', transition: 'Winger', pressing: 'Winger', control: 'Inside Forward', tempo: 'Inside Forward' }, default: 'Winger' },
+  ATT:  { map: { transition: 'Advanced Forward', width: 'Advanced Forward', pressing: 'Advanced Forward', control: 'False Nine', tempo: 'Second Striker', defensiveLoad: 'Target Man' }, default: 'Poacher' },
 };
 
 export function deriveArchetype(player = {}) {

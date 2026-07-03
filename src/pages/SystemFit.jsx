@@ -135,8 +135,13 @@ function useDatabaseSearch(kind, query) {
 }
 
 function Crest({ team, size = 38 }) {
-  if (team.crestUrl) {
-    return <img src={team.crestUrl} alt="" className="sf-crest-img" style={{ width: size, height: size }} />;
+  const [failed, setFailed] = useState(false);
+  // SYSTEM_TEAMS carry the real API-Football team id, so we can pull the club
+  // logo from the media CDN when no explicit crestUrl is set. Falls back to the
+  // coloured initials badge if the logo id is missing or the image 404s.
+  const url = team.crestUrl || (Number(team.id) > 0 ? `https://media.api-sports.io/football/teams/${team.id}.png` : null);
+  if (url && !failed) {
+    return <img src={url} alt="" className="sf-crest-img" style={{ width: size, height: size, objectFit: 'contain' }} onError={() => setFailed(true)} />;
   }
   return (
     <div className="sf-crest" style={{ width: size, height: size, background: team.accent, color: team.secondary }}>
@@ -761,19 +766,21 @@ function sf2Why(report, sum) {
 
 // Comparables: same archetype first (ranked by rating closeness, any age);
 // if the curated pool is thin, extend with the same position group.
+// Comparables = SAME ARCHETYPE only, ranked by rating proximity (age ignored).
+// No position fallback — a Controller must never be offered as a peer to a Box
+// Crasher. The curated SYSTEM_PLAYERS set has one player per archetype, so this
+// legitimately returns none there; the real bench comes from the enriched DB
+// pool once that query is wired in (see fetchArchetypePeers TODO).
 function sf2Similar(player) {
-  const pool = (Array.isArray(SYSTEM_PLAYERS) ? SYSTEM_PLAYERS : []).filter(p => p && p.name && p.name !== player.name);
-  const norm = a => String(a || '').trim().toLowerCase();
+  const arch = String(player.archetype || '').trim().toLowerCase();
+  if (!arch) return [];
   const rate = x => Number(x && x.rating) || 80;
   const pr = rate(player);
-  const byRating = (a, b) => Math.abs(rate(a) - pr) - Math.abs(rate(b) - pr);
-  let list = pool.filter(p => norm(p.archetype) === norm(player.archetype) && norm(player.archetype) !== '').sort(byRating);
-  if (list.length < 3) {
-    const g = sf2Group(player.position);
-    const extra = pool.filter(p => !list.includes(p) && sf2Group(p.position) === g).sort(byRating);
-    list = [...list, ...extra];
-  }
-  return list.slice(0, 3).map(p => ({ player: p, name: p.name, apiPlayerId: p.apiPlayerId, image: p.image, pct: sf2clamp(Math.round(96 - Math.abs(rate(p) - pr) * 2), 72, 98) }));
+  const pool = (Array.isArray(SYSTEM_PLAYERS) ? SYSTEM_PLAYERS : [])
+    .filter(p => p && p.name && p.name !== player.name && String(p.archetype || '').trim().toLowerCase() === arch)
+    .sort((a, b) => Math.abs(rate(a) - pr) - Math.abs(rate(b) - pr))
+    .slice(0, 3);
+  return pool.map(p => ({ player: p, name: p.name, apiPlayerId: p.apiPlayerId, image: p.image, pct: sf2clamp(Math.round(96 - Math.abs(rate(p) - pr) * 2), 74, 98) }));
 }
 
 function SelectorRow({ selectedPlayer, selectedTeam, setSelectedPlayer, setSelectedTeam }) {
@@ -1026,13 +1033,13 @@ function SummaryRail({ report, player, canExport, setSelectedPlayer }) {
         <button type="button" className="btn btn--lime btn--sm sf2-download" onClick={download}>DOWNLOAD FULL REPORT <ArrowRight size={13} /></button>
         {report.risks?.length > 0 && (<div className="sf2-risk"><small>RISK FLAGS</small>{report.risks.slice(0, 4).map(t => <span key={t}><i />{t}</span>)}</div>)}
       </section>
-      {similar.length > 0 && (
-        <section className="sf2-card">
-          <div className="sf2-card-head"><span>SIMILAR PLAYER PROFILES</span></div>
-          <div className="sf2-similar">{similar.map((p, i) => (
-            <button type="button" key={p.name} onClick={() => setSelectedPlayer(p.player)}><em>{i + 1}</em><ApiPlayerImage playerId={p.apiPlayerId ?? playerIdFor(p.name)} name={p.name} fallbackSrc={p.image || '/assets/players/neutral-player.svg'} alt={p.name} /><b>{p.name}</b><strong>{p.pct}%</strong></button>))}</div>
-        </section>
-      )}
+      <section className="sf2-card">
+        <div className="sf2-card-head"><span>SIMILAR PLAYER PROFILES</span><b>SAME ARCHETYPE</b></div>
+        {similar.length > 0
+          ? <div className="sf2-similar">{similar.map((p, i) => (
+              <button type="button" key={p.name} onClick={() => setSelectedPlayer(p.player)}><em>{i + 1}</em><ApiPlayerImage playerId={p.apiPlayerId ?? playerIdFor(p.name)} name={p.name} fallbackSrc={p.image || '/assets/players/neutral-player.svg'} alt={p.name} /><b>{p.name}</b><strong>{p.pct}%</strong></button>))}</div>
+          : <p className="sf2-similar-empty">No same-archetype peer in the current player set. Comparables populate from the enriched database as it connects.</p>}
+      </section>
     </aside>
   );
 }
@@ -1261,6 +1268,7 @@ export default function SystemFit() {
         .sf2-similar img { width:34px; height:34px; border-radius:50%; object-fit:cover; object-position:top; border:1px solid rgba(255,255,255,.12); flex:none; }
         .sf2-similar b { flex:1; color:#fff; font:700 13px/1.1 "Barlow",sans-serif; }
         .sf2-similar strong { padding:3px 8px; border:1px solid rgba(166,255,0,.24); border-radius:5px; color:#a6ff00; font:900 12px/1 "Barlow Condensed",sans-serif; }
+        .sf2-similar-empty { margin:2px 0 0; color:#7a828c; font:500 11.5px/1.5 "Barlow",sans-serif; }
 
         .sf-founder-strip { margin-top:0; }
 

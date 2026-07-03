@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, ArrowRight, Crown, Star, TrendingUp, X, LoaderCircle, Plus, Database, GitCompareArrows, SlidersHorizontal, Info } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import PlayerCard from '../components/PlayerCard.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
 import { getSupabasePlayerCount, getSupabasePlayers, getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
@@ -46,6 +47,16 @@ const AGE_OPTIONS = [['16-40','16–40'],['16-21','16–21'],['22-25','22–25']
 const RANK_TABS = ['Calibre Rating','Market Buzz','Fan Rating','Potential'];
 const PLAYER_TABLE_LIMIT = 25;
 
+// Live "data points" = indexed players x the stat metrics we store per player.
+// Real per-player metric columns from the enriched Supabase bank (base + StatsAPI).
+const METRIC_FIELDS = ['goals','assists','shots','shots_on','key_passes','dribbles_success','dribbles_attempts','tackles','interceptions','blocks','clearances','duels_won','duels_total','aerials_won','pass_accuracy','passes','minutes','appearances','starts','rating','xg_per_90','fouls_drawn','fouls_committed','yellow','crosses','saves'];
+function formatCompact(n){
+  n = Number(n) || 0;
+  if(n >= 1e9) return (n/1e9).toFixed(1).replace(/\.0$/,'') + 'B';
+  if(n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+  if(n >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K';
+  return String(Math.round(n));
+}
 function displayRating(rating){
   const numericRating = Number(rating);
   return Number.isFinite(numericRating) ? Math.round(numericRating) : '—';
@@ -281,80 +292,27 @@ function lineToRatingInput(player, stat){
   };
 }
 
-function PlayerProfileModal({player,stats,loading,onClose,onCompare,watched,onToggleWatch,canWatch}){
+function PlayerProfileModal({player,loading,onClose,onCompare,watched,onToggleWatch,canWatch}){
   if(!player) return null;
-
-  const stat = pickLeagueLine(stats?.statistics);
-  const liveInput = stat ? lineToRatingInput(player, stat) : null;
-  const liveCalc = liveInput && liveInput.minutes > 0 ? calibreRating(liveInput) : null;
-
-  // Reconciliation rule: the player list and the modal must show the SAME number.
-  // The list computes calibreRating from the enriched Supabase row and stores it
-  // on player.rating. The modal fetches fresh API-Football stats and recomputes —
-  // which produces a different result whenever the stat sets differ.
-  // Fix: always prefer the stored row rating so the badge is consistent with
-  // the table. Fall back to the live re-computation only for raw API search hits
-  // that have no pre-computed rating at all (player.rating is null/undefined).
-  const storedRating = (player.rating != null && Number.isFinite(Number(player.rating)))
-    ? Number(player.rating)
-    : null;
-  const liveRating = storedRating ?? (liveCalc ? liveCalc.rating : null);
-  const club = stat?.team?.name || player.club || player.team || 'Club data loading';
-  const position = specificPosition(stat?.games?.position,specificPosition(player.position,player.pos));
-
-  const items = [
-    ['Age', player.age || '—'],
-    ['Appearances', stat?.games?.appearences ?? stat?.games?.appearances ?? player.appearances ?? '—'],
-    ['Goals', stat?.goals?.total ?? player.goals ?? '—'],
-    ['Assists', stat?.goals?.assists ?? player.assists ?? '—'],
-    [
-      'Pass accuracy',
-      stat?.passes?.accuracy
-        ? String(stat.passes.accuracy) + '%'
-        : player.passAccuracy
-          ? String(player.passAccuracy) + '%'
-          : '—',
-    ],
-    ['Duels won', stat?.duels?.won ?? player.duelsWon ?? '—'],
-  ];
-
+  const ratingText = displayRating(player.rating != null ? player.rating : null);
   return (
     <div className="player-profile-modal" role="presentation" onMouseDown={onClose}>
-      <section className="player-profile-modal__dialog" onMouseDown={event=>event.stopPropagation()}>
-        <button type="button" className="player-profile-modal__close" onClick={onClose}><X size={16}/></button>
-
-        <div className="player-profile-modal__hero">
-          <ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name}/>
-          <div>
-            <div className="player-profile-modal__kicker"><Database size={12}/> Live player profile</div>
-            <h2>{player.name}</h2>
-            <p>{club} · {position}{player.nationality ? ` · ${player.nationality}` : ''}</p>
-          </div>
-          {liveRating != null && (
-            <div className="player-profile-modal__rating"><strong>{displayRating(liveRating)}</strong><span>Calibre</span></div>
-          )}
-        </div>
-
-        {loading
-          ? <div className="player-profile-modal__loading"><LoaderCircle size={16}/> Pulling current-season statistics…</div>
-          : <div className="player-profile-modal__stats player-profile-modal__stats--six">
-              {items.map(([label,value])=><div key={label}><strong>{value}</strong><span>{label}</span></div>)}
-            </div>
-        }
-
-        <p className="player-profile-modal__note">The live identity and available season statistics come from API-Football. Calibre’s weighted rating, archetype and system-fit layers sit on top of that source data.</p>
-
-        <div className="player-profile-modal__actions">
-          <button type="button" className="btn btn--lime btn--sm" onClick={()=>onCompare(player)}><Plus size={13}/> Add to compare</button>
-          <button type="button" className={`btn btn--sm ${watched ? 'btn--lime' : 'btn--outline'}`} onClick={onToggleWatch} title={canWatch ? (watched ? 'Remove from watchlist' : 'Add to watchlist') : 'Watchlist is a Pro feature'}><Star size={13}/> {watched ? 'Watching' : 'Watch'}</button>
-          <button type="button" className="btn btn--outline btn--sm" onClick={()=>navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}>Run system fit <ArrowRight size={13}/></button>
-          <ShareBar text={`${player.name} — Calibre rating ${displayRating(liveRating)}${player.archetype ? `, ${player.archetype}` : ''}.`} url={shareUrl('/players')} label={false}/>
-        </div>
+      <section className="pcard-dialog" onMouseDown={event=>event.stopPropagation()} style={{position:'relative',width:'min(520px,100%)',margin:'6vh auto',background:'#0b0e11',border:'1px solid rgba(255,255,255,.09)',borderRadius:18,boxShadow:'0 30px 80px rgba(0,0,0,.6)',padding:'26px'}}>
+        <button type="button" className="player-profile-modal__close" onClick={onClose} style={{position:'absolute',top:16,right:16,zIndex:2}}><X size={16}/></button>
+        <PlayerCard
+          player={player}
+          onViewProfile={()=>navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}
+          actions={<>
+            <button type="button" className="btn btn--outline btn--sm" onClick={()=>onCompare(player)}><Plus size={13}/> Add to compare</button>
+            <button type="button" className={`btn btn--sm ${watched ? 'btn--lime' : 'btn--outline'}`} onClick={onToggleWatch} title={canWatch ? (watched ? 'Remove from watchlist' : 'Add to watchlist') : 'Watchlist is a Pro feature'}><Star size={13}/> {watched ? 'Watching' : 'Watch'}</button>
+            <ShareBar text={`${player.name} — Calibre rating ${ratingText}${player.archetype ? `, ${player.archetype}` : ''}.`} url={shareUrl('/players')} label={false}/>
+          </>}
+        />
+        {loading && <div className="player-profile-modal__loading" style={{marginTop:14}}><LoaderCircle size={14}/> Syncing live profile…</div>}
       </section>
     </div>
   );
 }
-
 function CompareModal({players,onClose}){
   if(players.length<2) return null;
 
@@ -406,6 +364,29 @@ function WatchlistModal({ items, onOpen, onRemove, onClose }) {
         )}
       </section>
     </div>
+  );
+}
+
+function posChips(p) {
+  return String(p.pos || p.position || '').split(/[\/,]/).map(t => t.trim()).filter(Boolean).slice(0, 2);
+}
+function FeaturedCard({ player, onOpen, watched, onToggleWatch }) {
+  const chips = posChips(player);
+  return (
+    <article className="plp2-fcard" onClick={() => onOpen(player)}>
+      <div className="plp2-fcard-photo">
+        <div className="plp2-fcard-badge"><b>{displayRating(player.rating)}</b><span>{chips[0] || player.pos || '—'}</span></div>
+        <button type="button" className={`plp2-fcard-star${watched ? ' on' : ''}`} onClick={e => { e.stopPropagation(); onToggleWatch(player); }} aria-label="Watchlist">{watched ? <Star size={13} fill="currentColor" /> : <Star size={13} />}</button>
+        <ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name} loading="lazy" />
+      </div>
+      <div className="plp2-fcard-body">
+        <h4>{player.name}</h4>
+        <div className="plp2-fcard-meta">{[player.age ? `${player.age} yrs` : null, player.nationality || null].filter(Boolean).join(' · ')}</div>
+        <div className="plp2-fcard-club">{player.club || player.team || '—'}</div>
+        {chips.length > 0 && <div className="plp2-fcard-chips">{chips.map(c => <em key={c}>{c}</em>)}</div>}
+        <span className="plp2-fcard-link">View profile <ArrowRight size={12} /></span>
+      </div>
+    </article>
   );
 }
 
@@ -684,231 +665,250 @@ export default function Players(){
     setActivePlayer(null);
   }
 
+  const filteredRows = useMemo(()=>sourceRows.filter(p=>{
+    const posVal = p.position || p.pos || '';
+    const posOk = !posVal || posMatches(posVal,filters.position);
+    const natOk = filters.nation==='all' || !p.nationality || String(p.nationality).toLowerCase().includes(filters.nation);
+    const archOk = filters.archetype==='all' || foldAccents(p.archetype)===foldAccents(filters.archetype);
+    const ratingOk = filters.rating==='all' || (Number.isFinite(Number(p.rating)) && Number(p.rating)>=Number(filters.rating));
+    return ageInRange(p.age,filters.age) && posOk && natOk && archOk && ratingOk;
+  }),[sourceRows,filters]);
+  const rankingRows = useMemo(()=>sortCurated(filteredRows,rankTab),[filteredRows,rankTab]);
+  const featuredList = useMemo(()=>sortCurated(landingPlayers,'Calibre Rating').slice(0,8),[landingPlayers]);
+  const [rankPage,setRankPage] = useState(1);
+  const [pageSize,setPageSize] = useState(10);
+  useEffect(()=>{ setRankPage(1); },[rankTab,filters,search,notice]);
+  const rankPageCount = Math.max(1, Math.ceil(rankingRows.length / pageSize));
+  const rankPageRows = rankingRows.slice((rankPage-1)*pageSize, rankPage*pageSize);
+  const trendArrow = (p)=>{ const pot=Number(p.potential), rat=Number(rowRating(p)); if(!Number.isFinite(pot)||!Number.isFinite(rat)) return '—'; return pot>rat?'up':pot<rat?'down':'flat'; };
+  const quickActions = [
+    { key:'compare', icon:GitCompareArrows, label:'Compare Players', run:()=>{ if(comparePlayers.length>=2) setCompareOpen(true); else document.querySelector('.plp2-compare')?.scrollIntoView({behavior:'smooth'}); } },
+    { key:'search', icon:Search, label:'Advanced Search', run:()=>document.querySelector('.plp2-filters')?.scrollIntoView({behavior:'smooth'}) },
+    { key:'watch', icon:Star, label:'My Watchlist', run:()=>setWatchlistOpen(true) },
+    { key:'top', icon:Crown, label:'Top 100 Players', run:()=>{ setRankTab('Calibre Rating'); setFilters(f=>({...f,rating:'all'})); document.querySelector('.plp2-rankings')?.scrollIntoView({behavior:'smooth'}); } },
+    { key:'wonder', icon:TrendingUp, label:'Wonderkids (U21)', run:()=>{ setFilters(f=>({...f,age:'16-21'})); document.querySelector('.plp2-rankings')?.scrollIntoView({behavior:'smooth'}); } },
+    { key:'free', icon:Database, label:'Free Agents', run:()=>setNotice('Free-agent data connects with the transfers feed — coming soon.') },
+  ];
+
   return (
-    <div className="page players-page">
-      <div className="plp-header">
-        <div className="plp-title">Players</div>
-        <div className="plp-sub">Discover, analyse and compare football talent through the Calibre player bank and live enrichment layer.</div>
-        <button type="button" className="btn btn--outline btn--sm" style={{ marginTop:10 }} onClick={()=>setWatchlistOpen(true)}><Star size={13} /> Watchlist{watchlist.length ? ` (${watchlist.length})` : ''}</button>
+    <div className="page players-page plp2">
+      <style>{`
+        .plp2 { --l:#c8fa3c; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.52); --muted:#8b9299; max-width:1500px; position:relative; isolation:isolate; }
+        .plp2 * { box-sizing:border-box; }
+        .plp2::before { content:""; position:fixed; inset:0; z-index:-2; background:url("/assets/debates-bg.png") center/cover no-repeat; pointer-events:none; }
+        .plp2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.40),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.30) 0%,rgba(5,8,11,.55) 45%,rgba(5,8,11,.66) 100%); }
+        .plp2-hero { border:1px solid var(--line); border-radius:16px; background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); padding:26px 30px; margin-bottom:14px; }
+        .plp2-hero .eyebrow { color:var(--l); font:600 11px/1 "Barlow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+        .plp2-hero h1 { margin:12px 0 8px; color:#fff; font:800 46px/.95 "Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.01em; }
+        .plp2-hero p { margin:0; color:#c3c9cf; font:500 14px "Barlow",sans-serif; }
+        .plp2-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+        @media(max-width:900px){ .plp2-stats { grid-template-columns:repeat(2,1fr); } }
+        .plp2-stat { border:1px solid var(--line); border-radius:12px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:14px 16px; }
+        .plp2-stat b { display:block; color:var(--l); font:800 26px/1 "Barlow Condensed",sans-serif; }
+        .plp2-stat span { display:block; margin-top:6px; color:var(--muted); font:600 9.5px/1.3 "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+        .plp2-searchrow { display:flex; gap:10px; margin-bottom:10px; }
+        .plp2-search { flex:1; display:flex; align-items:center; gap:9px; height:44px; padding:0 14px; border:1px solid var(--line); border-radius:11px; background:var(--glass); backdrop-filter:blur(12px); color:var(--muted); }
+        .plp2-search input { flex:1; min-width:0; background:none; border:none; outline:none; color:#eef1f4; font:500 14px "Barlow",sans-serif; }
+        .plp2-filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+        .plp2-filters select { height:38px; padding:0 12px; border:1px solid var(--line); border-radius:9px; background:var(--glass); backdrop-filter:blur(10px); color:#d8dde2; font:600 12px "Barlow",sans-serif; cursor:pointer; }
+        .plp2-body { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:16px; align-items:start; }
+        @media(max-width:1080px){ .plp2-body { grid-template-columns:1fr; } }
+        .plp2-sec { border:1px solid var(--line); border-radius:16px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:18px; margin-bottom:14px; }
+        .plp2-sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+        .plp2-sec-head h3 { margin:0; color:#fff; font:800 18px/1 "Barlow Condensed",sans-serif; letter-spacing:.02em; text-transform:uppercase; }
+        .plp2-fcards { display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:12px; }
+        .plp2-fcard { border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.02); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s; }
+        .plp2-fcard:hover { border-color:rgba(200,250,60,.4); transform:translateY(-2px); }
+        .plp2-fcard-photo { position:relative; height:150px; margin:10px 10px 0; border-radius:11px; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); }
+        .plp2-fcard-photo img { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
+        .plp2-fcard-badge { position:absolute; top:8px; left:8px; z-index:2; display:flex; flex-direction:column; align-items:center; background:rgba(6,9,12,.72); border:1px solid var(--line); border-radius:9px; padding:4px 8px; backdrop-filter:blur(6px); }
+        .plp2-fcard-badge b { color:var(--l); font:800 19px/1 "Barlow Condensed",sans-serif; }
+        .plp2-fcard-badge span { color:#aeb4bb; font:700 8px/1 "Barlow",sans-serif; letter-spacing:.06em; margin-top:2px; }
+        .plp2-fcard-star { position:absolute; top:8px; right:8px; z-index:2; width:26px; height:26px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(0,0,0,.14); background:rgba(255,255,255,.78); color:#2a2f36; cursor:pointer; }
+        .plp2-fcard-star.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
+        .plp2-fcard-body { padding:11px 12px 12px; }
+        .plp2-fcard-body h4 { margin:0; color:#f2f5f7; font:700 14px/1.15 "Barlow",sans-serif; }
+        .plp2-fcard-meta { margin:3px 0 1px; color:#b6bcc3; font:500 11px "Barlow",sans-serif; }
+        .plp2-fcard-club { color:#6b7480; font:500 10.5px "Barlow",sans-serif; }
+        .plp2-fcard-chips { display:flex; gap:5px; margin:8px 0; }
+        .plp2-fcard-chips em { font-style:normal; padding:2px 7px; border:1px solid rgba(200,250,60,.4); border-radius:6px; color:var(--l); font:800 9px/1 "Barlow Condensed",sans-serif; }
+        .plp2-fcard-link { display:inline-flex; align-items:center; gap:5px; color:var(--l); font:700 11px "Barlow",sans-serif; }
+        .plp2-rank-tabs { display:flex; gap:6px; flex-wrap:wrap; }
+        .plp2-rank-tabs button { border:1px solid var(--line); background:rgba(255,255,255,.02); color:#aeb4bb; border-radius:8px; padding:7px 12px; font:700 11px "Barlow Condensed",sans-serif; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; }
+        .plp2-rank-tabs button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
+        .plp2-table-wrap { overflow-x:auto; }
+        .plp2-table { width:100%; border-collapse:collapse; }
+        .plp2-table th { text-align:left; padding:8px 10px; color:var(--muted); font:700 9px/1 "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; border-bottom:1px solid var(--line); white-space:nowrap; }
+        .plp2-table th.num, .plp2-table td.num { text-align:center; }
+        .plp2-table td { padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.05); color:#cfd4da; font:500 12.5px "Barlow",sans-serif; white-space:nowrap; }
+        .plp2-table tbody tr { cursor:pointer; transition:background .12s; }
+        .plp2-table tbody tr:hover { background:rgba(200,250,60,.05); }
+        .plp2-tp { display:flex; align-items:center; gap:9px; }
+        .plp2-tp-img { width:30px; height:30px; border-radius:50%; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); border:1px solid var(--line); flex:none; }
+        .plp2-tp-img img { width:100%; height:100%; object-fit:cover; object-position:top center; }
+        .plp2-tp strong { color:#f2f5f7; font-weight:700; }
+        .plp2-pos { padding:2px 7px; border:1px solid var(--line); border-radius:5px; color:#b6bcc3; font:700 10px "Barlow Condensed",sans-serif; }
+        .plp2-rate { color:var(--l); font:800 15px "Barlow Condensed",sans-serif; }
+        .plp2-trend.up { color:var(--l); } .plp2-trend.down { color:#ff8a6b; } .plp2-trend.flat { color:#6b7480; }
+        .plp2-pot { color:#e9edf1; font:700 13px "Barlow Condensed",sans-serif; }
+        .plp2-pager { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:14px; flex-wrap:wrap; }
+        .plp2-pages { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+        .plp2-pages button { min-width:30px; height:30px; padding:0 8px; border:1px solid var(--line); border-radius:7px; background:rgba(255,255,255,.02); color:#b6bcc3; font:700 12px "Barlow Condensed",sans-serif; cursor:pointer; }
+        .plp2-pages button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
+        .plp2-pages button:disabled { opacity:.4; cursor:default; }
+        .plp2-pages span { color:#6b7480; padding:0 3px; }
+        .plp2-pagesize { display:flex; align-items:center; gap:8px; color:var(--muted); font:600 11px "Barlow",sans-serif; }
+        .plp2-pagesize select { height:30px; padding:0 8px; border:1px solid var(--line); border-radius:7px; background:rgba(255,255,255,.02); color:#d8dde2; font:600 12px "Barlow",sans-serif; cursor:pointer; }
+        .plp2-rail > * { margin-bottom:14px; }
+        .plp2-qa { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:14px; }
+        .plp2-qa h4 { margin:0 0 10px; color:#e9edf1; font:800 11px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+        .plp2-qa button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; margin-bottom:7px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.02); color:#d8dde2; font:600 12.5px "Barlow",sans-serif; cursor:pointer; transition:border-color .12s,color .12s; }
+        .plp2-qa button:hover { border-color:rgba(200,250,60,.4); color:#fff; }
+        .plp2-qa button svg { color:var(--l); flex:none; }
+        .plp2-qa button:last-child { margin-bottom:0; }
+        .plp2-compare, .plp2-rising { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:14px; }
+        .plp2-side-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:11px; }
+        .plp2-side-head h4 { margin:0; color:#e9edf1; font:800 11px/1 "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+        .plp2-side-head button { background:none; border:none; color:var(--l); font:700 10px "Barlow",sans-serif; text-transform:uppercase; cursor:pointer; }
+        .plp2-cmp-slots { display:grid; gap:8px; margin-bottom:10px; }
+        .plp2-cmp-slot { display:flex; align-items:center; gap:9px; padding:8px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.02); position:relative; }
+        .plp2-cmp-slot img { width:30px; height:30px; border-radius:50%; object-fit:cover; object-position:top; flex:none; border:1px solid var(--line); }
+        .plp2-cmp-slot strong { color:#eef1f4; font:700 12px "Barlow",sans-serif; }
+        .plp2-cmp-slot span { color:var(--muted); font:500 10px "Barlow",sans-serif; }
+        .plp2-cmp-slot--empty { color:var(--muted); font:500 12px "Barlow",sans-serif; justify-content:center; }
+        .plp2-cmp-x { position:absolute; right:7px; top:7px; background:none; border:none; color:var(--muted); cursor:pointer; font-size:15px; }
+        .plp2-rising-row { display:flex; align-items:center; gap:9px; width:100%; text-align:left; padding:8px 0; border:none; background:none; border-top:1px solid rgba(255,255,255,.05); cursor:pointer; }
+        .plp2-rising-row:first-of-type { border-top:none; }
+        .plp2-rising-row img { width:30px; height:30px; border-radius:50%; object-fit:cover; object-position:top; flex:none; border:1px solid var(--line); }
+        .plp2-rising-row .ri { flex:1; min-width:0; }
+        .plp2-rising-row .ri strong { display:block; color:#eef1f4; font:700 12.5px "Barlow",sans-serif; }
+        .plp2-rising-row .ri span { color:var(--muted); font:500 10px "Barlow",sans-serif; }
+        .plp2-rising-row .rr { color:var(--l); font:800 15px "Barlow Condensed",sans-serif; }
+        .plp2-notice { border:1px solid rgba(200,250,60,.3); background:rgba(200,250,60,.06); border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#dfeeb6; font:500 12.5px "Barlow",sans-serif; }
+      `}</style>
+
+      <header className="plp2-hero">
+        <div className="eyebrow">Calibre Intelligence</div>
+        <h1>Players</h1>
+        <p>Discover, analyse and compare the world's best football talent.</p>
+      </header>
+
+      <div className="plp2-stats">
+        <div className="plp2-stat"><b>{supabaseError ? '—' : supabaseLoading ? '…' : supabaseTotal.toLocaleString()}</b><span>Players indexed</span></div>
+        <div className="plp2-stat"><b>{LEAGUE_OPTIONS.length - 1}</b><span>Leagues covered</span></div>
+        <div className="plp2-stat"><b>200+</b><span>Nations</span></div>
+        <div className="plp2-stat"><b>{supabaseLoading ? '…' : formatCompact(supabaseTotal * METRIC_FIELDS.length)}</b><span>Data points</span></div>
+        <div className="plp2-stat"><b>{String(CURRENT_SEASON).slice(2)}/{String(CURRENT_SEASON + 1).slice(2)}</b><span>Season coverage</span></div>
       </div>
 
-      <div className="plp-stats-bar">
-        <div className="plp-stat"><div className="plp-stat-label">Player Directory</div><div className="plp-stat-val">LIVE</div><div className="plp-stat-sub">Global profile search connected</div></div>
-        <div className="plp-stat"><div className="plp-stat-label">League Browse</div><div className="plp-stat-val">9</div><div className="plp-stat-sub">Beta league feeds enabled</div></div>
-        <div className="plp-stat"><div className="plp-stat-label">Calibre Database</div><div className="plp-stat-val">{supabaseError?'OFFLINE':supabaseLoading?'SYNC':supabaseTotal.toLocaleString()}</div><div className="plp-stat-sub">{supabaseError?'Fallback index active':'Supabase rating profiles enriched'}</div></div>
-        <div className="plp-stat"><div className="plp-stat-label">Featured Player</div><div className="plp-stat-val">Weekly</div><div className="plp-stat-sub">Editorial rotation</div></div>
+      <div className="plp2-searchrow">
+        <div className="plp2-search"><Search size={16} /><input placeholder="Search player by name — Gordon, Messi, Bellingham…" value={search} onChange={e => setSearch(e.target.value)} />{searching && <LoaderCircle className="player-live-spinner" size={15} />}</div>
+        <button className="btn btn--outline" type="button" onClick={() => document.querySelector('.plp2-filters')?.scrollIntoView({ behavior: 'smooth' })}><SlidersHorizontal size={14} /> Advanced Filters</button>
       </div>
 
-      <div className="plp-search-bar">
-        <div className="plp-search">
-          <Search size={16}/>
-          <input placeholder="Search the live player directory — try Gordon, Messi or Bellingham…" value={search} onChange={event=>setSearch(event.target.value)}/>
-          {searching && <LoaderCircle className="player-live-spinner" size={15}/>}
-        </div>
-
-        <button className="btn btn--outline" type="button" onClick={()=>document.querySelector('.plp-filters')?.scrollIntoView({behavior:'smooth'})}>
-          <SlidersHorizontal size={14}/> Advanced Filters
-        </button>
-      </div>
-
-      <div className="plp-filters">
-        <select className="plp-filter-select" value={filters.position} onChange={e=>setFilters({...filters,position:e.target.value})}>
-          {POSITION_OPTIONS.map(v=><option key={v} value={v}>{v==='all'?'All Positions':v}</option>)}
-        </select>
-
-        <select className="plp-filter-select" value={filters.age} onChange={e=>setFilters({...filters,age:e.target.value})}>
-          {AGE_OPTIONS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
-        </select>
-
-        <select className="plp-filter-select" value={filters.league} onChange={e=>setFilters({...filters,league:e.target.value})}>
-          {LEAGUE_OPTIONS.map(([v,l])=><option key={v} value={v}>{l}</option>)}
-        </select>
-
-        <select className="plp-filter-select" value={filters.nation} onChange={e=>setFilters({...filters,nation:e.target.value})}>
-          <option value="all">All Nations</option>
-          <option value="england">England</option>
-          <option value="spain">Spain</option>
-          <option value="france">France</option>
-          <option value="brazil">Brazil</option>
-          <option value="nigeria">Nigeria</option>
-        </select>
-
-        <select className="plp-filter-select" value={filters.archetype} onChange={e=>setFilters({...filters,archetype:e.target.value})}>
-          <option value="all">All Archetypes</option>
-          <option>Controller</option>
-          <option>Advanced Playmaker</option>
-          <option>Pressing Engine</option>
-          <option>Inside Forward</option>
-          <option>Wide Creator</option>
-          <option>Box Crasher</option>
-          <option>Poacher</option>
-          <option>Pure Striker</option>
-        </select>
-
-        <select className="plp-filter-select" value={filters.rating} onChange={e=>setFilters({...filters,rating:e.target.value})}>
-          <option value="all">All Ratings</option>
-          <option value="90">Calibre 90+</option>
-          <option value="85">Calibre 85+</option>
-          <option value="80">Calibre 80+</option>
-          <option value="75">Calibre 75+</option>
-          <option value="70">Calibre 70+</option>
-        </select>
-
-        <button className="btn btn--ghost btn--sm" type="button" onClick={()=>{
-          setSearch('');
-          setBrowseRows([]);
-          setFilters({position:'all',age:'16-40',league:'all',nation:'all',archetype:'all',rating:'all'});
-        }}>
-          Clear all
-        </button>
-
+      <div className="plp2-filters">
+        <select value={filters.position} onChange={e => setFilters({ ...filters, position: e.target.value })}>{POSITION_OPTIONS.map(v => <option key={v} value={v}>{v === 'all' ? 'All Positions' : v}</option>)}</select>
+        <select value={filters.league} onChange={e => setFilters({ ...filters, league: e.target.value })}>{LEAGUE_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+        <select value={filters.nation} onChange={e => setFilters({ ...filters, nation: e.target.value })}><option value="all">All Nations</option><option value="england">England</option><option value="spain">Spain</option><option value="france">France</option><option value="brazil">Brazil</option><option value="nigeria">Nigeria</option></select>
+        <select value={filters.age} onChange={e => setFilters({ ...filters, age: e.target.value })}>{AGE_OPTIONS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
+        <select value={filters.archetype} onChange={e => setFilters({ ...filters, archetype: e.target.value })}><option value="all">All Archetypes</option><option>Deep-Lying Playmaker</option><option>Advanced Playmaker</option><option>Box-to-Box Midfielder</option><option>Ball-Winning Midfielder</option><option>Inside Forward</option><option>Winger</option><option>Advanced Forward</option><option>Poacher</option></select>
+        <select value={filters.rating} onChange={e => setFilters({ ...filters, rating: e.target.value })}><option value="all">All Ratings</option><option value="90">Calibre 90+</option><option value="85">Calibre 85+</option><option value="80">Calibre 80+</option><option value="75">Calibre 75+</option><option value="70">Calibre 70+</option></select>
+        <button className="btn btn--ghost btn--sm" type="button" onClick={() => { setSearch(''); setBrowseRows([]); setNotice(''); setFilters({ position: 'all', age: '16-40', league: 'all', nation: 'all', archetype: 'all', rating: 'all' }); }}>Clear all</button>
         <button className="btn btn--lime btn--sm" type="button" onClick={applyFilters}>Apply Filters</button>
       </div>
 
-      {notice && <div className="player-search-state">{notice}</div>}
+      {notice && <div className="plp2-notice">{notice}</div>}
 
-      <div className="plp-layout">
-        <div>
-          <button className="plp-featured panel--featured player-card-button" type="button" onClick={()=>openProfile(localToProfile(featured))}>
-            <div className="plp-featured-img-wrap">
-              <ApiPlayerImage className="plp-featured-img" playerId={apiIdFor(featured)} name={featured.name} preferredSrc={portraitFor(featured)} fallbackSrc={fallbackFor(featured)} alt={featured.name}/>
-              <div className="plp-featured-img-overlay"/>
-              <div className="plp-featured-rating-badge"><strong>{displayRating(featured.rating)}</strong><span>Calibre</span></div>
+      <div className="plp2-body">
+        <main>
+          <section className="plp2-sec plp2-featured">
+            <div className="plp2-sec-head"><h3>Featured players</h3></div>
+            <div className="plp2-fcards">
+              {featuredList.map(p => <FeaturedCard key={p.name} player={localToProfile(p)} onOpen={op => openProfile(op)} watched={isWatched(apiIdFor(p))} onToggleWatch={handleToggleWatch} />)}
             </div>
+          </section>
 
-            <div className="plp-featured-body">
-              <div className="plp-featured-tag"><Star size={12}/><span>Featured player · weekly editorial spotlight</span></div>
-              <div className="plp-featured-name">{featured.name}</div>
-              <div className="plp-featured-club">⚽ {featured.club}</div>
-              <div className="plp-featured-meta">{featured.pos} · {featured.archetype}</div>
-              <p className="featured-selection-note"><Info size={12}/> Chosen from the current debate and transfer-window rotation, not solely by goals.</p>
-
-              <div className="plp-featured-stats">
-                <div className="plp-featured-stat"><strong>{displayRating(featured.rating)}</strong><span>Calibre</span></div>
-                <div className="plp-featured-stat"><strong>{featured.buzz}</strong><span>Market Buzz</span></div>
-                <div className="plp-featured-stat"><strong>{featured.fanRating} ★</strong><span>Fan Rating</span></div>
-                <div className="plp-featured-stat"><strong>{featured.potential}</strong><span>Potential</span></div>
+          <section className="plp2-sec plp2-rankings">
+            <div className="plp2-sec-head"><h3>Player rankings</h3><div className="plp2-rank-tabs">{RANK_TABS.map(tab => <button key={tab} type="button" className={rankTab === tab ? 'on' : ''} onClick={() => setRankTab(tab)}>{tab}</button>)}</div></div>
+            <div className="plp2-table-wrap">
+              <table className="plp2-table">
+                <thead><tr><th className="num">#</th><th>Player</th><th className="num">Age</th><th>Pos</th><th>Nation</th><th>Club</th><th className="num">Calibre</th><th className="num">Trend</th><th className="num">Potential</th></tr></thead>
+                <tbody>
+                  {rankPageRows.map((p, i) => {
+                    const rt = rowRating(p); const tr = trendArrow(p);
+                    return (
+                      <tr key={p.id || p.name} onClick={() => openProfile(p)}>
+                        <td className="num">{(rankPage - 1) * pageSize + i + 1}</td>
+                        <td><div className="plp2-tp"><div className="plp2-tp-img"><ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} loading="lazy" /></div><strong>{p.name}</strong></div></td>
+                        <td className="num">{p.age || '—'}</td>
+                        <td><span className="plp2-pos">{p.position || p.pos || '—'}</span></td>
+                        <td>{p.nationality || '—'}</td>
+                        <td>{p.club || p.team || '—'}</td>
+                        <td className="num">{rt != null ? <span className="plp2-rate">{displayRating(rt)}</span> : <span className="live-profile-pill">LIVE</span>}</td>
+                        <td className="num"><span className={`plp2-trend ${tr}`}>{tr === 'up' ? '▲' : tr === 'down' ? '▼' : '—'}</span></td>
+                        <td className="num"><span className="plp2-pot">{Number.isFinite(Number(p.potential)) ? p.potential : '—'}</span></td>
+                      </tr>
+                    );
+                  })}
+                  {rankPageRows.length === 0 && <tr><td colSpan={9} style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)' }}>No players match those filters.</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <div className="plp2-pager">
+              <div className="plp2-pagesize"><span>Show</span><select value={pageSize} onChange={e => { setPageSize(Number(e.target.value)); setRankPage(1); }}><option value={10}>10</option><option value={25}>25</option><option value={50}>50</option></select><span>· {rankingRows.length} players</span></div>
+              <div className="plp2-pages">
+                <button type="button" disabled={rankPage <= 1} onClick={() => setRankPage(p => Math.max(1, p - 1))}>‹</button>
+                {Array.from({ length: rankPageCount }, (_, i) => i + 1).filter(n => n === 1 || n === rankPageCount || Math.abs(n - rankPage) <= 1).map((n, idx, arr) => (
+                  <span key={n} style={{ display: 'contents' }}>
+                    {idx > 0 && arr[idx - 1] !== n - 1 && <span>…</span>}
+                    <button type="button" className={n === rankPage ? 'on' : ''} onClick={() => setRankPage(n)}>{n}</button>
+                  </span>
+                ))}
+                <button type="button" disabled={rankPage >= rankPageCount} onClick={() => setRankPage(p => Math.min(rankPageCount, p + 1))}>›</button>
               </div>
             </div>
-          </button>
+          </section>
+        </main>
 
-          <div className="plp-rankings panel" style={{marginTop:12}}>
-            <div className="panel-head"><div className="panel-title">Player Rankings</div></div>
+        <aside className="plp2-rail">
+          <div className="plp2-qa">
+            <h4>Quick actions</h4>
+            {quickActions.map(a => <button key={a.key} type="button" onClick={a.run}><a.icon size={15} /> {a.label}</button>)}
+          </div>
 
-            <div className="plp-rankings-tabs">
-              {RANK_TABS.map(tab=>
-                <button key={tab} type="button" className={`plp-rank-tab ${rankTab===tab?'active':''}`} onClick={()=>setRankTab(tab)}>
-                  {tab}
-                </button>
-              )}
+          <div className="plp2-compare">
+            <div className="plp2-side-head"><h4>Compare players</h4><button type="button" onClick={() => setComparePlayers([])}>Clear</button></div>
+            <div className="plp2-cmp-slots">
+              {[0, 1].map(index => { const p = comparePlayers[index]; return p
+                ? <div className="plp2-cmp-slot" key={p.id || p.name}><ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} /><div><strong>{p.name}</strong><br /><span>{p.team || p.club || 'Live profile'}</span></div><button className="plp2-cmp-x" type="button" onClick={() => setComparePlayers(cur => cur.filter((_, i) => i !== index))}>×</button></div>
+                : <div className="plp2-cmp-slot plp2-cmp-slot--empty" key={index}>Select a player</div>; })}
             </div>
+            <button className="btn btn--lime btn--sm" style={{ width: '100%' }} type="button" disabled={comparePlayers.length < 2} onClick={() => setCompareOpen(true)}>Compare players <ArrowRight size={13} /></button>
+          </div>
 
-            {ranked.map((r,index)=>
-              <button key={r.name} className="plp-rank-row player-row-button" type="button" onClick={()=>openProfile(localToProfile(r))}>
-                <div className="plp-rank-num">{index+1}</div>
-                <ApiPlayerImage className="avatar avatar--28" playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)}/>
-                <div className="plp-rank-name">{r.name}</div>
-                <div className="rating-badge rating-badge--sm">{rankTab==='Market Buzz'?r.buzz:rankTab==='Fan Rating'?r.fanRating:rankTab==='Potential'?r.potential:displayRating(r.rating)}</div>
+          <div className="plp2-rising">
+            <div className="plp2-side-head"><h4><TrendingUp size={12} /> Rising players</h4></div>
+            {risingComputed.map(r => (
+              <button key={r.name} type="button" className="plp2-rising-row" onClick={() => openProfile(localToProfile(r))}>
+                <ApiPlayerImage playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)} />
+                <div className="ri"><strong>{r.name}</strong><span>{r.sub}</span></div>
+                <div className="rr">{displayRating(r.rating)}</div>
               </button>
-            )}
+            ))}
           </div>
-        </div>
-
-        <div>
-          <div className="panel">
-            <div className="plp-db-header">
-              <div className="panel-title">Player Database</div>
-              <div className="plp-db-count">{hasLiveQuery?`${liveRows.length} global matches`:browseRows.length?`${browseRows.length} live league players`:'Curated landing index · use search or league browse'}</div>
-            </div>
-
-            {searchError && <div className="player-search-state">{searchError}</div>}
-
-            <table className="plp-db-table">
-              <thead>
-                <tr><th>#</th><th>Player</th><th>Age</th><th>Club / source</th><th>Pos</th><th>Rating</th><th>Profile</th></tr>
-              </thead>
-
-              <tbody>
-                {tableRows.map((p,i)=>{
-                  const rt = rowRating(p);
-                  return (
-                  <tr key={p.id||p.name} className="player-table-row" onClick={()=>openProfile(p)}>
-                    <td>{i+1}</td>
-                    <td><div className="plp-player-cell"><div className="plp-portrait-wrap"><ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} loading="lazy"/></div><strong>{p.name}</strong></div></td>
-                    <td>{p.age||'—'}</td>
-                    <td>{p.team||p.club||'API-Football profile'}</td>
-                    <td><span className="plp-pos-badge">{p.position||p.pos||'—'}</span></td>
-                    <td>{rt!=null?<div className="rating-badge rating-badge--sm">{displayRating(rt)}</div>:<span className="live-profile-pill">LIVE</span>}</td>
-                    <td><button className="btn btn--ghost btn--sm" type="button" onClick={event=>{event.stopPropagation();openProfile(p);}}>Open <ArrowRight size={12}/></button></td>
-                  </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <div>
-          <div className="panel plp-compare">
-            <div className="panel-head">
-              <div className="panel-title">Compare Players</div>
-              <button className="panel-action" type="button" onClick={()=>setComparePlayers([])}>Clear</button>
-            </div>
-
-            <div className="plp-compare-slots">
-              {[0,1].map(index=>{
-                const p = comparePlayers[index];
-
-                return p
-                  ? <div className="plp-compare-slot" key={p.id||p.name}>
-                      <ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)}/>
-                      <strong>{p.name}</strong>
-                      <span>{p.team||p.club||'Live profile'}</span>
-                      <button className="plp-compare-remove" type="button" onClick={()=>setComparePlayers(current=>current.filter((_,i)=>i!==index))}>×</button>
-                    </div>
-                  : <div className="plp-compare-slot plp-compare-slot--empty" key={index}>Select a player</div>;
-              })}
-            </div>
-
-            <button className="btn btn--lime btn--sm" style={{width:'100%'}} type="button" disabled={comparePlayers.length<2} onClick={()=>setCompareOpen(true)}>
-              COMPARE PLAYERS <ArrowRight size={13}/>
-            </button>
-          </div>
-
-          <div className="panel" style={{marginTop:10}}>
-            <div className="panel-head"><div className="panel-title"><TrendingUp size={12}/> Rising Players · role-aware</div></div>
-
-            {risingComputed.map(r=>
-              <button key={r.name} className="plp-rising-row player-row-button rising-row--role-aware" type="button" onClick={()=>openProfile(localToProfile(r))}>
-                <ApiPlayerImage playerId={apiIdFor(r)} name={r.name} preferredSrc={portraitFor(r)} fallbackSrc={fallbackFor(r)}/>
-                <div className="plp-rising-info">
-                  <strong>{r.name}</strong>
-                  <span>{r.sub}</span>
-                  <small>{r.metrics.map(([a,b])=>`${a}: ${b}`).join(' · ')}</small>
-                </div>
-
-                <div>
-                  <div className="rating-badge rating-badge--sm">{displayRating(r.rating)}</div>
-                </div>
-              </button>
-            )}
-
-            <p className="player-role-note">Midfielders are not ranked as strikers. The beta card prioritises duels, progression, pass completion and assists. Progressive-passing coverage will deepen where the live provider exposes the required event data.</p>
-          </div>
-        </div>
+        </aside>
       </div>
 
-      <div className="founder-strip" style={{marginTop:16}}>
-        <Crown size={22}/>
+      <div className="founder-strip" style={{ marginTop: 16 }}>
+        <Crown size={22} />
         <strong>Get World Cup Founder Pass</strong>
         <span>Unlock premium insights, advanced filters and exclusive World Cup content.</span>
-        <button type="button" className="btn btn--lime" onClick={()=>navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14}/></button>
+        <button type="button" className="btn btn--lime" onClick={() => navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14} /></button>
       </div>
 
-      <PlayerProfileModal player={activePlayer} stats={activeStats} loading={profileLoading} onClose={()=>setActivePlayer(null)} onCompare={addToCompare} watched={activePlayer ? isWatched(activePlayer.apiPlayerId ?? activePlayer.id) : false} onToggleWatch={()=>handleToggleWatch(activePlayer)} canWatch={canWatch}/>
-
-      {compareOpen && <CompareModal players={comparePlayers} onClose={()=>setCompareOpen(false)}/>}
-      {watchlistOpen && <WatchlistModal items={watchlist} onOpen={(pl)=>{ setWatchlistOpen(false); openProfile(pl); }} onRemove={(id)=>removeWatch(id)} onClose={()=>setWatchlistOpen(false)} />}
+      <PlayerProfileModal player={activePlayer} stats={activeStats} loading={profileLoading} onClose={() => setActivePlayer(null)} onCompare={addToCompare} watched={activePlayer ? isWatched(activePlayer.apiPlayerId ?? activePlayer.id) : false} onToggleWatch={() => handleToggleWatch(activePlayer)} canWatch={canWatch} />
+      {compareOpen && <CompareModal players={comparePlayers} onClose={() => setCompareOpen(false)} />}
+      {watchlistOpen && <WatchlistModal items={watchlist} onOpen={pl => { setWatchlistOpen(false); openProfile(pl); }} onRemove={id => removeWatch(id)} onClose={() => setWatchlistOpen(false)} />}
     </div>
   );
 }

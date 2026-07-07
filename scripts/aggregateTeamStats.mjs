@@ -131,6 +131,13 @@ function aggregateByTeam(players) {
     // scaled). It's only used for RELATIVE ranking, so the exact scale
     // doesn't matter — only the ordering across teams does.
 
+    // Count-INDEPENDENT ratios. Unlike per90 volumes (which scale with squad
+    // size / match-completeness), these are pure shares in [0,1], so they
+    // compare cleanly across teams regardless of how many players matched.
+    const vsum  = k => (t.acc[k] ? t.acc[k].vsum : null);
+    const share = (a, b) => { const x = vsum(a), y = vsum(b); return (x != null && y != null && (x + y) > 0) ? x / (x + y) : null; };
+    const ratio = (a, b) => { const x = vsum(a), y = vsum(b); return (x != null && y != null && y > 0) ? x / y : null; };
+
     out.push({
       id: t.id,
       count: t.count,
@@ -149,6 +156,9 @@ function aggregateByTeam(players) {
         big_chances_vol:    per90('big_chances_created'),
         shots_vol:          per90('total_shots'),
         dribbles_vol:       per90('successful_dribbles'),
+        // territory shares (count-independent) — for the pressing axis
+        opp_half_share:     share('opp_half_passes', 'own_half_passes'),
+        final_third_share:  ratio('final_third_passes', 'passes'),
       },
     });
   }
@@ -173,6 +183,48 @@ function percentileRanker(teams, metricKey) {
 
 function band(p) { return Math.round(35 + p * 64); }   // 0..1 -> 35..99
 
+function normBase(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+// Canonical name join: reconciles StatsAPI names (in team_indices) with the
+// names stored in derived_team_profiles. First an explicit alias table for the
+// ones that can't be derived, then generic prefix/suffix stripping.
+const NAME_ALIASES = {
+  'as monaco': 'monaco',
+  'olympique de marseille': 'marseille',
+  'olympique lyonnais': 'lyon',
+  'stade rennais': 'rennes',
+  'rc lens': 'lens',
+  'rc strasbourg': 'strasbourg',
+  'rc strasbourg alsace': 'strasbourg',
+  'fc bayern munchen': 'bayern munchen',
+  'sporting': 'sporting cp',
+  'sporting clube de portugal': 'sporting cp',
+  'bayer 04 leverkusen': 'bayer leverkusen',
+  'borussia m gladbach': 'borussia monchengladbach',
+  '1 fsv mainz 05': 'fsv mainz 05',
+  'sv werder bremen': 'werder bremen',
+  'internazionale': 'inter',
+  'inter milano': 'inter',
+};
+
+function norm(s) {
+  let n = normBase(s);
+  if (NAME_ALIASES[n]) return NAME_ALIASES[n];
+  // generic: drop leading club prefixes and a trailing bare "fc"/"cf".
+  // Numeric tokens (05, 04, 1899…) are left intact — stripping them is unsafe.
+  n = n
+    .replace(/^(fc|afc|sc|ac|as|rc|rcd|ss|ssc|ssv|sv|vfl|vfb|us|ud|cd|cf)\s+/, '')
+    .replace(/^olympique( de)?\s+/, '')
+    .replace(/^stade\s+/, '')
+    .replace(/\s+(fc|cf)$/, '')
+    .trim();
+  return NAME_ALIASES[n] || n;
+}
+
 function buildAxes(teams) {
   // pre-build rankers for each raw metric
   const rk = {};
@@ -186,7 +238,7 @@ function buildAxes(teams) {
       control:       has('pass_accuracy') || has('final_third_vol') || has('opp_half_vol'),
       tempo:         has('pass_vol') || has('shots_vol'),
       transition:    has('big_chances_vol') || has('shots_vol') || has('dribbles_vol'),
-      pressing:      has('tackles_vol') || has('interceptions_vol') || has('ground_duel'),
+      pressing:      has('opp_half_share') || has('final_third_share') || has('ground_duel'),
       width:         has('cross_vol') || has('cross_acc'),
       defensiveLoad: has('own_half_vol') || has('tackles_vol') || has('interceptions_vol'),
     };
@@ -207,10 +259,19 @@ function buildAxes(teams) {
       0.30 * pr(t, 'shots_vol') +
       0.20 * pr(t, 'dribbles_vol')
     );
+    // PRESSING — where the team wins and plays the ball, NOT raw tackle volume.
+    // Tackle/interception counts are an ANTI-signal for elite pressing sides:
+    // possession-dominant teams (City, Liverpool) tackle less because the
+    // opponent rarely has the ball. High tackle volume instead marks teams that
+    // DEFEND a lot (deep blocks) — which is defensiveLoad, not pressing. So we
+    // base pressing on territorial dominance (share of passing in the opponent
+    // half), sustained final-third involvement, and ground-duel aggression —
+    // all count-independent, so a true high press separates cleanly from a deep
+    // block that merely racks up defensive actions.
     const pressing = band(
-      0.40 * pr(t, 'tackles_vol') +
-      0.35 * pr(t, 'interceptions_vol') +
-      0.25 * pr(t, 'ground_duel')
+      0.45 * pr(t, 'opp_half_share') +
+      0.30 * pr(t, 'ground_duel') +
+      0.25 * pr(t, 'final_third_share')
     );
     const width = band(
       0.60 * pr(t, 'cross_vol') +
@@ -253,6 +314,54 @@ async function main() {
   if (exErr) { console.error('Read derived error:', exErr.message); process.exit(1); }
   const byId = new Map((existing || []).map(r => [Number(r.team_id), r]));
 
+  // ── PPDA-based pressing override (from team_indices) ──────────────────────
+  // PPDA (opponent passes ÷ our defensive actions) is the correct press signal;
+  // LOW ppda = intense press. We rank it GLOBALLY across every team that has it
+  // and override the territory-based pressing axis for those teams. Teams with
+  // no PPDA keep the territory fallback, so nothing regresses. Joined by name
+  // because team_indices is keyed by StatsAPI id, this table by API-Football id.
+  // Cup competitions (small, ~5-13 match samples that DUPLICATE clubs already
+  // present via their domestic league) are excluded — they contaminate the
+  // global press ranking. And when a club has more than one league row, we keep
+  // the highest-sample one so full-season PPDA always beats a thin sample.
+  const CUP_COMPS = new Set(['comp_3498', 'comp_08478']); // UEFA CL, CAF CL
+  const { data: idx } = await sb.from('team_indices').select('team_name,ppda_raw,matches,competition_id');
+  const bestByName = new Map(); // canonical name -> { ppda, matches }
+  for (const r of (idx || [])) {
+    if (r.ppda_raw == null || !r.team_name) continue;
+    if (CUP_COMPS.has(r.competition_id)) continue;        // domestic-league PPDA only
+    const key = norm(r.team_name);                        // same canonicaliser both sides
+    const m = Number(r.matches) || 0;
+    const prev = bestByName.get(key);
+    if (!prev || m > prev.matches) bestByName.set(key, { ppda: Number(r.ppda_raw), matches: m });
+  }
+  const ppdaByName = new Map();
+  for (const [nm, v] of bestByName) ppdaByName.set(nm, v.ppda);
+  for (const t of teams) {
+    const base = byId.get(t.id);
+    const nm = base ? norm(base.name) : null;
+    t.ppda = (nm && ppdaByName.has(nm)) ? ppdaByName.get(nm) : null;
+  }
+  const withPpda = teams.filter(t => t.ppda != null).sort((a, b) => a.ppda - b.ppda);
+  const nP = withPpda.length;
+  // VALUE-based scaling (not rank). PPDA is bunched near the low-middle with a
+  // long high tail, so ranking by position squashes genuinely-elite pressers
+  // (e.g. PSG) into the mid-pack. Instead we map the VALUE linearly: the best
+  // presser (min PPDA) → ~99, the 90th-percentile PPDA → the floor, clamped so
+  // the long tail of passive teams doesn't stretch the scale. Self-calibrating.
+  if (nP > 0) {
+    const vals = withPpda.map(t => t.ppda);          // ascending (low = press)
+    const lo = vals[0];                               // min → strongest press
+    const hi = vals[Math.floor((nP - 1) * 0.90)];     // p90 → floor
+    const span = Math.max(hi - lo, 1e-6);
+    for (const t of withPpda) {
+      const frac = Math.min(Math.max((t.ppda - lo) / span, 0), 1); // 0 at min, 1 at p90+
+      t.traits.pressing = band(1 - frac);             // low ppda → high pressing
+      t.ppdaPressing = true;
+    }
+  }
+  console.log(`PPDA pressing override applied to ${nP} of ${teams.length} teams${nP === 0 ? ' (run computeTeamIndices.mjs first)' : ''}.`);
+
   // build upsert rows: only for teams we have a derived profile for
   // (so we keep their name/league metadata and just swap in measured traits)
   const rows = [];
@@ -271,7 +380,9 @@ async function main() {
     const prior = base.traits || {};
     const blended = {};
     for (const axis of ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad']) {
-      const hadInputs = t.inputs && t.inputs[axis];
+      const hadInputs = axis === 'pressing'
+        ? (t.ppdaPressing || (t.inputs && t.inputs.pressing))
+        : (t.inputs && t.inputs[axis]);
       blended[axis] = hadInputs ? measured[axis] : (prior[axis] ?? measured[axis]);
     }
 

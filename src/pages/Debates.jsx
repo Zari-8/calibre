@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowRight, Crown, Eye, Flame, LockKeyhole, MessageSquare, Send, Star, TrendingUp, Trophy, Users, X, Zap } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
@@ -43,6 +43,13 @@ export default function Debates(){
   const totalComments=feed.reduce((s,d)=>s+(d.comments||0),0);
   // Filters removed — battles now show most-active first, no category pills.
   const sortedBattles=[...rateBattles].sort((a,b)=>(b.votes||0)-(a.votes||0));
+  const battleScroller = useRef(null);
+  const scrollBattles = (dir) => {
+    const el = battleScroller.current; if (!el) return;
+    const card = el.querySelector('.battle-preview');
+    const step = card ? card.offsetWidth + 14 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * step, behavior: 'smooth' });
+  };
   return <div className="page debates-page"><div className="debates-page__bg" aria-hidden="true"><img src="/assets/debates-bg.png" alt=""/></div><div className="debates-page__shade" aria-hidden="true"/>
     <style>{`
       .debates-page { position: relative; isolation: isolate; background: #05080b; }
@@ -91,6 +98,23 @@ export default function Debates(){
 
       .dbx-empty { padding: 26px; text-align: center; color: rgba(237,238,240,0.55); font: 500 14px/1.4 "Inter",sans-serif; border: 1px dashed rgba(255,255,255,0.12); border-radius: 12px; }
 
+      /* Compact "more battles" list — same pattern the Comparable Deals rail
+         used before its own visual upgrade: a scannable list of rows, not a
+         wall of big cards, so 20+ battles stay organized. */
+      .dbx-more-list { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; overflow: hidden; }
+      .dbx-battle-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(10,13,16,.6); cursor: pointer; transition: background .12s; }
+      .dbx-battle-row:hover { background: rgba(166,255,0,0.05); }
+      .dbx-br-players { display: flex; align-items: center; gap: 8px; flex: none; width: 200px; }
+      .dbx-br-players img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; }
+      .dbx-br-players span { font: 700 11.5px/1.2 "Inter",sans-serif; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 68px; }
+      .dbx-br-vs { color: rgba(237,238,240,0.4); font-size: 10px; flex: none; }
+      .dbx-br-title { flex: 1; min-width: 0; font: 600 12.5px/1.3 "Inter",sans-serif; color: #d8dde2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .dbx-br-bar { flex: none; width: 90px; height: 5px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
+      .dbx-br-bar span { display: block; height: 100%; background: #A6FF00; }
+      .dbx-br-split { flex: none; width: 64px; text-align: right; font: 800 11px "Space Grotesk","Inter",sans-serif; color: #A6FF00; }
+      .dbx-br-votes { flex: none; width: 76px; text-align: right; color: rgba(237,238,240,0.55); font: 600 11px "Inter",sans-serif; }
+      @media(max-width:760px){ .dbx-br-players { width: 140px; } .dbx-br-players span { max-width: 46px; } .dbx-br-votes { display:none; } }
+
       /* hot-potato fire — moved to BOTTOM-RIGHT and enlarged */
       .dbx-fire { position: absolute; bottom: 12px; right: 14px; top: auto; font-size: 26px; line-height: 1; filter: drop-shadow(0 4px 12px rgba(255,120,0,0.5)); pointer-events: none; }
       .debates-page .hot-potato-card { position: relative; padding-bottom: 46px; }
@@ -130,19 +154,19 @@ export default function Debates(){
       .dv-players { display: flex; align-items: center; gap: 10px; }
       .dv-player { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: 1px solid transparent; border-radius: 12px; padding: 6px; cursor: pointer; min-width: 0; }
       .dv-player:hover { border-color: rgba(200,255,0,0.4); background: rgba(200,255,0,0.05); }
-      .dv-player.is-voted { border-color: #c8ff00; background: rgba(200,255,0,0.08); }
+      .dv-player.is-voted { border-color: #a6ff00; background: rgba(200,255,0,0.08); }
       .dv-player img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; }
       .dv-player strong { color: #fff; font-size: 12.5px; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .dv-vs { color: #6b7075; font-size: 11px; font-weight: 700; flex: none; }
       .dv-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.10); overflow: hidden; margin: 10px 0 7px; }
-      .dv-bar span { display: block; height: 100%; background: #c8ff00; transition: width .3s ease; }
+      .dv-bar span { display: block; height: 100%; background: #a6ff00; transition: width .3s ease; }
       .dv-foot { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #8b9096; }
-      .dv-foot strong { color: #c8ff00; font-weight: 800; }
+      .dv-foot strong { color: #a6ff00; font-weight: 800; }
       .dv-title { display: block; width: 100%; background: none; border: none; cursor: pointer; color: #c4c9ce; font-size: 12.5px; line-height: 1.35; text-align: left; padding: 8px 0 2px; }
       .dv-title:hover { color: #fff; }
       .dv-hp-vote { display: flex; gap: 8px; margin: 8px 0; }
       .dv-hp-vote button { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); color: #fff; border-radius: 8px; padding: 8px 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; cursor: pointer; }
-      .dv-hp-vote button:hover { border-color: #c8ff00; color: #c8ff00; }
+      .dv-hp-vote button:hover { border-color: #a6ff00; color: #a6ff00; }
       .dv-goat-count { color: #8b9096; font-size: 12px; margin-bottom: 4px; }
 
       /* GOAT — kept as a DISTINCT hero, but compact: lime-tinted marquee, a
@@ -159,6 +183,34 @@ export default function Debates(){
         .dbx-top { grid-template-columns: 1fr; }
         .dbx-stats { max-width: 460px; }
       }
+      /* ── Featured rate-battle SIDE-SCROLLER ──────────────────────────────
+         More than three battles front-loaded, but as a single horizontal
+         rail the user scrolls/swipes through — never a vertical dump. */
+      .dbx-scroller { position: relative; margin: 0 -6px; }
+      .dbx-scroller__track {
+        display: flex; gap: 14px; overflow-x: auto; scroll-behavior: smooth;
+        scroll-snap-type: x mandatory; padding: 4px 6px 12px;
+        -webkit-overflow-scrolling: touch; scrollbar-width: none;
+      }
+      .dbx-scroller__track::-webkit-scrollbar { display: none; }
+      .dbx-scroller .battle-preview {
+        scroll-snap-align: start; flex: 0 0 300px; width: 300px;
+      }
+      .dbx-scroller__arrow {
+        position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
+        width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
+        display: grid; place-items: center; font: 700 22px/1 "Inter",sans-serif;
+        color: #04120a; background: #A6FF00; border: none;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.42); transition: transform .12s;
+      }
+      .dbx-scroller__arrow:hover { transform: translateY(-50%) scale(1.08); }
+      .dbx-scroller__arrow--prev { left: -8px; }
+      .dbx-scroller__arrow--next { right: -8px; }
+      @media (max-width: 760px) {
+        .dbx-scroller .battle-preview { flex-basis: 82%; width: 82%; }
+        .dbx-scroller__arrow { display: none; }
+      }
+
     `}</style>
 
     <div className="dbx-wrap">
@@ -184,7 +236,7 @@ export default function Debates(){
         {voteError && <div style={{background:'rgba(255,80,80,0.08)',border:'1px solid rgba(255,80,80,0.3)',borderRadius:9,padding:'9px 14px',color:'#ff9b9b',fontSize:12.5,marginBottom:12}}>{voteError}</div>}
         {sortedBattles.length===0
           ? <div className="dbx-empty">No live battles yet. Nominate one to get the argument started.</div>
-          : <div className="battle-grid">{sortedBattles.slice(0,3).map(item=>{const pair=BATTLE_VISUALS[item.slug]||[item.left||'Pedri',item.right||'Jude Bellingham'];const base=item.votes||0;const live=voteCounts[item.slug]||{left:0,right:0};const seedL=Math.round(base*leanFor(item)/100);const l=seedL+live.left;const r=(base-seedL)+live.right;const total=l+r||1;const lpct=Math.round(l/total*100);const mine=myVotes[item.slug];const totalVotes=base+live.left+live.right;return <div className="battle-preview" key={item.slug}><div className="battle-preview__header"><span className="battle-preview__live"><i/>Live</span><span>{totalVotes.toLocaleString()} votes</span></div><div className="dv-players"><button type="button" className={`dv-player${mine==='left'?' is-voted':''}`} onClick={()=>voteBattle(item.slug,'left')} title={mine?'You voted':'Vote '+pair[0]}><ApiPlayerImage playerId={playerIdFor(pair[0])} name={pair[0]} fallbackSrc="/assets/players/neutral-player.svg"/><strong>{pair[0]}</strong></button><span className="dv-vs">vs</span><button type="button" className={`dv-player${mine==='right'?' is-voted':''}`} onClick={()=>voteBattle(item.slug,'right')} title={mine?'You voted':'Vote '+pair[1]}><ApiPlayerImage playerId={playerIdFor(pair[1])} name={pair[1]} fallbackSrc="/assets/players/neutral-player.svg"/><strong>{pair[1]}</strong></button></div><div className="dv-bar"><span style={{width:lpct+'%'}}/></div><div className="dv-foot"><span>{mine?'Your vote is in':'Split so far'}</span><strong>{lpct}% – {100-lpct}%</strong></div><button type="button" className="dv-title" onClick={()=>setForum(item)}>{item.title}</button><div className="dbx-battle-meta"><span className="dbx-battle-stats"><Eye size={13}/> {totalVotes.toLocaleString()} <MessageSquare size={13}/> {(item.comments||0).toLocaleString()}</span><span className="dbx-heat"><Flame size={14}/> {compact(totalVotes)}</span></div><div className="battle-preview__share"><ShareBar text={`${item.title} — ${pair[0]} vs ${pair[1]}. Settle it on Calibre.`} url={shareUrl('/debates')} label={false}/></div></div>})}</div>}
+          : <div className="dbx-scroller"><button type="button" className="dbx-scroller__arrow dbx-scroller__arrow--prev" aria-label="Previous battles" onClick={()=>scrollBattles(-1)}>‹</button><div className="dbx-scroller__track" ref={battleScroller}>{sortedBattles.map(item=>{const pair=BATTLE_VISUALS[item.slug]||[item.left||'Pedri',item.right||'Jude Bellingham'];const base=item.votes||0;const live=voteCounts[item.slug]||{left:0,right:0};const seedL=Math.round(base*leanFor(item)/100);const l=seedL+live.left;const r=(base-seedL)+live.right;const total=l+r||1;const lpct=Math.round(l/total*100);const mine=myVotes[item.slug];const totalVotes=base+live.left+live.right;return <div className="battle-preview" key={item.slug}><div className="battle-preview__header"><span className="battle-preview__live"><i/>Live</span><span>{totalVotes.toLocaleString()} votes</span></div><div className="dv-players"><button type="button" className={`dv-player${mine==='left'?' is-voted':''}`} onClick={()=>voteBattle(item.slug,'left')} title={mine?'You voted':'Vote '+pair[0]}><ApiPlayerImage playerId={playerIdFor(pair[0])} name={pair[0]} fallbackSrc="/assets/players/neutral-player.svg"/><strong>{pair[0]}</strong></button><span className="dv-vs">vs</span><button type="button" className={`dv-player${mine==='right'?' is-voted':''}`} onClick={()=>voteBattle(item.slug,'right')} title={mine?'You voted':'Vote '+pair[1]}><ApiPlayerImage playerId={playerIdFor(pair[1])} name={pair[1]} fallbackSrc="/assets/players/neutral-player.svg"/><strong>{pair[1]}</strong></button></div><div className="dv-bar"><span style={{width:lpct+'%'}}/></div><div className="dv-foot"><span>{mine?'Your vote is in':'Split so far'}</span><strong>{lpct}% – {100-lpct}%</strong></div><button type="button" className="dv-title" onClick={()=>setForum(item)}>{item.title}</button><div className="dbx-battle-meta"><span className="dbx-battle-stats"><Eye size={13}/> {totalVotes.toLocaleString()} <MessageSquare size={13}/> {(item.comments||0).toLocaleString()}</span><span className="dbx-heat"><Flame size={14}/> {compact(totalVotes)}</span></div><div className="battle-preview__share"><ShareBar text={`${item.title} — ${pair[0]} vs ${pair[1]}. Settle it on Calibre.`} url={shareUrl('/debates')} label={false}/></div></div>})}</div><button type="button" className="dbx-scroller__arrow dbx-scroller__arrow--next" aria-label="More battles" onClick={()=>scrollBattles(1)}>›</button></div>}
       </section>
 
       <section className="debate-section"><div className="section-title-row"><div><span className="section-kicker"><Flame size={13}/> Hot potatoes</span><h2>Arguments that need a proper thread.</h2></div></div><div className="hot-potato-grid">{hot.map(item=>{const live=voteCounts[item.slug]||{left:0,right:0};const base=100;const y=Math.round(item.yes*base/100)+live.left;const n=(base-Math.round(item.yes*base/100))+live.right;const tot=y+n||1;const ypct=Math.round(y/tot*100);const mine=myVotes[item.slug];return <div className="panel hot-potato-card" key={item.slug}><button className="hot-potato-card__open" type="button" onClick={()=>setForum(item)}><span>HOT POTATO</span><h3>{item.title}</h3><p>{item.context}</p></button>{mine?<><div className="dv-bar"><span style={{width:ypct+'%'}}/></div><div className="dv-foot"><span>YES</span><strong>{ypct}% – {100-ypct}% NO</strong></div></>:<div className="dv-hp-vote"><button type="button" onClick={()=>voteBattle(item.slug,'left')}>YES</button><button type="button" onClick={()=>voteBattle(item.slug,'right')}>NO</button></div>}<div className="hot-potato-card__share"><ShareBar text={`${item.title} — ${ypct}% say YES on Calibre.`} url={shareUrl('/debates')} label={false}/></div><span className="dbx-fire">🔥</span></div>})}</div></section>

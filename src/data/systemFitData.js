@@ -75,46 +75,40 @@ export const SYSTEM_TEAMS = [
 ];
 
 export const SYSTEM_PLAYERS = [
-  { id: 154, name: 'Jude Bellingham', team: 'Real Madrid', age: 22, position: 'CM / AM', archetype: 'Box-to-Box Midfielder', image: '/assets/players/jude-bellingham.jpg', rating: 92, traits: { control: 86, transition: 94, pressing: 88, width: 72, tempo: 91, defensiveLoad: 84 }, roleMetrics: { Positioning: 92, 'Decision making': 91, 'Link-up play': 87, 'Final-third impact': 94, 'Press resistance': 85, 'Transition contribution': 93 } },
-  { id: 276, name: 'Pedri', team: 'FC Barcelona', age: 23, position: 'CM', archetype: 'Advanced Playmaker', image: '/assets/players/pedri.jpg', rating: 91, traits: { control: 98, transition: 77, pressing: 84, width: 76, tempo: 94, defensiveLoad: 75 }, roleMetrics: { Positioning: 96, 'Decision making': 95, 'Link-up play': 94, 'Final-third impact': 82, 'Press resistance': 96, 'Transition contribution': 79 } },
-  { id: 1100, name: 'Florian Wirtz', team: 'Bayer Leverkusen', age: 23, position: 'AM', archetype: 'Advanced Playmaker', image: '/assets/players/florian-wirtz.jpg', rating: 90, traits: { control: 91, transition: 90, pressing: 80, width: 82, tempo: 89, defensiveLoad: 67 }, roleMetrics: { Positioning: 89, 'Decision making': 91, 'Link-up play': 93, 'Final-third impact': 92, 'Press resistance': 88, 'Transition contribution': 87 } },
-  { id: 874, name: 'Vitinha', team: 'Paris Saint-Germain', age: 26, position: 'CM', archetype: 'Deep-Lying Playmaker', image: '/assets/players/vitinha.jpg', rating: 89, traits: { control: 95, transition: 78, pressing: 86, width: 74, tempo: 93, defensiveLoad: 81 }, roleMetrics: { Positioning: 94, 'Decision making': 93, 'Link-up play': 94, 'Final-third impact': 79, 'Press resistance': 94, 'Transition contribution': 80 } },
-  { id: 762, name: 'Lamine Yamal', team: 'FC Barcelona', age: 18, position: 'RW', archetype: 'Winger', image: '/assets/players/lamine-yamal.jpg', rating: 88, traits: { control: 88, transition: 96, pressing: 72, width: 98, tempo: 91, defensiveLoad: 54 }, roleMetrics: { Positioning: 84, 'Decision making': 88, 'Link-up play': 86, 'Final-third impact': 96, 'Press resistance': 91, 'Transition contribution': 93 } },
-  { id: 278, name: 'Vinícius Júnior', team: 'Real Madrid', age: 25, position: 'LW', archetype: 'Inside Forward', image: '/assets/players/vinicius-junior.jpg', rating: 93, traits: { control: 82, transition: 99, pressing: 69, width: 96, tempo: 95, defensiveLoad: 48 }, roleMetrics: { Positioning: 87, 'Decision making': 85, 'Link-up play': 82, 'Final-third impact': 98, 'Press resistance': 89, 'Transition contribution': 99 } },
-  { id: 521, name: 'Kylian Mbappé', team: 'Real Madrid', age: 27, position: 'CF / LW', archetype: 'Advanced Forward', image: '/assets/players/kylian-mbappe.jpg', rating: 94, traits: { control: 80, transition: 99, pressing: 62, width: 90, tempo: 98, defensiveLoad: 42 }, roleMetrics: { Positioning: 95, 'Decision making': 91, 'Link-up play': 79, 'Final-third impact': 99, 'Press resistance': 86, 'Transition contribution': 99 } },
-  { id: 9091, name: 'Anthony Gordon', team: 'Newcastle United', age: 25, position: 'LW / RW / AM', archetype: 'Winger', image: '/assets/players/gordon.jpg', rating: 86, traits: { control: 78, transition: 95, pressing: 91, width: 92, tempo: 94, defensiveLoad: 73 }, roleMetrics: { Positioning: 83, 'Decision making': 81, 'Link-up play': 79, 'Final-third impact': 87, 'Press resistance': 76, 'Transition contribution': 96 } },
+  { id: 154, name: 'Jude Bellingham', team: 'Real Madrid', age: 22, position: 'CM / AM', archetype: 'Box Crasher', image: '/assets/players/jude-bellingham.jpg', rating: 92, traits: { control: 86, transition: 94, pressing: 88, width: 72, tempo: 91, defensiveLoad: 84 }, roleMetrics: { Positioning: 92, 'Decision making': 91, 'Link-up play': 87, 'Final-third impact': 94, 'Press resistance': 85, 'Transition contribution': 93 } },
+  { id: 276, name: 'Pedri', team: 'FC Barcelona', age: 23, position: 'CM', archetype: 'Puppeteer', image: '/assets/players/pedri.jpg', rating: 91, traits: { control: 98, transition: 77, pressing: 84, width: 76, tempo: 94, defensiveLoad: 75 }, roleMetrics: { Positioning: 96, 'Decision making': 95, 'Link-up play': 94, 'Final-third impact': 82, 'Press resistance': 96, 'Transition contribution': 79 } },
+  { id: 1100, name: 'Florian Wirtz', team: 'Bayer Leverkusen', age: 23, position: 'AM', archetype: 'Magic Wand', image: '/assets/players/florian-wirtz.jpg', rating: 90, traits: { control: 91, transition: 90, pressing: 80, width: 82, tempo: 89, defensiveLoad: 67 }, roleMetrics: { Positioning: 89, 'Decision making': 91, 'Link-up play': 93, 'Final-third impact': 92, 'Press resistance': 88, 'Transition contribution': 87 } },
+  { id: 874, name: 'Vitinha', team: 'Paris Saint-Germain', age: 26, position: 'CM', archetype: 'Controller', image: '/assets/players/vitinha.jpg', rating: 89, traits: { control: 95, transition: 78, pressing: 86, width: 74, tempo: 93, defensiveLoad: 81 }, roleMetrics: { Positioning: 94, 'Decision making': 93, 'Link-up play': 94, 'Final-third impact': 79, 'Press resistance': 94, 'Transition contribution': 80 } },
+  { id: 762, name: 'Lamine Yamal', team: 'FC Barcelona', age: 18, position: 'RW', archetype: 'Paintbrush', image: '/assets/players/lamine-yamal.jpg', rating: 88, traits: { control: 88, transition: 96, pressing: 72, width: 98, tempo: 91, defensiveLoad: 54 }, roleMetrics: { Positioning: 84, 'Decision making': 88, 'Link-up play': 86, 'Final-third impact': 96, 'Press resistance': 91, 'Transition contribution': 93 } },
+  { id: 278, name: 'Vinícius Júnior', team: 'Real Madrid', age: 25, position: 'LW', archetype: 'Dagger', image: '/assets/players/vinicius-junior.jpg', rating: 93, traits: { control: 82, transition: 99, pressing: 69, width: 96, tempo: 95, defensiveLoad: 48 }, roleMetrics: { Positioning: 87, 'Decision making': 85, 'Link-up play': 82, 'Final-third impact': 98, 'Press resistance': 89, 'Transition contribution': 99 } },
+  { id: 521, name: 'Kylian Mbappé', team: 'Real Madrid', age: 27, position: 'CF / LW', archetype: 'Fox', image: '/assets/players/kylian-mbappe.jpg', rating: 94, traits: { control: 80, transition: 99, pressing: 62, width: 90, tempo: 98, defensiveLoad: 42 }, roleMetrics: { Positioning: 95, 'Decision making': 91, 'Link-up play': 79, 'Final-third impact': 99, 'Press resistance': 86, 'Transition contribution': 99 } },
+  { id: 9091, name: 'Anthony Gordon', team: 'Newcastle United', age: 25, position: 'LW / RW / AM', archetype: 'Transition Monster', image: '/assets/players/gordon.jpg', rating: 86, traits: { control: 78, transition: 95, pressing: 91, width: 92, tempo: 94, defensiveLoad: 73 }, roleMetrics: { Positioning: 83, 'Decision making': 81, 'Link-up play': 79, 'Final-third impact': 87, 'Press resistance': 76, 'Transition contribution': 96 } },
 ];
 
+// ── Team universe ──────────────────────────────────────────────────
+// The pool the picker's local search and the alternative-fit ranking scan.
+// Defaults to the hand-authored SYSTEM_TEAMS, but SystemFit registers the
+// MERGED set (every measured derived_team_profiles club + hand-authored
+// overrides) once the derived cache loads — so all teams in the DB are
+// selectable and rankable, not just the 54. Falls back to SYSTEM_TEAMS if
+// registration hasn't happened yet, so nothing ever regresses to empty.
+let TEAM_UNIVERSE = SYSTEM_TEAMS;
+export function registerTeamUniverse(teams) {
+  if (Array.isArray(teams) && teams.length) TEAM_UNIVERSE = teams;
+}
+export function getTeamUniverse() {
+  return TEAM_UNIVERSE;
+}
+
 const ROLE_MAP = {
-  // Goalkeepers
-  'Sweeper Keeper': ['Sweeper keeper', 'Build-up initiator', 'High-line support'],
-  'Shot-Stopper': ['Shot stopper', 'Line keeper', 'Set-piece anchor'],
-  // Centre-backs
-  'Ball-Playing Defender': ['Ball-playing defender', 'Progressive passer', 'Line-breaker'],
-  Stopper: ['Stopper', 'Aerial dominator', 'Front-foot defender'],
-  // Full-backs
-  'Wing-Back': ['Wing-back', 'Overlapping runner', 'Width provider'],
-  'Inverted Full-Back': ['Inverted full-back', 'Midfield tuck-in', 'Build-up support'],
-  'Full-Back': ['Full-back', 'Defensive width', 'Recovery runner'],
-  // Deep midfield
-  Anchor: ['Anchor', 'Screen the defence', 'Positional shield'],
-  'Ball-Winning Midfielder': ['Ball-winner', 'Pressing trigger', 'Duel monster'],
-  'Holding Midfielder': ['Holding midfielder', 'Deep distributor', 'Rest-defence anchor'],
-  // Central midfield
-  'Deep-Lying Playmaker': ['Deep-lying playmaker', 'Tempo controller', 'Press escape valve'],
-  'Box-to-Box Midfielder': ['Advanced 8', 'Roaming midfielder', 'Second-wave creator'],
-  Mezzala: ['Mezzala', 'Half-space runner', 'Wide-8 creator'],
-  'Advanced Playmaker': ['Free 10', 'Between-the-lines threat', 'Final-third creator'],
-  'Central Midfielder': ['Central midfielder', 'Two-way linker', 'Box-to-box option'],
-  // Wide forwards
-  Winger: ['Wide outlet', 'Touchline isolator', 'Chalk-on-boots runner'],
-  'Inside Forward': ['Inside forward', 'Cut-inside threat', 'Half-space runner'],
-  // Central forwards
-  'Advanced Forward': ['Advanced forward', 'Channel runner', 'Transition finisher'],
-  'False Nine': ['False nine', 'Drop-and-link', 'Space creator'],
-  'Second Striker': ['Second striker', 'Support forward', 'Between-the-lines runner'],
-  'Target Man': ['Target man', 'Hold-up focal point', 'Aerial outlet'],
-  Poacher: ['Poacher', 'Six-yard finisher', 'Last-line runner'],
+  'Box Crasher': ['Advanced 8', 'Roaming midfielder', 'Second-wave creator'],
+  Puppeteer: ['Controller', 'Deep-lying playmaker', 'Interior organiser'],
+  'Magic Wand': ['Advanced playmaker', 'Free 10', 'Wide creator'],
+  Controller: ['Deep-lying playmaker', 'Tempo controller', 'Press escape valve'],
+  Paintbrush: ['Wide creator', 'Inside forward', 'Touchline isolator'],
+  Dagger: ['Inside forward', 'Transition monster', 'Wide outlet'],
+  Fox: ['Poacher', 'Channel runner', 'Transition finisher'],
+  'Transition Monster': ['Left-wing runner', 'Right-wing outlet', 'Inside-left presser'],
 };
 
 function average(values) {
@@ -307,7 +301,7 @@ export function buildSystemFitReport(player, team) {
       note: detail.note,
       breakdown: [],
       rolePulse: player?.roleMetrics ? Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })) : [],
-      alternativeFits: SYSTEM_TEAMS
+      alternativeFits: TEAM_UNIVERSE
         .map(c => {
           const d = fitDetail(player, c, player?._hasStats !== false);
           return { ...c, score: d.score, verdict: d.score == null ? '—' : verdictFor(d.score) };
@@ -327,15 +321,15 @@ export function buildSystemFitReport(player, team) {
   const gaps = detail.gaps;
   // Breakdown now reflects the REAL dimensional alignment, not score+4.
   const breakdown = [
+    ['Role compatibility', score],
     ['Possession value', 100 - Math.abs((player.traits.control ?? 70) - (team.traits.control ?? 70))],
     ['Transition value', 100 - Math.abs((player.traits.transition ?? 70) - (team.traits.transition ?? 70))],
     ['Pressing match', 100 - Math.abs((player.traits.pressing ?? 70) - (team.traits.pressing ?? 70))],
-    ['Defensive workload', 100 - Math.abs((player.traits.defensiveLoad ?? 70) - (team.traits.defensiveLoad ?? 70))],
     ['Width fit', 100 - Math.abs((player.traits.width ?? 70) - (team.traits.width ?? 70))],
     ['Development ceiling', Math.min(96, player.age <= 23 ? player.rating + 3 : player.rating)],
   ].map(([label, value]) => ({ label, value: Math.max(20, Math.min(99, Math.round(value))) }));
 
-  const alternativeFits = SYSTEM_TEAMS
+  const alternativeFits = TEAM_UNIVERSE
     .map(candidate => {
       const d = fitDetail(player, candidate, player?._hasStats !== false);
       let s = d.score;
@@ -435,8 +429,9 @@ export function buildPlayerComparison(primary, challenger, team) {
 
 export function searchLocalTeams(query = '') {
   const needle = query.trim().toLowerCase();
-  if (!needle) return SYSTEM_TEAMS.slice(0, 6);
-  return SYSTEM_TEAMS.filter(team => `${team.name} ${team.country} ${team.league}`.toLowerCase().includes(needle)).slice(0, 8);
+  const pool = TEAM_UNIVERSE;
+  if (!needle) return pool.slice(0, 6);
+  return pool.filter(team => `${team.name} ${team.country} ${team.league}`.toLowerCase().includes(needle)).slice(0, 12);
 }
 
 export function searchLocalPlayers(query = '') {
@@ -565,4 +560,83 @@ export function buildTransferSpotlight(player, team, storyline = {}) {
     lineup: lineupForPlayer(p, score),
     sourceNote: `Auto-generated by Calibre System Fit · strongest signal: ${topSignal.label.toLowerCase()} (${topSignal.value}). Selected by ${storyline.signal || 'most-debated transfer on Calibre this week'}.`,
   };
+}
+
+// ── Role & Formation Fit — real trait-comparison scoring, not fabricated ──
+// Reuses the exact same weighted-RMSD comparison the team System Fit score
+// runs (see rawFit above), applied to positional role and formation trait
+// templates instead of a team's trait profile. A player's traits come from
+// playerTraits(player) — the same engine used everywhere else — so these
+// numbers are genuinely computed from real stats, just scored against a new,
+// explicitly-defined set of tactical templates rather than a specific team.
+const ROLE_TEMPLATES_BY_BUCKET = {
+  ATT: [
+    { role: 'Central Striker', traits: { control: 66, transition: 78, pressing: 62, width: 46, tempo: 74, defensiveLoad: 42 } },
+    { role: 'Pressing Forward', traits: { control: 62, transition: 84, pressing: 86, width: 58, tempo: 82, defensiveLoad: 58 } },
+    { role: 'False 9', traits: { control: 84, transition: 76, pressing: 60, width: 62, tempo: 84, defensiveLoad: 46 } },
+    { role: 'Wide Forward', traits: { control: 70, transition: 88, pressing: 60, width: 90, tempo: 86, defensiveLoad: 40 } },
+  ],
+  WIDE: [
+    { role: 'Winger', traits: { control: 76, transition: 88, pressing: 64, width: 92, tempo: 86, defensiveLoad: 44 } },
+    { role: 'Inside Forward', traits: { control: 78, transition: 86, pressing: 62, width: 70, tempo: 84, defensiveLoad: 42 } },
+    { role: 'Wide Playmaker', traits: { control: 86, transition: 74, pressing: 58, width: 80, tempo: 82, defensiveLoad: 48 } },
+  ],
+  MID: [
+    { role: 'Box-to-Box Midfielder', traits: { control: 82, transition: 82, pressing: 80, width: 62, tempo: 84, defensiveLoad: 72 } },
+    { role: 'Advanced Playmaker', traits: { control: 92, transition: 74, pressing: 58, width: 66, tempo: 86, defensiveLoad: 40 } },
+    { role: 'Deep-Lying Playmaker', traits: { control: 92, transition: 62, pressing: 66, width: 56, tempo: 78, defensiveLoad: 68 } },
+  ],
+  DM: [
+    { role: 'Anchor', traits: { control: 78, transition: 50, pressing: 78, width: 42, tempo: 62, defensiveLoad: 92 } },
+    { role: 'Ball-Winning Midfielder', traits: { control: 68, transition: 66, pressing: 92, width: 50, tempo: 74, defensiveLoad: 88 } },
+    { role: 'Deep-Lying Playmaker', traits: { control: 90, transition: 60, pressing: 66, width: 54, tempo: 76, defensiveLoad: 70 } },
+  ],
+  FB: [
+    { role: 'Wing-Back', traits: { control: 70, transition: 86, pressing: 76, width: 94, tempo: 82, defensiveLoad: 74 } },
+    { role: 'Inverted Full-Back', traits: { control: 84, transition: 66, pressing: 78, width: 48, tempo: 78, defensiveLoad: 82 } },
+    { role: 'Full-Back', traits: { control: 72, transition: 74, pressing: 78, width: 78, tempo: 74, defensiveLoad: 86 } },
+  ],
+  DEF: [
+    { role: 'Ball-Playing Defender', traits: { control: 82, transition: 56, pressing: 68, width: 40, tempo: 62, defensiveLoad: 90 } },
+    { role: 'Stopper', traits: { control: 62, transition: 42, pressing: 74, width: 32, tempo: 52, defensiveLoad: 96 } },
+  ],
+  GK: [
+    { role: 'Sweeper Keeper', traits: { control: 72, transition: 46, pressing: 40, width: 36, tempo: 56, defensiveLoad: 88 } },
+    { role: 'Shot-Stopper', traits: { control: 58, transition: 30, pressing: 34, width: 22, tempo: 42, defensiveLoad: 92 } },
+  ],
+};
+
+const FORMATION_TEMPLATES = [
+  { formation: '4-3-3', traits: { control: 78, transition: 80, pressing: 76, width: 74, tempo: 80, defensiveLoad: 66 } },
+  { formation: '4-2-3-1', traits: { control: 80, transition: 74, pressing: 72, width: 66, tempo: 78, defensiveLoad: 70 } },
+  { formation: '3-4-2-1', traits: { control: 76, transition: 82, pressing: 70, width: 80, tempo: 82, defensiveLoad: 62 } },
+  { formation: '4-4-2', traits: { control: 68, transition: 78, pressing: 78, width: 76, tempo: 76, defensiveLoad: 72 } },
+  { formation: '3-5-2', traits: { control: 80, transition: 72, pressing: 74, width: 62, tempo: 76, defensiveLoad: 74 } },
+];
+
+function playerBucket(player) {
+  try { return playerTraits(player)?.bucket || 'MID'; } catch { return 'MID'; }
+}
+
+/** Scores the player's real traits against each positional-role template for
+ * their bucket (e.g. a striker gets Central Striker / Pressing Forward /
+ * False 9 / Wide Forward), using the same weighted-RMSD comparison as team
+ * System Fit. Returns roles sorted by fit score, highest first. */
+export function scoreRoleFit(player) {
+  const { traits } = playerTraits(player);
+  const bucket = playerBucket(player);
+  const templates = ROLE_TEMPLATES_BY_BUCKET[bucket] || ROLE_TEMPLATES_BY_BUCKET.MID;
+  return templates
+    .map(t => ({ role: t.role, score: rawFit(traits, t.traits) }))
+    .sort((a, b) => b.score - a.score);
+}
+
+/** Scores the player's real traits against a fixed set of formation trait
+ * templates the same way, returning the top 3 formations by fit score. */
+export function scoreFormationFit(player) {
+  const { traits } = playerTraits(player);
+  return FORMATION_TEMPLATES
+    .map(t => ({ formation: t.formation, score: rawFit(traits, t.traits) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3);
 }

@@ -7,7 +7,15 @@ import Competitions from './pages/Competitions.jsx';
 import Talents from './pages/Talents.jsx';
 import SystemFit from './pages/SystemFit.jsx';
 import Pricing from './pages/Pricing.jsx';
-import WorldCup from './pages/WorldCup.jsx';
+import WorldCupOverview from './pages/WorldCupOverview.jsx';
+import WorldCupMatches from './pages/WorldCupMatches.jsx';
+import WorldCupMatchroom from './pages/WorldCupMatchroom.jsx';
+import WorldCupTeams from './pages/WorldCupTeams.jsx';
+import WorldCupPlayersToWatch from './pages/WorldCupPlayersToWatch.jsx';
+import WorldCupGroups from './pages/WorldCupGroups.jsx';
+import WorldCupStats from './pages/WorldCupStats.jsx';
+import WorldCupHistory from './pages/WorldCupHistory.jsx';
+import WorldCupPredictor from './pages/WorldCupPredictor.jsx';
 import Transfers from './pages/Transfers.jsx';
 import BetLanding from './pages/BetLanding.jsx';
 import Terms from './pages/Terms.jsx';
@@ -20,7 +28,15 @@ const routes = {
   '/talents':      Talents,
   '/system-fit':   SystemFit,
   '/pricing':      Pricing,
-  '/world-cup':    WorldCup,
+  '/world-cup':    WorldCupOverview,
+  '/world-cup/matches':   WorldCupMatches,
+  '/world-cup/matchroom': WorldCupMatchroom,
+  '/world-cup/teams':             WorldCupTeams,
+  '/world-cup/players-to-watch':  WorldCupPlayersToWatch,
+  '/world-cup/groups':            WorldCupGroups,
+  '/world-cup/stats':             WorldCupStats,
+  '/world-cup/history':           WorldCupHistory,
+  '/world-cup/predictor':         WorldCupPredictor,
   '/transfers':    Transfers,
   '/bet':          BetLanding,
   '/terms':        Terms,

@@ -6,13 +6,14 @@ import {
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import CommissionForm from '../components/CommissionForm.jsx';
 import DiscoveryDossier from '../components/DiscoveryDossier.jsx';
 import useAuth from '../hooks/useAuth.js';
 import { loadWatchlist, addToWatchlist, removeFromWatchlist, mergeLocalIntoAccount } from '../services/watchlist.js';
 import { resolveTier, can } from '../services/access.js';
-import { searchPlayerProfiles } from '../services/apiFootball.js';
+import { searchPlayerProfiles, teamLogoUrl } from '../services/apiFootball.js';
 import { getSupabaseTalentCandidates } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import playerTraits, { deriveArchetype } from '../services/playerTraits.js';
@@ -564,26 +565,26 @@ function TdeRing({ value, size = 104, label }) {
 }
 
 function PoolCard({ player, selected, shortlisted, onSelect, onToggleShortlist }) {
-  const tag = pathwayTag(player);
-  const ready = player.provisional ? null : numeric(player.readiness);
+  const chips = String(player.position || '').split(/[\/,]/).map(t => t.trim()).filter(Boolean).slice(0, 2);
+  const arch = player.archetype || player.role;
+  const teamId = player.apiTeamId ?? player.api_team_id ?? player.teamId ?? null;
+  const crest = player.logo || player.crestUrl || (teamId ? teamLogoUrl(teamId) : undefined);
+  const rating = player.provisional ? 'LIVE' : player.rating;
   return (
-    <article className={`tde-card${selected ? ' is-sel' : ''}`} onClick={() => onSelect(player)}>
-      <div className="tde-card-photo">
-        <div className="tde-card-top">
-          <div className="tde-card-badge"><b>{player.provisional ? 'LIVE' : player.rating}</b><span>{player.position}</span></div>
-          <button type="button" className="tde-card-star" onClick={e => { e.stopPropagation(); onToggleShortlist(player.name); }} aria-label={`${shortlisted ? 'Remove from' : 'Add to'} shortlist`}>{shortlisted ? <BookmarkCheck size={15} /> : <Star size={15} />}</button>
-        </div>
-        <ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" />
+    <article className={`tde-yc${selected ? ' is-sel' : ''}`} onClick={() => onSelect(player)}>
+      <div className="tde-yc-media">
+        <div className="tde-yc-img"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
+        <div className="tde-yc-crest"><ApiTeamLogo src={crest} name={player.club || player.name} /></div>
       </div>
-      <div className="tde-card-body">
-        <h3>{player.name}</h3>
-        <p>{player.club}</p>
-        <small>{player.league}</small>
-        <span className={`tde-tag tde-tag--${tag.cls}`}>{tag.label}</span>
-        <div className="tde-card-ready">
-          <div className="tde-card-ready-row"><span>Readiness</span><b>{ready == null ? '\u2014' : `${ready}%`}</b></div>
-          <div className="tde-card-bar"><i style={{ width: `${ready == null ? 0 : ready}%` }} /></div>
-        </div>
+      <div className="tde-yc-body">
+        <strong>{player.name}</strong>
+        <div className="tde-yc-role">{chips.join(' / ') || player.position || '—'}</div>
+        {arch && <div className="tde-yc-arch">{arch}</div>}
+        <div className="tde-yc-foot">{[player.club, player.league].filter(Boolean).join(' · ') || '—'}</div>
+      </div>
+      <div className="tde-yc-side">
+        <button type="button" className={`tde-yc-star${shortlisted ? ' on' : ''}`} onClick={e => { e.stopPropagation(); onToggleShortlist(player.name); }} aria-label={`${shortlisted ? 'Remove from' : 'Add to'} shortlist`}>{shortlisted ? <BookmarkCheck size={15} /> : <Star size={15} />}</button>
+        <div className="tde-yc-rating"><b>{rating}</b><span>Calibre</span></div>
       </div>
     </article>
   );
@@ -707,22 +708,44 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const peers = tpPeers(player, pool);
   const compare = pool.find(p => p.name === compareName) || null;
 
-  // Development curve
+  // Development curve — an S-curve (smoothstep easing), not a linear ramp:
+  // slow early growth, fastest through the breakout window, plateauing near
+  // the peak/ceiling. A straight rating->potential ramp reads as a flat line
+  // once drawn; this keeps the same start/end values but real acceleration.
   const W = 920, H = 150, PAD = 46;
   const n = stages.length;
   const norm = v => clamp((v - 58) / (96 - 58), 0, 1);
+  const ease = t => t * t * (3 - 2 * t);
   const pts = stages.map((_, i) => {
-    const val = rating + (potential - rating) * (i / Math.max(1, n - 1));
-    const x = PAD + (W - 2 * PAD) * (i / Math.max(1, n - 1));
+    const t = i / Math.max(1, n - 1);
+    const val = rating + (potential - rating) * ease(t);
+    const x = PAD + (W - 2 * PAD) * t;
     const y = (H - 24) - norm(val) * (H - 54);
     return [x, y];
   });
-  const line = pts.map(p => p.join(',')).join(' ');
+  // Catmull-Rom -> cubic Bezier so the SVG path is an actual curve through
+  // the points, not straight polyline segments between them.
+  const curvePath = pts.length < 2 ? '' : pts.reduce((d, p, i) => {
+    if (i === 0) return `M ${p[0]},${p[1]}`;
+    const p0 = pts[i - 1] || p;
+    const p1 = pts[i];
+    const prev2 = pts[i - 2] || p0;
+    const next = pts[i + 1] || p1;
+    const cp1x = p0[0] + (p1[0] - prev2[0]) / 6;
+    const cp1y = p0[1] + (p1[1] - prev2[1]) / 6;
+    const cp2x = p1[0] - (next[0] - p0[0]) / 6;
+    const cp2y = p1[1] - (next[1] - p0[1]) / 6;
+    return `${d} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p1[0]},${p1[1]}`;
+  }, '');
+  // Closed area path (curve -> down to baseline -> back to start) so the
+  // chart reads as a floor-to-value growth area, not just a bare line.
+  const baselineY = H - 24;
+  const areaPath = curvePath ? `${curvePath} L ${pts[pts.length - 1][0]},${baselineY} L ${pts[0][0]},${baselineY} Z` : '';
 
   return (
     <div className="tp">
       <style>{`
-        .tp { --l:#c8fa3c; --line:rgba(255,255,255,.09); --card:rgba(255,255,255,.03); --muted:#8b9299; }
+        .tp { --l:#c8fa3c; --line:rgba(255,255,255,.09); --card:rgba(9,13,16,.5); --muted:#8b9299; }
         .tp * { box-sizing:border-box; }
         .tp-top { display:flex; gap:16px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; margin-bottom:16px; }
         .tp-top h2 { margin:0; color:#fff; font:800 30px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
@@ -735,7 +758,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-grid { display:grid; grid-template-columns:236px minmax(0,1fr) 316px; gap:16px; align-items:start; }
         @media (max-width:1200px){ .tp-grid { grid-template-columns:220px minmax(0,1fr); } .tp-insights { grid-column:1/-1; } }
         @media (max-width:820px){ .tp-grid { grid-template-columns:1fr; } .tp-controls { display:none; } }
-        .tp-controls, .tp-insights, .tp-main > * { border:1px solid var(--line); border-radius:14px; background:var(--card); }
+        .tp-controls, .tp-insights, .tp-main > * { border:1px solid var(--line); border-radius:14px; background:var(--card); backdrop-filter:blur(11px); -webkit-backdrop-filter:blur(11px); }
         .tp-controls { padding:16px; position:sticky; top:14px; }
         .tp-controls .h { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
         .tp-controls .h span { color:#e9edf1; font:800 12px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
@@ -881,7 +904,14 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
             </div>
             <div className="tp-timeline">
               <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" role="img" aria-label="Development curve">
-                <polyline points={line} fill="none" stroke="var(--l)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                <defs>
+                  <linearGradient id="tp-curve-fill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="var(--l)" stopOpacity="0.32" />
+                    <stop offset="100%" stopColor="var(--l)" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <path d={areaPath} fill="url(#tp-curve-fill)" stroke="none" />
+                <path d={curvePath} fill="none" stroke="var(--l)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
                 {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={i === 1 ? 6 : 5} fill={i <= 1 ? 'var(--l)' : '#0b0d0f'} stroke="var(--l)" strokeWidth="2" />)}
               </svg>
             </div>
@@ -914,7 +944,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
 
         <aside className="tp-insights">
           <div className="tp-ins-h">Pathway insights</div>
-          <TdeRadar axes={axes} />
+          <TdeRadar axes={axes} size={150} />
           <ul className="tp-ins-list">
             <li><i />Strongest on {sortedAxes[0].key.toLowerCase()} ({sortedAxes[0].value}) for the profile</li>
             <li><i />{player.role} traits suit a {/Tier 1/.test(player.league || '') ? 'Tier 1' : 'step-up'} role</li>
@@ -1180,9 +1210,11 @@ export default function Talents() {
   return (
     <div className="page talents-page tde">
       <style>{`
-        .tde { --tde-lime:#c8fa3c; --tde-line:rgba(255,255,255,.09); --tde-card:rgba(255,255,255,.03); --tde-muted:#8b9299; }
+        .tde { --tde-lime:#c8fa3c; --tde-line:rgba(255,255,255,.09); --tde-card:rgba(255,255,255,.03); --tde-muted:#8b9299; --glass:rgba(9,13,16,.52); }
         .tde * { box-sizing:border-box; }
-        .talents-page.tde { max-width:1600px; }
+        .talents-page.tde { max-width:1600px; position:relative; isolation:isolate; }
+        .talents-page.tde::before { content:""; position:fixed; inset:0; z-index:-2; background:url("/assets/debates-bg.png") center/cover no-repeat; pointer-events:none; }
+        .talents-page.tde::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.40),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.30) 0%,rgba(5,8,11,.55) 45%,rgba(5,8,11,.66) 100%); }
         .tde-ticker { display:flex; align-items:center; gap:16px; border:1px solid var(--tde-line); border-radius:10px; background:rgba(255,255,255,.02); padding:0 14px; height:40px; margin-bottom:16px; overflow:hidden; }
         .tde-ticker-label { display:inline-flex; align-items:center; gap:6px; color:var(--tde-lime); font:700 10px/1 "Barlow Condensed",sans-serif; letter-spacing:.14em; text-transform:uppercase; flex:none; }
         .tde-ticker-track { display:flex; align-items:center; gap:22px; flex:1; overflow:hidden; white-space:nowrap; }
@@ -1191,10 +1223,8 @@ export default function Talents() {
         .tde-ticker-track span em { color:var(--tde-lime); font-style:normal; font-weight:800; }
         .tde-ticker-track span i { color:#6b7480; font-style:normal; font-size:10px; letter-spacing:.08em; }
         .tde-ticker-end { flex:none; color:var(--tde-muted); font:700 10px/1 "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
-        .tde-hero { position:relative; overflow:hidden; border:1px solid var(--tde-line); border-radius:16px; padding:30px 30px 22px; margin-bottom:18px; display:flex; gap:26px; align-items:flex-end; justify-content:space-between; }
-        .tde-hero::before { content:""; position:absolute; inset:0; background:url('/assets/debates-bg.png') center/cover no-repeat; opacity:.5; z-index:0; }
-        .tde-hero::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(4,6,9,.72),rgba(3,5,7,.94)); z-index:1; }
-        .tde-hero-main, .tde-hero-stats { position:relative; z-index:2; }
+        .tde-hero { position:relative; overflow:hidden; border:1px solid var(--tde-line); border-radius:16px; padding:26px 30px 20px; margin-bottom:18px; display:flex; gap:26px; align-items:flex-end; justify-content:space-between; background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); }
+                        .tde-hero-main, .tde-hero-stats { position:relative; z-index:2; }
         .tde-hero-main { min-width:0; }
         .tde-eyebrow { display:inline-flex; align-items:center; gap:6px; color:var(--tde-lime); font:600 11px/1 "Barlow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
         .tde-hero h1 { margin:12px 0 8px; font:800 44px/.96 "Barlow Condensed",sans-serif; letter-spacing:.01em; color:#fff; text-transform:uppercase; }
@@ -1210,7 +1240,7 @@ export default function Talents() {
         .tde-grid { display:grid; grid-template-columns:240px minmax(0,1fr) 360px; gap:16px; align-items:start; }
         @media (max-width:1180px){ .tde-grid { grid-template-columns:220px minmax(0,1fr); } .tde-detail { display:none; } }
         @media (max-width:820px){ .tde-grid { grid-template-columns:1fr; } .tde-rail { display:none; } }
-        .tde-rail { background:var(--tde-card); border:1px solid var(--tde-line); border-radius:14px; padding:16px; position:sticky; top:14px; }
+        .tde-rail { background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid var(--tde-line); border-radius:14px; padding:16px; position:sticky; top:14px; }
         .tde-rail-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
         .tde-rail-head span { color:#e9edf1; font:800 12px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
         .tde-rail-head button { background:none; border:none; color:var(--tde-lime); font:700 10px/1 "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
@@ -1236,27 +1266,44 @@ export default function Talents() {
         .tde-chip b { color:var(--tde-muted); font-weight:800; }
         .tde-chip.on { border-color:var(--tde-lime); background:rgba(200,250,60,.12); color:#eaffb0; }
         .tde-chip.on b { color:var(--tde-lime); }
-        .tde-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px; }
-        .tde-card { position:relative; border:1px solid var(--tde-line); border-radius:14px; background:var(--tde-card); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s; }
+         .tde-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:11px; }
+        .tde-yc { display:flex; gap:11px; background:rgba(9,13,16,.46); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--tde-line); border-radius:11px; padding:12px; cursor:pointer; transition:border-color .12s,transform .12s; }
+        .tde-yc:hover { border-color:rgba(200,250,60,.35); transform:translateY(-1px); }
+        .tde-yc.is-sel { border-color:var(--tde-lime); box-shadow:0 0 0 1px var(--tde-lime) inset; }
+        .tde-yc-media { display:flex; flex-direction:column; gap:7px; flex:none; align-items:center; }
+        .tde-yc-img { width:46px; height:46px; border-radius:8px; overflow:hidden; flex:none; background:rgba(255,255,255,.04); }
+        .tde-yc-img img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+        .tde-yc-crest { width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+        .tde-yc-crest img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+        .tde-yc-crest .api-team-logo-fallback { font:800 10px "Barlow Condensed",sans-serif; color:var(--tde-muted); letter-spacing:.03em; }
+        .tde-yc-body { min-width:0; flex:1; }
+        .tde-yc-body strong { display:block; color:#fff; font:700 13.5px/1.2 "Barlow",sans-serif; }
+        .tde-yc-role { font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; color:var(--tde-muted); margin:2px 0 5px; }
+        .tde-yc-arch { color:var(--tde-lime); font:700 11px "Barlow",sans-serif; margin-bottom:5px; }
+        .tde-yc-foot { display:flex; align-items:center; gap:6px; font-size:11px; color:#c4c9ce; }
+        .tde-yc-side { display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; flex:none; gap:6px; }
+        .tde-yc-star { background:none; border:none; color:var(--tde-muted); cursor:pointer; padding:0; display:flex; transition:color .12s,transform .12s; }
+        .tde-yc-star:hover { color:#fff; transform:scale(1.1); }
+        .tde-yc-star.on { color:var(--tde-lime); }
+        .tde-yc-rating { text-align:right; }
+        .tde-yc-rating b { display:block; font:800 22px/1 "Barlow Condensed",sans-serif; color:var(--tde-lime); }
+        .tde-yc-rating span { display:block; font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--tde-muted); }
+        .tde-card { position:relative; border:1px solid var(--tde-line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s; }
         .tde-card:hover { border-color:rgba(200,250,60,.4); transform:translateY(-2px); }
         .tde-card.is-sel { border-color:var(--tde-lime); box-shadow:0 0 0 1px var(--tde-lime) inset; }
-        .tde-card-top { position:absolute; inset:8px 8px auto 8px; display:flex; align-items:flex-start; justify-content:space-between; z-index:2; }
-        .tde-card-badge { display:flex; flex-direction:column; align-items:center; background:rgba(6,9,12,.72); border:1px solid var(--tde-line); border-radius:9px; padding:5px 8px; backdrop-filter:blur(6px); }
-        .tde-card-badge b { font:800 20px/1 "Barlow Condensed",sans-serif; color:var(--tde-lime); }
-        .tde-card-badge span { font:700 9px/1 "Barlow",sans-serif; letter-spacing:.08em; color:#aeb4bb; margin-top:3px; }
-        .tde-card-star { width:28px; height:28px; display:grid; place-items:center; border-radius:8px; border:1px solid var(--tde-line); background:rgba(6,9,12,.72); color:#cdd3d9; cursor:pointer; backdrop-filter:blur(6px); }
-        .tde-card-photo { position:relative; margin:12px 12px 0; height:132px; border-radius:11px; overflow:hidden; border:1px solid rgba(255,255,255,.1); background:radial-gradient(120% 110% at 50% 0%, rgba(255,255,255,.07), #0a0d10 70%); }
-        .tde-card-photo img { width:100%; height:100%; object-fit:cover; object-position:center 12%; display:block; }
-        .tde-card-photo::after { content:""; position:absolute; inset:0; border-radius:11px; background:linear-gradient(180deg,transparent 60%,rgba(11,13,15,.5)); }
-        .tde-card-body { padding:12px 13px 13px; }
-        .tde-card-body h3 { margin:0; color:#f2f5f7; font:700 15px/1.15 "Barlow",sans-serif; }
-        .tde-card-body p { margin:3px 0 1px; color:#b6bcc3; font:500 12px "Barlow",sans-serif; }
-        .tde-card-body small { display:block; color:#6b7480; font:500 10.5px "Barlow",sans-serif; }
-        .tde-tag { display:inline-block; margin:9px 0 10px; padding:3px 8px; border-radius:6px; font:800 9px/1.4 "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
-        .tde-tag--elite { background:rgba(200,250,60,.16); color:var(--tde-lime); }
-        .tde-tag--dev { background:rgba(80,180,255,.14); color:#7fc4ff; }
-        .tde-tag--project { background:rgba(255,255,255,.07); color:#aeb4bb; }
-        .tde-tag--live { background:rgba(255,180,60,.14); color:#ffbf6b; }
+        .tde-card-photo { position:relative; margin:10px 10px 0; height:152px; border-radius:11px; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); }
+        .tde-card-photo img { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
+        .tde-card-star { position:absolute; top:8px; right:8px; z-index:2; width:28px; height:28px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(0,0,0,.14); background:rgba(255,255,255,.78); color:#2a2f36; cursor:pointer; }
+        .tde-card-star.on { background:var(--tde-lime); color:#0a0d05; border-color:var(--tde-lime); }
+        .tde-card-body { padding:11px 13px 13px; }
+        .tde-card-rowtop { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; }
+        .tde-card-rating b { font:800 26px/1 "Barlow Condensed",sans-serif; color:var(--tde-lime); }
+        .tde-card-rating span { display:block; color:var(--tde-muted); font:700 8px/1 "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-top:3px; }
+        .tde-card-chips { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; max-width:58%; }
+        .tde-card-chips em { font-style:normal; padding:3px 7px; border:1px solid rgba(200,250,60,.4); border-radius:6px; color:var(--tde-lime); font:800 9px/1 "Barlow Condensed",sans-serif; letter-spacing:.04em; }
+        .tde-card-body h3 { margin:9px 0 0; color:#f2f5f7; font:700 15px/1.15 "Barlow",sans-serif; }
+        .tde-card-arch { margin:3px 0 0; color:var(--tde-lime); font:700 11px "Barlow",sans-serif; }
+        .tde-card-club { margin:2px 0 10px; color:#8b9299; font:500 11px "Barlow",sans-serif; }
         .tde-card-ready-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:5px; }
         .tde-card-ready-row span { color:var(--tde-muted); font:600 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
         .tde-card-ready-row b { color:#e9edf1; font:800 12px "Barlow Condensed",sans-serif; }
@@ -1264,7 +1311,7 @@ export default function Talents() {
         .tde-card-bar i { display:block; height:100%; background:linear-gradient(90deg,rgba(200,250,60,.5),var(--tde-lime)); border-radius:5px; }
         .tde-more { display:flex; justify-content:center; margin-top:18px; }
         .tde-detail { position:sticky; top:14px; }
-        .tde-scout { border:1px solid var(--tde-line); border-radius:16px; background:var(--tde-card); padding:16px; }
+        .tde-scout { border:1px solid var(--tde-line); border-radius:16px; background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); padding:16px; }
         .tde-scout--empty { color:var(--tde-muted); font:500 13px "Barlow",sans-serif; text-align:center; padding:40px 18px; }
         .tde-scout-head { display:flex; align-items:flex-start; gap:12px; }
         .tde-scout-face { width:66px; height:66px; flex:none; border-radius:12px; overflow:hidden; border:1px solid rgba(255,255,255,.12); background:radial-gradient(120% 110% at 50% 0%, rgba(255,255,255,.08), #0a0d10 70%); }
@@ -1388,170 +1435,211 @@ export default function Talents() {
 
       {view === 'pathways' && <TrajectoryPathway player={selected} pool={sourceTalents} onSelect={setSelectedName} />}
 
-      {view === 'rankings' && <section className="talent-ranking-panel">
-        <div className="talent-ranking-panel__head"><div><span>Trajectory-adjusted ranking</span><h2>Players moving fastest</h2></div><p>Readiness, potential and recent movement combine to surface the most actionable prospects.</p></div>
-        {ranked.map((player,index)=><button type="button" className="talent-ranking-row" key={player.name} onClick={()=>{setSelectedName(player.name);setView('pathways')}}><i>{String(index+1).padStart(2,'0')}</i><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy"/><span><strong>{player.name}</strong><small>{player.flag} {player.club} · {player.role}</small></span><em>{player.trend}</em><b>{clamp(Math.round((player.readiness+player.potential)/2),0,99)}</b></button>)}
+      {view === 'rankings' && <section className="rr">
+        <style>{`
+          .rr { --l:#c8fa3c; --line:rgba(255,255,255,.09); }
+          .rr-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
+          .rr-eyebrow { color:var(--l); font:700 10px/1 "Barlow",sans-serif; letter-spacing:.14em; text-transform:uppercase; }
+          .rr-head h2 { margin:7px 0 0; color:#fff; font:800 32px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
+          .rr-head p { margin:0; max-width:320px; color:#8b9299; font:500 12px/1.5 "Barlow",sans-serif; text-align:right; }
+          .rr-list { display:grid; gap:8px; }
+          .rr-row { display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:12px 16px; border:1px solid var(--line); border-radius:12px; background:rgba(9,13,16,.5); backdrop-filter:blur(11px); -webkit-backdrop-filter:blur(11px); cursor:pointer; transition:border-color .15s,transform .15s; }
+          .rr-row:hover { border-color:rgba(200,250,60,.4); transform:translateY(-1px); }
+          .rr-rank { flex:none; width:26px; color:#6b7480; font:800 17px/1 "Barlow Condensed",sans-serif; font-style:normal; }
+          .rr-photo { flex:none; width:42px; height:42px; border-radius:50%; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); border:1px solid var(--line); }
+          .rr-photo img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+          .rr-id { flex:1; min-width:0; }
+          .rr-id strong { display:block; color:#f2f5f7; font:700 15px "Barlow",sans-serif; }
+          .rr-id small { color:#8b9299; font:500 11.5px "Barlow",sans-serif; }
+          .rr-trend { flex:none; padding:5px 9px; border-radius:6px; background:rgba(200,250,60,.14); color:var(--l); font:800 9px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
+          .rr-ready { flex:none; color:#8b9299; font:600 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
+          .rr-ready b { color:#e9edf1; font:800 13px "Barlow Condensed",sans-serif; margin-left:6px; }
+          .rr-rating { flex:none; width:46px; text-align:center; color:var(--l); font:800 27px/1 "Barlow Condensed",sans-serif; }
+          @media (max-width:720px){ .rr-ready { display:none; } .rr-head p { display:none; } }
+        `}</style>
+        <div className="rr-head">
+          <div><span className="rr-eyebrow">Trajectory-adjusted ranking</span><h2>Players moving fastest</h2></div>
+          <p>Readiness, potential and recent movement combine to surface the most actionable prospects.</p>
+        </div>
+        <div className="rr-list">
+          {ranked.map((player, index) => (
+            <button type="button" className="rr-row" key={player.name} onClick={() => { setSelectedName(player.name); setView('pathways'); }}>
+              <i className="rr-rank">{String(index + 1).padStart(2, '0')}</i>
+              <span className="rr-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></span>
+              <span className="rr-id"><strong>{player.name}</strong><small>U{player.age} · {player.club} · {player.archetype || player.role}</small></span>
+              <span className="rr-trend">{player.trend}</span>
+              <span className="rr-ready">Readiness<b>{numeric(player.readiness)}%</b></span>
+              <b className="rr-rating">{clamp(Math.round((player.readiness + player.potential) / 2), 0, 99)}</b>
+            </button>
+          ))}
+        </div>
       </section>}
 
-      {view === 'youth' && <section className="yr2">
+      {view === 'youth' && <section className="yr">
         <style>{`
-          .yr2 { --l:#c8fa3c; --line:rgba(255,255,255,.09); --card:rgba(255,255,255,.03); --muted:#8b9299; }
-          .yr2 * { box-sizing:border-box; }
-          .yr2-top { display:flex; gap:18px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; margin-bottom:14px; }
-          .yr2-top .eyebrow { color:var(--l); font:600 11px/1 "Barlow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
-          .yr2-top h2 { margin:8px 0 6px; color:#fff; font:800 30px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
-          .yr2-top h2 em { color:var(--l); font-style:normal; }
-          .yr2-top p { margin:0; color:var(--muted); font:500 13px/1.5 "Barlow",sans-serif; max-width:440px; }
-          .yr2-top p strong { color:#cfd4da; }
-          .yr2-stats { display:flex; gap:10px; flex-wrap:wrap; }
-          .yr2-stat { border:1px solid var(--line); border-radius:12px; background:var(--card); padding:12px 14px; min-width:92px; text-align:left; }
-          .yr2-stat b { display:block; font:800 24px/1 "Barlow Condensed",sans-serif; color:#fff; }
-          .yr2-stat span { display:block; margin-top:5px; color:var(--muted); font:600 9px/1.2 "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
-          .yr2-stat small { display:block; color:#5f6976; font:500 9px "Barlow",sans-serif; margin-top:2px; }
-          button.yr2-stat { cursor:pointer; }
-          button.yr2-stat.on { border-color:var(--l); background:rgba(200,250,60,.1); }
-          button.yr2-stat.on b { color:var(--l); }
-          .yr2-note { display:flex; gap:9px; align-items:flex-start; border:1px solid var(--line); border-radius:11px; background:rgba(255,255,255,.02); padding:11px 14px; margin-bottom:16px; color:var(--muted); font:500 12px/1.5 "Barlow",sans-serif; }
-          .yr2-note svg { color:var(--l); flex:none; margin-top:1px; }
-          .yr2-grid { display:grid; grid-template-columns:240px minmax(0,1fr); gap:16px; align-items:start; }
-          @media (max-width:820px){ .yr2-grid { grid-template-columns:1fr; } .yr2-rail { display:none; } }
-          .yr2-rail { border:1px solid var(--line); border-radius:14px; background:var(--card); padding:16px; position:sticky; top:14px; }
-          .yr2-rail h4 { display:flex; align-items:center; justify-content:space-between; margin:0 0 12px; color:#e9edf1; font:800 12px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
-          .yr2-rail h4 button { background:none; border:none; color:var(--l); font:700 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
-          .yr2-search { display:flex; align-items:center; gap:8px; height:36px; padding:0 10px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.03); color:var(--muted); margin-bottom:12px; }
-          .yr2-search input { flex:1; min-width:0; background:none; border:none; outline:none; color:#e9edf1; font:500 13px "Barlow",sans-serif; }
-          .yr2-search button { background:none; border:none; color:var(--muted); cursor:pointer; display:flex; }
-          .yr2-field { margin-bottom:14px; }
-          .yr2-field > label { display:block; color:var(--muted); font:700 9.5px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:7px; }
-          .yr2-field select { width:100%; height:34px; padding:0 10px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.03); color:#d8dde2; font:600 12px "Barlow",sans-serif; cursor:pointer; }
-          .yr2-bands { display:flex; flex-wrap:wrap; gap:6px; }
-          .yr2-bands button { border:1px solid var(--line); background:rgba(255,255,255,.02); color:#b6bcc3; border-radius:999px; padding:6px 11px; font:700 11px "Barlow Condensed",sans-serif; cursor:pointer; }
-          .yr2-bands button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
-          .yr2-check { display:flex; align-items:center; gap:9px; cursor:pointer; color:#cfd4da; font:600 12px "Barlow",sans-serif; }
-          .yr2-check input { appearance:none; width:16px; height:16px; border:1px solid rgba(255,255,255,.22); border-radius:5px; background:rgba(255,255,255,.03); position:relative; cursor:pointer; flex:none; }
-          .yr2-check input:checked { background:var(--l); border-color:var(--l); }
-          .yr2-check input:checked::after { content:""; position:absolute; left:5px; top:2px; width:4px; height:8px; border:solid #0a0d05; border-width:0 2px 2px 0; transform:rotate(45deg); }
-          .yr2-check i { margin-left:auto; font-style:normal; color:var(--muted); font:700 11px "Barlow",sans-serif; }
-          .yr2-main { min-width:0; }
-          .yr2-status { color:var(--muted); font:500 13px "Barlow",sans-serif; padding:26px 4px; }
-          .yr2-inline-clear { background:none; border:none; color:var(--l); cursor:pointer; font:inherit; text-decoration:underline; }
-          .yr2-league { margin-bottom:22px; }
-          .yr2-league-head { display:flex; align-items:center; gap:10px; margin-bottom:11px; }
-          .yr2-league-head img { width:22px; height:22px; object-fit:contain; }
-          .yr2-league-head strong { color:#eef1f4; font:800 15px "Barlow Condensed",sans-serif; letter-spacing:.02em; text-transform:uppercase; }
-          .yr2-league-head em { color:var(--muted); font:600 11px "Barlow",sans-serif; font-style:normal; }
-          .yr2-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(206px,1fr)); gap:12px; }
-          .yr2-card { position:relative; border:1px solid var(--line); border-radius:14px; background:var(--card); overflow:hidden; transition:border-color .15s,transform .15s; }
-          .yr2-card:hover { border-color:rgba(200,250,60,.4); transform:translateY(-2px); }
-          .yr2-card-top { position:absolute; inset:8px 8px auto 8px; display:flex; align-items:flex-start; justify-content:space-between; z-index:2; }
-          .yr2-badge { display:flex; flex-direction:column; align-items:center; background:rgba(6,9,12,.72); border:1px solid var(--line); border-radius:9px; padding:5px 9px; backdrop-filter:blur(6px); }
-          .yr2-badge b { font:800 20px/1 "Barlow Condensed",sans-serif; color:#fff; }
-          .yr2-badge span { font:700 8px/1 "Barlow",sans-serif; letter-spacing:.08em; color:#aeb4bb; margin-top:3px; }
-          .yr2-star { width:28px; height:28px; display:grid; place-items:center; border-radius:8px; border:1px solid var(--line); background:rgba(6,9,12,.72); color:#cdd3d9; cursor:pointer; backdrop-filter:blur(6px); }
-          .yr2-star.on { color:var(--l); border-color:rgba(200,250,60,.4); }
-          .yr2-photo { position:relative; margin:12px 12px 0; height:132px; border-radius:11px; overflow:hidden; border:1px solid rgba(255,255,255,.1); background:radial-gradient(120% 110% at 50% 0%, rgba(255,255,255,.07), #0a0d10 70%); }
-          .yr2-photo img { width:100%; height:100%; object-fit:cover; object-position:center 12%; display:block; }
-          .yr2-photo::after { content:""; position:absolute; inset:0; border-radius:11px; background:linear-gradient(180deg,transparent 60%,rgba(11,13,15,.5)); }
-          .yr2-crest { position:absolute; right:8px; bottom:8px; width:26px; height:26px; z-index:2; }
-          .yr2-crest img { width:100%; height:100%; object-fit:contain; }
-          .yr2-body { padding:12px 13px 13px; }
-          .yr2-body h3 { margin:0; color:#f2f5f7; font:700 15px/1.15 "Barlow",sans-serif; }
-          .yr2-body .role { margin:3px 0 1px; color:#b6bcc3; font:600 10.5px "Barlow",sans-serif; letter-spacing:.05em; text-transform:uppercase; }
-          .yr2-body .meta { color:#6b7480; font:500 11px "Barlow",sans-serif; display:flex; align-items:center; gap:5px; }
-          .yr2-tags { display:flex; align-items:center; gap:6px; margin-top:10px; flex-wrap:wrap; }
-          .yr2-up { display:inline-flex; align-items:baseline; gap:3px; padding:3px 8px; border-radius:6px; background:rgba(200,250,60,.14); }
-          .yr2-up b { color:var(--l); font:800 12px "Barlow Condensed",sans-serif; }
-          .yr2-up span { color:var(--l); font:700 8px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; opacity:.85; }
-          .yr2-sig { padding:3px 8px; border-radius:6px; font:800 8.5px/1.4 "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
-          .yr2-sig.extreme { background:rgba(200,250,60,.18); color:var(--l); }
-          .yr2-sig.strong { background:rgba(160,230,80,.14); color:#c3ec6a; }
-          .yr2-sig.notable { background:rgba(80,180,255,.14); color:#7fc4ff; }
-          .yr2-sig.watch { background:rgba(255,255,255,.07); color:#aeb4bb; }
+          .yr { margin-top: 16px; --yr-line: rgba(255,255,255,0.09); --yr-card: rgba(255,255,255,0.025); --yr-muted: #8b9096; --yr-lime: #c8fa3c; }
+          .yr * { box-sizing: border-box; }
+          .yr-head { display: grid; grid-template-columns: minmax(220px, 1.1fr) 2fr; gap: 22px; align-items: start; margin-bottom: 18px; }
+          .yr-eyebrow { color: var(--yr-lime); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
+          .yr-title { font-family: 'Barlow Condensed', sans-serif; font-size: 38px; line-height: .98; letter-spacing: .01em; margin: 6px 0 10px; color: #fff; text-transform: uppercase; }
+          .yr-lede { color: var(--yr-muted); font-size: 13px; line-height: 1.5; max-width: 340px; }
+          .yr-lede a { color: var(--yr-lime); text-decoration: none; border-bottom: 1px solid rgba(200,250,60,0.3); }
+          .yr-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+          .yr-stat { background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 12px; padding: 14px 14px 12px; }
+          .yr-stat b { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 30px; line-height: 1; color: #fff; }
+          .yr-stat span { display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--yr-muted); margin-top: 6px; }
+          .yr-stat small { display: block; font-size: 10.5px; color: var(--yr-lime); margin-top: 3px; }
+          .yr-stat-btn { text-align: left; cursor: pointer; font: inherit; transition: border-color .12s, background .12s; }
+          .yr-stat-btn:hover { border-color: rgba(200,250,60,0.4); }
+          .yr-stat-btn.on { border-color: var(--yr-lime); background: rgba(200,250,60,0.08); }
+          .yr-stat-btn.on small { text-decoration: underline; }
+          .yr-note { display: flex; gap: 10px; align-items: flex-start; background: rgba(200,250,60,0.05); border: 1px solid rgba(200,250,60,0.18); border-radius: 10px; padding: 11px 14px; margin-bottom: 18px; color: #c4c9ce; font-size: 12.5px; line-height: 1.45; }
+          .yr-note svg { color: var(--yr-lime); flex: none; margin-top: 1px; }
+          .yr-body { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
+          .yr-rail { border-right: 1px solid var(--yr-line); padding-right: 18px; }
+          .yr-rail h4 { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--yr-muted); margin: 0 0 10px; }
+          .yr-rail .yr-clear { float: right; color: var(--yr-lime); font-size: 11px; cursor: pointer; text-transform: none; letter-spacing: 0; background: none; border: none; }
+          .yr-search { display: flex; align-items: center; gap: 8px; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 9px; padding: 9px 11px; margin-bottom: 16px; }
+          .yr-search input { background: none; border: none; outline: none; color: #fff; font-size: 13px; width: 100%; }
+          .yr-search svg { color: var(--yr-muted); flex: none; }
+          .yr-field { margin-bottom: 15px; }
+          .yr-field label { display: block; font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--yr-muted); margin-bottom: 7px; }
+          .yr-field select { width: 100%; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 9px; padding: 9px 11px; color: #fff; font-size: 13px; }
+          .yr-bands { display: flex; flex-wrap: wrap; gap: 6px; }
+          .yr-bands button { background: var(--yr-card); border: 1px solid var(--yr-line); color: #c4c9ce; border-radius: 999px; padding: 6px 11px; font-size: 12px; cursor: pointer; }
+          .yr-bands button.on { background: var(--yr-lime); color: #0a0d08; border-color: var(--yr-lime); font-weight: 600; }
+          .yr-tiers { display: flex; flex-direction: column; gap: 8px; }
+          .yr-tier { display: flex; align-items: center; gap: 9px; font-size: 12.5px; color: #c4c9ce; cursor: pointer; }
+          .yr-tier input { accent-color: var(--yr-lime); width: 15px; height: 15px; }
+          .yr-tier i { margin-left: auto; font-style: normal; font-size: 11px; color: var(--yr-muted); background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 6px; padding: 1px 7px; }
+          .yr-main { min-width: 0; }
+          .yr-league { margin-bottom: 26px; }
+          .yr-league-head { display: flex; align-items: center; gap: 10px; padding-bottom: 9px; border-bottom: 1px solid var(--yr-line); margin-bottom: 13px; }
+          .yr-league-head img { width: 22px; height: 22px; object-fit: contain; }
+          .yr-league-head strong { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; letter-spacing: .03em; text-transform: uppercase; color: #fff; }
+          .yr-league-head em { margin-left: auto; font-style: normal; font-size: 11.5px; color: var(--yr-muted); }
+          .yr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 11px; }
+          .yr-card { display: flex; gap: 11px; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 11px; padding: 12px; transition: border-color .12s, transform .12s; }
+          .yr-card:hover { border-color: rgba(200,250,60,0.35); transform: translateY(-1px); }
+          .yr-card-media { display: flex; flex-direction: column; gap: 7px; flex: none; align-items: center; }
+          .yr-card-img { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; flex: none; background: rgba(255,255,255,0.04); }
+          .yr-card-img img { width: 100%; height: 100%; object-fit: cover; }
+          .yr-card-crest { width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
+          .yr-card-crest img { width: 100%; height: 100%; object-fit: contain; }
+          .yr-card-body { min-width: 0; flex: 1; }
+          .yr-card-body strong { display: block; color: #fff; font-size: 13.5px; line-height: 1.2; }
+          .yr-card-body .yr-role { font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--yr-muted); margin: 2px 0 7px; }
+          .yr-card-foot { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #c4c9ce; }
+          .yr-card-foot .yr-flag { color: var(--yr-muted); }
+          .yr-card-side { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; flex: none; gap: 6px; }
+          .yr-bookmark { background: none; border: none; color: var(--yr-muted); cursor: pointer; padding: 0; display: flex; transition: color .12s, transform .12s; }
+          .yr-bookmark:hover { color: #fff; transform: scale(1.1); }
+          .yr-bookmark.on { color: var(--yr-lime); }
+          .yr-flagicon { font-size: 13px; line-height: 1; }
+          .yr-up { text-align: right; }
+          .yr-up b { font-family: 'Barlow Condensed', sans-serif; font-size: 22px; line-height: 1; color: var(--yr-lime); }
+          .yr-up span { display: block; font-size: 8.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--yr-muted); }
+          .yr-sig { font-size: 9.5px; letter-spacing: .04em; text-transform: uppercase; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
+          .yr-sig.extreme { background: #b388ff; color: #1a0a2e; }
+          .yr-sig.strong { background: #5ec8ff; color: #042033; }
+          .yr-sig.notable { background: #4fe3a0; color: #033322; }
+          .yr-sig.watch { background: rgba(255,255,255,0.12); color: #c4c9ce; }
+          .yr-status { color: var(--yr-muted); font-size: 13px; padding: 30px 4px; }
+          .yr-inline-clear { background: none; border: none; color: var(--yr-lime); cursor: pointer; font: inherit; text-decoration: underline; padding: 0; }
+          .yr-more { display: block; margin: 6px auto 0; background: var(--yr-card); border: 1px solid var(--yr-line); color: #fff; border-radius: 9px; padding: 10px 20px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+          @media (max-width: 880px) { .yr-head { grid-template-columns: 1fr; } .yr-stats { grid-template-columns: repeat(2, 1fr); } .yr-body { grid-template-columns: 1fr; } .yr-rail { border-right: none; border-bottom: 1px solid var(--yr-line); padding-right: 0; padding-bottom: 16px; } }
         `}</style>
 
-        <div className="yr2-top">
+        <div className="yr-head">
           <div>
-            <div className="eyebrow">Academy &amp; reserve pipelines</div>
-            <h2>Prospect <em>Signals</em></h2>
-            <p>Young players flagged by how far above their age group they're competing. A discovery surface, <strong>not a performance ranking</strong>.</p>
+            <div className="yr-eyebrow">Academy &amp; reserve pipelines</div>
+            <h2 className="yr-title">Prospect Signals</h2>
+            <p className="yr-lede">Young players flagged by how far above their age group they're competing. A discovery surface, <strong style={{color:'#c4c9ce'}}>not a performance ranking</strong>.</p>
           </div>
-          <div className="yr2-stats">
-            <div className="yr2-stat"><b>{youthStats.total.toLocaleString()}</b><span>Prospects</span><small>All leagues</small></div>
-            <div className="yr2-stat"><b>{youthStats.leagues}</b><span>Leagues</span><small>Academy &amp; reserve</small></div>
-            <div className="yr2-stat"><b>{youthStats.extreme}</b><span>Extreme</span><small>+6 years up</small></div>
-            <div className="yr2-stat"><b>{youthStats.youngest}</b><span>Youngest</span><small>Years old</small></div>
-            <button type="button" className={`yr2-stat${youthShortlistOnly ? ' on' : ''}`} onClick={() => setYouthShortlistOnly(v => !v)} title={shortlist.length ? 'Show only shortlisted prospects' : 'Bookmark prospects to build a watchlist'}>
-              <b>{shortlist.length}</b><span>Shortlisted</span><small>{youthShortlistOnly ? 'Showing · clear' : 'Your watchlist'}</small>
+          <div className="yr-stats">
+            <div className="yr-stat"><b>{youthStats.total.toLocaleString()}</b><span>Prospects</span><small>Across all leagues</small></div>
+            <div className="yr-stat"><b>{youthStats.leagues}</b><span>Leagues tracked</span><small>Academy &amp; reserve</small></div>
+            <div className="yr-stat"><b>{youthStats.extreme}</b><span>Extreme signals</span><small>+6 years up</small></div>
+            <div className="yr-stat"><b>{youthStats.youngest}</b><span>Youngest age</span><small>Years old</small></div>
+            <button type="button" className={`yr-stat yr-stat-btn${youthShortlistOnly?' on':''}`} onClick={()=>setYouthShortlistOnly(v=>!v)} title={shortlist.length ? 'Show only your shortlisted prospects' : 'Bookmark prospects to build a watchlist'}>
+              <b>{shortlist.length}</b><span>Shortlisted</span><small>{youthShortlistOnly ? 'Showing watchlist ·\u00A0clear' : 'Your watchlist'}</small>
             </button>
           </div>
         </div>
 
-        <div className="yr2-note">
-          <Filter size={15} />
+        <div className="yr-note">
+          <Filter size={15}/>
           <span>Signal strength is the age-level gap: a 16-year-old in U21 football reads +5 years up. Youth match data isn't published, so use these as discovery signals, not performance ratings.</span>
         </div>
 
-        <div className="yr2-grid">
-          <aside className="yr2-rail">
-            <h4>Filters <button type="button" onClick={() => { setYouthQuery(''); setYouthAge('all'); setYouthPos('all'); setYouthLeague('all'); setYouthPlayingUpOnly(false); }}>Clear all</button></h4>
-            <div className="yr2-search">
-              <Search size={15} />
-              <input type="text" value={youthQuery} placeholder="Prospect, club, nation…" onChange={e => setYouthQuery(e.target.value)} />
-              {youthQuery && <button type="button" onClick={() => setYouthQuery('')}><X size={13} /></button>}
+        <div className="yr-body">
+          <aside className="yr-rail">
+            <h4>Filters <button type="button" className="yr-clear" onClick={()=>{setYouthQuery('');setYouthAge('all');setYouthPos('all');setYouthLeague('all');setYouthPlayingUpOnly(false);}}>Clear all</button></h4>
+            <div className="yr-search">
+              <Search size={14}/>
+              <input type="text" value={youthQuery} placeholder="Search prospect, club, nation…" onChange={e=>setYouthQuery(e.target.value)}/>
+              {youthQuery && <button type="button" style={{background:'none',border:'none',color:'var(--yr-muted)',cursor:'pointer',display:'flex'}} onClick={()=>setYouthQuery('')}><X size={13}/></button>}
             </div>
-            <div className="yr2-field">
+            <div className="yr-field">
               <label>Age band</label>
-              <div className="yr2-bands">{YOUTH_AGE_BANDS.map(b => <button type="button" key={b} className={youthAge === b ? 'on' : ''} onClick={() => setYouthAge(b)}>{b === 'all' ? 'All' : b}</button>)}</div>
+              <div className="yr-bands">
+                {YOUTH_AGE_BANDS.map(b => <button type="button" key={b} className={youthAge===b?'on':''} onClick={()=>setYouthAge(b)}>{b==='all'?'All':b}</button>)}
+              </div>
             </div>
-            <div className="yr2-field">
+            <div className="yr-field">
               <label>Position</label>
-              <select value={youthPos} onChange={e => setYouthPos(e.target.value)}>{YOUTH_POSITIONS.map(p => <option key={p} value={p}>{p === 'all' ? 'All positions' : p}</option>)}</select>
+              <select value={youthPos} onChange={e=>setYouthPos(e.target.value)}>
+                {YOUTH_POSITIONS.map(p => <option key={p} value={p}>{p==='all'?'All positions':p}</option>)}
+              </select>
             </div>
-            <div className="yr2-field">
+            <div className="yr-field">
               <label>League / competition</label>
-              <select value={youthLeague} onChange={e => setYouthLeague(e.target.value)}>{youthLeagueOptions.map(l => <option key={l} value={l}>{l === 'all' ? 'All leagues' : l}</option>)}</select>
+              <select value={youthLeague} onChange={e=>setYouthLeague(e.target.value)}>
+                {youthLeagueOptions.map(l => <option key={l} value={l}>{l==='all'?'All leagues':l}</option>)}
+              </select>
             </div>
-            <div className="yr2-field">
-              <label>Playing up</label>
-              <label className="yr2-check"><input type="checkbox" checked={youthPlayingUpOnly} onChange={e => setYouthPlayingUpOnly(e.target.checked)} /> 3+ years up only <i>{youthProspects.filter(p => p.plays_up_years >= 3).length}</i></label>
+            <div className="yr-field">
+              <label>Playing up (years)</label>
+              <label className="yr-tier"><input type="checkbox" checked={youthPlayingUpOnly} onChange={e=>setYouthPlayingUpOnly(e.target.checked)}/> 3+ years up only <i>{youthProspects.filter(p=>p.plays_up_years>=3).length}</i></label>
             </div>
           </aside>
 
-          <div className="yr2-main">
-            {youthLoading && <p className="yr2-status">Loading prospect directory…</p>}
-            {!youthLoading && youthShortlistOnly && shortlist.length === 0 && <p className="yr2-status">Your watchlist is empty. Tap the star on any prospect card to add them here.</p>}
-            {!youthLoading && youthLoaded && !youthShortlistOnly && youthFiltered.length === 0 && <p className="yr2-status">No prospects match these filters. Try widening the age band or clearing the search.</p>}
-            {!youthLoading && youthShortlistOnly && shortlist.length > 0 && youthFiltered.length === 0 && <p className="yr2-status">None of your shortlisted prospects match the current filters. <button type="button" className="yr2-inline-clear" onClick={() => { setYouthQuery(''); setYouthAge('all'); setYouthPos('all'); setYouthLeague('all'); setYouthPlayingUpOnly(false); }}>Clear filters</button></p>}
+          <div className="yr-main">
+            {youthLoading && <p className="yr-status">Loading prospect directory…</p>}
+            {!youthLoading && youthShortlistOnly && shortlist.length === 0 && <p className="yr-status">Your watchlist is empty. Tap the bookmark on any prospect card to add them here.</p>}
+            {!youthLoading && youthLoaded && !youthShortlistOnly && youthFiltered.length === 0 && <p className="yr-status">No prospects match these filters. Try widening the age band or clearing the search.</p>}
+            {!youthLoading && youthShortlistOnly && shortlist.length > 0 && youthFiltered.length === 0 && <p className="yr-status">None of your shortlisted prospects match the current filters. <button type="button" className="yr-inline-clear" onClick={()=>{setYouthQuery('');setYouthAge('all');setYouthPos('all');setYouthLeague('all');setYouthPlayingUpOnly(false);}}>Clear filters</button></p>}
 
             {!youthLoading && youthByLeague.map(([league, players]) => (
-              <div className="yr2-league" key={league}>
-                <div className="yr2-league-head">
-                  {players[0]?.logo && <img src={players[0].logo} alt="" loading="lazy" />}
+              <div className="yr-league" key={league}>
+                <div className="yr-league-head">
+                  {players[0]?.logo && <img src={players[0].logo} alt="" loading="lazy"/>}
                   <strong>{league}</strong>
-                  <em>{players.length} prospect{players.length === 1 ? '' : 's'}</em>
+                  <em>{players.length} prospect{players.length===1?'':'s'}</em>
                 </div>
-                <div className="yr2-cards">
-                  {players.slice(0, youthLeague !== 'all' ? 200 : 10).map(p => {
+                <div className="yr-grid">
+                  {players.slice(0, league === youthLeague || youthLeague !== 'all' ? 200 : 10).map(p => {
                     const sig = youthSignal(p.plays_up_years);
-                    const saved = shortlist.includes(p.name);
                     return (
-                      <article className="yr2-card" key={`${p.api_player_id}-${p.season}`}>
-                        <div className="yr2-photo">
-                          <div className="yr2-card-top">
-                            <div className="yr2-badge"><b>{p.age ?? '—'}</b><span>Age</span></div>
-                            <button type="button" className={`yr2-star${saved ? ' on' : ''}`} aria-label={`${saved ? 'Remove from' : 'Add to'} shortlist`} onClick={() => toggleShortlist(p.name, { apiPlayerId: p.api_player_id, context: 'youth' })}>{saved ? <BookmarkCheck size={15} /> : <Star size={15} />}</button>
+                      <article className="yr-card" key={`${p.api_player_id}-${p.season}`}>
+                        <div className="yr-card-media">
+                          <div className="yr-card-img">
+                            <ApiPlayerImage playerId={p.api_player_id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={cleanName(p.name)} loading="lazy"/>
                           </div>
-                          <ApiPlayerImage playerId={p.api_player_id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={false} alt={cleanName(p.name)} loading="lazy" />
-                          {p.logo && <div className="yr2-crest"><img src={p.logo} alt="" loading="lazy" /></div>}
+                          {p.logo && <div className="yr-card-crest"><img src={p.logo} alt="" loading="lazy"/></div>}
                         </div>
-                        <div className="yr2-body">
-                          <h3>{cleanName(p.name)}</h3>
-                          <div className="role">{p.position || '—'}</div>
-                          <div className="meta">{flagFor(p.nationality)} {p.club || '—'} · {p.nationality || '—'}</div>
-                          <div className="yr2-tags">
-                            {p.plays_up_years >= 1 && <span className="yr2-up"><b>+{p.plays_up_years}</b><span>yrs up</span></span>}
-                            {sig && <span className={`yr2-sig ${sig.cls}`}>{sig.label}</span>}
-                          </div>
+                        <div className="yr-card-body">
+                          <strong>{cleanName(p.name)}</strong>
+                          <div className="yr-role">{p.position || '—'}</div>
+                          <div className="yr-card-foot">{p.club}</div>
+                          <div className="yr-card-foot"><span className="yr-flag"><span className="yr-flagicon">{flagFor(p.nationality)}</span> Age {p.age ?? '—'} · {p.nationality || '—'}</span></div>
+                        </div>
+                        <div className="yr-card-side">
+                          <button type="button" className={`yr-bookmark${shortlist.includes(p.name)?' on':''}`} aria-label={`${shortlist.includes(p.name)?'Remove from':'Add to'} shortlist`} onClick={()=>toggleShortlist(p.name, {apiPlayerId: p.api_player_id, context: 'youth'})}>
+                            {shortlist.includes(p.name) ? <BookmarkCheck size={15}/> : <Bookmark size={15}/>}
+                          </button>
+                          {p.plays_up_years >= 1 && <div className="yr-up"><b>+{p.plays_up_years}</b><span>yrs up</span></div>}
+                          {sig && <span className={`yr-sig ${sig.cls}`}>{sig.label}</span>}
                         </div>
                       </article>
                     );

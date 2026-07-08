@@ -11,7 +11,16 @@ import { WC_CONFIG, wcFacts } from '../data/worldCupData.js';
 // ── shared with the original WorldCup.jsx — same fixture picking logic, kept
 // local since this page only needs a compact featured-match card, not the
 // full Matchroom experience. ──
-const WC_LEAGUE_ID = 1;
+// getFixturesByDate() returns fixtures across ALL competitions for a date —
+// it doesn't filter by league. The numeric World Cup league id isn't in
+// LEAGUE_IDS (apiFootball.js only lists club competitions), and guessing a
+// wrong number here would silently zero out every real match with no error.
+// Matching by name instead is robust regardless of the real id — swap this
+// for a confirmed numeric id + LEAGUE_IDS entry once you have it, and every
+// page using isWorldCup() below picks it up with no further changes.
+function isWorldCup(fixture) {
+  return /world cup/i.test(fixture?.league?.name || '');
+}
 const WC_LIVE = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
 const WC_DONE = ['FT', 'AET', 'PEN'];
 
@@ -67,7 +76,7 @@ export default function WorldCupOverview() {
       try {
         const days = [-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10));
         const results = await Promise.all(days.map(d => getFixturesByDate(d).catch(() => [])));
-        const wc = results.flat().filter(f => f?.league?.id === WC_LEAGUE_ID);
+        const wc = results.flat().filter(f => isWorldCup(f));
         const live = wc.filter(f => WC_LIVE.includes(f.fixture?.status?.short));
         const done = wc.filter(f => WC_DONE.includes(f.fixture?.status?.short));
         const upcoming = wc.filter(f => !WC_LIVE.includes(f.fixture?.status?.short) && !WC_DONE.includes(f.fixture?.status?.short));

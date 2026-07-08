@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Search, ArrowRight, Crown, Star, TrendingUp, X, LoaderCircle, Plus, Database, GitCompareArrows, SlidersHorizontal, Info } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
-import PlayerCard from '../components/PlayerCard.jsx';
+import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
-import { CURRENT_SEASON, getLeaguePlayers, getPlayerStats, searchPlayerProfiles } from '../services/apiFootball.js';
-import { getSupabasePlayerCount, getSupabasePlayers, getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { CURRENT_SEASON, getLeaguePlayers, getPlayerProfile, getPlayerStats, searchPlayerProfiles, teamLogoUrl } from '../services/apiFootball.js';
+import { getSupabasePlayerCount, getSupabaseNationCount, getSupabasePlayers, getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
@@ -292,23 +292,91 @@ function lineToRatingInput(player, stat){
   };
 }
 
-function PlayerProfileModal({player,loading,onClose,onCompare,watched,onToggleWatch,canWatch}){
-  if(!player) return null;
-  const ratingText = displayRating(player.rating != null ? player.rating : null);
+function ppmStat(v, dp = 0) {
+  if (v == null || v === '') return '\u2014';
+  const n = Number(v);
+  if (!Number.isFinite(n)) return String(v);
+  return dp ? n.toFixed(dp) : String(n);
+}
+// Exact replica of the System Fit player pop-up (sf2-modal): 560px, #a6ff00 lime,
+// #8d929b muted, IBM Plex Mono labels, BIO (3-col) + PERFORMANCE (4-col).
+function PlayerProfileModal({ player, loading, onClose, onCompare, watched, onToggleWatch, canWatch }) {
+  if (!player) return null;
+  const arch = player.archetype || '';
+  const chips = String(player.position || player.pos || '').split(/[\/,]/).map(t => t.trim()).filter(Boolean).slice(0, 3);
+  const bio = [
+    ['COUNTRY', player.nationality || player.country || '\u2014'],
+    ['AGE', player.age || '\u2014'],
+    ['HEIGHT', player.height ? String(player.height) : '\u2014'],
+    ['WEIGHT', player.weight ? String(player.weight) : '\u2014'],
+    ['FOOT', player.foot || '\u2014'],
+    ['CLUB', player.club || player.team || '\u2014'],
+  ];
+  const stats = [
+    ['GOALS', ppmStat(player.goals)],
+    ['ASSISTS', ppmStat(player.assists)],
+    ['xG / 90', ppmStat(player.xg_per_90, 3)],
+    ['KEY PASSES', ppmStat(player.key_passes)],
+    ['SHOTS', ppmStat(player.shots)],
+    ['DRIBBLES', ppmStat(player.dribbles_success ?? player.successful_dribbles)],
+    ['DUELS WON', ppmStat(player.duels_won)],
+    ['TACKLES', ppmStat(player.tackles)],
+    ['INTERCEPTIONS', ppmStat(player.interceptions)],
+    ['PASS ACC %', ppmStat(player.pass_accuracy)],
+    ['MINUTES', ppmStat(player.minutes)],
+    ['CALIBRE', displayRating(player.rating)],
+  ];
   return (
-    <div className="player-profile-modal" role="presentation" onMouseDown={onClose}>
-      <section className="pcard-dialog" onMouseDown={event=>event.stopPropagation()} style={{position:'relative',width:'min(520px,100%)',margin:'6vh auto',background:'#0b0e11',border:'1px solid rgba(255,255,255,.09)',borderRadius:18,boxShadow:'0 30px 80px rgba(0,0,0,.6)',padding:'26px'}}>
-        <button type="button" className="player-profile-modal__close" onClick={onClose} style={{position:'absolute',top:16,right:16,zIndex:2}}><X size={16}/></button>
-        <PlayerCard
-          player={player}
-          onViewProfile={()=>navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}
-          actions={<>
-            <button type="button" className="btn btn--outline btn--sm" onClick={()=>onCompare(player)}><Plus size={13}/> Add to compare</button>
-            <button type="button" className={`btn btn--sm ${watched ? 'btn--lime' : 'btn--outline'}`} onClick={onToggleWatch} title={canWatch ? (watched ? 'Remove from watchlist' : 'Add to watchlist') : 'Watchlist is a Pro feature'}><Star size={13}/> {watched ? 'Watching' : 'Watch'}</button>
-            <ShareBar text={`${player.name} — Calibre rating ${ratingText}${player.archetype ? `, ${player.archetype}` : ''}.`} url={shareUrl('/players')} label={false}/>
-          </>}
-        />
-        {loading && <div className="player-profile-modal__loading" style={{marginTop:14}}><LoaderCircle size={14}/> Syncing live profile…</div>}
+    <div className="ppm2" role="presentation" onMouseDown={onClose}>
+      <section className="ppm2-card" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
+        <style>{`
+          .ppm2 { position:fixed; inset:0; z-index:1000; background:rgba(3,5,7,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:40px 20px; overflow:auto; }
+          .ppm2 * { box-sizing:border-box; }
+          .ppm2-card { --l:#a6ff00; --muted:#8d929b; position:relative; width:min(560px,100%); background:rgba(11,15,18,.97); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.65); padding:22px; }
+          .ppm2-close { position:absolute; top:14px; right:14px; width:30px; height:30px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03); color:#c4c9ce; cursor:pointer; }
+          .ppm2-close:hover { background:rgba(255,255,255,.08); color:#fff; }
+          .ppm2-head { display:flex; align-items:center; gap:14px; padding-right:34px; }
+          .ppm2-photo { width:70px; height:84px; border-radius:9px; overflow:hidden; flex:none; background:#0a0d10; }
+          .ppm2-photo img { width:100%; height:100%; object-fit:cover; object-position:top; }
+          .ppm2-id { flex:1; min-width:0; }
+          .ppm2-kicker { color:var(--l); font:800 10px/1 "IBM Plex Mono",monospace; letter-spacing:.15em; text-transform:uppercase; }
+          .ppm2-id h3 { margin:6px 0 0; color:#fff; font:900 24px/1 "Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.01em; }
+          .ppm2-tags { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+          .ppm2-tags span { padding:3px 8px; border:1px solid rgba(255,255,255,.14); border-radius:4px; color:#c4c9ce; font:700 9px/1 "IBM Plex Mono",monospace; }
+          .ppm2-tags em { padding:3px 8px; border:1px solid rgba(166,255,0,.3); border-radius:4px; color:var(--l); font:800 9px/1 "IBM Plex Mono",monospace; font-style:normal; }
+          .ppm2-rating { text-align:center; flex:none; }
+          .ppm2-rating strong { display:block; color:var(--l); font:900 40px/.85 "Barlow Condensed",sans-serif; }
+          .ppm2-rating span { display:block; margin-top:4px; color:var(--muted); font:800 8px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; }
+          .ppm2-sec { margin-top:18px; }
+          .ppm2-sec > small { display:block; color:var(--muted); font:800 9px/1 "IBM Plex Mono",monospace; letter-spacing:.12em; margin-bottom:11px; }
+          .ppm2-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 10px; }
+          .ppm2-grid--stats { grid-template-columns:repeat(4,1fr); }
+          .ppm2-grid > div { min-width:0; }
+          .ppm2-grid span { display:block; color:var(--muted); font:700 8px/1.2 "IBM Plex Mono",monospace; letter-spacing:.05em; }
+          .ppm2-grid b { display:block; margin-top:5px; color:#fff; font:800 15px/1 "Barlow Condensed",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+          .ppm2-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:18px; }
+          .ppm2-note { margin:18px 0 0; color:#6f757e; font:500 10.5px/1.4 "Barlow",sans-serif; }
+          @media(max-width:760px){ .ppm2-grid, .ppm2-grid--stats { grid-template-columns:repeat(2,1fr); } }
+        `}</style>
+        <button className="ppm2-close" type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
+        <div className="ppm2-head">
+          <div className="ppm2-photo"><ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name} /></div>
+          <div className="ppm2-id">
+            <div className="ppm2-kicker">Player profile</div>
+            <h3>{player.name}</h3>
+            <div className="ppm2-tags">{chips.map(c => <span key={c}>{c}</span>)}{arch && <em>{arch}</em>}</div>
+          </div>
+          <div className="ppm2-rating"><strong>{displayRating(player.rating)}</strong><span>CALIBRE</span></div>
+        </div>
+        <div className="ppm2-sec"><small>BIO</small><div className="ppm2-grid">{bio.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
+        <div className="ppm2-sec"><small>PERFORMANCE</small><div className="ppm2-grid ppm2-grid--stats">{stats.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
+        <div className="ppm2-actions">
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => onCompare(player)}><Plus size={13} /> Add to compare</button>
+          <button type="button" className={`btn btn--sm ${watched ? 'btn--lime' : 'btn--outline'}`} onClick={onToggleWatch} title={canWatch ? (watched ? 'Remove from watchlist' : 'Add to watchlist') : 'Watchlist is a Pro feature'}><Star size={13} /> {watched ? 'Watching' : 'Watch'}</button>
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}>Run System Fit <ArrowRight size={13} /></button>
+          <ShareBar text={`${player.name} \u2014 Calibre ${displayRating(player.rating)}${arch ? `, ${arch}` : ''}.`} url={shareUrl('/players')} label={false} />
+        </div>
+        <p className="ppm2-note">{loading ? 'Loading live stats from the connected player dataset\u2026' : 'Stats populate from the connected player dataset \u2014 blanks fill in as data syncs.'}</p>
       </section>
     </div>
   );
@@ -329,6 +397,7 @@ function CompareModal({players,onClose}){
               <ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name}/>
               <strong>{player.name}</strong>
               <span>{player.team||player.club||player.position||'Live API profile'}</span>
+              <button type="button" className="btn btn--outline btn--sm" style={{marginTop:8}} onClick={() => navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}>Run System Fit <ArrowRight size={12} /></button>
             </article>
           )}
         </div>
@@ -344,7 +413,7 @@ function WatchlistModal({ items, onOpen, onRemove, onClose }) {
     <div role="presentation" onMouseDown={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.72)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
       <section onMouseDown={e=>e.stopPropagation()} style={{ position:'relative', width:'100%', maxWidth:520, maxHeight:'82vh', overflowY:'auto', background:'#0a0a0c', border:'1px solid #1c1c1c', borderRadius:14, padding:'24px 22px' }}>
         <button type="button" onClick={onClose} aria-label="Close watchlist" style={{ position:'absolute', top:14, right:14, background:'none', border:'none', color:'#888', cursor:'pointer' }}><X size={18} /></button>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, color:'#c8ff00', fontSize:12, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase' }}><Star size={14} /> Your watchlist</div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, color:'#a6ff00', fontSize:12, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase' }}><Star size={14} /> Your watchlist</div>
         <h3 style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:26, fontWeight:800, margin:'0 0 14px', textTransform:'uppercase', color:'#fff' }}>{items.length} player{items.length === 1 ? '' : 's'} saved</h3>
         {items.length ? (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -353,14 +422,14 @@ function WatchlistModal({ items, onOpen, onRemove, onClose }) {
                 <button type="button" onClick={()=>onOpen({ id: pl.apiPlayerId, apiPlayerId: pl.apiPlayerId, name: pl.name })} style={{ flex:1, display:'flex', alignItems:'center', gap:12, background:'none', border:'none', color:'#eee', cursor:'pointer', textAlign:'left', minWidth:0 }}>
                   <ApiPlayerImage playerId={pl.apiPlayerId} name={pl.name} preferredSrc={pl.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" />
                   <span style={{ display:'flex', flexDirection:'column', minWidth:0 }}><strong style={{ fontSize:15, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pl.name}</strong><small style={{ color:'#888' }}>{[pl.position, pl.team].filter(Boolean).join(' \u00b7 ') || '\u2014'}</small></span>
-                  {pl.rating != null && <span style={{ marginLeft:'auto', fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, color:'#c8ff00' }}>{Math.round(pl.rating)}</span>}
+                  {pl.rating != null && <span style={{ marginLeft:'auto', fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, color:'#a6ff00' }}>{Math.round(pl.rating)}</span>}
                 </button>
                 <button type="button" onClick={()=>onRemove(pl.apiPlayerId)} aria-label={`Remove ${pl.name}`} style={{ background:'none', border:'none', color:'#666', cursor:'pointer', padding:4, flexShrink:0 }}><X size={15} /></button>
               </div>
             ))}
           </div>
         ) : (
-          <p style={{ color:'#888', lineHeight:1.6 }}>No players saved yet. Open any player profile and tap <b style={{ color:'#c8ff00' }}>Watch</b> to add them here.</p>
+          <p style={{ color:'#888', lineHeight:1.6 }}>No players saved yet. Open any player profile and tap <b style={{ color:'#a6ff00' }}>Watch</b> to add them here.</p>
         )}
       </section>
     </div>
@@ -370,22 +439,90 @@ function WatchlistModal({ items, onOpen, onRemove, onClose }) {
 function posChips(p) {
   return String(p.pos || p.position || '').split(/[\/,]/).map(t => t.trim()).filter(Boolean).slice(0, 2);
 }
+// Specific position abbreviation (ST/CAM/LW/CDM/CB/GK etc), not a broad
+// bucket like "FWD"/"MID" — prefers the granular `pos` field, falls back to
+// `position` only if that's all that's available. Named distinctly from the
+// pre-existing specificPosition(a,b) helper above (used in player
+// normalization/merging) so the two never collide — they had the same name
+// briefly and the merge logic at lines ~141/214/215 was silently broken by it.
+function cardPosition(p) {
+  return p.pos || p.position || '—';
+}
+// Which stat set to show below the crest. CAM/AM group with forwards per
+// spec ("forwards and AM"); everything else midfield-shaped goes to the
+// pass%/duels set.
+function positionBucket(p) {
+  const pos = String(p.pos || p.position || '').toUpperCase();
+  if (/^GK/.test(pos)) return 'GK';
+  if (/^(CB|LB|RB|WB|LWB|RWB|DF|DEF|SW)/.test(pos)) return 'DEF';
+  if (/^(ST|CF|SS|LW|RW|CAM|AM|FWD|ATT)/.test(pos)) return 'FWD';
+  if (/^(CM|CDM|DM|RM|LM|MF|MID)/.test(pos)) return 'MID';
+  return 'MID';
+}
+function statVal(v) { return (v == null || v === '') ? '—' : v; }
+function bucketStats(p) {
+  const bucket = positionBucket(p);
+  if (bucket === 'GK') return [
+    ['Games', statVal(p.appearances)], ['Min', statVal(p.minutes)],
+    ['Shots Stopped', statVal(p.shots_saved ?? p.saves)], ['Saves', statVal(p.saves)], ['Pass %', statVal(p.pass_accuracy)],
+  ];
+  if (bucket === 'DEF') return [
+    ['Games', statVal(p.appearances)], ['Min', statVal(p.minutes)],
+    ['Duels', statVal(p.duels_won)], ['Interceptions', statVal(p.interceptions)],
+  ];
+  if (bucket === 'MID') return [
+    ['Pass %', statVal(p.pass_accuracy)], ['Duels', statVal(p.duels_won)],
+    ['Games', statVal(p.appearances)], ['Min', statVal(p.minutes)],
+  ];
+  return [
+    ['Games', statVal(p.appearances)], ['Min', statVal(p.minutes)],
+    ['Goals', statVal(p.goals)], ['Assists', statVal(p.assists)],
+  ];
+}
+// The youth-style card (same layout as Talents' discovery-pool cards): portrait
+// + club crest on the left, name/role/archetype/club in the middle, Calibre
+// rating on the right. Adopted here so Featured Players matches Talents
+// instead of the separate System Fit-styled card (which stays as its own
+// thing, untouched, on the System Fit page).
 function FeaturedCard({ player, onOpen, watched, onToggleWatch }) {
-  const chips = posChips(player);
+  const arch = player.archetype || player.role;
+  const teamId = player.apiTeamId ?? player.api_team_id ?? player.teamId ?? null;
+  const crest = player.logo || player.crestUrl || (teamId ? teamLogoUrl(teamId) : undefined);
+  const rating = player.provisional ? 'LIVE' : displayRating(player.rating);
+  const shirtNumber = player.shirt_number ?? player.shirtNumber ?? player.number ?? null;
+  const stats = bucketStats(player);
   return (
-    <article className="plp2-fcard" onClick={() => onOpen(player)}>
-      <div className="plp2-fcard-photo">
-        <div className="plp2-fcard-badge"><b>{displayRating(player.rating)}</b><span>{chips[0] || player.pos || '—'}</span></div>
-        <button type="button" className={`plp2-fcard-star${watched ? ' on' : ''}`} onClick={e => { e.stopPropagation(); onToggleWatch(player); }} aria-label="Watchlist">{watched ? <Star size={13} fill="currentColor" /> : <Star size={13} />}</button>
-        <ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name} loading="lazy" />
+    <article className="plp2-yc" onClick={() => onOpen(player)}>
+      <div className="plp2-yc-top">
+        <div className="plp2-yc-media">
+          <div className="plp2-yc-img"><ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name} loading="lazy" /></div>
+          <div className="plp2-yc-crest"><ApiTeamLogo src={crest} name={player.club || player.team || player.name} /></div>
+        </div>
+        <div className="plp2-yc-body">
+          <strong>{player.name}</strong>
+          <div className="plp2-yc-meta">{[player.age ? `${player.age} yrs` : null, player.nationality || null].filter(Boolean).join(' · ') || '—'}</div>
+          <div className="plp2-yc-role">
+            <em>{cardPosition(player)}</em>
+            {shirtNumber != null && <span className="plp2-yc-no">No. {shirtNumber}</span>}
+          </div>
+          {arch && <div className="plp2-yc-arch">{arch}</div>}
+          <div className="plp2-yc-foot">{[player.club || player.team, player.league].filter(Boolean).join(' · ') || '—'}</div>
+        </div>
+        <div className="plp2-yc-side">
+          <button type="button" className={`plp2-yc-star${watched ? ' on' : ''}`} onClick={e => { e.stopPropagation(); onToggleWatch(player); }} aria-label={watched ? 'Remove from watchlist' : 'Add to watchlist'}>
+            {watched ? <Star size={15} fill="currentColor" /> : <Star size={15} />}
+          </button>
+          <div className="plp2-yc-rating"><b>{rating}</b><span>Calibre</span></div>
+        </div>
       </div>
-      <div className="plp2-fcard-body">
-        <h4>{player.name}</h4>
-        <div className="plp2-fcard-meta">{[player.age ? `${player.age} yrs` : null, player.nationality || null].filter(Boolean).join(' · ')}</div>
-        <div className="plp2-fcard-club">{player.club || player.team || '—'}</div>
-        {chips.length > 0 && <div className="plp2-fcard-chips">{chips.map(c => <em key={c}>{c}</em>)}</div>}
-        <span className="plp2-fcard-link">View profile <ArrowRight size={12} /></span>
+
+      <div className={`plp2-yc-stats plp2-yc-stats--${stats.length}`}>
+        {stats.map(([label, val]) => <div key={label}><b>{val}</b><span>{label}</span></div>)}
       </div>
+
+      <button type="button" className="plp2-yc-more" onClick={e => { e.stopPropagation(); onOpen(player); }}>
+        View Full Profile <ArrowRight size={12} />
+      </button>
     </article>
   );
 }
@@ -429,6 +566,7 @@ export default function Players(){
   const [notice,setNotice] = useState('');
   const [supabaseRows,setSupabaseRows] = useState([]);
   const [supabaseTotal,setSupabaseTotal] = useState(0);
+  const [nationCount,setNationCount] = useState(null);
   const [supabaseError,setSupabaseError] = useState('');
   const [supabaseLoading,setSupabaseLoading] = useState(true);
 
@@ -452,11 +590,14 @@ export default function Players(){
   useEffect(()=>{
     let active = true;
 
+    // Resolve by api_player_id, NOT by exact name string. getSupabasePlayers'
+    // name filter requires a byte-for-byte match against the DB's stored name — e.g. curated 'Phil Foden' vs DB 'Philip Walter Foden' silently
+    // fails, so the merge falls back to the bare curated stub with no
+    // apiTeamId/nationality at all, breaking the crest and Nationality field.
+    // Every curated entry already carries a real apiPlayerId, so id lookup
+    // via getSupabasePlayersByApiIds is the reliable path.
     Promise.all([
-      getSupabasePlayers({
-        names:CURATED_PLAYERS.map(player=>player.name),
-        limit:60,
-      }),
+      getSupabasePlayersByApiIds(CURATED_PLAYERS.map(player=>player.apiPlayerId).filter(Boolean)),
       getSupabasePlayerCount(),
     ])
       .then(([rows,total])=>{
@@ -480,6 +621,16 @@ export default function Players(){
     return ()=>{
       active = false;
     };
+  },[]);
+
+  // Separate, non-blocking: the nation count reads more rows than the main
+  // fetch above, so it shouldn't delay featured players from showing.
+  useEffect(()=>{
+    let active = true;
+    getSupabaseNationCount()
+      .then(n => { if(active) setNationCount(n); })
+      .catch(() => { /* stat card falls back to a loading dash, never a guess */ });
+    return () => { active = false; };
   },[]);
 
   useEffect(()=>{
@@ -619,30 +770,47 @@ export default function Players(){
 
     setProfileLoading(true);
 
-    // Reconcile against the canonical enriched DB row so identity (full name,
-    // age, position) and the stored Calibre rating are identical no matter how
-    // the profile was opened — list click, ?playerId= URL, Competitions board.
-    // Without this, a bare {id,name} open computes a live rating off partial
-    // data (e.g. Haaland 81 / "Player") instead of the enriched record (90 / ST).
+    // Reconcile against the enriched DB row for bio + performance stats, but
+    // — same pattern as System Fit's pop-up — let curated identity fields
+    // (rating, archetype, position) win when the card that opened this
+    // pop-up already carried them. The players table has its own live-computed
+    // rating/archetype columns which can legitimately disagree with the
+    // curated Featured Players values (e.g. Haaland: curated 90/Poacher vs a
+    // partial-data live compute of 80/Inside Forward) — without this, the
+    // pop-up contradicts the very card the person clicked.
     try {
       const dbRows = await getSupabasePlayersByApiIds([apiId]);
       const db = dbRows && dbRows[0];
       if (db) {
         const scored = resolveRating(db);
         setActivePlayer(prev => ({
-          ...prev,
           ...db,
-          name: db.full_name || db.name || (prev && prev.name),
+          ...prev,
+          name: (prev && prev.name) || db.full_name || db.name,
           apiPlayerId: apiId,
           id: (prev && prev.id) ?? db.id ?? apiId,
           age: db.age ?? (prev && prev.age) ?? null,
-          position: db.position || db.pos || (prev && (prev.position || prev.pos)) || '',
-          pos: db.pos || db.position || (prev && (prev.pos || prev.position)) || '',
-          rating: (scored && scored.rating != null) ? scored.rating : (prev && prev.rating != null ? prev.rating : null),
+          position: (prev && (prev.position || prev.pos)) || db.position || db.pos || '',
+          pos: (prev && (prev.pos || prev.position)) || db.pos || db.position || '',
+          rating: (prev && prev.rating != null) ? prev.rating : ((scored && scored.rating != null) ? scored.rating : (db.rating ?? null)),
+          archetype: (prev && prev.archetype) || db.archetype || null,
           league_id: db.league_id ?? (prev && prev.league_id) ?? null,
         }));
       }
     } catch { /* keep the original record if the lookup fails */ }
+
+    try {
+      const prof = await getPlayerProfile(apiId);
+      if (prof) {
+        setActivePlayer(prev => ({
+          ...prev,
+          height: prof.height || prev?.height || null,
+          weight: prof.weight || prev?.weight || null,
+          nationality: prev?.nationality || prof.nationality || null,
+          image: prev?.image || prof.image || null,
+        }));
+      }
+    } catch { /* keep DB bio if the profile lookup fails */ }
 
     try{
       setActiveStats(await getPlayerStats(apiId));
@@ -693,10 +861,10 @@ export default function Players(){
   return (
     <div className="page players-page plp2">
       <style>{`
-        .plp2 { --l:#c8fa3c; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.52); --muted:#8b9299; max-width:1500px; position:relative; isolation:isolate; }
+        .plp2 { --l:#a6ff00; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.52); --muted:#8b9299; max-width:1500px; position:relative; isolation:isolate; }
         .plp2 * { box-sizing:border-box; }
         .plp2::before { content:""; position:fixed; inset:0; z-index:-2; background:url("/assets/debates-bg.png") center/cover no-repeat; pointer-events:none; }
-        .plp2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.40),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.30) 0%,rgba(5,8,11,.55) 45%,rgba(5,8,11,.66) 100%); }
+        .plp2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.20),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.14) 0%,rgba(5,8,11,.26) 45%,rgba(5,8,11,.34) 100%); }
         .plp2-hero { border:1px solid var(--line); border-radius:16px; background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); padding:26px 30px; margin-bottom:14px; }
         .plp2-hero .eyebrow { color:var(--l); font:600 11px/1 "Barlow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
         .plp2-hero h1 { margin:12px 0 8px; color:#fff; font:800 46px/.95 "Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.01em; }
@@ -716,23 +884,39 @@ export default function Players(){
         .plp2-sec { border:1px solid var(--line); border-radius:16px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:18px; margin-bottom:14px; }
         .plp2-sec-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
         .plp2-sec-head h3 { margin:0; color:#fff; font:800 18px/1 "Barlow Condensed",sans-serif; letter-spacing:.02em; text-transform:uppercase; }
-        .plp2-fcards { display:grid; grid-template-columns:repeat(auto-fill,minmax(168px,1fr)); gap:12px; }
-        .plp2-fcard { border:1px solid var(--line); border-radius:14px; background:rgba(255,255,255,.02); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s; }
-        .plp2-fcard:hover { border-color:rgba(200,250,60,.4); transform:translateY(-2px); }
-        .plp2-fcard-photo { position:relative; height:150px; margin:10px 10px 0; border-radius:11px; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); }
-        .plp2-fcard-photo img { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
-        .plp2-fcard-badge { position:absolute; top:8px; left:8px; z-index:2; display:flex; flex-direction:column; align-items:center; background:rgba(6,9,12,.72); border:1px solid var(--line); border-radius:9px; padding:4px 8px; backdrop-filter:blur(6px); }
-        .plp2-fcard-badge b { color:var(--l); font:800 19px/1 "Barlow Condensed",sans-serif; }
-        .plp2-fcard-badge span { color:#aeb4bb; font:700 8px/1 "Barlow",sans-serif; letter-spacing:.06em; margin-top:2px; }
-        .plp2-fcard-star { position:absolute; top:8px; right:8px; z-index:2; width:26px; height:26px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(0,0,0,.14); background:rgba(255,255,255,.78); color:#2a2f36; cursor:pointer; }
-        .plp2-fcard-star.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
-        .plp2-fcard-body { padding:11px 12px 12px; }
-        .plp2-fcard-body h4 { margin:0; color:#f2f5f7; font:700 14px/1.15 "Barlow",sans-serif; }
-        .plp2-fcard-meta { margin:3px 0 1px; color:#b6bcc3; font:500 11px "Barlow",sans-serif; }
-        .plp2-fcard-club { color:#6b7480; font:500 10.5px "Barlow",sans-serif; }
-        .plp2-fcard-chips { display:flex; gap:5px; margin:8px 0; }
-        .plp2-fcard-chips em { font-style:normal; padding:2px 7px; border:1px solid rgba(200,250,60,.4); border-radius:6px; color:var(--l); font:800 9px/1 "Barlow Condensed",sans-serif; }
-        .plp2-fcard-link { display:inline-flex; align-items:center; gap:5px; color:var(--l); font:700 11px "Barlow",sans-serif; }
+        .plp2-fcards { display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:11px; }
+        .plp2-yc { display:flex; flex-direction:column; gap:0; background:rgba(255,255,255,.02); border:1px solid var(--line); border-radius:11px; padding:12px; cursor:pointer; transition:border-color .12s,transform .12s; }
+        .plp2-yc:hover { border-color:rgba(166,255,0,.35); transform:translateY(-1px); }
+        .plp2-yc-top { display:flex; gap:11px; }
+        .plp2-yc-media { display:flex; flex-direction:column; gap:7px; flex:none; align-items:center; }
+        .plp2-yc-img { width:46px; height:46px; border-radius:8px; overflow:hidden; flex:none; background:rgba(255,255,255,.04); }
+        .plp2-yc-img img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+        .plp2-yc-crest { width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+        .plp2-yc-crest img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+        .plp2-yc-crest .api-team-logo-fallback { font:800 10px "Barlow Condensed",sans-serif; color:var(--muted); letter-spacing:.03em; }
+        .plp2-yc-body { min-width:0; flex:1; }
+        .plp2-yc-body strong { display:block; color:#fff; font:700 13.5px/1.2 "Barlow",sans-serif; }
+        .plp2-yc-meta { font-size:10.5px; color:var(--muted); margin:2px 0 4px; }
+        .plp2-yc-role { display:flex; align-items:center; gap:7px; margin:0 0 5px; }
+        .plp2-yc-role em { font-style:normal; font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; color:var(--l); border:1px solid rgba(166,255,0,.35); border-radius:5px; padding:2px 7px; }
+        .plp2-yc-no { font-size:10px; color:var(--muted); font-weight:700; }
+        .plp2-yc-arch { color:var(--l); font:700 11px "Barlow",sans-serif; margin-bottom:5px; }
+        .plp2-yc-foot { display:flex; align-items:center; gap:6px; font-size:11px; color:#c4c9ce; }
+        .plp2-yc-side { display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; flex:none; gap:6px; }
+        .plp2-yc-star { background:none; border:none; color:var(--muted); cursor:pointer; padding:0; display:flex; transition:color .12s,transform .12s; }
+        .plp2-yc-star:hover { color:#fff; transform:scale(1.1); }
+        .plp2-yc-star.on { color:var(--l); }
+        .plp2-yc-rating { text-align:right; }
+        .plp2-yc-rating b { display:block; font:800 22px/1 "Barlow Condensed",sans-serif; color:var(--l); }
+        .plp2-yc-rating span { display:block; font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+        .plp2-yc-stats { display:grid; gap:6px; margin-top:11px; padding-top:11px; border-top:1px solid var(--line); }
+        .plp2-yc-stats--4 { grid-template-columns:repeat(4,1fr); }
+        .plp2-yc-stats--5 { grid-template-columns:repeat(5,1fr); }
+        .plp2-yc-stats div { text-align:center; min-width:0; }
+        .plp2-yc-stats b { display:block; font:800 15px/1 "Barlow Condensed",sans-serif; color:#fff; }
+        .plp2-yc-stats span { display:block; margin-top:3px; font-size:8px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .plp2-yc-more { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:11px; background:none; border:1px solid var(--line); color:var(--l); font:700 10.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:8px; border-radius:7px; cursor:pointer; transition:border-color .12s,background .12s; }
+        .plp2-yc-more:hover { border-color:var(--l); background:rgba(166,255,0,.06); }
         .plp2-rank-tabs { display:flex; gap:6px; flex-wrap:wrap; }
         .plp2-rank-tabs button { border:1px solid var(--line); background:rgba(255,255,255,.02); color:#aeb4bb; border-radius:8px; padding:7px 12px; font:700 11px "Barlow Condensed",sans-serif; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; }
         .plp2-rank-tabs button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
@@ -796,7 +980,7 @@ export default function Players(){
       <div className="plp2-stats">
         <div className="plp2-stat"><b>{supabaseError ? '—' : supabaseLoading ? '…' : supabaseTotal.toLocaleString()}</b><span>Players indexed</span></div>
         <div className="plp2-stat"><b>{LEAGUE_OPTIONS.length - 1}</b><span>Leagues covered</span></div>
-        <div className="plp2-stat"><b>200+</b><span>Nations</span></div>
+        <div className="plp2-stat"><b>{nationCount != null ? nationCount : '…'}</b><span>Nations</span></div>
         <div className="plp2-stat"><b>{supabaseLoading ? '…' : formatCompact(supabaseTotal * METRIC_FIELDS.length)}</b><span>Data points</span></div>
         <div className="plp2-stat"><b>{String(CURRENT_SEASON).slice(2)}/{String(CURRENT_SEASON + 1).slice(2)}</b><span>Season coverage</span></div>
       </div>
@@ -824,7 +1008,7 @@ export default function Players(){
           <section className="plp2-sec plp2-featured">
             <div className="plp2-sec-head"><h3>Featured players</h3></div>
             <div className="plp2-fcards">
-              {featuredList.map(p => <FeaturedCard key={p.name} player={localToProfile(p)} onOpen={op => openProfile(op)} watched={isWatched(apiIdFor(p))} onToggleWatch={handleToggleWatch} />)}
+              {featuredList.map(p => { const pl = localToProfile(p); return <FeaturedCard key={p.name} player={pl} onOpen={openProfile} watched={isWatched(apiIdFor(pl))} onToggleWatch={handleToggleWatch} />; })}
             </div>
           </section>
 

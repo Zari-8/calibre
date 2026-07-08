@@ -10,7 +10,7 @@ import { resolveTier, can } from '../services/access.js';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { SYSTEM_TEAMS, computeSystemFit } from '../data/systemFitData.js';
+import { SYSTEM_TEAMS, computeSystemFit, scoreRoleFit, scoreFormationFit } from '../data/systemFitData.js';
 import { calibreValue, valuationVerdict } from '../services/calibreValue.js';
 import { fitAdjustedValue, fitVerdict } from '../services/calibreFitValue.js';
 
@@ -121,6 +121,8 @@ async function fetchComparablePool() {
       fee: t.fee_millions,
       tag: t.position_label || t.position || '—',
       position: t.position || t.position_label || '',
+      from: t.from_club || null,
+      to: t.to_club || null,
       roi,
       roiClass,
       apiPlayerId: t.api_player_id,
@@ -547,8 +549,8 @@ function TeamSearch({ value, onChange, onSelect }) {
 }
 
 // ── Tabs ───────────────────────────────────────────────────────────────────────
-const TABS = ['Overview', 'Value Analysis', 'System Fit', 'Risk Profile', 'Comparables'];
-const TAB_GATE = { 'Value Analysis': 'valuation.breakdown', 'Comparables': 'valuation.comparables' };
+const TABS = ['System Fit', 'Scout Report', 'Financial Context', 'Risk Analysis', 'Market Context'];
+const TAB_GATE = { 'Financial Context': 'valuation.breakdown', 'Market Context': 'valuation.comparables' };
 
 // ── Main component ─────────────────────────────────────────────────────────────
 export default function Transfers() {
@@ -621,7 +623,7 @@ export default function Transfers() {
   });
   const [marketValue, setMarketValue] = useState(40);
   const [askingPrice, setAskingPrice] = useState(100);
-  const [activeTab, setActiveTab] = useState('Overview');
+  const [activeTab, setActiveTab] = useState('System Fit');
   const [selectedTeam, setSelectedTeam] = useState(null);
   // System Fit recalculates whenever player OR team changes
   const sysFit = selectedTeam ? computeSystemFit(selectedPlayer, selectedTeam) : null;
@@ -640,6 +642,13 @@ export default function Transfers() {
   const fit = useMemo(() => fitAdjustedValue(valuation, systemFitScore), [valuation, systemFitScore]);
   const dealVerdict = useMemo(() => fitVerdict(valuation, fit, askingPrice), [valuation, fit, askingPrice]);
   const verdictClass = dealVerdict.tone === 'good' ? 'lime' : dealVerdict.tone === 'bad' ? 'red' : 'amber';
+  // Display-only simplification: the engine can return 7 distinct labels
+  // (BACK IT / FAIR DEAL / NEGOTIATE HARD / CONDITIONAL DEAL / SYSTEM RISK /
+  // PUNT / WALK AWAY) — the underlying calibreFitValue.js logic is untouched,
+  // this just collapses the headline stamp to the classic DEAL / NEGOTIATE /
+  // WALK AWAY vocabulary using the same real tone the engine already computed.
+  // The full reasoning (dealVerdict.why) still reflects the real verdict.
+  const verdictDisplay = dealVerdict.tone === 'good' ? 'DEAL' : dealVerdict.tone === 'warn' ? 'NEGOTIATE' : dealVerdict.tone === 'bad' ? 'WALK AWAY' : dealVerdict.label;
   const verdict = computeVerdict({
     marketValue: valuation.estimatedValue,
     askingPrice,
@@ -654,11 +663,15 @@ export default function Transfers() {
       let dbPlayer = null;
       if (apiPlayerId) {
         const rows = await getSupabasePlayersByApiIds([apiPlayerId]);
-        dbPlayer = rows[0];
+        const row = rows && rows[0];
+        // Guard against a stale/wrong api_player_id on the transfers row
+        // silently loading a different (or badly-enriched) player's stats.
+        if (row && (!name || namesMatch(name, row))) dbPlayer = row;
       }
       if (!dbPlayer && name) {
         const rows = await searchSupabasePlayers(name, { limit: 1 });
-        dbPlayer = rows[0];
+        const row = rows && rows[0];
+        if (row && namesMatch(name, row)) dbPlayer = row;
       }
       if (dbPlayer) {
         // Use live computed rating when stored is null/missing — same logic the hero card uses
@@ -702,7 +715,7 @@ export default function Transfers() {
   }
 
   const premiumColor = dealVerdict.premium > 100 ? '#ef4444' : dealVerdict.premium > 50 ? '#f59e0b' : '#c8ff00';
-  const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${dealVerdict.label}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
+  const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdictDisplay}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
 
   // Comparables react to whoever is being analysed (position group + fee proximity)
   const rankedComparables = useMemo(
@@ -766,472 +779,419 @@ export default function Transfers() {
     return () => { cancelled = true; };
   }, [rankedComparables]);
 
+  // Recent Transfers rows only trust the transfers table's own api_player_id,
+  // which is frequently null/stale — the same class of data gap already
+  // diagnosed for valuations. Comparable Deals works around this by resolving
+  // each name against the real players table; do the same here so photos
+  // (and a trustworthy id for the fuzzy-lookup fallback) actually show.
+  const [transferIntel, setTransferIntel] = useState({});
+  const transferIntelRef = useRef({});
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!supabaseConfigured || !supabase || !recentTransfers.length) return;
+      const cache = transferIntelRef.current;
+      const need = recentTransfers.filter(t => t.name && !(t.id in cache));
+      await Promise.all(need.map(async t => {
+        try {
+          const rows = await searchSupabasePlayers(t.name, { limit: 1 });
+          const row = rows && rows[0];
+          cache[t.id] = (row && namesMatch(t.name, row)) ? row : null;
+        } catch { cache[t.id] = null; }
+      }));
+      if (cancelled) return;
+      const intel = {};
+      for (const t of recentTransfers) {
+        const row = cache[t.id];
+        intel[t.id] = row
+          ? { resolved: true, image: row.image || row.img || null, resolvedApiId: row.apiPlayerId }
+          : { resolved: false };
+      }
+      if (!cancelled) setTransferIntel(intel);
+    })();
+    return () => { cancelled = true; };
+  }, [recentTransfers]);
+
+  const recentTransfersResolved = useMemo(
+    () => recentTransfers.map(t => ({ ...t, ...(transferIntel[t.id] || {}) })),
+    [recentTransfers, transferIntel]
+  );
+
   const comparables = useMemo(
     () => rankedComparables.map(c => ({ ...c, ...(comparableIntel[(c.name || '').toLowerCase()] || {}) })),
     [rankedComparables, comparableIntel]
   );
 
-  return (
-    <div style={pageStyle}>
-      {/* ── SINGLE OUTER GRID: main | right sidebar ── */}
-      <div style={{ maxWidth: 1340, margin: '0 auto', padding: '0 24px 32px', display: 'grid', gridTemplateColumns: '1fr 290px', gap: 20, alignItems: 'start' }}>
+  const shirtNumber = selectedPlayer?.shirt_number ?? selectedPlayer?.shirtNumber ?? null;
+  const roleFits = useMemo(() => { try { return scoreRoleFit(selectedPlayer); } catch { return []; } }, [selectedPlayer]);
+  const formationFits = useMemo(() => { try { return scoreFormationFit(selectedPlayer); } catch { return []; } }, [selectedPlayer]);
+  const riskPct = Math.max(4, Math.min(96, Math.round(
+    ((dealVerdict.premium ?? 0) > 100 ? 92 : (dealVerdict.premium ?? 0) > 40 ? 68 : (dealVerdict.premium ?? 0) > 0 ? 42 : 22)
+    * 0.6 + (100 - valuation.confidence) * 0.4
+  )));
+  const riskLabel = riskPct >= 70 ? 'High risk' : riskPct >= 45 ? 'Medium risk' : 'Low risk';
+  const riskWhy = `Fit score is ${systemFitScore != null ? (systemFitScore >= 75 ? 'strong' : systemFitScore >= 60 ? 'workable' : 'low') : 'unknown'} for this system and the asking price is ${dealVerdict.premium > 40 ? 'high' : dealVerdict.premium > 0 ? 'above estimate' : 'reasonable'}. ${riskPct >= 70 ? 'High risk of overpaying for limited impact.' : riskPct >= 45 ? 'Manageable risk if the fit case is right.' : 'Low risk at this price and fit level.'}`;
 
-        {/* ── LEFT COLUMN: hero + tabs ── */}
-        <div style={{ minWidth: 0 }}>
+  return (
+    <div className="tr2">
+      <style>{`
+        .tr2 { --l:#a6ff00; --muted:#8d929b; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.5); position:relative; isolation:isolate; color:#fff; font-family:'Barlow',sans-serif; padding-bottom:40px; background:#050708; }
+        .tr2 * { box-sizing:border-box; }
+        .tr2-wrap { max-width:1500px; margin:0 auto; padding:22px 24px 0; display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start; }
+        @media(max-width:1080px){ .tr2-wrap { grid-template-columns:1fr; } }
+        .tr2-card { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); }
+        .tr2-hero { position:relative; overflow:hidden; display:grid; grid-template-columns:1.05fr .95fr; gap:18px; padding:22px; margin-bottom:16px; }
+        .tr2-hero::before { content:""; position:absolute; inset:0; z-index:0; background:url("/assets/transfers-bg.png") center 18% / cover no-repeat; }
+        .tr2-hero::after { content:""; position:absolute; inset:0; z-index:0; background:linear-gradient(90deg,rgba(6,9,11,.97) 0%,rgba(6,9,11,.90) 40%,rgba(6,9,11,.55) 68%,rgba(6,9,11,.30) 100%); }
+        .tr2-hero > * { position:relative; z-index:1; }
+        @media(max-width:860px){ .tr2-hero { grid-template-columns:1fr; } .tr2-hero::after { background:linear-gradient(180deg,rgba(6,9,11,.6) 0%,rgba(6,9,11,.95) 55%); } }
+        .tr2-eyebrow { color:var(--l); font:700 11px/1 "Barlow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
+        .tr2-h1 { margin:10px 0 12px; font:800 clamp(38px,4.4vw,58px)/.92 "Barlow Condensed",sans-serif; text-transform:uppercase; }
+        .tr2-h1 em { font-style:normal; color:var(--l); }
+        .tr2-sub { margin:0 0 18px; max-width:520px; color:#c3c9cf; font:500 13.5px/1.6 "Barlow",sans-serif; }
+        .tr2-search-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:16px; }
+        .tr2-cta { background:var(--l); border:none; color:#0a0d05; font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; padding:11px 18px; border-radius:9px; cursor:pointer; white-space:nowrap; }
+        .tr2-kpis { display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden; margin-bottom:12px; }
+        .tr2-kpi { background:rgba(6,9,12,.6); padding:12px 14px; }
+        .tr2-kpi span { display:block; color:var(--muted); font:700 9.5px/1 "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+        .tr2-kpi b { font:800 24px/1 "Barlow Condensed",sans-serif; }
+        .tr2-slider-box { border:1px solid var(--line); border-radius:10px; padding:14px 16px; background:rgba(6,9,12,.4); }
+        .tr2-slider-lbl { display:flex; justify-content:space-between; align-items:center; color:var(--muted); font:700 10px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:9px; }
+        .tr2-slider-lbl button { background:none; border:1px solid var(--line); color:#c9ced4; border-radius:6px; padding:3px 9px; font:700 10px "Barlow Condensed",sans-serif; cursor:pointer; }
+        .tr2-slider-row { display:flex; align-items:center; gap:12px; }
+        .tr2-slider-row input[type=range] { flex:1; accent-color:var(--l); height:4px; }
+        .tr2-price { font:800 22px "Barlow Condensed",sans-serif; color:var(--l); }
+        .tr2-slider-scale { display:flex; justify-content:space-between; color:#6f757e; font:600 10px "Barlow",sans-serif; margin-top:6px; }
+        .tr2-quickset { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+        .tr2-quickset button { background:none; border:1px solid var(--line); color:#c9ced4; border-radius:7px; padding:6px 10px; font:700 10.5px "Barlow Condensed",sans-serif; letter-spacing:.03em; cursor:pointer; }
+        .tr2-player { display:flex; flex-direction:column; gap:14px; padding:20px; }
+        .tr2-pid { display:flex; gap:12px; align-items:center; }
+        .tr2-pid-photo { width:56px; height:56px; border-radius:10px; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%,#eef2f5,#b3bdc6 92%); flex:none; }
+        .tr2-pid-photo img { width:100%; height:100%; object-fit:cover; object-position:top; }
+        .tr2-pid h3 { margin:0; font:800 19px/1 "Barlow Condensed",sans-serif; text-transform:uppercase; }
+        .tr2-pid-meta { margin-top:5px; color:#a9afb6; font:500 11.5px "Barlow",sans-serif; }
+        .tr2-chips { display:flex; gap:6px; flex-wrap:wrap; }
+        .tr2-basics { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:12px 0; padding:10px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+        .tr2-basics div span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:4px; }
+        .tr2-basics div b { display:block; color:#fff; font:800 18px "Barlow Condensed",sans-serif; }
+        .tr2-chip { padding:3px 9px; border:1px solid var(--line); border-radius:6px; color:#c9ced4; font:700 9.5px "Barlow Condensed",sans-serif; letter-spacing:.04em; }
+        .tr2-crest { width:32px; height:32px; margin-left:auto; }
+        .tr2-crest img { max-width:100%; max-height:100%; object-fit:contain; }
+        .tr2-verdict { border-radius:12px; padding:16px; text-align:center; border:1px solid; }
+        .tr2-verdict.lime { border-color:rgba(166,255,0,.4); background:rgba(166,255,0,.06); }
+        .tr2-verdict.amber { border-color:rgba(232,177,58,.4); background:rgba(232,177,58,.06); }
+        .tr2-verdict.red { border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.06); }
+        .tr2-verdict-title { font:800 26px/1 "Barlow Condensed",sans-serif; letter-spacing:.02em; }
+        .tr2-verdict.lime .tr2-verdict-title { color:var(--l); }
+        .tr2-verdict.amber .tr2-verdict-title { color:#e8b13a; }
+        .tr2-verdict.red .tr2-verdict-title { color:#ef4444; }
+        .tr2-risk-label { color:var(--muted); font:700 10px "Barlow",sans-serif; letter-spacing:.12em; text-transform:uppercase; margin:12px 0 8px; }
+        .tr2-risk-track { position:relative; height:8px; border-radius:6px; background:linear-gradient(90deg,#a6ff00,#e8b13a,#ef4444); margin-bottom:8px; }
+        .tr2-risk-dot { position:absolute; top:-4px; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid #0a0d05; transform:translateX(-50%); }
+        .tr2-risk-ends { display:flex; justify-content:space-between; color:#6f757e; font:600 9.5px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
+        .tr2-risk-why { margin-top:10px; color:#b6bcc3; font:500 12px/1.6 "Barlow",sans-serif; }
+        .tr2-actions { display:flex; flex-direction:column; gap:8px; }
+        .tr2-actions .btnrow { display:flex; gap:8px; flex-wrap:wrap; }
+        .tr2-tabs { display:flex; gap:2px; overflow-x:auto; margin-bottom:0; }
+        .tr2-tabs button { flex:none; background:rgba(9,13,16,.5); border:1px solid var(--line); border-bottom:none; color:#8d929b; font:800 11.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:12px 18px; cursor:pointer; border-radius:10px 10px 0 0; white-space:nowrap; }
+        .tr2-tabs button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
+        .tr2-tabs button .g { margin-left:6px; font-size:9px; opacity:.8; }
+        .tr2-panel { border-radius:0 12px 12px 12px; padding:22px; margin-bottom:16px; }
+        .tr2-label { color:var(--muted); font:700 10.5px "Barlow",sans-serif; letter-spacing:.14em; text-transform:uppercase; margin-bottom:14px; display:block; }
+        .tr2-role-row { display:flex; align-items:center; gap:12px; padding:9px 0; }
+        .tr2-role-row span:first-child { width:170px; flex:none; color:#d8dde2; font:600 12.5px "Barlow",sans-serif; }
+        .tr2-role-bar { flex:1; height:8px; border-radius:5px; background:rgba(255,255,255,.07); overflow:hidden; }
+        .tr2-role-bar i { display:block; height:100%; border-radius:5px; background:var(--l); }
+        .tr2-role-row b { width:44px; text-align:right; flex:none; color:var(--l); font:800 14px "Barlow Condensed",sans-serif; }
+        .tr2-pitches { display:flex; gap:16px; flex-wrap:wrap; }
+        .tr2-pitch { width:150px; }
+        .tr2-pitch svg { width:100%; height:120px; display:block; background:rgba(255,255,255,.03); border-radius:8px; }
+        .tr2-pitch-foot { display:flex; justify-content:space-between; margin-top:6px; font:700 11px "Barlow Condensed",sans-serif; color:#c9ced4; }
+        .tr2-scout-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px 18px; margin-bottom:18px; }
+        .tr2-scout-grid div label { display:block; color:var(--muted); font:700 9.5px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; }
+        .tr2-scout-grid div b { font:800 22px "Barlow Condensed",sans-serif; color:#fff; }
+        .tr2-note { color:#8d929b; font:500 12px/1.6 "Barlow",sans-serif; }
+        .tr2-waterfall-row { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px 0; border-bottom:1px solid var(--line); }
+        .tr2-waterfall-row .name { font:700 14px "Barlow",sans-serif; color:#fff; }
+        .tr2-waterfall-row .desc { color:#8d929b; font:500 11px "Barlow",sans-serif; margin-top:2px; }
+        .tr2-waterfall-row .impact { font:800 18px "Barlow Condensed",sans-serif; flex:none; }
+        .tr2-result-row { display:flex; align-items:center; justify-content:space-between; padding:14px 0 0; margin-top:6px; }
+        .tr2-result-row .rl { color:var(--l); font:800 11px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+        .tr2-result-row .rv { color:var(--l); font:800 28px "Barlow Condensed",sans-serif; }
+        .tr2-stub-row { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+        .tr2-stub { border:1px solid var(--line); border-radius:7px; padding:7px 11px; color:#a9afb6; font:600 11.5px "Barlow",sans-serif; }
+        .tr2-signal { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+        .tr2-signal span { color:#a9afb6; font:500 12.5px "Barlow",sans-serif; }
+        .tr2-signal b { font:800 14px "Barlow Condensed",sans-serif; }
+        .tr2-table { width:100%; border-collapse:collapse; }
+        .tr2-table th { text-align:left; padding:8px 12px; color:var(--muted); font:700 9.5px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; border-bottom:1px solid var(--line); }
+        .tr2-table td { padding:10px 12px; border-bottom:1px solid rgba(255,255,255,.05); font:600 13px "Barlow",sans-serif; color:#d8dde2; }
+        .tr2-table td.rate { font:800 17px "Barlow Condensed",sans-serif; color:var(--l); }
+        .tr2-rail-title { font:800 20px/1 "Barlow Condensed",sans-serif; text-transform:uppercase; }
+        .tr2-rail-sub { color:var(--muted); font:600 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+        .tr2-rail-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); cursor:pointer; }
+        .tr2-rail-row:last-child { border-bottom:none; }
+        .tr2-rail-photo { width:38px; height:38px; border-radius:50%; overflow:hidden; flex:none; background:radial-gradient(120% 120% at 50% 0%,#eef2f5,#b3bdc6 92%); }
+        .tr2-rail-photo img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
+        .tr2-rail-id { flex:1; min-width:0; }
+        .tr2-rail-id strong { display:block; color:#eef1f4; font:700 12.5px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tr2-rail-id span { display:block; color:#8d929b; font:500 10.5px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tr2-rail-id .tr2-rail-route { margin-top:5px; padding:4px 8px; border-radius:6px; background:rgba(255,255,255,.06); color:#d8dde2; font:700 10.5px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tr2-rail-id .tr2-rail-route .arrow { color:var(--l); font-style:normal; }
+        .tr2-rail-photo { margin-top:2px; }
+        .tr2-rail-side { flex:none; text-align:right; }
+        .tr2-rail-side b { display:block; color:var(--l); font:800 14px "Barlow Condensed",sans-serif; }
+        .tr2-rail-side button { margin-top:4px; background:none; border:1px solid rgba(166,255,0,.4); color:var(--l); font:700 8.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; border-radius:5px; padding:2px 8px; cursor:pointer; }
+        .tr2-footer { max-width:1500px; margin:8px auto 0; padding:0 24px; }
+        .tr2-footer-grid { display:grid; grid-template-columns:repeat(4,1fr) 220px; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+        @media(max-width:980px){ .tr2-footer-grid { grid-template-columns:1fr 1fr; } }
+        .tr2-footer-item { background:rgba(9,13,16,.55); padding:16px; }
+        .tr2-footer-item b { display:block; color:var(--l); font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.04em; text-transform:uppercase; margin-bottom:4px; }
+        .tr2-footer-item span { color:#8d929b; font:500 11px "Barlow",sans-serif; }
+        .tr2-footer-cta { background:rgba(9,13,16,.55); display:flex; align-items:center; justify-content:center; }
+        .tr2-footer-cta button { background:var(--l); border:none; color:#0a0d05; font:800 11px "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; padding:10px 16px; border-radius:8px; cursor:pointer; }
+        .tr2-disclaimer { max-width:1500px; margin:14px auto 0; padding:0 24px; color:#5b6168; font:500 10.5px/1.6 "Barlow",sans-serif; }
+        .tr2-sf-grid { display:grid; grid-template-columns:200px 1fr 1fr; gap:24px; align-items:start; }
+        @media(max-width:900px){ .tr2-sf-grid { grid-template-columns:1fr; } }
+        .tr2-sf-col { min-width:0; }
+        .tr2-sf-ring-col { text-align:center; }
+        .tr2-ring { position:relative; width:118px; height:118px; margin:6px auto 12px; border-radius:50%; background:conic-gradient(var(--l) calc(var(--pct)), rgba(255,255,255,.08) 0); display:grid; place-items:center; }
+        .tr2-ring::before { content:""; position:absolute; inset:9px; border-radius:50%; background:#0b0e10; }
+        .tr2-ring span { position:relative; font:800 34px "Barlow Condensed",sans-serif; color:#fff; }
+        .tr2-sf-verdict { color:var(--l); font:800 13px "Barlow Condensed",sans-serif; letter-spacing:.04em; text-transform:uppercase; margin-bottom:6px; }
+      `}</style>
+
+      <div className="tr2-wrap">
+        <main style={{ minWidth: 0 }}>
 
           {/* ── HERO ── */}
-          <div style={{ background: '#0f0f0f', borderBottom: '1px solid #1c1c1c', padding: '20px 0 18px', marginBottom: 16 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 24, alignItems: 'start' }}>
-          {/* Left — headline + search */}
-          <div style={{ paddingRight: 0 }}>
-            <div style={eyebrowStyle}>Transfer Intelligence · Live Deal Room</div>
-            <h1 style={headlineStyle}>Deal or<br />No Deal?</h1>
-            <p style={heroSubStyle}>
-              Stress-test any transfer fee against Calibre’s independent valuation — rating, position scarcity, league strength, age curve, system fit and risk — then change the asking price and watch the verdict move live.
-            </p>
+          <div className="tr2-card tr2-hero">
+            <div>
+              <div className="tr2-eyebrow">Transfer Intelligence</div>
+              <h1 className="tr2-h1">Deal or<br /><em>No Deal?</em></h1>
+              <p className="tr2-sub">We combine independent valuation, system fit, risk and market context to tell you what others miss. Set your asking price and run the verdict.</p>
 
-            <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
-              <PlayerSearch
-                value={playerQuery}
-                onChange={setPlayerQuery}
-                onSelect={p => {
-                  const live = p.rating || calibreRating(p)?.rating || 75;
-                  setSelectedPlayer({ ...p, rating: Math.round(live) });
-                  setPlayerQuery(p.full_name || p.name);
-                  setMarketValue(Math.round(live * 0.65));
-                }}
-                onEnter={handleAnalyse}
-              />
-              <TeamSearch
-                value={buyerQuery}
-                onChange={setBuyerQuery}
-                onSelect={t => { setSelectedTeam(t); setBuyerQuery(t.name); }}
-              />
-              <button style={ctaBtn} onClick={handleAnalyse}>Analyse →</button>
-            </div>
-
-            {/* KPI row */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: '#1c1c1c' }}>
-              {[
-                { label: 'Calibre Estimated Value', value: `€${valuation.estimatedValue}M`, color: '#c8ff00' },
-                { label: 'Asking Price', value: `€${askingPrice}M`, color: '#fff' },
-                { label: 'Premium vs Calibre', value: `${dealVerdict.premium >= 0 ? '+' : ''}${dealVerdict.premium}%`, color: premiumColor },
-              ].map(k => (
-                <div key={k.label} style={{ background: '#0a0a0a', padding: '14px 16px' }}>
-                  <div style={{ fontSize: 11, letterSpacing: '0.15em', color: '#8a8a8a', textTransform: 'uppercase', marginBottom: 5, fontFamily: "'Barlow Condensed', sans-serif" }}>{k.label}</div>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, color: k.color }}>{k.value}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Asking price adjuster */}
-            <div style={{ marginTop: 14, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: '14px 16px' }}>
-              <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#8a8a8a', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 8 }}>Adjust asking price — verdict updates live</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, color: '#c8ff00', fontWeight: 800 }}>€</span>
-                <input
-                  type="range" min="1" max="300" value={askingPrice}
-                  onChange={e => setAskingPrice(Number(e.target.value))}
-                  style={{ flex: 1, accentColor: '#c8ff00', height: 4 }}
+              <div className="tr2-search-row">
+                <PlayerSearch
+                  value={playerQuery}
+                  onChange={setPlayerQuery}
+                  onSelect={p => {
+                    const live = p.rating || calibreRating(p)?.rating || 75;
+                    setSelectedPlayer({ ...p, rating: Math.round(live) });
+                    setPlayerQuery(p.full_name || p.name);
+                    setMarketValue(Math.round(live * 0.65));
+                  }}
+                  onEnter={handleAnalyse}
                 />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <input
-                    type="number" value={askingPrice}
-                    onChange={e => setAskingPrice(Math.max(1, Math.min(300, Number(e.target.value))))}
-                    style={{ ...inputStyle, width: 72, padding: '6px 10px', fontSize: 18, fontWeight: 800, color: '#c8ff00', textAlign: 'center', MozAppearance: 'textfield' }}
-                  />
-                  <span style={{ fontSize: 12, color: '#555' }}>M</span>
+                <TeamSearch value={buyerQuery} onChange={setBuyerQuery} onSelect={t => { setSelectedTeam(t); setBuyerQuery(t.name); }} />
+                <button className="tr2-cta" onClick={handleAnalyse}>Analyse →</button>
+              </div>
+
+              <div className="tr2-slider-box">
+                <div className="tr2-slider-lbl">
+                  <span>Set your asking price</span>
+                  <button onClick={() => setAskingPrice(100)}>Reset</button>
+                </div>
+                <div className="tr2-slider-row">
+                  <span className="tr2-price">€{askingPrice}M</span>
+                  <input type="range" min="1" max="300" value={askingPrice} onChange={e => setAskingPrice(Number(e.target.value))} />
+                </div>
+                <div className="tr2-slider-scale"><span>€1M</span><span>€300M</span></div>
+                <div className="tr2-quickset">
+                  <button onClick={() => setAskingPrice(Math.round(valuation.estimatedValue))}>Value €{valuation.estimatedValue}M</button>
+                  <button onClick={() => setAskingPrice(Math.round(valuation.fairRange.high))}>Fair €{valuation.fairRange.high}M</button>
+                  <button onClick={() => setAskingPrice(Math.round(valuation.maxSensibleBid))}>Max €{valuation.maxSensibleBid}M</button>
                 </div>
               </div>
-              {canBreakdown ? (
-              <div style={{ marginTop: 10, fontSize: 13, color: '#8a8a8a' }}>
-                {selectedTeam ? `Max sensible bid for ${selectedTeam.short || selectedTeam.name}` : 'Max sensible bid'}: <span style={{ color: '#c8ff00', fontWeight: 700 }}>€{fit.clubMaxSensibleBid}M</span>
-                <span style={{ marginLeft: 10, color: '#8a8a8a' }}>Fair range €{fit.fitFairRange.low}–{fit.fitFairRange.high}M</span>
+            </div>
+
+            <div>
+              <div className="tr2-player" style={{ padding: 0 }}>
+                <div className="tr2-pid">
+                  <div className="tr2-pid-photo"><ApiPlayerImage playerId={selectedPlayer?.apiPlayerId} name={selectedPlayer?.name} fallbackSrc="/assets/players/neutral-player.svg" /></div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <h3>{selectedPlayer?.full_name || selectedPlayer?.name || 'Select a player'}</h3>
+                    <div className="tr2-pid-meta">{selectedPlayer?.pos} · Age {selectedPlayer?.age} · {selectedPlayer?.club}</div>
+                  </div>
+                  {selectedTeam?.crestUrl && <div className="tr2-crest"><img src={selectedTeam.crestUrl} alt={selectedTeam.name} /></div>}
+                </div>
+                <div className="tr2-chips">
+                  {selectedPlayer?.nationality && <span className="tr2-chip">{selectedPlayer.nationality}</span>}
+                  {selectedPlayer?.foot && <span className="tr2-chip">{selectedPlayer.foot} Foot</span>}
+                  {shirtNumber != null && <span className="tr2-chip">No. {shirtNumber}</span>}
+                  {selectedPlayer?.archetype && <span className="tr2-chip">{selectedPlayer.archetype}</span>}
+                </div>
+                <div className="tr2-basics">
+                  <div><span>Apps</span><b>{selectedPlayer?.appearances ?? '—'}</b></div>
+                  <div><span>Goals</span><b>{selectedPlayer?.goals ?? '—'}</b></div>
+                  <div><span>Assists</span><b>{selectedPlayer?.assists ?? '—'}</b></div>
+                  <div><span>Calibre</span><b style={{ color: 'var(--l)' }}>{selectedPlayer?.rating ? Math.round(selectedPlayer.rating) : '—'}</b></div>
+                </div>
+                <div className="tr2-kpis">
+                  <div className="tr2-kpi"><span>{selectedTeam ? `Value to ${selectedTeam.short || selectedTeam.name}` : 'Calibre Value'}</span><b style={{ color: 'var(--l)' }}>€{selectedTeam ? fit.fitAdjustedValue : valuation.estimatedValue}M</b></div>
+                  <div className="tr2-kpi"><span>Asking Price</span><b>€{askingPrice}M</b></div>
+                  <div className="tr2-kpi"><span>Premium</span><b style={{ color: premiumColor }}>{dealVerdict.premium >= 0 ? '+' : ''}{dealVerdict.premium}%</b></div>
+                </div>
+                {selectedTeam && fit.fitAdjustedValue !== valuation.estimatedValue && (
+                  <div className="tr2-note" style={{ marginBottom: 10 }}>Base (club-agnostic) value €{valuation.estimatedValue}M, adjusted to €{fit.fitAdjustedValue}M for {selectedTeam.short || selectedTeam.name}'s system fit ({systemFitScore}/100) — the verdict below is based on this adjusted figure.</div>
+                )}
+                {dealVerdict.premium > 300 && (
+                  <div className="tr2-note" style={{ color: '#e8b13a', marginBottom: 8 }}>⚠ A premium this large usually means the resolved Calibre rating ({selectedPlayer?.rating ?? '—'}) looks too low for this player, not that the fee is unreasonable — worth checking the player record.</div>
+                )}
+                {canBreakdown ? (
+                  <div className="tr2-note">Max sensible bid: <b style={{ color: 'var(--l)' }}>€{fit.clubMaxSensibleBid}M</b> · Fair range €{fit.fitFairRange.low}–{fit.fitFairRange.high}M</div>
+                ) : (
+                  <div className="tr2-note">Max sensible bid & fair range — <span onClick={() => navigateTo('/pricing')} style={{ color: 'var(--l)', cursor: 'pointer', fontWeight: 700 }}>unlock with Pro →</span></div>
+                )}
               </div>
-              ) : (
-              <div style={{ marginTop: 10, fontSize: 13, color: '#8a8a8a' }}>
-                Max sensible bid & fair range — <span onClick={() => navigateTo('/pricing')} style={{ color: '#c8ff00', cursor: 'pointer', fontWeight: 700 }}>unlock with Pro →</span>
-              </div>
-              )}
             </div>
           </div>
 
-          {/* Right — player card + verdict */}
-            <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
-              {/* Player identity */}
-              <div style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 18, paddingBottom: 16, borderBottom: '1px solid #1c1c1c' }}>
-                <div style={{ width: 64, height: 64, background: '#1a1a1a', border: '1px solid #2a2a2a', overflow: 'hidden', flexShrink: 0 }}>
-                  <ApiPlayerImage
-                    playerId={selectedPlayer?.apiPlayerId}
-                    name={selectedPlayer?.name}
-                    fallbackSrc="/assets/players/neutral-player.svg"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  />
-                </div>
-                <div>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>{selectedPlayer?.full_name || selectedPlayer?.name || 'Select a player'}</div>
-                  <div style={{ fontSize: 13, color: '#999', marginTop: 4 }}>
-                    {selectedPlayer?.pos} · Age {selectedPlayer?.age} · {selectedPlayer?.club}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#8a8a8a', marginTop: 2, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                    {selectedPlayer?.nationality} · Calibre {selectedPlayer?.rating ? Math.round(selectedPlayer.rating) : '—'}
-                  </div>
-                </div>
-              </div>
-
-              {/* 2×2 metric grid */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1, background: '#1c1c1c', marginBottom: 1 }}>
-                {[
-                  { label: 'Fit-Adjusted Value', value: selectedTeam ? `€${fit.fitAdjustedValue}M` : 'Pick a club', color: '#c8ff00' },
-                  { label: 'Max Sensible Bid',   value: `€${fit.clubMaxSensibleBid}M`, color: '#c8ff00' },
-                  { label: 'System Fit',         value: systemFitScore != null ? `${systemFitScore}` : '—', color: '#c8ff00' },
-                  { label: 'Confidence',         value: `${valuation.confidence}`, color: valuation.confidence >= 70 ? '#c8ff00' : valuation.confidence >= 55 ? '#f59e0b' : '#ef4444' },
-                ].map(m => (
-                  <div key={m.label} style={{ background: '#0a0a0a', padding: '12px 14px' }}>
-                    <div style={{ fontSize: 11, letterSpacing: '0.12em', color: '#8a8a8a', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 4 }}>{m.label}</div>
-                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 26, fontWeight: 800, color: m.color }}>{m.value}</div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Verdict stamp */}
-              <VerdictStamp verdict={dealVerdict.label} verdictClass={verdictClass} />
-              {dealVerdict.why && (
-                <div style={{ marginTop: 8, fontSize: 13, color: '#aaa', lineHeight: 1.5 }}>
-                  <span style={{ color: '#c8ff00', fontWeight: 700, textTransform: 'uppercase', fontSize: 11, letterSpacing: '0.1em' }}>Why · </span>{dealVerdict.why}
-                </div>
-              )}
-
-              {/* Share */}
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
+          {/* ── VERDICT + SYSTEM RISK ── */}
+          <div className="tr2-card" style={{ padding: 22, marginBottom: 16, display: 'grid', gridTemplateColumns: '220px 1fr', gap: 22, alignItems: 'center', borderLeft: '3px solid transparent' }}>
+            <div className={`tr2-verdict ${verdictClass}`}>
+              <div style={{ fontSize: 10, letterSpacing: '.14em', textTransform: 'uppercase', color: '#8d929b', marginBottom: 8 }}>Calibre Verdict</div>
+              <div className="tr2-verdict-title">{verdictDisplay}</div>
+            </div>
+            <div style={{ borderLeft: '1px solid var(--line)', paddingLeft: 22 }}>
+              <div className="tr2-risk-label">System Risk</div>
+              <div className="tr2-risk-track"><div className="tr2-risk-dot" style={{ left: `${riskPct}%` }} /></div>
+              <div className="tr2-risk-ends"><span>Low risk</span><span>High risk</span></div>
+              <p className="tr2-risk-why">{riskWhy}</p>
+              <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                <DealReport player={selectedPlayer} team={selectedTeam} verdict={verdict} sysFit={sysFit} marketValue={valuation.estimatedValue} askingPrice={askingPrice} />
                 <ShareBar text={shareText} url={shareUrl('/transfers')} />
+                {canDossier && <button className="tr2-cta" style={{ background: 'transparent', border: '1px solid var(--line)', color: '#c9ced4' }} onClick={() => setShowDossier(true)}>Generate dossier →</button>}
               </div>
+            </div>
+          </div>
 
-              {/* PDF Report download — Scout & Club tier feature */}
-              <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
-                <DealReport
-                  player={selectedPlayer}
-                  team={selectedTeam}
-                  verdict={verdict}
-                  sysFit={sysFit}
-                  marketValue={valuation.estimatedValue}
-                  askingPrice={askingPrice}
-                />
-              </div>
-
-              {canDossier && (
-                <div style={{ marginTop: 12, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
-                  <button
-                    onClick={() => setShowDossier(true)}
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#c8ff00', color: '#0a0a0a', border: '1px solid #c8ff00', padding: '7px 13px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer' }}
-                  >Generate full dossier →</button>
-                  <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginTop: 8 }}>Commissioned · multi-page decision brief</div>
-                </div>
-              )}
-
-              {/* Public commissioning CTA — opens the €499 request form for everyone */}
-              <div style={{ marginTop: 12, paddingTop: 14, borderTop: '1px solid #1c1c1c' }}>
-                <button
-                  onClick={() => setShowCommission(true)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#9a9a9a', border: '1px solid #2a2a2a', padding: '7px 12px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}
-                >Commission a full dossier · €499</button>
-                <div style={{ fontSize: 10, color: '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginTop: 8 }}>40-point Director-of-Football brief · token-gated PDF</div>
-              </div>
-            </div>{/* close left hero col */}
-            </div>{/* close hero grid */}
-          </div>{/* close hero wrap */}
-
-          {/* Tabs */}
-          <div style={{ display: 'flex', gap: 2, background: '#0a0a0a', border: '1px solid #1c1c1c', borderBottom: 'none', overflowX: 'auto' }}>
+          {/* ── TABS ── */}
+          <div className="tr2-tabs">
             {TABS.map(tab => {
               const gate = TAB_GATE[tab];
               const locked = gate && !can(tier, gate);
               return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                style={{
-                  background: activeTab === tab ? '#c8ff00' : 'none',
-                  border: 'none',
-                  color: activeTab === tab ? '#0a0a0a' : '#666',
-                  fontFamily: "'Barlow Condensed', sans-serif",
-                  fontSize: 12, fontWeight: 800, letterSpacing: '0.1em',
-                  textTransform: 'uppercase', padding: '12px 18px',
-                  cursor: 'pointer', whiteSpace: 'nowrap',
-                  transition: 'all 0.15s',
-                }}
-              >{tab}{locked && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, color: activeTab === tab ? '#0a0a0a' : '#c8ff00', opacity: 0.85 }}>{gate === 'valuation.comparables' ? 'SCOUT' : 'PRO'}</span>}</button>
-            );})}
+                <button key={tab} className={activeTab === tab ? 'on' : ''} onClick={() => setActiveTab(tab)}>
+                  {tab}{locked && <span className="g">{gate === 'valuation.comparables' ? 'SCOUT' : 'PRO'}</span>}
+                </button>
+              );
+            })}
           </div>
 
-          {/* Tab panels */}
-          <div style={{ border: '1px solid #1c1c1c', background: '#0a0a0a' }}>
-            {/* Data source note */}
-            <div style={{ padding: '8px 16px', borderBottom: '1px solid #1c1c1c', background: '#080808', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 11, letterSpacing: '0.12em', color: '#777', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>
-                Calibre Value & Risk — computed live from the rating engine · System Fit — model estimate
-              </span>
-            </div>
-
-            {activeTab === 'Value Analysis' && !canBreakdown && (
-              <TierLock title="Full valuation breakdown" blurb="Fair-value range, max sensible bid, premium analysis and the drivers behind the verdict." tierLabel="Pro" />
-            )}
-            {activeTab === 'Comparables' && !canComparables && (
-              <TierLock title="Comparable players" blurb="Like-rated players in the same position, valued live by the engine — the market context for this deal." tierLabel="Scout" />
-            )}
-            {/* OVERVIEW */}
-            {activeTab === 'Overview' && (() => {
-              const est = valuation.estimatedValue;
-              const fairHigh = valuation.fairRange.high;
-              const maxBid = valuation.maxSensibleBid;
-              const prem = dealVerdict.premium ?? 0;
-              const vColor = verdictClass === 'lime' ? '#c8ff00' : verdictClass === 'red' ? '#ef4444' : '#f59e0b';
-              const mins = Number.isFinite(Number(selectedPlayer?.minutes)) ? Number(selectedPlayer.minutes)
-                : Number.isFinite(Number(selectedPlayer?.appearances)) ? Number(selectedPlayer.appearances) * 90 : null;
-              const SCALE = 300;
-              const pct = v => Math.max(0, Math.min(100, (v / SCALE) * 100));
-              const zones = [
-                { from: 0, to: est, color: '#c8ff00' },
-                { from: est, to: fairHigh, color: '#84cc16' },
-                { from: fairHigh, to: maxBid, color: '#f59e0b' },
-                { from: maxBid, to: SCALE, color: '#ef4444' },
-              ];
-              const sampleScore = mins == null ? null : Math.max(0, Math.min(100, Math.round(mins / 30)));
-              const feeScore = Math.max(0, Math.min(100, prem));
-              return (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
-                <ScorePanel title="Calibre Value" score={`€${est}M`} scoreColor={vColor}>
-                  <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6, margin: 0 }}>
-                    {dealVerdict.label} · {prem >= 0 ? '+' : ''}{prem}% vs estimate at €{askingPrice}M ask. {dealVerdict.why}
-                  </p>
-                </ScorePanel>
-
-                <ScorePanel title="System Fit" score={systemFitScore ?? '—'}>
-                  {sysFit ? (
-                    <>
-                      <MetricBar label="Pressing" value={sysFit.pressing} />
-                      <MetricBar label="Transition" value={sysFit.transition} />
-                      <MetricBar label="Box threat" value={sysFit.boxThreat} />
-                    </>
-                  ) : (
-                    <p style={{ fontSize: 11.5, color: '#888', lineHeight: 1.6, margin: 0 }}>
-                      Select a buying club above to run the System Fit analysis. Calibre recalculates from the team&rsquo;s tactical profile.
-                    </p>
-                  )}
-                </ScorePanel>
-
-                <ScorePanel title="Confidence" score={valuation.confidence} scoreColor={valuation.confidence >= 70 ? '#c8ff00' : valuation.confidence >= 55 ? '#f59e0b' : '#ef4444'}>
-                  {sampleScore != null && <MetricBar label="Sample" value={sampleScore} color={sampleScore >= 60 ? '#c8ff00' : '#f59e0b'} />}
-                  <MetricBar label="Scarcity" value={valuation.scarcity} color={valuation.scarcity >= 65 ? '#ef4444' : '#f59e0b'} />
-                  <MetricBar label="Fee pressure" value={feeScore} color={prem > 30 ? '#ef4444' : prem > 0 ? '#f59e0b' : '#c8ff00'} />
-                </ScorePanel>
-
-                {/* Deal lever — spans full width */}
-                <div style={{ background: '#0f0f0f', padding: 20, gridColumn: 'span 3' }}>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, letterSpacing: '0.15em', color: '#8a8a8a', textTransform: 'uppercase', marginBottom: 14 }}>Deal Lever — drag to find the right price</div>
-
-                  {/* Zone track */}
-                  <div style={{ position: 'relative', height: 28, marginBottom: 8 }}>
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', borderRadius: 3, overflow: 'hidden' }}>
-                      {zones.map((z, i) => (
-                        <div key={i} style={{ width: `${pct(z.to) - pct(z.from)}%`, background: z.color, opacity: 0.30 }} />
-                      ))}
+          <div className="tr2-card tr2-panel">
+            {/* SYSTEM FIT — Overall Fit ring · Role Fit Breakdown · Best Fit Formations, side by side, matching the mockup. Role/formation scores are real (scoreRoleFit/scoreFormationFit) and don't need a club selected; the ring is the real team-fit score once one is picked. */}
+            {activeTab === 'System Fit' && (
+              <>
+                <div className="tr2-sf-grid">
+                  <div className="tr2-sf-col tr2-sf-ring-col">
+                    <span className="tr2-label">Overall System Fit</span>
+                    <div className="tr2-ring" style={{ '--pct': `${systemFitScore ?? 0}%` }}>
+                      <span>{systemFitScore ?? '—'}</span>
                     </div>
-                    <div style={{ position: 'absolute', top: -4, bottom: -4, left: `${pct(askingPrice)}%`, width: 2, background: '#fff', boxShadow: '0 0 6px rgba(255,255,255,0.7)' }} />
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9.5, color: '#777', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 14 }}>
-                    <span>€0</span>
-                    <span style={{ color: '#c8ff00' }}>est €{est}M</span>
-                    <span style={{ color: '#f59e0b' }}>fair €{fairHigh}M</span>
-                    <span style={{ color: '#ef4444' }}>max €{maxBid}M</span>
-                    <span>€{SCALE}M</span>
+                    {selectedTeam ? (
+                      <>
+                        <div className="tr2-sf-verdict">{systemFitScore >= 80 ? 'Elite Fit' : systemFitScore >= 65 ? 'Good Fit' : 'Stretched Fit'}</div>
+                        <p className="tr2-note">{systemFitScore >= 80 ? `Matches ${selectedTeam.short}'s system closely.` : systemFitScore >= 65 ? `Can work in this system with some adjustments.` : `Would need real tactical adjustment to thrive here.`}</p>
+                      </>
+                    ) : (
+                      <p className="tr2-note">Select a buying club above to run the real team fit.</p>
+                    )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, color: '#8a8a8a', width: 48 }}>€1M</span>
-                    <input type="range" min="1" max="300" value={askingPrice} onChange={e => setAskingPrice(Number(e.target.value))} style={{ flex: 1, accentColor: vColor }} />
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, color: '#8a8a8a', width: 52, textAlign: 'right' }}>€300M</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
-                    {[
-                      { price: est, label: 'VALUE BUY', color: '#c8ff00' },
-                      { price: fairHigh, label: 'FAIR CEILING', color: '#84cc16' },
-                      { price: maxBid, label: 'MAX SENSIBLE', color: '#f59e0b' },
-                      { price: askingPrice, label: 'CURRENT ASK', color: vColor },
-                    ].map(b => (
-                      <button
-                        key={b.label}
-                        onClick={() => setAskingPrice(Math.round(b.price))}
-                        style={{ background: 'none', border: `1px solid ${b.color}33`, color: b.color, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer' }}
-                      >
-                        €{Math.round(b.price)}M — {b.label}
-                      </button>
+                  <div className="tr2-sf-col">
+                    <span className="tr2-label">Role Fit Breakdown</span>
+                    {roleFits.map(r => (
+                      <div className="tr2-role-row" key={r.role}>
+                        <span>{r.role}</span>
+                        <div className="tr2-role-bar"><i style={{ width: `${r.score}%` }} /></div>
+                        <b>{r.score}/100</b>
+                      </div>
                     ))}
                   </div>
+
+                  <div className="tr2-sf-col">
+                    <span className="tr2-label">Best Fit Formations</span>
+                    <div className="tr2-pitches">
+                      {formationFits.map(f => <MiniPitch key={f.formation} formation={f.formation} score={f.score} />)}
+                    </div>
+                  </div>
                 </div>
-              </div>
+
+                {selectedTeam && (
+                  <>
+                    <span className="tr2-label" style={{ marginTop: 24 }}>{selectedTeam.name} · {selectedTeam.formation} · {selectedTeam.philosophy}</span>
+                    <MetricBar label="Press match" value={sysFit.pressing} />
+                    <MetricBar label="Transition" value={sysFit.transition} />
+                    <MetricBar label="Box threat" value={sysFit.boxThreat} />
+                  </>
+                )}
+              </>
+            )}
+
+            {/* SCOUT REPORT — real appearance/output line + the verdict narrative */}
+            {activeTab === 'Scout Report' && (() => {
+              const mins = Number.isFinite(Number(selectedPlayer?.minutes)) ? Number(selectedPlayer.minutes)
+                : Number.isFinite(Number(selectedPlayer?.appearances)) ? Number(selectedPlayer.appearances) * 90 : null;
+              const apps = selectedPlayer?.appearances;
+              const per90 = (v) => (v != null && mins) ? (Number(v) / mins * 90).toFixed(2) : null;
+              return (
+                <>
+                  <span className="tr2-label">Scout Report — {selectedPlayer?.full_name || selectedPlayer?.name || 'this player'}</span>
+                  <div className="tr2-scout-grid">
+                    <div><label>Appearances</label><b>{apps ?? '—'}</b></div>
+                    <div><label>Goals</label><b>{selectedPlayer?.goals ?? '—'}</b></div>
+                    <div><label>Assists</label><b>{selectedPlayer?.assists ?? '—'}</b></div>
+                    <div><label>Minutes</label><b>{mins ?? '—'}</b></div>
+                    <div><label>Goals / 90</label><b>{per90(selectedPlayer?.goals) ?? '—'}</b></div>
+                    <div><label>Assists / 90</label><b>{per90(selectedPlayer?.assists) ?? '—'}</b></div>
+                    <div><label>Pass Acc %</label><b>{selectedPlayer?.pass_accuracy ?? '—'}</b></div>
+                    <div><label>Calibre</label><b style={{ color: 'var(--l)' }}>{selectedPlayer?.rating ? Math.round(selectedPlayer.rating) : '—'}</b></div>
+                  </div>
+                  <p className="tr2-note">{dealVerdict.why}</p>
+                </>
               );
             })()}
 
-            {/* VALUE ANALYSIS */}
-            {activeTab === 'Value Analysis' && canBreakdown && (
-              <div style={{ padding: 24 }}>
-                <div style={tabSectionLabel}>Calibre Value Breakdown</div>
-                <p style={{ fontSize: 12.5, color: '#999', lineHeight: 1.6, margin: '0 0 18px', maxWidth: 640 }}>
-                  How Calibre builds {selectedPlayer?.full_name || selectedPlayer?.name || 'this player'}&rsquo;s value from the ground up &mdash; each factor&rsquo;s marginal effect in euros, summing to the Calibre Estimated Value. This is the model&rsquo;s own number, not a market quote.
-                </p>
-
-                {/* Waterfall */}
-                <div style={{ border: '1px solid #1c1c1c', background: '#0a0a0a' }}>
-                  {valuation.breakdown.filter(f => !f.stub).map(f => {
-                    const isBase = f.name === 'Performance Level';
-                    const pos = f.impact > 0, neg = f.impact < 0;
-                    const impactColor = isBase ? '#c8ff00' : neg ? '#ef4444' : pos ? '#c8ff00' : '#666';
-                    const impactTxt = isBase ? `\u20ac${f.impact}M` : pos ? `+\u20ac${f.impact}M` : neg ? `\u2212\u20ac${Math.abs(f.impact)}M` : '\u2014';
-                    return (
-                      <div key={f.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '13px 18px', borderBottom: '1px solid #141414' }}>
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700, color: '#fff' }}>
-                            {isBase ? 'Base \u00b7 ' : ''}{f.name}
-                          </div>
-                          <div style={{ fontSize: 11.5, color: '#888', marginTop: 2 }}>{f.note}</div>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                          {f.score != null && (
-                            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, color: '#777', letterSpacing: '0.04em', minWidth: 46, textAlign: 'right' }}>{f.score}<span style={{ color: '#3a3a3a' }}>/100</span></span>
-                          )}
-                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800, color: impactColor, minWidth: 88, textAlign: 'right' }}>{impactTxt}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {/* Result */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: '16px 18px', background: 'rgba(200,255,0,0.06)', borderTop: '1px solid #c8ff0033' }}>
-                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#c8ff00' }}>Calibre Estimated Value</div>
-                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 30, fontWeight: 800, color: '#c8ff00' }}>&euro;{valuation.estimatedValue}M</div>
-                  </div>
-                </div>
-
-                {/* Confidence + range strip */}
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 24, marginTop: 16, padding: '14px 18px', background: '#0f0f0f', border: '1px solid #1c1c1c' }}>
-                  {[
-                    { k: 'Confidence', v: `${valuation.confidence}/100` },
-                    { k: 'Fair range', v: `\u20ac${valuation.fairRange.low}\u2013${valuation.fairRange.high}M` },
-                    { k: 'Max sensible bid', v: `\u20ac${valuation.maxSensibleBid}M` },
-                    { k: 'Scarcity', v: `${valuation.scarcity}/100` },
-                  ].map(s => (
-                    <div key={s.k}>
-                      <div style={{ fontSize: 10, color: '#8a8a8a', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 3 }}>{s.k}</div>
-                      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 17, fontWeight: 800, color: '#fff' }}>{s.v}</div>
+            {/* FINANCIAL CONTEXT — full Calibre value waterfall */}
+            {activeTab === 'Financial Context' && !canBreakdown && (
+              <TierLock title="Full valuation breakdown" blurb="Fair-value range, max sensible bid, premium analysis and the drivers behind the verdict." tierLabel="Pro" />
+            )}
+            {activeTab === 'Financial Context' && canBreakdown && (
+              <>
+                <span className="tr2-label">Calibre Value Breakdown</span>
+                <p className="tr2-note" style={{ marginBottom: 16 }}>How Calibre builds {selectedPlayer?.full_name || selectedPlayer?.name || 'this player'}'s value from the ground up — each factor's marginal effect in euros, summing to the Calibre Estimated Value.</p>
+                {valuation.breakdown.filter(f => !f.stub).map(f => {
+                  const isBase = f.name === 'Performance Level';
+                  const pos = f.impact > 0, neg = f.impact < 0;
+                  const impactColor = isBase ? 'var(--l)' : neg ? '#ef4444' : pos ? 'var(--l)' : '#6f757e';
+                  const impactTxt = isBase ? `€${f.impact}M` : pos ? `+€${f.impact}M` : neg ? `−€${Math.abs(f.impact)}M` : '—';
+                  return (
+                    <div className="tr2-waterfall-row" key={f.name}>
+                      <div><div className="name">{isBase ? 'Base · ' : ''}{f.name}</div><div className="desc">{f.note}</div></div>
+                      <div className="impact" style={{ color: impactColor }}>{impactTxt}</div>
                     </div>
-                  ))}
+                  );
+                })}
+                <div className="tr2-result-row"><span className="rl">Calibre Estimated Value</span><span className="rv">€{valuation.estimatedValue}M</span></div>
+
+                <div className="tr2-scout-grid" style={{ marginTop: 22 }}>
+                  <div><label>Confidence</label><b>{valuation.confidence}/100</b></div>
+                  <div><label>Fair range</label><b>€{valuation.fairRange.low}–{valuation.fairRange.high}M</b></div>
+                  <div><label>Max sensible bid</label><b>€{valuation.maxSensibleBid}M</b></div>
+                  <div><label>Scarcity</label><b>{valuation.scarcity}/100</b></div>
                 </div>
 
-                {valuation.confidenceDrivers && valuation.confidenceDrivers.length > 0 && (
-                  <div style={{ marginTop: 12, fontSize: 12, color: '#888', lineHeight: 1.6 }}>
-                    <span style={{ color: '#8a8a8a', textTransform: 'uppercase', fontSize: 10, letterSpacing: '0.1em', fontFamily: "'Barlow Condensed', sans-serif" }}>Confidence notes &middot; </span>
-                    {valuation.confidenceDrivers.map(d => Array.isArray(d) ? `${d[0]}: ${d[1]}` : d).join('  \u00b7  ')}
-                  </div>
-                )}
-
-                {/* Not-yet-modelled stubs */}
-                <div style={{ ...tabSectionLabel, marginTop: 24 }}>Not yet in the model &mdash; shown for transparency</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {valuation.breakdown.filter(f => f.stub).map(f => (
-                    <div key={f.name} style={{ border: '1px solid #1c1c1c', background: '#0c0c0c', padding: '8px 12px' }}>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12.5, color: '#aaa', fontWeight: 700 }}>{f.name}</span>
-                      <span style={{ fontSize: 11, color: '#666', marginLeft: 8 }}>{f.note}</span>
-                    </div>
-                  ))}
+                <span className="tr2-label" style={{ marginTop: 22 }}>Not yet in the model — shown for transparency</span>
+                <div className="tr2-stub-row">
+                  {valuation.breakdown.filter(f => f.stub).map(f => <div className="tr2-stub" key={f.name}>{f.name} — {f.note}</div>)}
                 </div>
-                <div style={{ marginTop: 14, fontSize: 11, color: '#666', lineHeight: 1.6, maxWidth: 640 }}>
-                  The five live factors are applied in order and sum to the Calibre Estimated Value. The items above are disclosed but held neutral until they&rsquo;re calibrated &mdash; Calibre shows what it doesn&rsquo;t yet model rather than inventing it.
-                </div>
-              </div>
+              </>
             )}
 
-            {/* SYSTEM FIT */}
-            {activeTab === 'System Fit' && (
-              <div style={{ padding: 24 }}>
-                {!selectedTeam ? (
-                  <div style={{ textAlign: 'center', padding: '40px 20px' }}>
-                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 10 }}>SELECT A BUYING CLUB</div>
-                    <p style={{ fontSize: 13, color: '#666', maxWidth: 420, margin: '0 auto', lineHeight: 1.6 }}>
-                      Type a club name in the search box above and select from the dropdown. Calibre will recalculate System Fit based on the team's real tactical profile — formation, press intensity, line height, and possession style.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 24 }}>
-                      <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: '20px 28px', textAlign: 'center', flexShrink: 0 }}>
-                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 72, fontWeight: 800, color: '#c8ff00', lineHeight: 1 }}>{systemFitScore}</div>
-                        <div style={{ fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>System Fit</div>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 6 }}>
-                          {selectedTeam.name} · {selectedTeam.formation} · {selectedTeam.philosophy}
-                        </div>
-                        <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, margin: '0 0 16px' }}>
-                          {selectedPlayer?.full_name || selectedPlayer?.name} {systemFitScore >= 80 ? `fits ${selectedTeam.short}'s ${selectedTeam.philosophy.toLowerCase()} system strongly` : systemFitScore >= 65 ? `is a workable fit for ${selectedTeam.short} but with adjustments needed` : `is a tactical stretch for ${selectedTeam.short}'s ${selectedTeam.philosophy.toLowerCase()}`}. {selectedTeam.intensity} press intensity and {selectedTeam.lineHeight.toLowerCase()} line height shape the demands on every signing.
-                        </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <MetricBar label="Press match" value={sysFit.pressing} />
-                          <MetricBar label="Transition" value={sysFit.transition} />
-                          <MetricBar label="Control" value={Math.round((sysFit.traits.control + sysFit.teamTraits.control) / 2)} />
-                          <MetricBar label="Width" value={Math.round((sysFit.traits.width + sysFit.teamTraits.width) / 2)} />
-                          <MetricBar label="Tempo" value={Math.round((sysFit.traits.tempo + sysFit.teamTraits.tempo) / 2)} />
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 16, borderLeft: `2px solid ${systemFitScore >= 75 ? '#c8ff00' : systemFitScore >= 60 ? '#f59e0b' : '#ef4444'}` }}>
-                      <div style={{ fontSize: 10, color: systemFitScore >= 75 ? '#c8ff00' : systemFitScore >= 60 ? '#f59e0b' : '#ef4444', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 6 }}>Fit verdict</div>
-                      <p style={{ fontSize: 13, color: '#888', margin: 0, lineHeight: 1.6 }}>
-                        {systemFitScore >= 80
-                          ? `Elite fit at ${systemFitScore}/100. ${selectedPlayer?.name} matches ${selectedTeam.short}'s tactical demands closely. The system works — the rest is about price.`
-                          : systemFitScore >= 65
-                          ? `Workable fit at ${systemFitScore}/100. There are areas where ${selectedPlayer?.name}'s profile diverges from ${selectedTeam.short}'s structure, but a competent coach can manage it.`
-                          : `Stretched fit at ${systemFitScore}/100. ${selectedPlayer?.name} would need significant tactical adjustment to thrive in ${selectedTeam.short}'s system. Worth the price only if there's a structural shift coming.`}
-                      </p>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-
-            {/* placeholder so old tab block is removed below */}
-            {false && (
-              <div style={{ padding: 24 }}>
-                <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', marginBottom: 24 }}>
-                  <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: '20px 28px', textAlign: 'center', flexShrink: 0 }}>
-                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 72, fontWeight: 800, color: '#c8ff00', lineHeight: 1 }}>{systemFitScore}</div>
-                    <div style={{ fontSize: 10, color: '#555', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>System Fit</div>
-                  </div>
-                  <div>
-                    <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 700, marginBottom: 6 }}>{buyerQuery || 'Buying club'} · 4-2-3-1 · High press</div>
-                    <p style={{ fontSize: 13, color: '#888', lineHeight: 1.6, margin: '0 0 16px' }}>
-                      {selectedPlayer?.name || 'This player'} suits {buyerQuery || 'the buying club'}'s direct, high-tempo style well. Press intensity and transition output are elite for a player of this age. The system fit works — the price doesn't.
-                    </p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      <MetricBar label="Press intensity" value={88} />
-                      <MetricBar label="Transition" value={91} />
-                      <MetricBar label="Box threat" value={82} />
-                      <MetricBar label="Aerial duels" value={44} color="#f59e0b" />
-                      <MetricBar label="Link-up play" value={79} />
-                    </div>
-                  </div>
-                </div>
-                <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 16, borderLeft: '2px solid #c8ff00' }}>
-                  <div style={{ fontSize: 10, color: '#c8ff00', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 6 }}>Fit verdict</div>
-                  <p style={{ fontSize: 13, color: '#888', margin: 0, lineHeight: 1.6 }}>
-                    System fit is strong at {systemFitScore}/100. The main concern is aerial duels (44) in a side that relies on second-ball recovery. That's a positional gap, not a player quality issue — it can be managed tactically. Fit works. Price needs renegotiation.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* RISK PROFILE */}
-            {activeTab === 'Risk Profile' && (() => {
-              const col = c => c === 'lime' ? '#c8ff00' : c === 'amber' ? '#f59e0b' : '#ef4444';
+            {/* RISK ANALYSIS */}
+            {activeTab === 'Risk Analysis' && (() => {
+              const col = c => c === 'lime' ? 'var(--l)' : c === 'amber' ? '#e8b13a' : '#ef4444';
               const age = Number(selectedPlayer?.age);
               const mins = Number.isFinite(Number(selectedPlayer?.minutes)) ? Number(selectedPlayer.minutes)
                 : Number.isFinite(Number(selectedPlayer?.appearances)) ? Number(selectedPlayer.appearances) * 90 : null;
@@ -1243,287 +1203,184 @@ export default function Transfers() {
               const fromLeague = selectedPlayer?.league || selectedPlayer?.competition || LEAGUE_ID_TO_NAME[selectedPlayer?.league_id] || null;
               const toLeague = selectedTeam ? (selectedTeam.league || selectedTeam.competition || LEAGUE_ID_TO_NAME[selectedTeam.league_id] || null) : null;
               const crossLeague = (fromLeague && toLeague) ? String(fromLeague).toLowerCase() !== String(toLeague).toLowerCase() : null;
-
               const signals = [
-                { label: 'Confidence', value: `${conf}/100`, cls: conf >= 70 ? 'lime' : conf >= 55 ? 'amber' : 'red' },
-                { label: 'Minutes sample', value: mins == null ? 'Unknown' : `${Math.round(mins)}\u2032`, cls: mins == null ? 'amber' : mins >= 1800 ? 'lime' : mins >= 900 ? 'amber' : 'red' },
-                { label: 'Age profile', value: !Number.isFinite(age) ? 'Unknown' : age <= 21 ? `${age} \u00b7 developing` : age <= 27 ? `${age} \u00b7 peak` : age <= 29 ? `${age} \u00b7 late peak` : `${age} \u00b7 decline risk`, cls: !Number.isFinite(age) ? 'amber' : age <= 21 ? 'amber' : age <= 27 ? 'lime' : age <= 29 ? 'amber' : 'red' },
-                { label: 'Curve direction', value: ageMult >= 1.05 ? 'Appreciating' : ageMult >= 0.85 ? 'Stable' : 'Depreciating', cls: ageMult >= 1.05 ? 'lime' : ageMult >= 0.85 ? 'amber' : 'red' },
-                { label: 'League adaptation', value: !toLeague ? 'Select a club' : crossLeague ? `${fromLeague} \u2192 ${toLeague}` : 'Same league', cls: !toLeague ? 'amber' : crossLeague ? 'amber' : 'lime' },
-                { label: 'System fit', value: fitS == null ? 'Select a club' : fitS < 58 ? `${fitS} \u00b7 system risk` : `${fitS}/100`, cls: fitS == null ? 'amber' : fitS < 58 ? 'red' : fitS < 72 ? 'amber' : 'lime' },
-                { label: 'Fee pressure', value: `${prem >= 0 ? '+' : ''}${prem}% vs Calibre`, cls: prem <= 0 ? 'lime' : prem <= 30 ? 'amber' : 'red' },
-                { label: 'Seller leverage', value: `${scar}/100`, cls: scar >= 65 ? 'red' : scar >= 40 ? 'amber' : 'lime' },
+                { label: 'Age risk', value: Number.isFinite(age) ? `×${ageMult.toFixed(2)}` : '—', cls: ageMult >= 0.95 ? 'lime' : ageMult >= 0.8 ? 'amber' : 'red' },
+                { label: 'Sample size', value: mins != null ? `${mins} min` : '—', cls: (mins ?? 0) >= 1800 ? 'lime' : (mins ?? 0) >= 900 ? 'amber' : 'red' },
+                { label: 'Position scarcity', value: `${scar}/100`, cls: scar >= 65 ? 'red' : scar >= 45 ? 'amber' : 'lime' },
+                { label: 'Fee premium', value: `${prem >= 0 ? '+' : ''}${prem}%`, cls: prem > 30 ? 'red' : prem > 0 ? 'amber' : 'lime' },
+                { label: 'System fit', value: fitS != null ? `${fitS}/100` : 'No club picked', cls: fitS == null ? 'amber' : fitS >= 75 ? 'lime' : fitS >= 60 ? 'amber' : 'red' },
+                { label: 'Cross-league move', value: crossLeague == null ? '—' : crossLeague ? 'Yes' : 'No', cls: crossLeague ? 'amber' : 'lime' },
               ];
-
               const drivers = Array.isArray(valuation.confidenceDrivers) ? valuation.confidenceDrivers : [];
-              const dCls = s => /known|strong|calibrated/i.test(s) ? 'lime' : /medium/i.test(s) ? 'amber' : 'red';
-
+              const dCls = st => /known|strong|calibrated/i.test(st) ? 'lime' : /medium/i.test(st) ? 'amber' : 'red';
               return (
-              <div style={{ padding: 24 }}>
-                <p style={{ fontSize: 12.5, color: '#999', lineHeight: 1.6, margin: '0 0 18px', maxWidth: 660 }}>
-                  Every signal below is computed from Calibre&rsquo;s own inputs &mdash; rating, minutes, age curve, league and system fit. Calibre does not invent injury, contract or agent data it cannot see; those are listed separately as not modelled.
-                </p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
-                  <div>
-                    <div style={tabSectionLabel}>Risk &amp; Uncertainty Signals</div>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      {signals.map(r => (
-                        <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid #1c1c1c' }}>
-                          <span style={{ fontSize: 12.5, color: '#999' }}>{r.label}</span>
-                          <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 800, color: col(r.cls) }}>{r.value}</span>
-                        </div>
-                      ))}
+                <>
+                  <p className="tr2-note" style={{ marginBottom: 16 }}>Every signal below is computed from Calibre's own inputs — rating, minutes, age curve, league and system fit. Calibre does not invent injury, contract or agent data it cannot see; those are listed separately as not modelled.</p>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 28 }}>
+                    <div>
+                      <span className="tr2-label">Risk & Uncertainty Signals</span>
+                      {signals.map(r => <div className="tr2-signal" key={r.label}><span>{r.label}</span><b style={{ color: col(r.cls) }}>{r.value}</b></div>)}
                     </div>
-                  </div>
-                  <div>
-                    <div style={tabSectionLabel}>Why confidence is {conf}/100</div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: 18 }}>
-                      {drivers.length === 0 ? (
-                        <span style={{ fontSize: 12, color: '#888' }}>All key inputs present.</span>
-                      ) : drivers.map((d, i) => {
-                        const label = Array.isArray(d) ? d[0] : d;
-                        const status = Array.isArray(d) ? d[1] : '';
-                        return (
-                          <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: 12, color: '#999' }}>{label}</span>
-                            <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, color: col(dCls(String(status))) }}>{status}</span>
-                          </div>
-                        );
+                    <div>
+                      <span className="tr2-label">Why confidence is {conf}/100</span>
+                      {drivers.length === 0 ? <p className="tr2-note">All key inputs present.</p> : drivers.map((d, i) => {
+                        const label = Array.isArray(d) ? d[0] : d; const status = Array.isArray(d) ? d[1] : '';
+                        return <div className="tr2-signal" key={i}><span>{label}</span><b style={{ color: col(dCls(String(status))) }}>{status}</b></div>;
                       })}
-                    </div>
-                    <div style={tabSectionLabel}>Age Curve &mdash; Peak Projection</div>
-                    <AgeCurveChart currentAge={Number.isFinite(age) ? age : 24} />
-                    <div style={{ fontSize: 11.5, color: '#888', marginTop: 12, lineHeight: 1.6 }}>
-                      {Number.isFinite(age)
-                        ? `At ${age}, Calibre applies an age multiplier of \u00d7${ageMult.toFixed(2)} to the valuation. Peak window is 22\u201327.`
-                        : 'Age unknown \u2014 the curve shows the model\u2019s generic peak projection (22\u201327).'}
+                      <span className="tr2-label" style={{ marginTop: 18 }}>Age Curve — Peak Projection</span>
+                      <AgeCurveChart currentAge={Number.isFinite(age) ? age : 24} />
+                      <p className="tr2-note" style={{ marginTop: 10 }}>{Number.isFinite(age) ? `At ${age}, Calibre applies an age multiplier of ×${ageMult.toFixed(2)}. Peak window is 22–27.` : 'Age unknown — generic peak projection shown (22–27).'}</p>
                     </div>
                   </div>
-                </div>
-                <div style={{ ...tabSectionLabel, marginTop: 24 }}>Not modelled &mdash; Calibre has no data for these</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {['Injury history', 'Contract term', 'Agent leverage', 'Disciplinary record'].map(x => (
-                    <div key={x} style={{ border: '1px solid #1c1c1c', background: '#0c0c0c', padding: '8px 12px' }}>
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12.5, color: '#aaa', fontWeight: 700 }}>{x}</span>
-                      <span style={{ fontSize: 11, color: '#666', marginLeft: 8 }}>not modelled</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                  <span className="tr2-label" style={{ marginTop: 22 }}>Not modelled — Calibre has no data for these</span>
+                  <div className="tr2-stub-row">{['Injury history', 'Contract term', 'Agent leverage', 'Disciplinary record'].map(x => <div className="tr2-stub" key={x}>{x} — not modelled</div>)}</div>
+                </>
               );
             })()}
 
-            {/* COMPARABLES */}
-            {activeTab === 'Comparables' && canComparables && (
-              <div style={{ padding: 24 }}>
-                <div style={tabSectionLabel}>Similar players — same position group, comparable rating</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 1, background: '#1c1c1c' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
-                    {['Player', 'Calibre Value', 'Profile', 'Rating'].map(h => (
-                      <div key={h} style={{ background: '#0a0a0a', padding: '8px 14px', fontSize: 9, letterSpacing: '0.12em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{h}</div>
+            {/* MARKET CONTEXT */}
+            {activeTab === 'Market Context' && !canComparables && (
+              <TierLock title="Comparable players" blurb="Like-rated players in the same position, valued live by the engine — the market context for this deal." tierLabel="Scout" />
+            )}
+            {activeTab === 'Market Context' && canComparables && (
+              <>
+                <span className="tr2-label">Similar players — same position group, comparable rating</span>
+                <table className="tr2-table">
+                  <thead><tr><th>Player</th><th>Calibre Value</th><th>Profile</th><th>Rating</th></tr></thead>
+                  <tbody>
+                    {comparables.map(c => (
+                      <tr key={c.name}>
+                        <td style={{ display: 'flex', alignItems: 'center', gap: 9 }}><ApiPlayerImage preferredSrc={c.image} apiPlayerId={c.resolvedApiId} name={c.name} allowLookup={c.resolved === true} fallbackSrc="/assets/players/neutral-player.svg" style={{ width: 28, height: 28, borderRadius: '50%' }} />{c.name}</td>
+                        <td className="rate">{c.fee != null ? `€${c.fee}M` : c.estimate != null ? `€${Math.round(c.estimate)}M` : '—'}</td>
+                        <td><span className="tr2-chip">{c.tag}</span></td>
+                        <td className="rate" style={{ color: c.rating != null ? (c.rating >= 80 ? 'var(--l)' : c.rating >= 72 ? '#e8b13a' : '#8d929b') : '#5b6168' }}>{c.rating != null ? c.rating : '—'}</td>
+                      </tr>
                     ))}
-                  </div>
-                  {comparables.map(c => (
-                    <div key={c.name} style={{ display: 'grid', gridTemplateColumns: '1.5fr 0.8fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
-                      <div style={{ background: '#0f0f0f', padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <ApiPlayerImage preferredSrc={c.image} apiPlayerId={c.resolvedApiId} name={c.name} allowLookup={c.resolved === true} fallbackSrc="/assets/players/neutral-player.svg" style={{ width: 28, height: 28, borderRadius: '50%' }} />
-                        <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 15, fontWeight: 700 }}>{c.name}</span>
-                      </div>
-                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800, color: '#c8ff00' }}>{c.fee != null ? `€${c.fee}M` : c.estimate != null ? `€${Math.round(c.estimate)}M` : '—'}</div>
-                      <div style={{ background: '#0f0f0f', padding: '12px 14px' }}>
-                        <span style={{ border: '1px solid #2a2a2a', padding: '3px 8px', fontSize: 10, color: '#666', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{c.tag}</span>
-                      </div>
-                      <div style={{ background: '#0f0f0f', padding: '12px 14px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800, color: c.rating != null ? (c.rating >= 80 ? '#c8ff00' : c.rating >= 72 ? '#f59e0b' : '#888') : '#555' }}>{c.rating != null ? c.rating : '—'}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ marginTop: 16, fontSize: 11, color: '#555' }}>
-                  Comparables are drawn from the player database — same position group, comparable Calibre rating — and each is valued live by Calibre's engine, so the set changes with the player you analyse.
-                </div>
-              </div>
+                  </tbody>
+                </table>
+                <p className="tr2-note" style={{ marginTop: 14 }}>Comparables are drawn from the player database — same position group, comparable Calibre rating — and each is valued live by Calibre's engine, so the set changes with the player you analyse.</p>
+              </>
             )}
           </div>
 
           {/* ── EDITORIAL SPOTLIGHT ── */}
           {spotlight && (
-            <div style={{ marginBottom: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', borderLeft: '3px solid #c8ff00', padding: 0, overflow: 'hidden' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderBottom: '1px solid #1c1c1c', background: '#0a0a0a' }}>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 9, letterSpacing: '0.2em', color: '#c8ff00', textTransform: 'uppercase' }}>Editorial Pick</span>
-                <span style={{ fontSize: 9, color: '#444', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>· Rotates every 3 days · Connected to player DB</span>
+            <div className="tr2-card" style={{ padding: 0, marginBottom: 16, overflow: 'hidden', borderLeft: '3px solid var(--l)' }}>
+              <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--line)', display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ color: 'var(--l)', fontSize: 9, letterSpacing: '.18em', textTransform: 'uppercase', fontWeight: 800 }}>Editorial Pick</span>
+                <span style={{ color: '#5b6168', fontSize: 9, letterSpacing: '.08em', textTransform: 'uppercase' }}>· Rotates every 3 days</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto', gap: 0, alignItems: 'stretch' }}>
-                {/* Portrait */}
-                <div style={{ background: '#1a1a1a', overflow: 'hidden', minHeight: 120 }}>
-                  <ApiPlayerImage
-                    playerId={spotlight.apiPlayerId}
-                    name={spotlight.name}
-                    fallbackSrc="/assets/players/neutral-player.svg"
-                    style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top center', display: 'block' }}
-                  />
-                </div>
-                {/* Content */}
+              <div style={{ display: 'grid', gridTemplateColumns: '80px 1fr auto' }}>
+                <div style={{ minHeight: 110 }}><ApiPlayerImage playerId={spotlight.apiPlayerId} name={spotlight.name} fallbackSrc="/assets/players/neutral-player.svg" style={{ width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'top' }} /></div>
                 <div style={{ padding: '14px 18px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800, textTransform: 'uppercase' }}>{spotlight.name}</span>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.1em', color: '#555', textTransform: 'uppercase' }}>{spotlight.pos} · {spotlight.club} → {spotlight.to}</span>
-                    {spotlight.rating && (
-                      <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, color: '#c8ff00', marginLeft: 'auto' }}>CR {spotlight.rating}</span>
-                    )}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ font: '800 18px "Barlow Condensed",sans-serif', textTransform: 'uppercase' }}>{spotlight.name}</span>
+                    <span style={{ color: '#6f757e', fontSize: 10, letterSpacing: '.06em', textTransform: 'uppercase' }}>{spotlight.pos} · {spotlight.club} → {spotlight.to}</span>
+                    {spotlight.rating && <span style={{ marginLeft: 'auto', color: 'var(--l)', font: '800 15px "Barlow Condensed",sans-serif' }}>CR {spotlight.rating}</span>}
                   </div>
-                  <p style={{ fontSize: 12, color: '#888', lineHeight: 1.6, margin: '0 0 10px' }}>{spotlight.context}</p>
-                  {spotlight.goals != null && (
-                    <div style={{ display: 'flex', gap: 16 }}>
-                      {[
-                        { label: 'Apps', value: spotlight.appearances },
-                        { label: 'Goals', value: spotlight.goals },
-                        { label: 'Assists', value: spotlight.assists },
-                      ].map(s => (
-                        <div key={s.label}>
-                          <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, color: '#fff' }}>{s.value ?? '—'}</div>
-                          <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  <p className="tr2-note">{spotlight.context}</p>
                 </div>
-                {/* Load into engine CTA */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '14px 16px', borderLeft: '1px solid #1c1c1c', gap: 8, background: '#0a0a0a' }}>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800 }}>€{spotlight.fee}M</div>
-                  <div style={{ fontSize: 9, color: '#555', letterSpacing: '0.1em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Quoted fee</div>
-                  <button
-                    onClick={() => {
-                      setSelectedPlayer({ ...spotlight, full_name: spotlight.name, rating: spotlight.rating || 78 });
-                      setPlayerQuery(spotlight.name);
-                      setAskingPrice(spotlight.fee || 80);
-                      setMarketValue(spotlight.marketValue || 40);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    style={{ background: '#c8ff00', border: 'none', color: '#0a0a0a', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 12px', cursor: 'pointer', whiteSpace: 'nowrap' }}
-                  >
-                    Run Analysis →
-                  </button>
+                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 6, padding: '14px 16px', borderLeft: '1px solid var(--line)' }}>
+                  <div style={{ font: '800 18px "Barlow Condensed",sans-serif' }}>€{spotlight.fee}M</div>
+                  <button className="tr2-cta" style={{ padding: '7px 11px', fontSize: 10 }} onClick={() => { setSelectedPlayer({ ...spotlight, full_name: spotlight.name, rating: spotlight.rating || 78 }); setPlayerQuery(spotlight.name); setAskingPrice(spotlight.fee || 80); setMarketValue(spotlight.marketValue || 40); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>Run analysis →</button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* ── MORE DEALS — single row, paged like World Cup Facts ── */}
-          {recentTransfers.length > 4 && (() => {
-            const more = recentTransfers.slice(4);
-            const PER = 4;
-            const pageCount = Math.max(1, Math.ceil(more.length / PER));
-            const safePage = Math.min(moreDealsPage, pageCount - 1);
-            const paged = more.slice(safePage * PER, safePage * PER + PER);
-            return (
-              <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16 }}>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>More Deals</div>
-                  <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, alignItems: 'start' }}>
-                  {paged.map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
-                </div>
-                {pageCount > 1 && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 14 }}>
-                    <button type="button" disabled={safePage === 0} onClick={() => setMoreDealsPage(p => Math.max(0, p - 1))}
-                      style={{ background: 'none', border: '1px solid #2a2a2a', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 14px', color: safePage === 0 ? '#444' : '#888', cursor: safePage === 0 ? 'not-allowed' : 'pointer' }}>← Prev</button>
-                    <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.12em', color: '#666', textTransform: 'uppercase', minWidth: '11ch', textAlign: 'center' }}>Page {safePage + 1} of {pageCount}</span>
-                    <button type="button" disabled={safePage >= pageCount - 1} onClick={() => setMoreDealsPage(p => Math.min(pageCount - 1, p + 1))}
-                      style={{ background: 'none', border: '1px solid #2a2a2a', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px 14px', color: safePage >= pageCount - 1 ? '#444' : '#888', cursor: safePage >= pageCount - 1 ? 'not-allowed' : 'pointer' }}>Next →</button>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
+          <p className="tr2-note">Calibre Estimated Value, fair ranges and system fit scores are computed independently from Calibre's rating engine and TheStatsAPI event data — they are not market quotes. Not financial or sporting advice.</p>
+        </main>
 
-          {/* ── HOW CALIBRE VERDICTS WORK ── */}
-          <div style={{ marginTop: 16, background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20 }}>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.18em', color: '#555', textTransform: 'uppercase', marginBottom: 16 }}>How the verdict engine works</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 1, background: '#1c1c1c' }}>
-              {[
-                { step: '01', title: 'Calibre Estimated Value', desc: 'Derived from the rating, position scarcity, league strength and age curve — an independent valuation, not a market quote.' },
-                { step: '02', title: 'Fair range & max bid', desc: 'A defensible band around the estimate, plus the walk-away ceiling — widened by scarcity, narrowed by confidence.' },
-                { step: '03', title: 'The asking price', desc: 'What the selling club is quoting. Enter any number and the verdict recalculates instantly.' },
-                { step: '04', title: 'The verdict', desc: 'VALUE BUY / FAIR DEAL / NEGOTIATE HARD / WALK AWAY — adjusted for how the player fits the buying club.' },
-              ].map(s => (
-                <div key={s.step} style={{ background: '#0a0a0a', padding: '14px 16px' }}>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.15em', color: '#c8ff00', marginBottom: 6 }}>{s.step}</div>
-                  <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, fontWeight: 700, textTransform: 'uppercase', marginBottom: 6 }}>{s.title}</div>
-                  <div style={{ fontSize: 11, color: '#666', lineHeight: 1.6 }}>{s.desc}</div>
-                </div>
-              ))}
+        {/* ── RIGHT RAIL ── */}
+        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 16 }}>
+          <div className="tr2-card" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
+              <div className="tr2-rail-title">Recent<br />Transfers</div>
+              <span className="tr2-rail-sub">Summer 2026</span>
             </div>
-          </div>
-
-          {/* ── DISCLAIMER ── */}
-          <div style={{ marginTop: 12, fontSize: 10, color: '#333', lineHeight: 1.6 }}>
-            Calibre Estimated Value, fair ranges and system fit scores are computed independently from Calibre’s rating engine and TheStatsAPI event data — they are not market quotes. Not financial or sporting advice.
-          </div>
-        </div>
-
-        {/* ── RIGHT ASIDE — Market Pulse + System Fit link ── */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 16, position: 'sticky', top: 0, paddingTop: 16 }}>
-          {/* Recent transfers — top 4 above Market Pulse */}
-          <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>Recent<br />Transfers</div>
-              <span style={{ fontSize: 9, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>Summer 2026</span>
-            </div>
-            {recentTransfers.slice(0, 4).map(t => <RecentTransferCard key={t.id} transfer={t} onAnalyse={handleAnalyseRecent} />)}
-          </div>
-
-          {/* Market pulse — promoted up the sidebar */}
-          <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 18 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, paddingBottom: 14, borderBottom: '1px solid #1c1c1c' }}>
-              <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22, fontWeight: 800, textTransform: 'uppercase', lineHeight: 1 }}>Market<br />Pulse</div>
-              <span style={{ fontSize: 9, letterSpacing: '0.15em', color: transfersLoading ? '#444' : '#c8ff00', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>{transfersLoading ? 'Loading…' : 'Live'}</span>
-            </div>
-            {marketPulse.map(p => (
-              <div key={p.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '9px 0', borderBottom: '1px solid #1c1c1c' }}>
-                <span style={{ fontSize: 11, color: '#666' }}>{p.label}</span>
-                <span style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 13, fontWeight: 800, color: p.highlight ? '#c8ff00' : '#fff' }}>{p.value}</span>
+            {recentTransfersResolved.slice(0, 4).map(t => (
+              <div className="tr2-rail-row" key={t.id} onClick={() => handleAnalyseRecent(t)}>
+                <div className="tr2-rail-photo"><ApiPlayerImage preferredSrc={t.image} apiPlayerId={t.resolvedApiId || t.apiPlayerId} name={t.name} allowLookup={t.resolved === true} fallbackSrc="/assets/players/neutral-player.svg" /></div>
+                <div className="tr2-rail-id">
+                  <strong>{t.name}</strong>
+                  <span>{t.pos ? `${t.pos} · ` : ''}{t.from} → {t.to}</span>
+                </div>
+                <div className="tr2-rail-side">
+                  <b>{t.fee ? `€${t.fee}M` : 'TBD'}</b>
+                  <button type="button" onClick={e => { e.stopPropagation(); handleAnalyseRecent(t); }}>Analyse</button>
+                </div>
               </div>
             ))}
           </div>
 
+          <div className="tr2-card" style={{ padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--line)' }}>
+              <div className="tr2-rail-title">Comparable<br />Deals</div>
+              <span className="tr2-rail-sub" style={{ color: 'var(--l)' }}>{transfersLoading ? 'Loading…' : 'Live'}</span>
+            </div>
+            {comparables.slice(0, 5).map(c => (
+              <div className="tr2-rail-row" style={{ cursor: 'default', alignItems: 'flex-start' }} key={c.name}>
+                <div className="tr2-rail-photo"><ApiPlayerImage preferredSrc={c.image} apiPlayerId={c.resolvedApiId} name={c.name} allowLookup={c.resolved === true} fallbackSrc="/assets/players/neutral-player.svg" /></div>
+                <div className="tr2-rail-id">
+                  <strong>{c.name}</strong>
+                  <span className="tr2-rail-tag">{c.tag}</span>
+                  {c.from && c.to && <span className="tr2-rail-route">{c.from} <b className="arrow">→</b> {c.to}</span>}
+                </div>
+                <div className="tr2-rail-side">
+                  <b>{c.fee != null ? `€${c.fee}M` : c.estimate != null ? `€${Math.round(c.estimate)}M` : '—'}</b>
+                </div>
+              </div>
+            ))}
+          </div>
 
-          {/* Navigate to System Fit */}
-          <button
-            onClick={() => navigateTo('/system-fit')}
-            style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 16, cursor: 'pointer', textAlign: 'left', transition: 'border-color 0.15s' }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = '#c8ff00'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#1c1c1c'}
-          >
-            <div style={{ fontSize: 9, letterSpacing: '0.15em', color: '#c8ff00', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 6 }}>Also try</div>
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, textTransform: 'uppercase', marginBottom: 4 }}>System Fit →</div>
-            <div style={{ fontSize: 11, color: '#666' }}>Run the full tactical fit for any player × team combination</div>
+          <button className="tr2-card" style={{ padding: 16, cursor: 'pointer', textAlign: 'left', border: 'none', color: '#fff' }} onClick={() => navigateTo('/system-fit')}>
+            <div style={{ color: 'var(--l)', fontSize: 9, letterSpacing: '.15em', textTransform: 'uppercase', marginBottom: 6 }}>Also try</div>
+            <div style={{ font: '800 15px "Barlow Condensed",sans-serif', textTransform: 'uppercase', marginBottom: 4 }}>System Fit →</div>
+            <div style={{ color: '#8d929b', fontSize: 11 }}>Run the full tactical fit for any player × team combination</div>
           </button>
         </aside>
       </div>
 
+      {/* ── FOOTER STRIP ── */}
+      <div className="tr2-footer">
+        <div className="tr2-footer-grid">
+          <div className="tr2-footer-item"><b>Independent Valuation</b><span>Data-driven, not opinion.</span></div>
+          <div className="tr2-footer-item"><b>System Fit Engine</b><span>Why he works, or doesn't.</span></div>
+          <div className="tr2-footer-item"><b>Risk-First Approach</b><span>Protect your club.</span></div>
+          <div className="tr2-footer-item"><b>Market Context</b><span>Make smarter moves.</span></div>
+          <div className="tr2-footer-cta">
+            <button onClick={() => navigateTo('/pricing')}>Unlock Pro Insights</button>
+          </div>
+        </div>
+      </div>
+      <div className="tr2-disclaimer">Deeper reports. Better decisions.</div>
+
       {showDossier && (
-        <Dossier
-          player={selectedPlayer}
-          team={selectedTeam}
-          valuation={valuation}
-          fit={fit}
-          dealVerdict={dealVerdict}
-          verdict={verdict}
-          sysFit={sysFit}
-          comparables={comparables}
-          askingPrice={askingPrice}
-          marketValue={valuation.estimatedValue}
-          recipient={user?.email}
-          onClose={() => setShowDossier(false)}
-        />
+        <Dossier player={selectedPlayer} team={selectedTeam} valuation={valuation} fit={fit} dealVerdict={dealVerdict} verdict={verdict} sysFit={sysFit} comparables={comparables} askingPrice={askingPrice} marketValue={valuation.estimatedValue} recipient={user?.email} onClose={() => setShowDossier(false)} />
       )}
       {showCommission && (
-        <CommissionForm
-          player={selectedPlayer}
-          club={selectedTeam}
-          onClose={() => setShowCommission(false)}
-        />
+        <CommissionForm player={selectedPlayer} club={selectedTeam} onClose={() => setShowCommission(false)} />
       )}
+    </div>
+  );
+}
+
+const FORMATION_DOTS = {'4-3-3': [[50, 88], [20, 68], [38, 70], [62, 70], [80, 68], [28, 46], [50, 44], [72, 46], [22, 18], [50, 14], [78, 18]], '4-2-3-1': [[50, 88], [20, 68], [38, 70], [62, 70], [80, 68], [36, 50], [64, 50], [22, 26], [50, 22], [78, 26], [50, 10]], '3-4-2-1': [[50, 88], [30, 70], [50, 72], [70, 70], [16, 50], [38, 48], [62, 48], [84, 50], [38, 20], [62, 20], [50, 10]], '4-4-2': [[50, 88], [20, 68], [38, 70], [62, 70], [80, 68], [18, 44], [38, 42], [62, 42], [82, 44], [40, 16], [60, 16]], '3-5-2': [[50, 88], [30, 70], [50, 72], [70, 70], [14, 48], [34, 44], [50, 42], [66, 44], [86, 48], [40, 16], [60, 16]]};
+
+function MiniPitch({ formation, score }) {
+  const dots = FORMATION_DOTS[formation] || FORMATION_DOTS['4-3-3'];
+  const tone = score >= 75 ? '#a6ff00' : score >= 60 ? '#e8b13a' : '#ef4444';
+  return (
+    <div className="tr2-pitch">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none">
+        <rect x="4" y="4" width="92" height="92" rx="3" fill="none" stroke="rgba(255,255,255,.14)" strokeWidth="1" />
+        <line x1="4" y1="50" x2="96" y2="50" stroke="rgba(255,255,255,.10)" strokeWidth="1" />
+        {dots.map((d, i) => <circle key={i} cx={d[0]} cy={d[1]} r="4" fill={tone} />)}
+      </svg>
+      <div className="tr2-pitch-foot">
+        <span>{formation}</span>
+        <b style={{ color: tone }}>{score}</b>
+      </div>
     </div>
   );
 }
@@ -1564,56 +1421,6 @@ function AgeCurveChart({ currentAge }) {
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────────────────
-const pageStyle = {
-  background: '#0a0a0a',
-  color: '#ffffff',
-  fontFamily: "'Barlow', sans-serif",
-  paddingBottom: 32,
-};
-
-const heroWrap = {
-  background: '#0f0f0f',
-  borderBottom: '1px solid #1c1c1c',
-  padding: '28px 24px 24px',
-};
-
-const heroInner = {
-  maxWidth: 1340,
-  margin: '0 auto',
-  display: 'grid',
-  gridTemplateColumns: '1fr 420px',
-  gap: 32,
-  alignItems: 'start',
-};
-
-const eyebrowStyle = {
-  fontFamily: "'Barlow Condensed', sans-serif",
-  fontSize: 10,
-  letterSpacing: '0.2em',
-  color: '#c8ff00',
-  textTransform: 'uppercase',
-  marginBottom: 12,
-  display: 'block',
-};
-
-const headlineStyle = {
-  fontFamily: "'Barlow Condensed', sans-serif",
-  fontSize: 'clamp(52px, 6vw, 80px)',
-  fontWeight: 800,
-  lineHeight: 0.9,
-  textTransform: 'uppercase',
-  letterSpacing: '-0.01em',
-  margin: '0 0 16px',
-};
-
-const heroSubStyle = {
-  fontSize: 14,
-  color: '#888',
-  lineHeight: 1.6,
-  margin: '0 0 20px',
-  maxWidth: 500,
-};
 
 const inputStyle = {
   background: '#111',
@@ -1624,39 +1431,4 @@ const inputStyle = {
   padding: '11px 14px',
   outline: 'none',
   WebkitAppearance: 'none',
-};
-
-const ctaBtn = {
-  background: '#c8ff00',
-  border: 'none',
-  color: '#0a0a0a',
-  fontFamily: "'Barlow Condensed', sans-serif",
-  fontWeight: 800,
-  fontSize: 13,
-  letterSpacing: '0.08em',
-  padding: '11px 20px',
-  cursor: 'pointer',
-  textTransform: 'uppercase',
-  whiteSpace: 'nowrap',
-  flexShrink: 0,
-};
-
-const layoutStyle = {
-  maxWidth: 1200,
-  margin: '24px auto 0',
-  padding: '0 32px',
-  display: 'grid',
-  gridTemplateColumns: '1fr 320px',
-  gap: 20,
-  alignItems: 'start',
-};
-
-const tabSectionLabel = {
-  fontFamily: "'Barlow Condensed', sans-serif",
-  fontSize: 11,
-  letterSpacing: '0.18em',
-  color: '#8a8a8a',
-  textTransform: 'uppercase',
-  marginBottom: 14,
-  display: 'block',
 };

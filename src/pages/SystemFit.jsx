@@ -5,11 +5,11 @@ import {
   Download, FileText, GitCompare, Layers3, Search, Share2, ShieldCheck, Sparkles, Star, Target, Users, X,
 } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
-import { searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
+import { getPlayerProfile, searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
-import { searchSupabasePlayers } from '../services/supabasePlayers.js';
-import { loadDerivedTeams, enrichFromDerived } from '../services/derivedTeams.js';
+import { getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { loadDerivedTeams, enrichFromDerived, allDerivedTeams, searchDerivedTeams } from '../services/derivedTeams.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
 import { playerIdFor } from '../data/playerIds.js';
@@ -18,6 +18,7 @@ import { playerTraits, deriveArchetype } from '../services/playerTraits.js';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams, TRANSFER_STORYLINES, pickTransferStoryline, buildTransferSpotlight,
+  registerTeamUniverse,
 } from '../data/systemFitData.js';
 import {
   exportComparisonCsv, exportComparisonPdf, exportFitCsv, exportFitPdf,
@@ -109,7 +110,15 @@ function useDatabaseSearch(kind, query) {
       try {
         let rows;
         if (kind === 'team') {
-          rows = (await searchApiTeams(query) || []).map(item => ({ ...item, source: 'api' }));
+          // Measured profiles first: every club in derived_team_profiles is
+          // reachable here (not just the hand-authored 54). API-Football is a
+          // fallback only for clubs we haven't enriched yet.
+          const derivedRows = (await searchDerivedTeams(query, 8) || []).map(item => ({ ...item, source: 'derived' }));
+          if (derivedRows.length) {
+            rows = derivedRows;
+          } else {
+            rows = (await searchApiTeams(query) || []).map(item => ({ ...item, source: 'api' }));
+          }
         } else {
           const dbRows = await searchSupabasePlayers(query, { limit: 8 });
           if (dbRows && dbRows.length) {
@@ -860,52 +869,86 @@ function LeftNav({ mode, setMode, canFitFull, canCompare }) {
 }
 
 function PlayerProfileModal({ player, report, onClose }) {
+  const [data, setData] = useState(player);
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const onKey = e => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
+
+  // Curated SYSTEM_PLAYERS carry only name/age/rating/traits — no bio, no event
+  // stats — and their ids are placeholders. Resolve the REAL API-Football id by
+  // name, then pull the enriched DB row (base API-Football + StatsAPI layers) and
+  // the API bio (height/weight the DB doesn't store). A player selected from a DB
+  // search already carries stats, so we skip the fetch for those.
+  useEffect(() => {
+    let alive = true;
+    setData(player);
+    const alreadyRich = player.goals != null || player.shots != null || player.pass_accuracy != null;
+    const realId = player.apiPlayerId ?? playerIdFor(player.name) ?? (Number(player.id) > 0 ? Number(player.id) : null);
+    if (alreadyRich || !realId) return;
+    setLoading(true);
+    (async () => {
+      let db = null, profile = null;
+      try { const rows = await getSupabasePlayersByApiIds([realId]); db = rows?.[0] || null; } catch { /* supabase off */ }
+      try { profile = await getPlayerProfile(realId); } catch { /* api off */ }
+      if (!alive) return;
+      const merged = {
+        ...(db || {}),
+        height: profile?.height || db?.height || player.height,
+        weight: profile?.weight || db?.weight || player.weight,
+        country: db?.nationality || profile?.nationality || player.country || player.nationality,
+        ...player, // curated display fields (name, rating, archetype, team, image) win; stat keys only exist on db
+      };
+      setData(merged);
+      setLoading(false);
+    })();
+    return () => { alive = false; };
+  }, [player]);
+
+  const p = data;
   const dash = v => (v == null || v === '' || v === '—') ? '—' : v;
-  const pick = (...keys) => { for (const k of keys) { const v = player[k]; if (typeof v === 'number' || (typeof v === 'string' && v !== '' && v !== '—')) return v; } return '—'; };
+  const pick = (...keys) => { for (const k of keys) { const v = p[k]; if (typeof v === 'number' || (typeof v === 'string' && v !== '' && v !== '—')) return v; } return '—'; };
   const bio = [
-    ['COUNTRY', dash(player.country || player.nationality || player.nation)],
-    ['AGE', dash(player.age)],
-    ['HEIGHT', dash(player.height)],
-    ['WEIGHT', dash(player.weight)],
-    ['FOOT', dash(player.foot)],
-    ['CLUB', dash(player.team)],
+    ['COUNTRY', dash(p.country || p.nationality || p.nation)],
+    ['AGE', dash(p.age)],
+    ['HEIGHT', dash(p.height)],
+    ['WEIGHT', dash(p.weight)],
+    ['FOOT', dash(p.foot)],
+    ['CLUB', dash(p.team || p.club)],
   ];
   const stats = [
     ['GOALS', pick('goals', '_goals')],
     ['ASSISTS', pick('assists', '_assists')],
-    ['xG / 90', pick('xg_per90', 'xgPer90', 'xg')],
+    ['xG / 90', pick('xg_per_90', 'xg_per90', 'xgPer90', 'xg')],
     ['KEY PASSES', pick('key_passes', 'keyPasses')],
-    ['SHOTS', pick('shots', 'shots_total')],
-    ['DRIBBLES', pick('dribbles', 'dribbles_success', 'dribbles_completed')],
+    ['SHOTS', pick('shots', 'total_shots', 'shots_total')],
+    ['DRIBBLES', pick('dribbles_success', 'successful_dribbles', 'dribbles', 'dribbles_completed')],
     ['DUELS WON', pick('duels_won', 'duel_win_pct', 'duelsWon')],
     ['TACKLES', pick('tackles')],
     ['INTERCEPTIONS', pick('interceptions')],
     ['PASS ACC %', pick('pass_accuracy', 'passAccuracy')],
     ['MINUTES', pick('minutes', 'stats_minutes')],
-    ['CALIBRE', dash(player.rating)],
+    ['CALIBRE', dash(p.rating)],
   ];
-  const chips = sf2Tokens(player.position).slice(0, 3);
+  const chips = sf2Tokens(p.position).slice(0, 3);
   return createPortal(
     <div className="sf2-modal" role="presentation" onMouseDown={onClose}>
       <section className="sf2-modal-card" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
         <button className="sf2-modal-close" type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
         <div className="sf2-modal-head">
-          <div className="sf2-modal-photo"><ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name) ?? player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} /></div>
+          <div className="sf2-modal-photo"><ApiPlayerImage playerId={p.apiPlayerId ?? playerIdFor(p.name) ?? p.id} name={p.name} fallbackSrc={p.image || '/assets/players/neutral-player.svg'} alt={p.name} /></div>
           <div className="sf2-modal-id">
             <div className="sf-kicker">PLAYER PROFILE</div>
-            <h3>{player.name}</h3>
-            <div className="sf2-modal-tags">{chips.map(c => <span key={c}>{c}</span>)}{player.archetype && <em>{player.archetype}</em>}</div>
+            <h3>{p.name}</h3>
+            <div className="sf2-modal-tags">{chips.map(c => <span key={c}>{c}</span>)}{p.archetype && <em>{p.archetype}</em>}</div>
           </div>
-          <div className="sf2-modal-rating"><strong>{player.rating ?? '—'}</strong><span>CALIBRE</span></div>
+          <div className="sf2-modal-rating"><strong>{p.rating ?? '—'}</strong><span>CALIBRE</span></div>
         </div>
         <div className="sf2-modal-sec"><small>BIO</small><div className="sf2-modal-grid">{bio.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
         <div className="sf2-modal-sec"><small>PERFORMANCE</small><div className="sf2-modal-grid sf2-modal-grid--stats">{stats.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
-        <p className="sf2-modal-note">Stats populate from the connected player dataset — blanks fill in as data syncs.</p>
+        <p className="sf2-modal-note">{loading ? 'Loading live stats from the connected player dataset\u2026' : 'Stats populate from the connected player dataset \u2014 blanks fill in as data syncs.'}</p>
       </section>
     </div>,
     document.body
@@ -917,7 +960,7 @@ function AttributeCard({ player, report }) {
   const rating = player.rating ?? '—';
   const chips = sf2Tokens(player.position).slice(0, 3);
   const grid = [
-    ['ARCHETYPE', player.archetype],
+    ['NATIONALITY', player.nationality || player.country || null],
     ['AGE', player.age && player.age !== '—' ? player.age : null],
     ['CLUB', player.team],
     ['TOP ROLE', report.primaryRoles?.[0]],
@@ -1056,10 +1099,31 @@ export default function SystemFit() {
   const [mode, setMode] = useState('fit');
 
   useEffect(() => {
-    // Warm the derived-team cache so that when a user searches a club outside
-    // the curated 54, normalizeApiTeam can give it real traits instead of the
-    // generic placeholder. Fire-and-forget; failures degrade to generic.
-    loadDerivedTeams();
+    // Warm the derived-team cache, then register the MERGED team universe so
+    // System Fit's picker and alternative-fit ranking see every measured club
+    // in the DB — not just the hand-authored 54. Merge rule: measured traits
+    // win (that's the whole point of the DNA pipeline), but marquee clubs keep
+    // their hand-authored brand colours + philosophy prose, which the derived
+    // rows don't carry. Fire-and-forget; on failure the universe stays as
+    // SYSTEM_TEAMS so nothing regresses.
+    loadDerivedTeams().then(() => {
+      const byId = new Map(allDerivedTeams().map(t => [Number(t.id), { ...t }]));
+      for (const s of SYSTEM_TEAMS) {
+        const measured = byId.get(Number(s.id));
+        if (measured) {
+          byId.set(Number(s.id), {
+            ...measured,                       // measured traits + categoricals
+            accent: s.accent,                  // hand-authored brand colours
+            secondary: s.secondary,
+            philosophy: s.philosophy || measured.philosophy,
+            short: s.short || measured.short,
+          });
+        } else {
+          byId.set(Number(s.id), s);           // hand-authored-only club (no measured row yet)
+        }
+      }
+      registerTeamUniverse([...byId.values()]);
+    }).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -1088,7 +1152,11 @@ export default function SystemFit() {
             <p>We analyse the player. You decide the role.<br />Does he fit your system?</p>
           </div>
           <div className="sf2-hero-actions">
-            <button type="button" className="btn btn--ghost btn--sm"><Share2 size={14} /> SHARE</button>
+            <ShareBar
+              text={`${selectedPlayer.name} \u2192 ${report.team.name}: ${report.score}% system fit on Calibre \u2014 \u201c${report.verdict}\u201d.`}
+              url={shareUrl('/system-fit')}
+              title="Calibre System Fit"
+            />
             <ExportButtons mode={mode} fitReport={report} comparison={comparison} canExport={canExport} />
           </div>
         </div>
@@ -1273,7 +1341,7 @@ export default function SystemFit() {
         .sf-founder-strip { margin-top:0; }
 
         /* full-profile modal (portaled to <body>, sits above everything) */
-        .sf2-modal { position:fixed; inset:0; z-index:1000; background:rgba(3,5,7,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:flex-start; justify-content:center; padding:56px 20px; overflow:auto; }
+        .sf2-modal { position:fixed; inset:0; z-index:1000; background:rgba(3,5,7,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:40px 20px; overflow:auto; }
         .sf2-modal-card { position:relative; width:min(560px,100%); background:rgba(11,15,18,.97); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.65); padding:22px; }
         .sf2-modal-close { position:absolute; top:14px; right:14px; width:30px; height:30px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03); color:#c4c9ce; cursor:pointer; }
         .sf2-modal-close:hover { background:rgba(255,255,255,.08); color:#fff; }

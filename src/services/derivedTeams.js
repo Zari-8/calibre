@@ -72,6 +72,27 @@ export function getDerivedTeam(teamId) {
   return _cache.get(Number(teamId)) || null;
 }
 
+// Every measured profile as an array, shaped like SYSTEM_TEAMS entries.
+// Sync — call loadDerivedTeams() first (returns [] if the cache is cold).
+export function allDerivedTeams() {
+  if (!_cache) return [];
+  return [..._cache.values()];
+}
+
+// Search the measured profiles by club / country / league. Awaits the cache
+// load itself, so it's safe to call before loadDerivedTeams() has resolved.
+// This is what makes EVERY team in the DB reachable from the picker, not just
+// the hand-authored 54.
+export async function searchDerivedTeams(query = '', limit = 8) {
+  const map = await loadDerivedTeams();
+  const all = [...map.values()];
+  const needle = query.trim().toLowerCase();
+  if (!needle) return all.slice(0, limit);
+  return all
+    .filter(t => `${t.name} ${t.short} ${t.country} ${t.league}`.toLowerCase().includes(needle))
+    .slice(0, limit);
+}
+
 // Convenience: given an API team object, return a derived-enriched profile if
 // we have one, else null. Used by normalizeApiTeam's enrichment path.
 export function enrichFromDerived(apiTeam) {

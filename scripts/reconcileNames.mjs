@@ -217,10 +217,18 @@ async function main() {
       let hits = 0;
 
       for (const player of squad) {
-        // Skip already enriched players
+        // Skip only players who already carry the fields THIS script writes.
+        // enrichStatsAPI.mjs (the match-based pipeline) also sets
+        // statsapi_player_id but writes to differently-named `statsapi_*`
+        // columns the rating engine doesn't read — checking statsapi_player_id
+        // alone let that pipeline "claim" a player and permanently block this
+        // (correct, unprefixed-column) script from ever filling them in.
         const { data: existing } = await sb.from('players')
-          .select('id').eq('statsapi_player_id', player.id).limit(1);
-        if (existing?.length) { skipped++; continue; }
+          .select('id, shot_accuracy, ground_duel_win_pct, big_chances_created')
+          .eq('statsapi_player_id', player.id).limit(1);
+        const hit = existing?.[0];
+        const alreadyEnriched = hit && (hit.shot_accuracy != null || hit.ground_duel_win_pct != null || hit.big_chances_created != null);
+        if (alreadyEnriched) { skipped++; continue; }
 
         const stats  = await getStats(player.id, season.id);
         const fields = buildFields(player, stats, comp.id, season.id);

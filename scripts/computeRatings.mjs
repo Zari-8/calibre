@@ -48,17 +48,31 @@ async function processRow(row) {
   else updated++;
 }
 
-async function run() {
-  console.log('Computing canonical ratings from the live engine...\n');
-  while (true) {
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const TRANSIENT = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated|TypeError/i;
+
+async function fetchPage(off) {
+  const MAX = 5;
+  for (let attempt = 1; attempt <= MAX; attempt++) {
     const { data, error } = await sb
       .from('players')
       .select('*')
       .or('minutes.gt.0,appearances.gt.0,api_average_rating.gt.0') // only rows worth scoring
       .order('id', { ascending: true })
-      .range(offset, offset + PAGE - 1);
+      .range(off, off + PAGE - 1);
+    if (!error) return data;
+    const transient = TRANSIENT.test(String(error.message || error));
+    if (!transient || attempt === MAX) { console.error('Fetch failed:', error.message || error); process.exit(1); }
+    const wait = 1000 * attempt;
+    console.warn(`  ↻ page @${off}: ${error.message || error} — retry ${attempt}/${MAX - 1} in ${wait}ms`);
+    await sleep(wait);
+  }
+}
 
-    if (error) { console.error('Fetch failed:', error.message); process.exit(1); }
+async function run() {
+  console.log('Computing canonical ratings from the live engine...\n');
+  while (true) {
+    const data = await fetchPage(offset);
     if (!data || data.length === 0) break;
 
     for (let i = 0; i < data.length; i += CONCURRENCY) {

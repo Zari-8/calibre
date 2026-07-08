@@ -230,6 +230,10 @@ export async function getSupabasePlayers({
     .select(selectCols)
     .range(offset,offset+limit-1);
 
+  if(!hasLeagueFilter){
+    query = query.or('hidden.is.null,hidden.eq.false');
+  }
+
   if(Array.isArray(names) && names.length){
     query = query.in('name',names);
   }
@@ -248,6 +252,7 @@ export async function getSupabaseTalentCandidates({limit=240}={}){
   const { data, error } = await client
     .from('players')
     .select(PLAYER_SELECT)
+    .or('hidden.is.null,hidden.eq.false')
     .not('age','is',null)
     .gte('age',16)
     .lte('age',22)
@@ -272,6 +277,7 @@ export async function getSupabasePlayersByApiIds(apiIds=[]){
     .from('players')
     .select(PLAYER_SELECT)
     .in('api_player_id',ids)
+    .or('hidden.is.null,hidden.eq.false')
     .not('rating','is',null)
     .order('appearances',{ascending:false,nullsFirst:false});
 
@@ -291,7 +297,8 @@ export async function getSupabasePlayersByApiIds(apiIds=[]){
     const { data: fallback, error: e2 } = await client
       .from('players')
       .select(PLAYER_SELECT)
-      .in('api_player_id',missing);
+      .in('api_player_id',missing)
+      .or('hidden.is.null,hidden.eq.false');
     if(e2) throw e2;
     for(const row of (fallback||[])){
       const aid = row.api_player_id;
@@ -325,6 +332,7 @@ export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
     .from('players')
     .select(PLAYER_SELECT)
     .or(`name.ilike.%${query}%,full_name.ilike.%${query}%`)
+    .or('hidden.is.null,hidden.eq.false')
     .order('appearances',{ascending:false,nullsFirst:false})
     .limit(limit);
 
@@ -338,9 +346,28 @@ export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
     .from('players')
     .select(PLAYER_SELECT)
     .or(`firstname.ilike.%${query}%,lastname.ilike.%${query}%`)
+    .or('hidden.is.null,hidden.eq.false')
     .order('appearances',{ascending:false,nullsFirst:false})
     .limit(limit);
 
   if(e3) throw e3;
   return (namePartial||[]).map(normalizePlayer);
+}
+
+// Real distinct-nationality count for the Players page's "Nations" stat card
+// — replaces a hardcoded "200+" with an actual count from the DB. Selects
+// only the nationality column (not full rows) to keep the payload small, and
+// counts distinct values client-side since PostgREST has no simple built-in
+// distinct-count. If your Postgres row cap truncates this below the true
+// total, raise the .limit() below — this never falls back to a guessed number.
+export async function getSupabaseNationCount(){
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('players')
+    .select('nationality')
+    .not('nationality','is',null)
+    .limit(100000);
+  if(error) throw error;
+  const distinct = new Set((data||[]).map(r => String(r.nationality || '').trim().toLowerCase()).filter(Boolean));
+  return distinct.size;
 }

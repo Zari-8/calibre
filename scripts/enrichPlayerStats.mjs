@@ -56,7 +56,8 @@ const PASS_ACCURACY_OVERRIDE = {
   335051: 89.3,   // João Neves — API-Football ~82%; FBref/FotMob ~89%, UEFA CL ~93%
 };
 
-const MAX_PLAYERS     = Number(process.env.MAX_PLAYERS || 250);
+const TARGET_UUIDS_RAW = (process.env.TARGET_UUIDS || '').split(',').map(s => s.trim()).filter(Boolean);
+const MAX_PLAYERS     = Number(process.env.MAX_PLAYERS || (TARGET_UUIDS_RAW.length ? TARGET_UUIDS_RAW.length : 250));
 const REFRESH_DAYS    = Number(process.env.REFRESH_DAYS || 7);
 const DELAY_MS        = Number(process.env.DELAY_MS || 250);
 const FORCE           = process.env.FORCE === '1';
@@ -68,6 +69,11 @@ const PLAYER_NAMES    = process.env.PLAYER_NAMES || null; // comma-separated nam
 // whose registry rows are stored under inconsistent legal names.
 const PLAYER_IDS      = (process.env.PLAYER_IDS || '')
   .split(',').map(s => Number(s.trim())).filter(n => Number.isInteger(n) && n > 0);
+// Target by internal players.id (UUID) instead of api_player_id. Use this for
+// rows whose api_player_id is NULL — they're invisible to the normal read
+// filter below and to PLAYER_IDS, but RESOLVE_IDS can still find them a real
+// api_player_id by name+nationality once they're in the working set.
+const TARGET_UUIDS    = TARGET_UUIDS_RAW;
 const RESOLVE_IDS     = process.env.RESOLVE_IDS === '1';   // re-resolve mis-mapped ids by name
 const DRY_RUN         = process.env.DRY_RUN === '1';       // preview only, no writes
 const API_HOST        = 'https://v3.football.api-sports.io';
@@ -192,6 +198,7 @@ function compStrength(s) {
 function accumulate(entries) {
   let minutes=0,apps=0,starts=0,passes=0,key=0,dribS=0,dribA=0;
   let tackles=0,inter=0,duelsWon=0,shots=0,goals=0,assists=0;
+  let saves=0,conceded=0,penaltySaved=0,hasGkFields=false;
   let accSum=0,accW=0,ratingSum=0,ratingW=0,pos=null,posMin=-1;
   for (const s of entries) {
     const m=num(s?.games?.minutes);
@@ -201,6 +208,10 @@ function accumulate(entries) {
     tackles+=num(s?.tackles?.total); inter+=num(s?.tackles?.interceptions);
     duelsWon+=num(s?.duels?.won); shots+=num(s?.shots?.total);
     goals+=num(s?.goals?.total); assists+=num(s?.goals?.assists);
+    // Shot-stopping — already in the API-Football payload, just unread until now.
+    if (s?.goals?.saves != null) { saves += num(s.goals.saves); hasGkFields = true; }
+    if (s?.goals?.conceded != null) { conceded += num(s.goals.conceded); hasGkFields = true; }
+    if (s?.penalty?.saved != null) { penaltySaved += num(s.penalty.saved); hasGkFields = true; }
     const accRaw=s?.passes?.accuracy;
     if (accRaw!=null && m>0){ const total=num(s?.passes?.total);
       const pct=Number(accRaw)<=100?Number(accRaw):(total>0?(Number(accRaw)/total)*100:null);
@@ -212,6 +223,8 @@ function accumulate(entries) {
   return { minutes, stats_minutes:minutes, appearances:apps, starts, goals, assists,
     passes, key_passes:key, dribbles_success:dribS, dribbles_attempts:dribA,
     tackles, interceptions:inter, duels_won:duelsWon, shots,
+    saves: hasGkFields?saves:null, goals_conceded: hasGkFields?conceded:null,
+    penalty_saved: hasGkFields?penaltySaved:null,
     pass_accuracy: accW>0?Math.round((accSum/accW)*10)/10:null,
     api_average_rating: ratingW>0?Math.round((ratingSum/ratingW)*100)/100:null,
     position: pos };
@@ -287,6 +300,7 @@ function leagueLine(stats, preferredLeagueId) {
 
   let minutes = 0, apps = 0, starts = 0, passes = 0, key = 0, dribS = 0, dribA = 0;
   let tackles = 0, inter = 0, duelsWon = 0, shots = 0, goals = 0, assists = 0;
+  let saves = 0, conceded = 0, penaltySaved = 0, hasGkFields = false;
   let accSum = 0, accW = 0, ratingSum = 0, ratingW = 0, pos = null, posMin = -1;
 
   for (const s of lines) {
@@ -304,6 +318,10 @@ function leagueLine(stats, preferredLeagueId) {
     shots   += num(s?.shots?.total);
     goals   += num(s?.goals?.total);
     assists += num(s?.goals?.assists);
+    // Shot-stopping — already in the API-Football payload, just unread until now.
+    if (s?.goals?.saves != null) { saves += num(s.goals.saves); hasGkFields = true; }
+    if (s?.goals?.conceded != null) { conceded += num(s.goals.conceded); hasGkFields = true; }
+    if (s?.penalty?.saved != null) { penaltySaved += num(s.penalty.saved); hasGkFields = true; }
 
     const accRaw = s?.passes?.accuracy;
     if (accRaw != null && m > 0) {
@@ -334,6 +352,9 @@ function leagueLine(stats, preferredLeagueId) {
     interceptions: inter,
     duels_won: duelsWon,
     shots,
+    saves: hasGkFields ? saves : null,
+    goals_conceded: hasGkFields ? conceded : null,
+    penalty_saved: hasGkFields ? penaltySaved : null,
     pass_accuracy: accW > 0 ? Math.round((accSum / accW) * 10) / 10 : null,
     api_average_rating: ratingW > 0 ? Math.round((ratingSum / ratingW) * 100) / 100 : null,
     position: pos,
@@ -358,17 +379,23 @@ async function main() {
   function buildRead() {
     let q = supabase
       .from('players')
-      .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at')
-      .not('api_player_id', 'is', null)
-      .gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
-    if (LEAGUE_ID) q = q.eq('league_id', LEAGUE_ID);
-    if (NATIONALITY) q = q.ilike('nationality', `%${NATIONALITY}%`);
-    if (PLAYER_IDS.length) q = q.in('api_player_id', PLAYER_IDS);
-    else if (PLAYER_NAMES) q = q.or(PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(','));
+      .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at');
+    if (TARGET_UUIDS.length) {
+      // Explicit UUID targeting bypasses the api_player_id-not-null gate —
+      // rows with a null api_player_id are only reachable this way.
+      q = q.in('id', TARGET_UUIDS);
+    } else {
+      q = q.not('api_player_id', 'is', null).gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
+      if (LEAGUE_ID) q = q.eq('league_id', LEAGUE_ID);
+      if (NATIONALITY) q = q.ilike('nationality', `%${NATIONALITY}%`);
+      if (PLAYER_IDS.length) q = q.in('api_player_id', PLAYER_IDS);
+      else if (PLAYER_NAMES) q = q.or(PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(','));
+    }
     return q.order('stats_updated_at', { ascending: true, nullsFirst: true }).limit(MAX_PLAYERS);
   }
 
-  if (PLAYER_IDS.length) console.log(`Targeting ${PLAYER_IDS.length} player(s) by api_player_id: ${PLAYER_IDS.join(', ')}`);
+  if (TARGET_UUIDS.length) console.log(`Targeting ${TARGET_UUIDS.length} player(s) by internal id (bypasses api_player_id filter)`);
+  else if (PLAYER_IDS.length) console.log(`Targeting ${PLAYER_IDS.length} player(s) by api_player_id: ${PLAYER_IDS.join(', ')}`);
 
   // Retry the read on transient connection drops (fetch failed) before giving up.
   let rows = null, readErr = null;
@@ -395,8 +422,20 @@ async function main() {
     }
 
     try {
-      let { season, line, stats, calls: c } = await enrichById(row.api_player_id, row.league_id);
-      calls += c;
+      // A null/0 api_player_id (e.g. rows only ever touched by TheStatsAPI)
+      // can't be looked up directly — skip straight to name resolution below
+      // instead of letting an API error here abort the whole row before
+      // RESOLVE_IDS gets a chance. A non-null id that throws (bad/stale id)
+      // is treated the same way rather than failing the row outright.
+      let season = null, line = null, stats = null;
+      if (row.api_player_id) {
+        try {
+          const res0 = await enrichById(row.api_player_id, row.league_id);
+          season = res0.season; line = res0.line; stats = res0.stats; calls += res0.calls;
+        } catch (e0) {
+          console.log(`· ${row.name}: initial id ${row.api_player_id} lookup failed (${e0.message})`);
+        }
+      }
       let usedId = row.api_player_id;
       let didRemap = false;
 
@@ -483,6 +522,9 @@ async function main() {
         stats_updated_at: new Date().toISOString(),
       };
       if (line.api_average_rating != null) update.api_average_rating = line.api_average_rating;
+      if (line.saves != null) update.saves = line.saves;
+      if (line.goals_conceded != null) update.goals_conceded = line.goals_conceded;
+      if (line.penalty_saved != null) update.penalty_saved = line.penalty_saved;
       if (splits) update.competition_splits = splits;
       if (didRemap) update.api_player_id = usedId;
 
@@ -497,7 +539,8 @@ async function main() {
       const accTag = (PASS_ACCURACY_OVERRIDE[Number(row.api_player_id)] != null) ? ' ✎acc' : '';
       const sb = (splits && splits.base) || {}, sf = (splits && splits.friendly) || {}, so = (splits && splits.overlay) || {};
       const splitTag = splits ? ` | base ${sb.minutes||0}'/${sb.goals||0}g/${sb.pass_accuracy ?? '–'}% · fr ${sf.minutes||0}' · ov ${so.minutes||0}'/${so.goals||0}g@${so.strength ?? '–'}` : '';
-      console.log(`✓ ${row.name}${tag} · ${season} · ${line.league_name || 'league'} · ${line.stats_minutes}' · ${line.appearances}app · ${line.goals}g ${line.assists}a · ${accFixed}%${accTag}${splitTag}`);
+      const gkTag = line.saves != null ? ` | GK: ${line.saves}sv/${line.goals_conceded ?? 0}ga` : '';
+      console.log(`✓ ${row.name}${tag} · ${season} · ${line.league_name || 'league'} · ${line.stats_minutes}' · ${line.appearances}app · ${line.goals}g ${line.assists}a · ${accFixed}%${accTag}${splitTag}${gkTag}`);
     } catch (e) {
       failed++;
       console.warn(`✗ ${row.name} (${row.api_player_id}): ${e.message}`);

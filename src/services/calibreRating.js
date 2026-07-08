@@ -19,40 +19,60 @@ const WEIGHTS = { Performance: 0.35, Consistency: 0.20, Form: 0.20, Impact: 0.15
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 function per(value, mins) { return mins > 0 ? num(value) / (mins / 90) : 0; }
+// v8.4 bugfix — every v8.1/v8.2 "is this field populated" check used
+// num(player.x, -1) and then tested `< 0` to detect "no data". That's broken
+// for real Postgres nulls: Number(null) is 0, which IS finite, so num() with
+// a null input returns 0 — the -1 default NEVER fires for an actual DB null,
+// only for a genuinely absent/undefined key. Since Supabase returns every
+// unpopulated column as null (not undefined), this meant "no shot_accuracy
+// on record" was silently read as "measured 0% shot accuracy", "no xG data"
+// as "measured 0.00 xG", etc. — for the ~70-95% of rated players missing a
+// given v8.2 field, these functions weren't neutral, they were actively
+// applying a worst-case score. numOrNull is the correct "is this present"
+// check; num() is left untouched everywhere it's used for real 0-defaults.
+function numOrNull(v) {
+  if (v === null || v === undefined || v === '') return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
 
 // ── TheStatsAPI event-stat helpers (v8.1) ────────────────────────────────
 // These fire only when the new columns are populated (non-null). When absent
 // the engine falls back to the v8 path unchanged — no rating breakage.
 
 // Shot quality nudge: rewards on-target efficiency, penalises big-chance waste.
-// Returns a small signed adjustment [-6, +6] to the production score.
+// Returns a signed adjustment [-9, +9] to the production score. (v8.3: widened
+// from [-6,+6] — coverage assessment showed this signal, when present, was
+// too capped to move a ranked "spine" score meaningfully.)
 function shotQualityNudge(player) {
-  const acc = num(player.shot_accuracy, -1);
-  const missed = num(player.big_chances_missed, -1);
-  if (acc < 0 && missed < 0) return 0;        // no new data
+  const acc = numOrNull(player.shot_accuracy);
+  const missed = numOrNull(player.big_chances_missed);
+  if (acc == null && missed == null) return 0;        // no new data
   let nudge = 0;
-  if (acc >= 0) nudge += clamp((acc - 33) / 33 * 4, -4, 4);  // 33% SOT = neutral
-  if (missed >= 0) nudge -= clamp(missed / 5 * 3, 0, 3);      // each 5 missed = -3
-  return clamp(nudge, -6, 6);
+  if (acc != null) nudge += clamp((acc - 33) / 33 * 6, -6, 6);  // 33% SOT = neutral
+  if (missed != null) nudge -= clamp(missed / 5 * 4.5, 0, 4.5);  // each 5 missed = -4.5
+  return clamp(nudge, -9, 9);
 }
 
 // Chance creation boost: big_chances_created per 90 is a strong creativity signal.
-// Returns a bonus [0, 10] added to the create component.
+// Returns a bonus [0, 16] added to the create component. (v8.3: widened from
+// [0,10] — rarest advanced field (16.8% coverage) but the strongest single
+// creativity signal we collect, worth more headroom when it's there.)
 function chanceCreationBoost(player, sm) {
-  const bcc = num(player.big_chances_created, -1);
-  if (bcc < 0) return 0;
+  const bcc = numOrNull(player.big_chances_created);
+  if (bcc == null) return 0;
   const bcc90 = per(bcc, sm);
-  return clamp(bcc90 / 0.5 * 10, 0, 10);     // 0.5 BCC/90 = full +10
+  return clamp(bcc90 / 0.5 * 16, 0, 16);     // 0.5 BCC/90 = full +16
 }
 
 // Duel quality: replaces raw count-based win rate when % data is available.
 // Returns [0, 100] component score, same scale as the existing duel calc.
 function duelQualityScore(player, du90) {
-  const gd = num(player.ground_duel_win_pct, -1);
-  const ad = num(player.aerial_duel_win_pct, -1);
-  if (gd < 0 && ad < 0) return null;          // fall back to count-based
-  const gdScore = gd >= 0 ? clamp((gd - 30) / 40 * 80, 0, 80) : 40;
-  const adScore = ad >= 0 ? clamp((ad - 25) / 40 * 60, 0, 60) : 30;
+  const gd = numOrNull(player.ground_duel_win_pct);
+  const ad = numOrNull(player.aerial_duel_win_pct);
+  if (gd == null && ad == null) return null;          // fall back to count-based
+  const gdScore = gd != null ? clamp((gd - 30) / 40 * 80, 0, 80) : 40;
+  const adScore = ad != null ? clamp((ad - 25) / 40 * 60, 0, 60) : 30;
   const pctScore = gdScore * 0.6 + adScore * 0.4;
   // Blend with volume (du90) so a player who wins 80% of 1 duel/90 isn't overrated
   const volScore = clamp(du90 / 5.2 * 100, 0, 100);
@@ -62,25 +82,42 @@ function duelQualityScore(player, du90) {
 // Territorial index: opp_half_passes share → forward aggression score [0, 100].
 // Used in DEF builds: a centre-back who rarely crosses halfway reads differently.
 function territorialIndex(player) {
-  const opp = num(player.opp_half_passes, -1);
-  const own = num(player.own_half_passes, -1);
-  if (opp < 0 || own < 0 || opp + own === 0) return null;
+  const opp = numOrNull(player.opp_half_passes);
+  const own = numOrNull(player.own_half_passes);
+  if (opp == null || own == null || opp + own === 0) return null;
   const share = opp / (opp + own);            // 0 = never attacks, 1 = always
   return clamp(share * 100, 0, 100);
 }
 
 // Dribble quality: uses success % when available, else falls back to raw dr90.
 function dribbleScore(player, sm) {
-  const pct = num(player.dribble_success_pct, -1);
-  const cnt = num(player.successful_dribbles ?? player.dribbles_success, -1);
-  if (pct < 0) {
+  const pct = numOrNull(player.dribble_success_pct);
+  const cnt = numOrNull(player.successful_dribbles ?? player.dribbles_success);
+  if (pct == null) {
     const dr90 = per(player.dribbles_success ?? player.dribbles, sm);
     return { dr90, bonus: 0 };
   }
-  const dr90 = cnt >= 0 ? per(cnt, sm) : per(player.dribbles_success ?? player.dribbles, sm);
-  // Quality bonus: high success rate above 55% average earns up to +8
-  const bonus = clamp((pct - 55) / 25 * 8, -4, 8);
+  const dr90 = cnt != null ? per(cnt, sm) : per(player.dribbles_success ?? player.dribbles, sm);
+  // Quality bonus: high success rate above 55% average earns up to +12.
+  // (v8.3: widened from [-4,+8] — only 8.9% coverage, but a clean skill
+  // signal that was barely nudging the score even when present.)
+  const bonus = clamp((pct - 55) / 25 * 12, -6, 12);
   return { dr90, bonus };
+}
+// Incisiveness signal (v8.4): raw pass_accuracy/volume treats a sideways
+// safety ball the same as a defense-splitting line-breaker. TheStatsAPI's
+// season-stats endpoint carries `final_third_passes` (accurate_final_third
+// _passes — completed passes that land IN the attacking third), which this
+// codebase has been collecting via reconcileNames.mjs but never actually
+// reading. It's a much better proxy for pass QUALITY/risk than accuracy%,
+// which rewards a keeper-to-centreback recycle just as much as a through
+// ball. Returns a bonus [0, 14], additive, 0 when no data (no behavior
+// change until the field is populated for a given row).
+function incisivePassBoost(player, sm) {
+  const f3p = numOrNull(player.final_third_passes);
+  if (f3p == null) return 0;
+  const f3p90 = per(f3p, sm);
+  return clamp(f3p90 / 4.5 * 14, 0, 14);   // ~4.5 accurate final-third passes/90 = full credit
 }
 const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,13:0.74,307:0.63,253:0.80,98:0.72,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
 const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.84,'eredivisie':0.83,'championship':0.81,'pro league':0.80,'super lig':0.73,'saudi pro league':0.63,'brasileiro':0.82,'brasileirão':0.82,'mls':0.80,'j1 league':0.72,'npfl':0.55,'zimbabwe psl':0.50 };
@@ -93,16 +130,43 @@ function leagueStrength(line) {
     for (const name in LEAGUE_STRENGTH) if (key.includes(name)) return LEAGUE_STRENGTH[name]; }
   return DEFAULT_LEAGUE;
 }
-function positionBucket(player) {
+export function positionBucket(player) {
   const text = `${player.role||''} ${player.position||''} ${player.archetype||''} ${player.pos||''} ${player.primary_role||''}`.toLowerCase();
   if (/(goalkeeper|keeper|\bgk\b)/.test(text)) return 'GK';
   if (/(defender|centre.?back|center.?back|full.?back|wing.?back|\bcb\b|\brb\b|\blb\b|\bdef\b)/.test(text)) return 'DEF';
   if (/(striker|forward|winger|wide creator|wide forward|attack|poacher|fox|\bst\b|\brw\b|\blw\b|\bcf\b|\bfwd\b|\batt\b)/.test(text)) return 'ATT';
   return 'MID';
 }
-function qFlat(apiR) { return apiR > 0 ? clamp(42 + (apiR - 6.9) * 25, 0, 100) : 46; }
+// v8.3 recalibration — anchored to the real api_average_rating distribution
+// across 10,245 rated players (assessApiRatingDistribution.mjs), not an
+// arbitrary flat slope. The old function required apiR ~9.2 to reach 100 and
+// mapped the true median (6.76) to 38.5 — meaning q was contributing *below*
+// neutral for essentially the entire rated population, not just a few edge
+// cases. These anchors put the empirical median at 50 and spread the real
+// p10/p90/p99/max points around it, piecewise-linear between them.
+const Q_ANCHORS = [
+  [3.30, 5],    // observed min
+  [6.45, 25],   // p10
+  [6.76, 50],   // p50 (median) — neutral, by definition
+  [7.14, 75],   // p90
+  [7.64, 92],   // p99
+  [10.00, 100], // observed max
+];
+export function qFlat(apiR) {
+  if (!(apiR > 0)) return 46;
+  if (apiR <= Q_ANCHORS[0][0]) return Q_ANCHORS[0][1];
+  for (let i = 1; i < Q_ANCHORS.length; i++) {
+    const [x1, y1] = Q_ANCHORS[i - 1];
+    const [x2, y2] = Q_ANCHORS[i];
+    if (apiR <= x2) {
+      const t = (apiR - x1) / (x2 - x1);
+      return clamp(y1 + t * (y2 - y1), 0, 100);
+    }
+  }
+  return 100;
+}
 function spine(vals, w) { const s = [...vals].sort((a,b)=>b-a); let p=0; s.forEach((v,i)=>{p+=v*(w[i]??0);}); return p; }
-function productionComponents(player, bucket) {
+export function productionComponents(player, bucket) {
   const m = num(player.minutes ?? player.mins);
   const sm = num(player.stats_minutes) || m;
 
@@ -117,16 +181,16 @@ function productionComponents(player, bucket) {
 
   const ev = sm > 0 && num(passesRaw) > 0;
 
-  const g90 = per(player.goals, m);
-  const a90 = per(player.assists, m);
+  const g90 = per(player.goals, sm);
+  const a90 = per(player.assists, sm);
 
-  const xg = num(player.xg ?? player.expected_goals, -1);
-  const xa = num(player.xa ?? player.expected_assists, -1);
-  const npxg = num(player.npxg ?? player.np_expected_goals, -1);
+  const xg = numOrNull(player.xg ?? player.expected_goals);
+  const xa = numOrNull(player.xa ?? player.expected_assists);
+  const npxg = numOrNull(player.npxg ?? player.np_expected_goals);
 
-  const xg90 = xg >= 0 ? per(xg, sm) : null;
-  const xa90 = xa >= 0 ? per(xa, sm) : null;
-  const npxg90 = npxg >= 0 ? per(npxg, sm) : null;
+  const xg90 = xg != null ? per(xg, sm) : null;
+  const xa90 = xa != null ? per(xa, sm) : null;
+  const npxg90 = npxg != null ? per(npxg, sm) : null;
 
   const pass90 = per(passesRaw, sm);
   const acc = num(player.pass_accuracy);
@@ -146,9 +210,10 @@ function productionComponents(player, bucket) {
   const bccBoost = chanceCreationBoost(player, sm);
   const duelScore = duelQualityScore(player, du90);
   const terr = territorialIndex(player);
+  const f3pBoost = incisivePassBoost(player, sm);
 
-  const shotQuality = num(player.shot_quality, -1);
-  const shotQualityBonus = shotQuality >= 0
+  const shotQuality = numOrNull(player.shot_quality);
+  const shotQualityBonus = shotQuality != null
     ? clamp((shotQuality - 0.10) / 0.12 * 6, -3, 6)
     : 0;
 
@@ -182,7 +247,13 @@ function productionComponents(player, bucket) {
 
   if (bucket === 'ATT') {
     const create = clamp(assistSignal + key90 / 2.5 * 30 + bccBoost, 0, 120);
-    const carry = clamp(dr90 / 2.1 * 40 + dribBonus + sh90 / 4.0 * 28, 0, 95);
+    // v8.3: duelScore (ground/aerial duel win%) was computed for every player
+    // but only ever consumed by DEF/MID — a forward's hold-up play and
+    // physical duel-winning never touched their rating. Folded into carry at
+    // a modest weight; ceiling raised 95->100 to give it room without
+    // truncating existing dribble/shot-volume carry scores.
+    const duelNudge = duelScore != null ? (duelScore - 50) * 0.10 : 0;
+    const carry = clamp(dr90 / 2.1 * 40 + dribBonus + sh90 / 4.0 * 28 + duelNudge, 0, 100);
     return { vals: [goalScore, create, carry], w: [0.76, 0.16, 0.08], ev };
   }
 
@@ -192,7 +263,7 @@ function productionComponents(player, bucket) {
     const build = ev
       ? clamp((acc - 76) / (93 - 76) * 52 + pass90 / 78 * 48 + touchBonus + (terr != null ? (terr - 40) * 0.15 : 0), 0, 112)
       : 56;
-    const prog = clamp(key90 / 1.0 * 42 + dr90 / 0.9 * 28 + dribBonus, 0, 88);
+    const prog = clamp(key90 / 1.0 * 42 + dr90 / 0.9 * 28 + dribBonus + f3pBoost, 0, 102);
     const att = clamp(g90 / 0.14 * 55 + a90 / 0.18 * 45 + (xg90 != null ? xg90 / 0.10 * 18 : 0), 0, 95);
     return { vals: [defend, build, prog, att], w: [0.66, 0.21, 0.08, 0.05], ev };
   }
@@ -205,9 +276,10 @@ function productionComponents(player, bucket) {
   const create = clamp(
     key90 / 1.9 * 52 +
     (xa90 != null ? xa90 / 0.32 * 52 : a90 / 0.46 * 52) +
-    bccBoost,
+    bccBoost +
+    f3pBoost,
     0,
-    120
+    134
   );
 
   const goal = clamp(g90 / 0.42 * 70 + (xg90 != null ? xg90 / 0.32 * 38 : 0) + sqNudge + shotQualityBonus, 0, 122);
@@ -235,10 +307,17 @@ function scoreLine(line = {}) {
   const ovr=num(line._strengthOverride, NaN);
   const sRaw=Number.isFinite(ovr)?clamp(ovr,0.30,1.10):leagueStrength(line);
   const baseApps=num(line.appearances ?? line.apps);
-  const hasEvidence = minutes>0 || baseApps>0 || apiR>0;
+  // Hollow-shell fingerprint: a row touched only by TheStatsAPI enrichment,
+  // never resolved to a real API-Football league/rating/minutes. These
+  // produce fake floor ratings (per-90 stats collapse without real minutes)
+  // whether or not a correctly-enriched duplicate row exists elsewhere for
+  // the same player. Treat as no evidence rather than score it.
+  const leagueId = num(line.league_id ?? line.leagueId);
+  const hollowShell = !leagueId && !(apiR>0) && !(minutes>0) && num(line.stats_minutes)>0;
+  const hasEvidence = !hollowShell && (minutes>0 || baseApps>0 || apiR>0 || num(line.stats_minutes)>0);
   if (!hasEvidence) return { rating:null, computed:null, breakdown:null, bucket, confidence:'none', provisional:true };
 
-  let availMin=num(line.avail_minutes, NaN); if (!Number.isFinite(availMin)) availMin=minutes;
+  let availMin=num(line.avail_minutes, NaN); if (!Number.isFinite(availMin)) availMin=minutes||num(line.stats_minutes);
   let appsA=num(line.avail_apps, NaN); if (!Number.isFinite(appsA)) appsA=baseApps;
   let startsA=num(line.avail_starts, NaN); if (!Number.isFinite(startsA)) startsA=num(line.starts);
   if (appsA<=0 && availMin>0) { appsA=availMin/85; startsA=appsA*0.9; }
@@ -248,12 +327,42 @@ function scoreLine(line = {}) {
   if (bucket==='GK') {
     const acc=num(line.pass_accuracy);
     const buildNudge=acc>0?clamp((acc-70)/25*12,0,12):0;
-    production=clamp(q*0.9+buildNudge,0,100); ev=false;
+    const sm=num(line.stats_minutes)||minutes;
+
+    // v8.4 — real shot-stopping signal. saves/goals_conceded come straight out
+    // of API-Football's existing player-statistics payload (goals.saves /
+    // goals.conceded) — the data was always there, enrichPlayerStats.mjs just
+    // never read it. Previously GK production was ~90% reputation (apiR via
+    // q) with zero independent signal, so two keepers with the same apiR but
+    // very different actual shot-stopping graded identically. save% now
+    // dilutes q once there's enough of a sample to trust it; trust ramps to
+    // full weight at 40 shots faced (~half a season of regular starts). No
+    // save data yet (not re-enriched) -> falls back to the old formula
+    // exactly, so nothing breaks before the re-enrichment pass runs.
+    const saves=numOrNull(line.saves);
+    const conceded=numOrNull(line.goals_conceded);
+    const shotsFaced=(saves!=null && conceded!=null)?saves+conceded:-1;
+    if (shotsFaced>0) {
+      const savePct=saves/shotsFaced*100;
+      // 68% ~ typical top-five-league save rate = neutral(50); ±2.5pts per 1%.
+      const shotStop=clamp(50+(savePct-68)*2.5,0,100);
+      const trust=clamp(shotsFaced/40,0,1);
+      production=clamp(q*(1-0.35*trust)+shotStop*(0.35*trust)+buildNudge,0,100);
+      ev=trust>=0.5;
+    } else {
+      production=clamp(q*0.9+buildNudge,0,100); ev=false;
+    }
   } else {
     const c=productionComponents(line,bucket);
     production=clamp(spine(c.vals,c.w),0,116); ev=c.ev;
   }
-  const core=clamp(production*0.76+q*0.24,0,108);
+  // GK production already blends in q above (at full weight when no save
+  // data, at reduced weight when it exists) — blending q in again at 24%
+  // here would double-count it. Outfielders still get the normal 76/24 blend
+  // since their production is entirely independent stats.
+  const core = bucket === 'GK'
+    ? clamp(production, 0, 108)
+    : clamp(production*0.76+q*0.24, 0, 108);
 
   const Performance=clamp(core*sRaw,0,100);
   const startRate=appsA>0?startsA/appsA:0.7, minsPerApp=appsA>0?availMin/appsA:0;
@@ -285,10 +394,34 @@ function hasUsableSplits(s) {
 function carryMeta(player) {
   return { role:player.role, position:player.position, archetype:player.archetype, pos:player.pos, primary_role:player.primary_role, age:num(player.age) };
 }
+// v8.4 bugfix — buildBaseLine/buildOverlayLine only ever copied the fields
+// that exist per-competition inside competition_splits.base/overlay (raw
+// API-Football counts). The v8.1/v8.2 TheStatsAPI fields (shot_accuracy,
+// xg/xa, ground_duel_win_pct, final_third_passes, etc.) are stored as flat
+// SEASON TOTALS on the player row, not split by competition — so neither
+// scoreLine() call for a splits-blended player ever saw them. Every player
+// with international/continental minutes on record (i.e. most marquee names)
+// was getting the v7 no-advanced-stats treatment regardless of how well
+// enriched they actually were. There's no per-competition breakdown for
+// these signals to split accurately, so the same season-level reading is
+// applied to both bodies of work — an approximation, but a real signal
+// beats the silent zero it was getting before.
+function advancedFields(player) {
+  return {
+    shot_accuracy:player.shot_accuracy, big_chances_missed:player.big_chances_missed,
+    big_chances_created:player.big_chances_created,
+    ground_duel_win_pct:player.ground_duel_win_pct, aerial_duel_win_pct:player.aerial_duel_win_pct,
+    dribble_success_pct:player.dribble_success_pct, successful_dribbles:player.successful_dribbles,
+    final_third_passes:player.final_third_passes,
+    opp_half_passes:player.opp_half_passes, own_half_passes:player.own_half_passes,
+    shot_quality:player.shot_quality,
+    xg:player.xg, xa:player.xa, npxg:player.npxg,
+  };
+}
 function buildBaseLine(player, s) {
   const b=s.base||{}, f=s.friendly||{};
   const fMin=num(f.minutes), fApps=num(f.appearances), fStarts=num(f.starts);
-  return { ...carryMeta(player),
+  return { ...carryMeta(player), ...advancedFields(player),
     league_id:num(b.league_id)||num(player.league_id), league:player.league, league_name:player.league_name,
     api_average_rating:num(b.api_average_rating)||num(player.api_average_rating),
     minutes:num(b.minutes), stats_minutes:num(b.stats_minutes)||num(b.minutes),
@@ -297,6 +430,7 @@ function buildBaseLine(player, s) {
     passes:num(b.passes), pass_accuracy:num(b.pass_accuracy),
     key_passes:num(b.key_passes), dribbles_success:num(b.dribbles_success), dribbles:num(b.dribbles),
     tackles:num(b.tackles), interceptions:num(b.interceptions), duels_won:num(b.duels_won), shots:num(b.shots),
+    saves:b.saves!=null?num(b.saves):null, goals_conceded:b.goals_conceded!=null?num(b.goals_conceded):null,
     // Friendlies: near-full availability (0.9×), zero output weight.
     avail_minutes:num(b.minutes)+0.9*fMin,
     avail_apps:num(b.appearances)+0.9*fApps,
@@ -306,7 +440,7 @@ function buildBaseLine(player, s) {
 function buildOverlayLine(player, s) {
   const o=s.overlay||{};
   const oMin=num(o.minutes);
-  return { ...carryMeta(player),
+  return { ...carryMeta(player), ...advancedFields(player),
     _strengthOverride:num(o.strength)||0.95,
     _volTarget:clamp(34*(oMin/3400),6,34),
     api_average_rating:num(o.api_average_rating)||num(player.api_average_rating),
@@ -316,6 +450,7 @@ function buildOverlayLine(player, s) {
     passes:num(o.passes), pass_accuracy:num(o.pass_accuracy),
     key_passes:num(o.key_passes), dribbles_success:num(o.dribbles_success), dribbles:num(o.dribbles),
     tackles:num(o.tackles), interceptions:num(o.interceptions), duels_won:num(o.duels_won), shots:num(o.shots),
+    saves:o.saves!=null?num(o.saves):null, goals_conceded:o.goals_conceded!=null?num(o.goals_conceded):null,
   };
 }
 

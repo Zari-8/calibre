@@ -49,6 +49,18 @@ function norm(s) {
 }
 
 // ── Multi-strategy name resolution ───────────────────────────────
+// A common surname (Lewandowski, Bellingham, ...) can have a dozen unrelated
+// or hollow stub rows plus the one real, fully-enriched row for the actual
+// player — and the real row is often stored abbreviated ("R. Lewandowski"),
+// which an *exact* name-string match on TheStatsAPI's full "Robert
+// Lewandowski" will never hit. The old logic tried exact-name matches first
+// with a blind .limit(1), so it happily wrote real season stats onto
+// whichever row's `name` column happened to equal the search string — even
+// a decoy with zero minutes — while the real Barcelona row went untouched.
+// Fixed by trying the surname-substring pool FIRST and picking whichever
+// candidate actually looks like the real player (has minutes and/or an
+// api_player_id already), before falling back to the old exact-match
+// strategies for edge cases.
 async function findPlayer(name) {
   const key = norm(name);
   if (cache.has(key)) return cache.get(key);
@@ -58,7 +70,29 @@ async function findPlayer(name) {
   const first  = parts[0];
   const initLast = parts.length >= 2 ? `${first[0]} ${last}` : null;
 
-  // Strategy 1: exact ilike
+  // Strategy 0: surname-substring pool, disambiguated by real-player signal
+  // (minutes played and/or an already-linked api_player_id), not by which
+  // row's stored name string happens to match verbatim.
+  if (last.length > 2) {
+    const { data } = await sb.from('players')
+      .select('id,name,minutes,api_player_id')
+      .ilike('name', `%${last}%`)
+      .order('minutes', { ascending: false, nullsFirst: false })
+      .limit(25);
+    const candidates = data || [];
+    const narrowed = candidates.filter(p => {
+      const n = norm(p.name);
+      return n.includes(first) || (first[0] && n.includes(` ${first[0]}`.trim()));
+    });
+    const pool = narrowed.length ? narrowed : candidates;
+    const best = pool
+      .filter(p => (p.minutes > 0) || p.api_player_id)
+      .sort((a, b) => (b.minutes || 0) - (a.minutes || 0))[0];
+    if (best) return set(key, best);
+  }
+
+  // Strategy 1: exact ilike (fallback — only reached if the surname pool
+  // above found no real-player candidate, e.g. a genuinely new/rare name)
   let row = await sbSearch(name);
   if (row) return set(key, row);
 

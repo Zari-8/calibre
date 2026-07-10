@@ -362,6 +362,49 @@ async function main() {
   }
   console.log(`PPDA pressing override applied to ${nP} of ${teams.length} teams${nP === 0 ? ' (run computeTeamIndices.mjs first)' : ''}.`);
 
+  // ── xG-shape signal (from team_shot_profiles) ────────────────────────────
+  // Adds a dimension `transition` didn't have before: not just how MUCH a
+  // team shoots/creates (big_chances_vol/shots_vol/dribbles_vol are pure
+  // volume), but how much of that threat is genuinely CREATED via open play
+  // vs. manufactured from set pieces/penalties. Two teams with identical shot
+  // volume can have very different transition profiles — a possession side
+  // carving chances open in the run of play should rank higher here than a
+  // side racking up the same shot count mostly from corners/free-kicks.
+  // Joined by normalized team name, same pattern as the PPDA join above
+  // (team_shot_profiles is keyed by StatsAPI's own team_id, this table by
+  // API-Football id). Blended in at 25% weight — a refinement of the
+  // existing volume-based transition score, not a replacement.
+  const { data: shotProfiles } = await sb.from('team_shot_profiles')
+    .select('team_name,xg_for,open_play_xg_for');
+  const shotShareByName = new Map(); // canonical name -> { share, xgFor } — keep the highest-xG sample per name
+  for (const r of (shotProfiles || [])) {
+    if (!r.team_name || r.xg_for == null || r.xg_for <= 0) continue;
+    const key = norm(r.team_name);
+    const share = r.open_play_xg_for / r.xg_for;
+    const prev = shotShareByName.get(key);
+    if (!prev || r.xg_for > prev.xgFor) shotShareByName.set(key, { share, xgFor: r.xg_for });
+  }
+  for (const t of teams) {
+    const base = byId.get(t.id);
+    const nm = base ? norm(base.name) : null;
+    t.openPlayXgShare = (nm && shotShareByName.has(nm)) ? shotShareByName.get(nm).share : null;
+  }
+  const withShotShape = teams.filter(t => t.openPlayXgShare != null);
+  if (withShotShape.length > 0) {
+    const vals = withShotShape.map(t => t.openPlayXgShare).sort((a, b) => a - b);
+    const rank = (v) => {
+      let lo = 0, hi = vals.length;
+      while (lo < hi) { const mid = (lo + hi) >> 1; if (vals[mid] <= v) lo = mid + 1; else hi = mid; }
+      return lo / vals.length;
+    };
+    for (const t of withShotShape) {
+      const openPlayBand = band(rank(t.openPlayXgShare));
+      t.traits.transition = Math.round(t.traits.transition * 0.75 + openPlayBand * 0.25);
+      t.xgShapeApplied = true;
+    }
+  }
+  console.log(`xG-shape signal applied to transition for ${withShotShape.length} of ${teams.length} teams${withShotShape.length === 0 ? ' (run enrichStatsAPI.mjs with shotmap coverage first)' : ''}.`);
+
   // build upsert rows: only for teams we have a derived profile for
   // (so we keep their name/league metadata and just swap in measured traits)
   const rows = [];
@@ -382,6 +425,8 @@ async function main() {
     for (const axis of ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad']) {
       const hadInputs = axis === 'pressing'
         ? (t.ppdaPressing || (t.inputs && t.inputs.pressing))
+        : axis === 'transition'
+        ? (t.xgShapeApplied || (t.inputs && t.inputs.transition))
         : (t.inputs && t.inputs[axis]);
       blended[axis] = hadInputs ? measured[axis] : (prior[axis] ?? measured[axis]);
     }

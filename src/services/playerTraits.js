@@ -26,15 +26,60 @@ function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d;
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function per90(v, minutes) { return minutes > 0 ? num(v) / (minutes / 90) : 0; }
 
+// TheStatsAPI's mode-of-matches position (statsapi_position) and
+// API-Football's per-competition position tag (api_position) are REAL
+// measured behavior — what a player actually lined up as, not a stored
+// label that can drift stale. Both are coarse (only Goalkeeper/Defender/
+// Midfielder/Forward), so they can't replace the finer FB/DM/WIDE
+// subdivisions below, but when they DISAGREE with the coarse group the text
+// fields imply, the measured data wins over the label.
+function coarseFromMeasured(player) {
+  const raw = String(player.statsapi_position || player.api_position || '').toLowerCase();
+  if (!raw) return null;
+  if (/goalkeeper|^g$/.test(raw)) return 'GK';
+  if (/defender|^d$/.test(raw)) return 'DEF';
+  if (/midfielder|^m$/.test(raw)) return 'MID';
+  if (/forward|attacker|^f$/.test(raw)) return 'ATT';
+  return null;
+}
+
+// Which coarse group(s) each fine-grained text bucket is compatible with.
+// WIDE is deliberately ambiguous — a winger can legitimately show up as
+// either M or F in a 4-way feed — so it's never treated as conflicting
+// with either.
+const COARSE_COMPAT = {
+  GK: ['GK'], FB: ['DEF'], DEF: ['DEF'], DM: ['MID'], MID: ['MID'],
+  WIDE: ['MID', 'ATT'], ATT: ['ATT'],
+};
+
 function positionBucket(player) {
-  const t = `${player.role || ''} ${player.position || ''} ${player.archetype || ''} ${player.pos || ''}`.toLowerCase();
-  if (/(goalkeeper|keeper|\bgk\b)/.test(t)) return 'GK';
-  if (/(wing.?back|full.?back|\brb\b|\blb\b|\brwb\b|\blwb\b)/.test(t)) return 'FB';
-  if (/(back|defender|centre.?back|center.?back|\bcb\b|\bdef\b)/.test(t)) return 'DEF';
-  if (/(wing|\brw\b|\blw\b|winger)/.test(t)) return 'WIDE';
-  if (/(forward|striker|\bcf\b|\bst\b|attacker|poacher)/.test(t)) return 'ATT';
-  if (/(defensive mid|\bdm\b|\bcdm\b|anchor|holding|ball-winning)/.test(t)) return 'DM';
-  return 'MID';
+  // v2 bugfix — this used to fold player.archetype into the scanned text,
+  // which made bucket detection circular: a stale/wrong LEGACY archetype
+  // label (e.g. "Ball-Winning Defender" — not a real label this engine
+  // produces) contained the word "defender" and hijacked the DEF check
+  // before the DM check ever ran, misclassifying real defensive midfielders
+  // (Rúben Neves) as centre-backs. Bucket must be derived only from actual
+  // position fields, never from the archetype we're about to (re)compute.
+  // Also now reads primary_role/raw_position — the cleaner, unabbreviated
+  // fields ("Defensive Midfielder", "Attacker") — alongside the short ones.
+  const t = `${player.role || ''} ${player.position || ''} ${player.pos || ''} ${player.primary_role || ''} ${player.raw_position || ''}`.toLowerCase();
+  let textBucket = 'MID';
+  if (/(goalkeeper|keeper|\bgk\b)/.test(t)) textBucket = 'GK';
+  else if (/(wing.?back|full.?back|\brb\b|\blb\b|\brwb\b|\blwb\b)/.test(t)) textBucket = 'FB';
+  else if (/(back|defender|centre.?back|center.?back|\bcb\b|\bdef\b)/.test(t)) textBucket = 'DEF';
+  else if (/(wing|\brw\b|\blw\b|winger)/.test(t)) textBucket = 'WIDE';
+  else if (/(forward|striker|\bcf\b|\bst\b|\bfwd\b|\batt\b|attacker|poacher)/.test(t)) textBucket = 'ATT';
+  else if (/(defensive mid|\bdm\b|\bcdm\b|anchor|holding|ball-winning)/.test(t)) textBucket = 'DM';
+
+  // v3 — v8.5 added real per-match/per-competition position feeds
+  // (api_position, statsapi_position) this session, but nothing ever read
+  // them for archetype purposes. Cross-check: if the measured coarse group
+  // contradicts the text-derived bucket's coarse group, trust the measured
+  // data — but only at the coarse level, since the finer subtype (FB/DM/
+  // WIDE) came from the now-contradicted text and shouldn't be kept either.
+  const measured = coarseFromMeasured(player);
+  if (measured && !COARSE_COMPAT[textBucket].includes(measured)) return measured;
+  return textBucket;
 }
 
 // Position baselines for the aggregate fallback (no event data).
@@ -155,30 +200,109 @@ export function playerTraits(player = {}) {
   return { traits, roleMetrics: roleMetricsFrom(traits), basis: event ? 'event' : 'aggregate', bucket };
 }
 
-// Map a player's standout trait (vs their position baseline) to an individual
-// archetype label, so registry players stop sharing one label per position.
+// v3 — each label now names 2-3 DEFINING traits instead of one. The old
+// design picked whichever single trait had the largest delta above the
+// position baseline and looked up one label for it — which meant a small,
+// possibly noisy edge on ONE trait could decide the label even when it
+// wasn't really the player's standout skill (e.g. Rashford's control delta
+// edging out everything else landed him on "False Nine" despite a real
+// transition/width/pressing profile that's textbook Inside Forward — the
+// "least-worst trait" problem). Now every candidate label is scored by the
+// AVERAGE delta across its own defining traits, so a label only wins when
+// several of its real requirements are actually met, not just one. Several
+// labels below already had multiple traits independently triggering them
+// in the old single-key map (e.g. ATT's Advanced Forward: transition OR
+// width OR pressing) — those are simply grouped into one signature here.
 const ARCHETYPE_LABELS = {
-  GK:   { map: { control: 'Sweeper Keeper' }, default: 'Shot-Stopper' },
-  DEF:  { map: { control: 'Ball-Playing Defender', transition: 'Ball-Playing Defender', pressing: 'Stopper', defensiveLoad: 'Stopper' }, default: 'Stopper' },
-  FB:   { map: { width: 'Wing-Back', transition: 'Wing-Back', control: 'Inverted Full-Back', tempo: 'Inverted Full-Back', defensiveLoad: 'Full-Back', pressing: 'Full-Back' }, default: 'Full-Back' },
-  DM:   { map: { control: 'Deep-Lying Playmaker', tempo: 'Deep-Lying Playmaker', defensiveLoad: 'Anchor', pressing: 'Ball-Winning Midfielder' }, default: 'Holding Midfielder' },
-  MID:  { map: { control: 'Deep-Lying Playmaker', transition: 'Box-to-Box Midfielder', pressing: 'Ball-Winning Midfielder', width: 'Mezzala', tempo: 'Advanced Playmaker' }, default: 'Central Midfielder' },
-  WIDE: { map: { width: 'Winger', transition: 'Winger', pressing: 'Winger', control: 'Inside Forward', tempo: 'Inside Forward' }, default: 'Winger' },
-  ATT:  { map: { transition: 'Advanced Forward', width: 'Advanced Forward', pressing: 'Advanced Forward', control: 'False Nine', tempo: 'Second Striker', defensiveLoad: 'Target Man' }, default: 'Poacher' },
+  GK: {
+    labels: [
+      { name: 'Sweeper Keeper', traits: ['control', 'tempo'] },
+    ],
+    default: 'Shot-Stopper',
+  },
+  DEF: {
+    labels: [
+      { name: 'Ball-Playing Defender', traits: ['control', 'transition'] },
+      { name: 'Stopper', traits: ['pressing', 'defensiveLoad'] },
+    ],
+    default: 'Stopper',
+  },
+  FB: {
+    labels: [
+      { name: 'Wing-Back', traits: ['width', 'transition'] },
+      { name: 'Inverted Full-Back', traits: ['control', 'tempo'] },
+    ],
+    default: 'Full-Back',
+  },
+  DM: {
+    labels: [
+      { name: 'Deep-Lying Playmaker', traits: ['control', 'tempo'] },
+      { name: 'Ball-Winning Midfielder', traits: ['pressing', 'defensiveLoad'] },
+      { name: 'Anchor', traits: ['defensiveLoad'] },
+    ],
+    default: 'Holding Midfielder',
+  },
+  MID: {
+    labels: [
+      { name: 'Deep-Lying Playmaker', traits: ['control', 'defensiveLoad'] },
+      { name: 'Box-to-Box Midfielder', traits: ['transition', 'pressing', 'tempo'] },
+      { name: 'Ball-Winning Midfielder', traits: ['pressing', 'defensiveLoad'] },
+      { name: 'Mezzala', traits: ['width', 'transition'] },
+      { name: 'Advanced Playmaker', traits: ['tempo', 'transition'] },
+    ],
+    default: 'Central Midfielder',
+  },
+  WIDE: {
+    labels: [
+      { name: 'Winger', traits: ['width', 'transition'] },
+      { name: 'Inside Forward', traits: ['control', 'tempo'] },
+    ],
+    default: 'Winger',
+  },
+  ATT: {
+    labels: [
+      { name: 'Advanced Forward', traits: ['transition', 'width', 'pressing'] },
+      { name: 'False Nine', traits: ['control', 'pressing'] },
+      { name: 'Second Striker', traits: ['tempo', 'transition'] },
+      { name: 'Target Man', traits: ['defensiveLoad', 'control'] },
+    ],
+    default: 'Poacher',
+  },
 };
 
 export function deriveArchetype(player = {}) {
   const { traits, bucket } = playerTraits(player);
   const base = BASE[bucket] || BASE.MID;
-  const labels = ARCHETYPE_LABELS[bucket] || ARCHETYPE_LABELS.MID;
-  let bestKey = null;
-  let bestDelta = -Infinity;
-  for (const k of TRAIT_KEYS) {
-    if (!labels.map[k]) continue;
-    const delta = traits[k] - (base[k] ?? 70);
-    if (delta > bestDelta) { bestDelta = delta; bestKey = k; }
+  const config = ARCHETYPE_LABELS[bucket] || ARCHETYPE_LABELS.MID;
+
+  let best = null;
+  let bestScore = -Infinity;
+  for (const label of config.labels) {
+    const deltas = label.traits.map((k) => traits[k] - (base[k] ?? 70));
+    const avg = deltas.reduce((a, b) => a + b, 0) / deltas.length;
+    // Coverage bonus — plain averaging structurally punishes labels that
+    // require MORE corroborating traits: a 3-trait signature only wins if
+    // ALL three legs are strong, but averaging means a weaker third leg
+    // drags it below a 2-trait label that gets to cherry-pick just its best
+    // two legs from the same trait pool. Made worse by real correlation in
+    // the underlying formulas — transition/width/tempo all partly derive
+    // from the same dribbles-carrying signal (drib90), so Mezzala
+    // (width+transition) rides that correlation and out-scored Box-to-Box
+    // Midfielder (transition+pressing+tempo) even for a genuinely elite,
+    // defensively-strong box-to-box profile, since Mezzala never has to
+    // clear the less-correlated `pressing` leg at all. +2/extra-trait wasn't
+    // enough to overcome that; +4 was verified (synthetic profile sweep:
+    // pure destroyer/genuine box-to-box/moderate box-to-box/pure creator)
+    // to correctly separate Ball-Winning Midfielder (pressing alone) from
+    // Box-to-Box (pressing AND transition/tempo together) without wrongly
+    // promoting a pure creator with weak pressing.
+    const score = avg + (label.traits.length - 2) * 4;
+    if (score > bestScore) { bestScore = score; best = label.name; }
   }
-  return bestKey && bestDelta > 3 ? labels.map[bestKey] : labels.default;
+  // Same >3 bar as before — a label only overrides the position default
+  // when its defining traits, averaged (plus coverage bonus), clear a real
+  // threshold.
+  return best && bestScore > 3 ? best : config.default;
 }
 
 export default playerTraits;

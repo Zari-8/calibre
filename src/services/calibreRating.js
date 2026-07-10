@@ -45,8 +45,17 @@ function numOrNull(v) {
 // from [-6,+6] — coverage assessment showed this signal, when present, was
 // too capped to move a ranked "spine" score meaningfully.)
 function shotQualityNudge(player) {
-  const acc = numOrNull(player.shot_accuracy);
+  let acc = numOrNull(player.shot_accuracy);
   const missed = numOrNull(player.big_chances_missed);
+  // v8.5 fallback: TheStatsAPI's shot_accuracy only reaches a minority of
+  // rows. shots/shots_on are sibling fields inside the API-Football response
+  // enrichPlayerStats.mjs already fetches for EVERY player — a real shot
+  // accuracy reading from the base source, not just an enrichment extra.
+  if (acc == null) {
+    const shots = numOrNull(player.shots ?? player.total_shots);
+    const shotsOn = numOrNull(player.shots_on);
+    if (shots != null && shotsOn != null && shots > 0) acc = clamp((shotsOn / shots) * 100, 0, 100);
+  }
   if (acc == null && missed == null) return 0;        // no new data
   let nudge = 0;
   if (acc != null) nudge += clamp((acc - 33) / 33 * 6, -6, 6);  // 33% SOT = neutral
@@ -70,7 +79,19 @@ function chanceCreationBoost(player, sm) {
 function duelQualityScore(player, du90) {
   const gd = numOrNull(player.ground_duel_win_pct);
   const ad = numOrNull(player.aerial_duel_win_pct);
-  if (gd == null && ad == null) return null;          // fall back to count-based
+  if (gd == null && ad == null) {
+    // v8.5 fallback: a real (not ground/aerial-split) duel win% from
+    // API-Football's duels.total/duels.won — sibling fields of duels.won,
+    // which the engine already reads. Reaches every enriched player, not
+    // just the ones with TheStatsAPI's split percentages.
+    const total = numOrNull(player.duels_total);
+    const won = numOrNull(player.duels_won ?? player.aerial_duels_won);
+    if (total == null || won == null || total <= 0) return null;   // fall back to count-based
+    const pct = clamp((won / total) * 100, 0, 100);
+    const pctScore = clamp((pct - 45) / 35 * 70, 0, 100);   // 45% = neutral, matches gd/ad's ~general shape
+    const volScore = clamp(du90 / 5.2 * 100, 0, 100);
+    return clamp(pctScore * 0.60 + volScore * 0.40, 0, 110);
+  }
   const gdScore = gd != null ? clamp((gd - 30) / 40 * 80, 0, 80) : 40;
   const adScore = ad != null ? clamp((ad - 25) / 40 * 60, 0, 60) : 30;
   const pctScore = gdScore * 0.6 + adScore * 0.4;
@@ -104,6 +125,59 @@ function dribbleScore(player, sm) {
   const bonus = clamp((pct - 55) / 25 * 12, -6, 12);
   return { dr90, bonus };
 }
+
+// v8.5 — API-Football sibling fields that were fetched every enrichment run
+// and simply never read off the response: tackles.blocks, dribbles.past,
+// cards.yellow/red, fouls.committed/drawn, penalty.won/scored/missed. Zero
+// extra API cost — these are all in the SAME response as tackles.total,
+// duels.won, goals.total etc. which the engine already consumes.
+
+// Blocks are a genuine defensive action distinct from tackles/interceptions
+// (shots and crosses stopped, not the ball won outright). Being dribbled
+// past a lot is a real weakness signal a raw tackle/interception count can't
+// see — a defender can rack up tackles while still getting turned constantly.
+// Returns a signed adjustment [-8, +8].
+function defensiveExtrasNudge(player, sm) {
+  const blocks = numOrNull(player.tackle_blocks);
+  const past = numOrNull(player.dribbled_past);
+  if (blocks == null && past == null) return 0;
+  let nudge = 0;
+  if (blocks != null) nudge += clamp(per(blocks, sm) / 1.2 * 6, 0, 6);      // 1.2 blocks/90 = full credit
+  if (past != null) nudge -= clamp(per(past, sm) / 2.5 * 8, 0, 8);          // 2.5 times dribbled past/90 = full penalty
+  return clamp(nudge, -8, 8);
+}
+
+// Discipline: cards scaled per-90, deliberately mild — a competitive tackler
+// naturally picks some up, this isn't meant to punish physical defending,
+// just the extreme end (repeat bookings, red cards, conceding penalties).
+// Returns [-10, 0].
+function disciplineNudge(player, sm) {
+  const yellows = numOrNull(player.yellow_cards);
+  const reds = numOrNull(player.red_cards);
+  const penCon = numOrNull(player.penalty_conceded);
+  if (yellows == null && reds == null && penCon == null) return 0;
+  let penalty = 0;
+  if (yellows != null) penalty += clamp((per(yellows, sm) - 0.15) / 0.35 * 4, 0, 4);  // >0.15 yellows/90 starts costing
+  if (reds != null) penalty += clamp(per(reds, sm) / 0.05 * 3, 0, 3);                  // any real red-card rate is a big deal
+  // Conceding a penalty is a sharper, rarer lapse than a normal foul — a real
+  // per-90 rate here (any at all, given how rare pens are) is a bigger deal
+  // than a card, so it gets its own headroom rather than sharing the "fouls" bucket.
+  if (penCon != null) penalty += clamp(per(penCon, sm) / 0.06 * 3, 0, 3);
+  return -clamp(penalty, 0, 10);
+}
+
+// Fouls drawn is a real threat signal defenders have to give something up to
+// stop (an attacker nobody wants to foul isn't being pressured). Penalties
+// won is the sharpest version of the same thing — earning a foul in the box.
+// Returns a bonus [0, 10] for ATT/MID creation components.
+function foulsAndPenaltyBoost(player, sm) {
+  const drawn = numOrNull(player.fouls_drawn);
+  const penWon = numOrNull(player.penalty_won);
+  let boost = 0;
+  if (drawn != null) boost += clamp(per(drawn, sm) / 1.8 * 6, 0, 6);   // 1.8 fouls drawn/90 = full credit
+  if (penWon != null) boost += clamp(per(penWon, sm) / 0.15 * 4, 0, 4); // a real penalty-won rate is rare and valuable
+  return clamp(boost, 0, 10);
+}
 // Incisiveness signal (v8.4): raw pass_accuracy/volume treats a sideways
 // safety ball the same as a defense-splitting line-breaker. TheStatsAPI's
 // season-stats endpoint carries `final_third_passes` (accurate_final_third
@@ -131,7 +205,13 @@ function leagueStrength(line) {
   return DEFAULT_LEAGUE;
 }
 export function positionBucket(player) {
-  const text = `${player.role||''} ${player.position||''} ${player.archetype||''} ${player.pos||''} ${player.primary_role||''}`.toLowerCase();
+  // player.archetype deliberately excluded — including it makes bucket
+  // detection circular (a stale/wrong archetype label can hijack the regex
+  // before the real position fields get a say; this class of bug was found
+  // and fixed in playerTraits.js's own positionBucket() earlier — ported
+  // the same fix here so a future archetype recompute can't corrupt rating
+  // position detection the same way).
+  const text = `${player.role||''} ${player.position||''} ${player.pos||''} ${player.primary_role||''} ${player.raw_position||''}`.toLowerCase();
   if (/(goalkeeper|keeper|\bgk\b)/.test(text)) return 'GK';
   if (/(defender|centre.?back|center.?back|full.?back|wing.?back|\bcb\b|\brb\b|\blb\b|\bdef\b)/.test(text)) return 'DEF';
   if (/(striker|forward|winger|wide creator|wide forward|attack|poacher|fox|\bst\b|\brw\b|\blw\b|\bcf\b|\bfwd\b|\batt\b)/.test(text)) return 'ATT';
@@ -211,6 +291,8 @@ export function productionComponents(player, bucket) {
   const duelScore = duelQualityScore(player, du90);
   const terr = territorialIndex(player);
   const f3pBoost = incisivePassBoost(player, sm);
+  const defExtras = defensiveExtrasNudge(player, sm);
+  const foulsBoost = foulsAndPenaltyBoost(player, sm);
 
   const shotQuality = numOrNull(player.shot_quality);
   const shotQualityBonus = shotQuality != null
@@ -254,12 +336,12 @@ export function productionComponents(player, bucket) {
     // truncating existing dribble/shot-volume carry scores.
     const duelNudge = duelScore != null ? (duelScore - 50) * 0.10 : 0;
     const carry = clamp(dr90 / 2.1 * 40 + dribBonus + sh90 / 4.0 * 28 + duelNudge, 0, 100);
-    return { vals: [goalScore, create, carry], w: [0.76, 0.16, 0.08], ev };
+    return { vals: [goalScore, clamp(create + foulsBoost, 0, 134), carry], w: [0.76, 0.16, 0.08], ev };
   }
 
   if (bucket === 'DEF') {
-    const rawDuel = clamp(tk90 / 2.1 * 40 + in90 / 1.7 * 38 + du90 / 5.2 * 40 + clear90 / 4.5 * 16, 0, 118);
-    const defend = duelScore !== null ? clamp(duelScore * 1.05 + clear90 / 4.5 * 12, 0, 118) : rawDuel;
+    const rawDuel = clamp(tk90 / 2.1 * 40 + in90 / 1.7 * 38 + du90 / 5.2 * 40 + clear90 / 4.5 * 16 + defExtras, 0, 118);
+    const defend = duelScore !== null ? clamp(duelScore * 1.05 + clear90 / 4.5 * 12 + defExtras, 0, 118) : rawDuel;
     const build = ev
       ? clamp((acc - 76) / (93 - 76) * 52 + pass90 / 78 * 48 + touchBonus + (terr != null ? (terr - 40) * 0.15 : 0), 0, 112)
       : 56;
@@ -277,15 +359,16 @@ export function productionComponents(player, bucket) {
     key90 / 1.9 * 52 +
     (xa90 != null ? xa90 / 0.32 * 52 : a90 / 0.46 * 52) +
     bccBoost +
-    f3pBoost,
+    f3pBoost +
+    foulsBoost,
     0,
-    134
+    144
   );
 
   const goal = clamp(g90 / 0.42 * 70 + (xg90 != null ? xg90 / 0.32 * 38 : 0) + sqNudge + shotQualityBonus, 0, 122);
   const carry = clamp(dr90 / 1.5 * 64 + dribBonus - lossPenalty * 0.5, 0, 104);
-  const duelRaw = clamp(tk90 / 2.1 * 48 + in90 / 1.4 * 42 + clear90 / 3.0 * 8, 0, 104);
-  const defend = duelScore !== null ? clamp(duelScore * 0.86 + tk90 / 2.1 * 10 + in90 / 1.4 * 10, 0, 104) : duelRaw;
+  const duelRaw = clamp(tk90 / 2.1 * 48 + in90 / 1.4 * 42 + clear90 / 3.0 * 8 + defExtras, 0, 104);
+  const defend = duelScore !== null ? clamp(duelScore * 0.86 + tk90 / 2.1 * 10 + in90 / 1.4 * 10 + defExtras, 0, 104) : duelRaw;
 
   return { vals: [progress, create, goal, carry, defend], w: [0.58, 0.24, 0.09, 0.04, 0.05], ev };
 }
@@ -360,9 +443,15 @@ function scoreLine(line = {}) {
   // data, at reduced weight when it exists) — blending q in again at 24%
   // here would double-count it. Outfielders still get the normal 76/24 blend
   // since their production is entirely independent stats.
-  const core = bucket === 'GK'
+  let core = bucket === 'GK'
     ? clamp(production, 0, 108)
     : clamp(production*0.76+q*0.24, 0, 108);
+
+  // v8.5 — discipline, applied once here rather than duplicated per bucket
+  // branch. Deliberately mild (see disciplineNudge) — this is a sanity check
+  // against reckless/repeat bookings, not a penalty on physical defending.
+  const sm2 = num(line.stats_minutes)||minutes;
+  core = clamp(core + disciplineNudge(line, sm2), 0, 108);
 
   const Performance=clamp(core*sRaw,0,100);
   const startRate=appsA>0?startsA/appsA:0.7, minsPerApp=appsA>0?availMin/appsA:0;
@@ -431,6 +520,12 @@ function buildBaseLine(player, s) {
     key_passes:num(b.key_passes), dribbles_success:num(b.dribbles_success), dribbles:num(b.dribbles),
     tackles:num(b.tackles), interceptions:num(b.interceptions), duels_won:num(b.duels_won), shots:num(b.shots),
     saves:b.saves!=null?num(b.saves):null, goals_conceded:b.goals_conceded!=null?num(b.goals_conceded):null,
+    duels_total:b.duels_total!=null?num(b.duels_total):null, shots_on:b.shots_on!=null?num(b.shots_on):null,
+    tackle_blocks:b.tackle_blocks!=null?num(b.tackle_blocks):null, dribbled_past:b.dribbled_past!=null?num(b.dribbled_past):null,
+    yellow_cards:b.yellow_cards!=null?num(b.yellow_cards):null, red_cards:b.red_cards!=null?num(b.red_cards):null,
+    fouls_committed:b.fouls_committed!=null?num(b.fouls_committed):null, fouls_drawn:b.fouls_drawn!=null?num(b.fouls_drawn):null,
+    penalty_won:b.penalty_won!=null?num(b.penalty_won):null, penalty_scored:b.penalty_scored!=null?num(b.penalty_scored):null,
+    penalty_missed:b.penalty_missed!=null?num(b.penalty_missed):null, penalty_conceded:b.penalty_conceded!=null?num(b.penalty_conceded):null,
     // Friendlies: near-full availability (0.9×), zero output weight.
     avail_minutes:num(b.minutes)+0.9*fMin,
     avail_apps:num(b.appearances)+0.9*fApps,
@@ -451,6 +546,12 @@ function buildOverlayLine(player, s) {
     key_passes:num(o.key_passes), dribbles_success:num(o.dribbles_success), dribbles:num(o.dribbles),
     tackles:num(o.tackles), interceptions:num(o.interceptions), duels_won:num(o.duels_won), shots:num(o.shots),
     saves:o.saves!=null?num(o.saves):null, goals_conceded:o.goals_conceded!=null?num(o.goals_conceded):null,
+    duels_total:o.duels_total!=null?num(o.duels_total):null, shots_on:o.shots_on!=null?num(o.shots_on):null,
+    tackle_blocks:o.tackle_blocks!=null?num(o.tackle_blocks):null, dribbled_past:o.dribbled_past!=null?num(o.dribbled_past):null,
+    yellow_cards:o.yellow_cards!=null?num(o.yellow_cards):null, red_cards:o.red_cards!=null?num(o.red_cards):null,
+    fouls_committed:o.fouls_committed!=null?num(o.fouls_committed):null, fouls_drawn:o.fouls_drawn!=null?num(o.fouls_drawn):null,
+    penalty_won:o.penalty_won!=null?num(o.penalty_won):null, penalty_scored:o.penalty_scored!=null?num(o.penalty_scored):null,
+    penalty_missed:o.penalty_missed!=null?num(o.penalty_missed):null, penalty_conceded:o.penalty_conceded!=null?num(o.penalty_conceded):null,
   };
 }
 

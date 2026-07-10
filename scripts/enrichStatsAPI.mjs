@@ -191,6 +191,8 @@ function ensurePlayer(map, playerId, base) {
       appearances: 0,
       starts: 0,
       stats_minutes: 0,
+      position_counts: {},
+      saves: 0,
 
       goals: 0,
       assists: 0,
@@ -283,10 +285,19 @@ function aggregatePlayerStats(playerAgg, match, json) {
     const duels = row.duels || {};
     const defending = row.defending || {};
     const general = row.general || {};
+    const goalkeeping = row.goalkeeping || {};
 
     player.appearances += row.played ? 1 : 0;
     player.starts += row.started ? 1 : 0;
     player.stats_minutes += num(row.minutes_played);
+
+    // Real per-match position code (G/D/M/F) — only tally matches actually
+    // played, so an unused bench appearance doesn't count toward the mode.
+    if (row.played && row.position) {
+      const code = String(row.position).toUpperCase();
+      player.position_counts[code] = (player.position_counts[code] || 0) + 1;
+    }
+    player.saves += num(goalkeeping.saves);
 
     player.goals += num(shooting.goals);
     player.assists += num(passing.assists);
@@ -386,6 +397,20 @@ function aggregateShotmap(playerAgg, teamAgg, match, json) {
   }
 }
 
+const POSITION_WORD = { G: 'Goalkeeper', D: 'Defender', M: 'Midfielder', F: 'Forward' };
+
+// Mode of the per-match position code this player was actually listed under
+// (only matches they played, per aggregatePlayerStats). A single-match
+// sample is noisy — e.g. a wing-back can get logged D at one club and M at
+// another — so this is the code with the most matches, with the full counts
+// written alongside for transparency rather than pretending certainty.
+function modePosition(counts) {
+  const entries = Object.entries(counts || {});
+  if (!entries.length) return null;
+  entries.sort((a, b) => b[1] - a[1]);
+  return entries[0][0];
+}
+
 function buildPlayerUpdate(player) {
   const minutes = player.stats_minutes || 0;
   const shots = player.total_shots || 0;
@@ -398,6 +423,7 @@ function buildPlayerUpdate(player) {
   const npxg = player.np_expected_goals > 0 ? player.np_expected_goals : Math.max(0, xg - player.penalty_xg);
 
   const per90 = (v) => minutes ? round((v / minutes) * 90) : null;
+  const modeCode = modePosition(player.position_counts);
 
   return {
     // Identity / join keys only. These are safe.
@@ -405,6 +431,12 @@ function buildPlayerUpdate(player) {
     statsapi_season_id: player.statsapi_season_id,
     statsapi_competition_id: player.statsapi_competition_id,
     statsapi_enriched_at: new Date().toISOString(),
+
+    // Real per-match position (G/D/M/F, from a source independent of
+    // whatever originally populated position/pos/primary_role/raw_position —
+    // kept in its own column pending review, not auto-merged into those.
+    statsapi_position: modeCode ? POSITION_WORD[modeCode] || modeCode : null,
+    statsapi_position_counts: Object.keys(player.position_counts || {}).length ? player.position_counts : null,
 
     // xG/xA layer. API-Football does not provide this baseline, so these can stay unprefixed.
     xg: round(xg),
@@ -447,6 +479,15 @@ function buildPlayerUpdate(player) {
     statsapi_long_ball_accuracy: longBalls ? Math.round((player.accurate_long_balls / longBalls) * 100) : null,
 
     statsapi_ground_duel_win_pct: duels ? Math.round((player.duel_won / duels) * 100) : null,
+    // aerial_duels_won, touches, possession_lost: API-Football has NO
+    // equivalent field for any of these (it only gives one combined
+    // duels.won, and nothing at all for touches/possession-lost), so unlike
+    // tackles/interceptions/duels_won/shots there's no collision risk in
+    // writing these unprefixed. calibreRating.js already reads all three
+    // (aerial_duels_won as a duel-count fallback, touches/possession_lost
+    // for touchBonus/lossPenalty) — they were computed correctly this whole
+    // time, just published under a name the engine never looked for.
+    aerial_duels_won: player.aerial_won || null,
     statsapi_aerial_duels_won: player.aerial_won || null,
     statsapi_aerial_duels_won_per90: per90(player.aerial_won),
 
@@ -456,9 +497,11 @@ function buildPlayerUpdate(player) {
     statsapi_dispossessed: player.dispossessed || null,
     statsapi_dispossessed_per90: per90(player.dispossessed),
 
+    possession_lost: player.possession_lost || null,
     statsapi_possession_lost: player.possession_lost || null,
     statsapi_possession_lost_per90: per90(player.possession_lost),
 
+    touches: player.touches || null,
     statsapi_touches: player.touches || null,
     statsapi_touches_per90: per90(player.touches),
 
@@ -651,11 +694,41 @@ async function main() {
     enriched++;
   }
 
+  // Persist the team-season shotmap aggregate to team_shot_profiles — this
+  // used to be computed and immediately discarded. aggregateTeamStats.mjs
+  // reads it (joined by normalized team name, same pattern as its existing
+  // team_indices/PPDA join) to blend an open-play xG-share signal into the
+  // transition axis of derived_team_profiles.
+  let teamRowsWritten = 0, teamWriteErrors = 0;
+  if (!DRY_RUN && teams.length) {
+    const teamRows = teams.map(t => ({
+      statsapi_team_id: t.statsapi_team_id,
+      statsapi_competition_id: t.statsapi_competition_id || '',
+      statsapi_season_id: t.statsapi_season_id || '',
+      team_name: t.team_name,
+      shots_for: t.shots_for,
+      shots_on_target_for: t.shots_on_target_for,
+      goals_for: t.goals_for,
+      xg_for: round(t.xg_for),
+      open_play_xg_for: round(t.open_play_xg_for),
+      set_piece_xg_for: round(t.set_piece_xg_for),
+      penalty_xg_for: round(t.penalty_xg_for),
+      updated_at: new Date().toISOString(),
+    }));
+    for (let i = 0; i < teamRows.length; i += 100) {
+      const chunk = teamRows.slice(i, i + 100);
+      const { error } = await sb.from('team_shot_profiles')
+        .upsert(chunk, { onConflict: 'statsapi_team_id,statsapi_competition_id,statsapi_season_id' });
+      if (error) { teamWriteErrors++; console.error('  team_shot_profiles upsert error:', error.message); continue; }
+      teamRowsWritten += chunk.length;
+    }
+  }
+
   console.log(`\n── Summary ──────────────────`);
   console.log(`Enriched players : ${enriched}`);
   console.log(`No Supabase match: ${noMatch}`);
   console.log(`Update errors    : ${errors}`);
-  console.log(`Team aggregates  : ${teams.length} not written yet`);
+  console.log(`Team aggregates  : ${teams.length} computed, ${teamRowsWritten} written${teamWriteErrors ? `, ${teamWriteErrors} errors` : ''}${DRY_RUN ? ' (dry run — none written)' : ''}`);
   console.log(`Dry run          : ${DRY_RUN ? 'yes' : 'no'}`);
 
   if (droppedColumns.size) {

@@ -199,6 +199,9 @@ function accumulate(entries) {
   let minutes=0,apps=0,starts=0,passes=0,key=0,dribS=0,dribA=0;
   let tackles=0,inter=0,duelsWon=0,shots=0,goals=0,assists=0;
   let saves=0,conceded=0,penaltySaved=0,hasGkFields=false;
+  let duelsTotal=0,shotsOn=0,tackleBlocks=0,dribbledPast=0;
+  let yellowCards=0,redCards=0,foulsCommitted=0,foulsDrawn=0;
+  let penaltyWon=0,penaltyScored=0,penaltyMissed=0,penaltyConceded=0,hasExtraFields=false;
   let accSum=0,accW=0,ratingSum=0,ratingW=0,pos=null,posMin=-1;
   for (const s of entries) {
     const m=num(s?.games?.minutes);
@@ -212,6 +215,19 @@ function accumulate(entries) {
     if (s?.goals?.saves != null) { saves += num(s.goals.saves); hasGkFields = true; }
     if (s?.goals?.conceded != null) { conceded += num(s.goals.conceded); hasGkFields = true; }
     if (s?.penalty?.saved != null) { penaltySaved += num(s.penalty.saved); hasGkFields = true; }
+    // Sibling fields of ones we already read above — same response, zero extra API cost.
+    if (s?.duels?.total != null) { duelsTotal += num(s.duels.total); hasExtraFields = true; }
+    if (s?.shots?.on != null) { shotsOn += num(s.shots.on); hasExtraFields = true; }
+    if (s?.tackles?.blocks != null) { tackleBlocks += num(s.tackles.blocks); hasExtraFields = true; }
+    if (s?.dribbles?.past != null) { dribbledPast += num(s.dribbles.past); hasExtraFields = true; }
+    if (s?.cards?.yellow != null) { yellowCards += num(s.cards.yellow); hasExtraFields = true; }
+    if (s?.cards?.red != null) { redCards += num(s.cards.red); hasExtraFields = true; }
+    if (s?.fouls?.committed != null) { foulsCommitted += num(s.fouls.committed); hasExtraFields = true; }
+    if (s?.fouls?.drawn != null) { foulsDrawn += num(s.fouls.drawn); hasExtraFields = true; }
+    if (s?.penalty?.won != null) { penaltyWon += num(s.penalty.won); hasExtraFields = true; }
+    if (s?.penalty?.scored != null) { penaltyScored += num(s.penalty.scored); hasExtraFields = true; }
+    if (s?.penalty?.missed != null) { penaltyMissed += num(s.penalty.missed); hasExtraFields = true; }
+    if (s?.penalty?.commited != null) { penaltyConceded += num(s.penalty.commited); hasExtraFields = true; }
     const accRaw=s?.passes?.accuracy;
     if (accRaw!=null && m>0){ const total=num(s?.passes?.total);
       const pct=Number(accRaw)<=100?Number(accRaw):(total>0?(Number(accRaw)/total)*100:null);
@@ -225,6 +241,12 @@ function accumulate(entries) {
     tackles, interceptions:inter, duels_won:duelsWon, shots,
     saves: hasGkFields?saves:null, goals_conceded: hasGkFields?conceded:null,
     penalty_saved: hasGkFields?penaltySaved:null,
+    duels_total: hasExtraFields?duelsTotal:null, shots_on: hasExtraFields?shotsOn:null,
+    tackle_blocks: hasExtraFields?tackleBlocks:null, dribbled_past: hasExtraFields?dribbledPast:null,
+    yellow_cards: hasExtraFields?yellowCards:null, red_cards: hasExtraFields?redCards:null,
+    fouls_committed: hasExtraFields?foulsCommitted:null, fouls_drawn: hasExtraFields?foulsDrawn:null,
+    penalty_won: hasExtraFields?penaltyWon:null, penalty_scored: hasExtraFields?penaltyScored:null,
+    penalty_missed: hasExtraFields?penaltyMissed:null, penalty_conceded: hasExtraFields?penaltyConceded:null,
     pass_accuracy: accW>0?Math.round((accSum/accW)*10)/10:null,
     api_average_rating: ratingW>0?Math.round((ratingSum/ratingW)*100)/100:null,
     position: pos };
@@ -301,6 +323,9 @@ function leagueLine(stats, preferredLeagueId) {
   let minutes = 0, apps = 0, starts = 0, passes = 0, key = 0, dribS = 0, dribA = 0;
   let tackles = 0, inter = 0, duelsWon = 0, shots = 0, goals = 0, assists = 0;
   let saves = 0, conceded = 0, penaltySaved = 0, hasGkFields = false;
+  let duelsTotal = 0, shotsOn = 0, tackleBlocks = 0, dribbledPast = 0;
+  let yellowCards = 0, redCards = 0, foulsCommitted = 0, foulsDrawn = 0;
+  let penaltyWon = 0, penaltyScored = 0, penaltyMissed = 0, penaltyConceded = 0, hasExtraFields = false;
   let accSum = 0, accW = 0, ratingSum = 0, ratingW = 0, pos = null, posMin = -1;
 
   for (const s of lines) {
@@ -322,6 +347,19 @@ function leagueLine(stats, preferredLeagueId) {
     if (s?.goals?.saves != null) { saves += num(s.goals.saves); hasGkFields = true; }
     if (s?.goals?.conceded != null) { conceded += num(s.goals.conceded); hasGkFields = true; }
     if (s?.penalty?.saved != null) { penaltySaved += num(s.penalty.saved); hasGkFields = true; }
+    // Sibling fields of ones we already read above — same response, zero extra API cost.
+    if (s?.duels?.total != null) { duelsTotal += num(s.duels.total); hasExtraFields = true; }
+    if (s?.shots?.on != null) { shotsOn += num(s.shots.on); hasExtraFields = true; }
+    if (s?.tackles?.blocks != null) { tackleBlocks += num(s.tackles.blocks); hasExtraFields = true; }
+    if (s?.dribbles?.past != null) { dribbledPast += num(s.dribbles.past); hasExtraFields = true; }
+    if (s?.cards?.yellow != null) { yellowCards += num(s.cards.yellow); hasExtraFields = true; }
+    if (s?.cards?.red != null) { redCards += num(s.cards.red); hasExtraFields = true; }
+    if (s?.fouls?.committed != null) { foulsCommitted += num(s.fouls.committed); hasExtraFields = true; }
+    if (s?.fouls?.drawn != null) { foulsDrawn += num(s.fouls.drawn); hasExtraFields = true; }
+    if (s?.penalty?.won != null) { penaltyWon += num(s.penalty.won); hasExtraFields = true; }
+    if (s?.penalty?.scored != null) { penaltyScored += num(s.penalty.scored); hasExtraFields = true; }
+    if (s?.penalty?.missed != null) { penaltyMissed += num(s.penalty.missed); hasExtraFields = true; }
+    if (s?.penalty?.commited != null) { penaltyConceded += num(s.penalty.commited); hasExtraFields = true; }
 
     const accRaw = s?.passes?.accuracy;
     if (accRaw != null && m > 0) {
@@ -355,6 +393,18 @@ function leagueLine(stats, preferredLeagueId) {
     saves: hasGkFields ? saves : null,
     goals_conceded: hasGkFields ? conceded : null,
     penalty_saved: hasGkFields ? penaltySaved : null,
+    duels_total: hasExtraFields ? duelsTotal : null,
+    shots_on: hasExtraFields ? shotsOn : null,
+    tackle_blocks: hasExtraFields ? tackleBlocks : null,
+    dribbled_past: hasExtraFields ? dribbledPast : null,
+    yellow_cards: hasExtraFields ? yellowCards : null,
+    red_cards: hasExtraFields ? redCards : null,
+    fouls_committed: hasExtraFields ? foulsCommitted : null,
+    fouls_drawn: hasExtraFields ? foulsDrawn : null,
+    penalty_won: hasExtraFields ? penaltyWon : null,
+    penalty_scored: hasExtraFields ? penaltyScored : null,
+    penalty_missed: hasExtraFields ? penaltyMissed : null,
+    penalty_conceded: hasExtraFields ? penaltyConceded : null,
     pass_accuracy: accW > 0 ? Math.round((accSum / accW) * 10) / 10 : null,
     api_average_rating: ratingW > 0 ? Math.round((ratingSum / ratingW) * 100) / 100 : null,
     position: pos,
@@ -525,6 +575,27 @@ async function main() {
       if (line.saves != null) update.saves = line.saves;
       if (line.goals_conceded != null) update.goals_conceded = line.goals_conceded;
       if (line.penalty_saved != null) update.penalty_saved = line.penalty_saved;
+      // Sibling fields of ones we already wrote above — same API-Football
+      // response, zero extra API cost. Real duel win%, real shot accuracy,
+      // blocks, times-dribbled-past, discipline, and penalty involvement —
+      // all previously fetched and discarded.
+      if (line.duels_total != null) update.duels_total = line.duels_total;
+      if (line.shots_on != null) update.shots_on = line.shots_on;
+      if (line.tackle_blocks != null) update.tackle_blocks = line.tackle_blocks;
+      if (line.dribbled_past != null) update.dribbled_past = line.dribbled_past;
+      if (line.yellow_cards != null) update.yellow_cards = line.yellow_cards;
+      if (line.red_cards != null) update.red_cards = line.red_cards;
+      if (line.fouls_committed != null) update.fouls_committed = line.fouls_committed;
+      if (line.fouls_drawn != null) update.fouls_drawn = line.fouls_drawn;
+      if (line.penalty_won != null) update.penalty_won = line.penalty_won;
+      if (line.penalty_scored != null) update.penalty_scored = line.penalty_scored;
+      if (line.penalty_missed != null) update.penalty_missed = line.penalty_missed;
+      if (line.penalty_conceded != null) update.penalty_conceded = line.penalty_conceded;
+      // API-Football's own per-competition position tag — already computed
+      // by leagueLine() above (from games.position) but never written until
+      // now. Kept in its own column, independent of whatever originally
+      // populated position/pos/primary_role/raw_position, pending review.
+      if (line.position) update.api_position = line.position;
       if (splits) update.competition_splits = splits;
       if (didRemap) update.api_player_id = usedId;
 

@@ -22,7 +22,11 @@ const FIELDS = [
   'dribble_success_pct', 'successful_dribbles',
   'shot_quality',
   'xg', 'xa', 'npxg',
-  'saves', 'goals_conceded',
+  'saves', 'goals_conceded', 'penalty_saved',
+  'duels_total', 'shots_on', 'tackle_blocks', 'dribbled_past',
+  'yellow_cards', 'red_cards', 'fouls_committed', 'fouls_drawn',
+  'penalty_won', 'penalty_scored', 'penalty_missed',
+  'api_position', 'statsapi_position',
   'competition_splits',
 ];
 

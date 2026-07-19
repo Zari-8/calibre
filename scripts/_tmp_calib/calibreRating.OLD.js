@@ -219,79 +219,6 @@ function leagueStrength(line) {
     for (const name in LEAGUE_STRENGTH) if (key.includes(name)) return LEAGUE_STRENGTH[name]; }
   return DEFAULT_LEAGUE;
 }
-// v8.7 — calibration anchors for the spine() fix (see buildSpineFixCalibration.mjs
-// and the spine() comment above productionComponents). Built empirically from
-// the full live player base: for every scored player, compare the rating the
-// CURRENTLY-LIVE engine produces (spine still sorted/buggy) against the
-// spine-fixed-but-otherwise-identical engine, at matching percentiles. Piecewise-
-// linear between anchors, same technique as Q_ANCHORS/qFlat above. This is what
-// makes the spine() fix safe to ship: fixing spine() alone changes RELATIVE
-// ordering (correcting who was unfairly boosted by the old magnitude-sorted
-// weighting) but, unremapped, is mathematically guaranteed to only ever lower
-// scores (rearrangement inequality) since the weights are ~monotonically
-// descending per bucket — an earlier attempt at this exact fix without a remap
-// dropped 10,111/13,883 players and sent a real Girona starter to 47. Remapping
-// the corrected-but-uncalibrated score onto the live distribution's own shape
-// (same percentile histogram) preserves the scale while fixing the ranking.
-// Regenerate by re-running buildSpineFixCalibration.mjs any time the engine
-// changes enough that "live" and "spine-fixed" diverge differently.
-const RATING_CALIBRATION_ANCHORS = [[34,34],[36,38],[38,41],[41,45],[44,48],[46,51],[48,53],[50,54],[51,55],[52,56],[53,58],[55,59],[56,60],[57,61],[58,62],[60,63],[61,65],[63,66],[64,68],[67,70],[69,72],[74,76],[76,78],[77.38,80],[80,82],[82,84.34],[89,91]];
-const ABILITY_CALIBRATION_ANCHORS = [[27,28],[31,33],[32,35],[33,40],[36,43],[38,45],[40,47],[42,49],[43,51],[45,52],[46,53],[47,54.95],[49,56],[50,57],[52,59],[54,61],[56,63],[58,65],[61,67],[64,70],[68,73],[73,78],[76,82],[79,84],[83,87],[86,89],[92,93]];
-// Generic piecewise-linear anchor lookup — same interpolation as qFlat, but
-// parameterized over any anchor table instead of being hardcoded to Q_ANCHORS.
-// Values outside the anchor range are clamped to the nearest anchor's output
-// rather than extrapolated (avoids blowing up past the empirical data).
-function remapByAnchors(value, anchors) {
-  if (!Number.isFinite(value)) return value;
-  if (value <= anchors[0][0]) return anchors[0][1];
-  const last = anchors[anchors.length - 1];
-  if (value >= last[0]) return last[1];
-  for (let i = 1; i < anchors.length; i++) {
-    const [x1, y1] = anchors[i - 1];
-    const [x2, y2] = anchors[i];
-    if (value <= x2) {
-      if (x2 === x1) return y2;
-      const t = (value - x1) / (x2 - x1);
-      return y1 + t * (y2 - y1);
-    }
-  }
-  return last[1];
-}
-// v8.7b — league/minutes floor. Separate problem from spine()'s ordering bug,
-// found by comparing against FC26's own player ratings: a genuine rotation
-// player with real minutes at a top-five-league club (sRaw ~1.0) never rates
-// below ~72 there, but this engine's pure stats-percentile approach let
-// modest-output regulars bottom out at ~51-55 — Segunda/academy territory for
-// someone who's demonstrably good enough to hold a squad spot in La Liga.
-// That's not something the spine fix caused (checked: OLD/live shows the same
-// low floor) — it's that surviving competition for a squad spot in a strong
-// league is itself real evidence of quality that a pure per-90 output
-// percentile doesn't capture on its own. This adds a floor, not a rewrite:
-// strengthFloor scales with league strength (weak leagues get little to no
-// floor boost — sRaw's existing discount still does its job there), and
-// minutesTrust ramps the floor in only once someone has genuinely proven
-// themselves with real minutes (900+, roughly half a season) — a two-game
-// cameo doesn't get free credit. Stats still differentiate everyone ABOVE
-// the floor; this only lifts scores that would otherwise land below it.
-function leagueMinutesFloor(sRaw, minutes) {
-  const strengthFloor = clamp(18 + num(sRaw) * 50, 18, 68); // sRaw 1.0 -> 68
-  const minutesTrust = clamp(num(minutes) / 900, 0, 1);      // full trust ~900min
-  return strengthFloor * minutesTrust;
-}
-// Applied once, at the very outside of calibreRating() (all four exit paths),
-// so it matches exactly how the anchors above were derived — comparing the
-// full end-to-end result (including base/overlay blending, where applicable),
-// not an internal intermediate value.
-function applyCalibration(result) {
-  if (!result) return result;
-  const ratingIn = result.rating ?? result.computed;
-  let rating = Number.isFinite(ratingIn) ? clamp(Math.round(remapByAnchors(ratingIn, RATING_CALIBRATION_ANCHORS)), 1, 99) : ratingIn;
-  let ability = Number.isFinite(result.ability) ? clamp(Math.round(remapByAnchors(result.ability, ABILITY_CALIBRATION_ANCHORS)), 1, 99) : result.ability;
-  const floor = leagueMinutesFloor(result.leagueStrength, result.minutes);
-  if (Number.isFinite(rating) && floor > rating) rating = clamp(Math.round(floor), 1, 99);
-  if (Number.isFinite(ability) && floor > ability) ability = clamp(Math.round(floor), 1, 99);
-  return { ...result, rating, computed: rating, ability };
-}
 export function positionBucket(player) {
   // player.archetype deliberately excluded — including it makes bucket
   // detection circular (a stale/wrong archetype label can hijack the regex
@@ -333,22 +260,17 @@ export function qFlat(apiR) {
   }
   return 100;
 }
-// v8.7 — REAL fix, paired with a distribution remap. vals/w are built in
-// matching order per bucket (e.g. ATT: [goalScore,create,carry] against
-// [0.76,0.16,0.08] — goal threat is SPECIFICALLY what 0.76 means for a
-// striker). The old version sorted vals by magnitude before applying w, so
-// that weight landed on whichever raw number was biggest, not on the stat it
-// was written for. Fixed here to apply positionally, no re-ranking — see
-// RATING_CALIBRATION_ANCHORS below and remapCalibrated() for why this is
-// safe to ship: the earlier attempt at this exact fix (see git history)
-// mathematically could only ever lower scores (rearrangement inequality) and
-// broke the whole 1-99 scale as a result (a real Girona starter landing at
-// 47). This time the corrected-but-uncalibrated score is passed through an
-// empirical percentile remap built from the live population, so the overall
-// distribution shape matches what's live today — only RELATIVE ordering
-// changes (fixing who was unfairly boosted vs suppressed by the bug), not
-// the scale itself.
-function spine(vals, w) { let p=0; vals.forEach((v,i)=>{p+=v*(w[i]??0);}); return p; }
+// REVERTED (see session notes) — sort-based spine() is how the entire 1-99
+// scale (TRIM_FLOOR, the 27+x*0.72 compression curve, Q_ANCHORS) was
+// calibrated. Swapping it for positional weighting is mathematically
+// guaranteed (rearrangement inequality: weights are ~monotonically
+// descending per bucket, so sorted pairing is always >= any other pairing)
+// to lower nearly every player's score, not just the inflated ones — dry run
+// showed 10,111/13,883 players dropping, average -6.1, with legitimate
+// starters (Abel Ruiz, Girona) landing at 47. Not a targeted fix; a full
+// recalibration event that needs its own project. Left as the original
+// production logic pending that decision.
+function spine(vals, w) { const s = [...vals].sort((a,b)=>b-a); let p=0; s.forEach((v,i)=>{p+=v*(w[i]??0);}); return p; }
 export function productionComponents(player, bucket) {
   const m = num(player.minutes ?? player.mins);
   const sm = num(player.stats_minutes) || m;
@@ -601,7 +523,7 @@ function scoreLine(line = {}) {
   // than a hidden discount on the ability score above.
   const availability=Math.round(Consistency);
 
-  return { rating:computed, computed, ability, availability, breakdown, bucket, production:Math.round(production), core:Math.round(core), leagueStrength:sRaw, minutes:availMin, confidence, provisional:!ev&&bucket!=='GK' };
+  return { rating:computed, computed, ability, availability, breakdown, bucket, production:Math.round(production), core:Math.round(core), leagueStrength:sRaw, confidence, provisional:!ev&&bucket!=='GK' };
 }
 
 // ── Split helpers ───────────────────────────────────────────────────────
@@ -704,7 +626,7 @@ function buildOverlayLine(player, s) {
 
 export function calibreRating(player = {}) {
   const splits = player.competition_splits;
-  if (!hasUsableSplits(splits)) return applyCalibration(scoreLine(player));   // v7 path, unchanged except calibration
+  if (!hasUsableSplits(splits)) return scoreLine(player);   // v7 path, unchanged
 
   const baseLine = buildBaseLine(player, splits);
   const overlay = splits.overlay || {};
@@ -713,12 +635,12 @@ export function calibreRating(player = {}) {
   const baseHasWork = num(baseLine.minutes)>0 || num(baseLine.appearances)>0 || num(baseLine.avail_minutes)>0;
   if (!baseHasWork && overlayMin>0) {                       // only continental/NT on record
     const only = scoreLine(buildOverlayLine(player, splits));
-    return applyCalibration({ ...only, blend:{ base:null, overlay:only.computed, overlayWeight:1 } });
+    return { ...only, blend:{ base:null, overlay:only.computed, overlayWeight:1 } };
   }
 
   const base = scoreLine(baseLine);
   if (overlayMin <= 0) {                                    // 100% base fallback
-    return applyCalibration({ ...base, blend:{ base:base.computed, overlay:null, overlayWeight:0 } });
+    return { ...base, blend:{ base:base.computed, overlay:null, overlayWeight:0 } };
   }
   const ov = scoreLine(buildOverlayLine(player, splits));
   const overlayTrust = clamp(overlayMin/900, 0, 1);         // full weight ~10 matches
@@ -726,14 +648,10 @@ export function calibreRating(player = {}) {
   const blended = clamp(Math.round(base.computed*(1-w) + ov.computed*w), 1, 99);
   // Same base/overlay weighting applied to ability and availability so all
   // three numbers are internally consistent, not just the season score.
-  // NOTE: this blend happens BEFORE calibration, on raw scoreLine() outputs —
-  // matching exactly how buildSpineFixCalibration.mjs derived the anchors
-  // (it compared calibreRating(row).rating end-to-end, which for split
-  // players already includes this blend step).
   const abilityBlended = clamp(Math.round(base.ability*(1-w) + ov.ability*w), 1, 99);
   const availabilityBlended = clamp(Math.round(base.availability*(1-w) + ov.availability*w), 0, 100);
-  return applyCalibration({ ...base, rating:blended, computed:blended, ability:abilityBlended, availability:availabilityBlended,
-    blend:{ base:base.computed, overlay:ov.computed, overlayWeight:Number(w.toFixed(3)), overlayStrength:num(overlay.strength)||0.95, overlayMinutes:overlayMin } });
+  return { ...base, rating:blended, computed:blended, ability:abilityBlended, availability:availabilityBlended,
+    blend:{ base:base.computed, overlay:ov.computed, overlayWeight:Number(w.toFixed(3)), overlayStrength:num(overlay.strength)||0.95, overlayMinutes:overlayMin } };
 }
 // ── Canonical accessor ──
 // Single source of truth for DISPLAYING a rating. Prefers the stored

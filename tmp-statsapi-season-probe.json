@@ -1,0 +1,60 @@
+{
+  "player_id": "pl_61926368",
+  "season_id": "sn_6125938",
+  "competition_id": "comp_3039",
+  "competition_name": "Premier League",
+  "team_id": "tm_9145",
+  "position": "D",
+  "rating": 7.12,
+  "appearances": 12,
+  "starts": 7,
+  "minutes_played": 713,
+  "scoring": {
+    "goals": 0,
+    "assists": 1,
+    "goals_assists_sum": 1,
+    "goal_conversion_percentage": 0,
+    "penalties_taken": 0,
+    "penalty_goals": 0,
+    "big_chances_created": 3,
+    "big_chances_missed": 0
+  },
+  "shooting": {
+    "total_shots": 5,
+    "shots_on_target": 1,
+    "shots_off_target": 3
+  },
+  "passing": {
+    "total_passes": 354,
+    "accurate_passes": 289,
+    "inaccurate_passes": 65,
+    "pass_accuracy": 81.6,
+    "key_passes": 8,
+    "accurate_crosses": 3,
+    "accurate_crosses_percentage": 18.8,
+    "accurate_own_half_passes": 0,
+    "accurate_opposition_half_passes": 0,
+    "accurate_final_third_passes": 0
+  },
+  "defending": {
+    "tackles": 15,
+    "interceptions": 9
+  },
+  "duels": {
+    "ground_duels_won": 36,
+    "ground_duels_won_percentage": 53.7,
+    "aerial_duels_won": 12,
+    "aerial_duels_won_percentage": null,
+    "total_duels_won": 48,
+    "total_duels_won_percentage": null,
+    "successful_dribbles": 3,
+    "successful_dribbles_percentage": null
+  },
+  "discipline": {
+    "yellow_cards": 0,
+    "red_cards": 0,
+    "direct_red_cards": 0,
+    "penalty_won": 0,
+    "penalty_conceded": 0
+  }
+}

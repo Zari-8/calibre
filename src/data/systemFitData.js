@@ -282,7 +282,17 @@ function isCurrentClub(player, team) {
   const norm = s => String(s || '').toLowerCase().replace(/\b(fc|cf|sc|ac|afc|cp|club|de|the)\b/g, '').replace(/[^a-z]/g, '');
   const p = norm(player?.team);
   if (!p) return false;
-  return [team?.name, team?.short].map(norm).filter(Boolean).some(n => n === p || n.includes(p) || p.includes(n));
+  // Exact match only. The old n.includes(p)/p.includes(n) fallback (meant to
+  // catch abbreviations like "Man Utd" vs "Manchester United") never actually
+  // caught that case — "manutd" isn't a substring of "manchesterunited" either
+  // way — but it DID false-positive on any club whose name is a prefix of
+  // another: "Inter" is a substring of "Inter Miami", so selecting Inter Milan
+  // for a Inter Miami player (e.g. Messi) got floored to a 89+ "native fit"
+  // and the false "already embedded in Inter's system" verdict, even though
+  // he's never played for that club. Same risk for Real Madrid/Real Sociedad,
+  // Racing Club/Racing Santander, Sporting CP/Sporting Gijón, etc. Exact
+  // normalized equality is the only safe test here.
+  return [team?.name, team?.short].map(norm).filter(Boolean).some(n => n === p);
 }
 
 export function buildSystemFitReport(player, team) {
@@ -320,12 +330,37 @@ export function buildSystemFitReport(player, team) {
 
   const gaps = detail.gaps;
   // Breakdown now reflects the REAL dimensional alignment, not score+4.
+  //
+  // 'Overall Role Compatibility' is NOT a peer input alongside the trait-gap
+  // rows below it — it's the weighted RMSD across all six FIT_DIMS (rawFit()
+  // in this file), so it's the OUTCOME the other rows explain, not a 5th
+  // ingredient. It's kept in the list (now clearly labelled and pinned last)
+  // so the summary number is still visible in the same breakdown, but it
+  // must never be read as "one more score that happened to come out lower."
+  //
+  // Defensive workload fit was previously missing entirely from this list —
+  // rawFit() weighs defensiveLoad same as the other five dimensions, and a
+  // large gap there is often the actual reason the overall score comes out
+  // well below its visible sub-scores (e.g. a winger with strong possession/
+  // transition/pressing/width alignment but a big defensiveLoad gap vs a
+  // high-press team). Without this row, that gap only ever surfaced as prose
+  // in the risk flags, never as a number — making the overall score look
+  // unexplained next to four strong-looking values.
+  //
+  // Order matters here: several UI call sites slice this array by a fixed
+  // count (report.breakdown.slice(0,5) / slice(0,6)) rather than showing all
+  // of it, so the six real fit dimensions (overall + the five trait gaps
+  // that feed it) are kept first, with 'Development ceiling' — an age/
+  // potential note, not actually part of the fit calculation — pushed last
+  // so it's the one that drops off a truncated view, not the new row that
+  // was the whole point of this fix.
   const breakdown = [
-    ['Role compatibility', score],
+    ['Overall Role Compatibility (weighted)', score],
     ['Possession value', 100 - Math.abs((player.traits.control ?? 70) - (team.traits.control ?? 70))],
     ['Transition value', 100 - Math.abs((player.traits.transition ?? 70) - (team.traits.transition ?? 70))],
     ['Pressing match', 100 - Math.abs((player.traits.pressing ?? 70) - (team.traits.pressing ?? 70))],
     ['Width fit', 100 - Math.abs((player.traits.width ?? 70) - (team.traits.width ?? 70))],
+    ['Defensive workload fit', 100 - Math.abs((player.traits.defensiveLoad ?? 70) - (team.traits.defensiveLoad ?? 70))],
     ['Development ceiling', Math.min(96, player.age <= 23 ? player.rating + 3 : player.rating)],
   ].map(([label, value]) => ({ label, value: Math.max(20, Math.min(99, Math.round(value))) }));
 

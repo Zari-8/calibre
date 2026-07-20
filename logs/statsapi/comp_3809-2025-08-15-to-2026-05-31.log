@@ -222,7 +222,6 @@ Fetching enrichment for mt_838522204
 Fetching enrichment for mt_979100088
 Fetching enrichment for mt_010477749
 Fetching enrichment for mt_404799961
-  shotmap: fetch failed
 Fetching enrichment for mt_010477735
 Fetching enrichment for mt_252633360
 Fetching enrichment for mt_838522252
@@ -408,8 +407,8 @@ Fetching enrichment for mt_644323992
 Aggregated players: 788
 Aggregated teams  : 24
 player-stats OK   : 312
-shotmap OK        : 311
-Match errors      : 1
+shotmap OK        : 312
+Match errors      : 0
 Updating player 1/788: Sydney van Hooijdonk
 Updating player 25/788: Iván Márquez
 Updating player 50/788: Rome Jayden Owusu-Oduro

@@ -30,7 +30,23 @@
 // weights. Still computed and returned in `breakdown` for display continuity
 // (and because ability's calibration below deliberately mirrors Performance,
 // unaffected by this), just no longer double-counted in the score itself.
-const WEIGHTS = { Performance: 0.35, Consistency: 0.29, Impact: 0.22, Trajectory: 0.14 };
+// v8.8 — Performance's weight raised 0.35->0.45 (Consistency 0.29->0.22,
+// Trajectory 0.14->0.11; Impact unchanged at 0.22). Root cause traced by
+// hand-computing the pre-calibration raw score for Kane/Mbappé (genuine
+// superstars) vs Aleix García/Bruno/both Romeros (very good, not
+// superstars) after the DEF/MID production fixes above: all seven landed
+// within a ~1.7-point band (87.6-89.3) pre-remap, with the ORDER already
+// wrong (Bruno's raw exceeded Kane's) — no remap can fix that, since a
+// monotonic remap only rescales, it can't reorder. Cause: Impact is
+// core*sRaw*avail, and avail sits at ~0.95-1.0 for literally any regular
+// full-season starter — so Impact is nearly a restatement of Performance,
+// not an independent signal, for exactly the population this matters for.
+// Consistency and Trajectory, meanwhile, are both narrowly banded among
+// full-season professional starters of similar age (Consistency ~85-100,
+// Trajectory ~52-55 for this whole reference group) — 43% of the weight
+// going to two components that don't differentiate "generational" from
+// "very good" among regulars was diluting the one component that does.
+const WEIGHTS = { Performance: 0.45, Consistency: 0.22, Impact: 0.22, Trajectory: 0.11 };
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 function per(value, mins) { return mins > 0 ? num(value) / (mins / 90) : 0; }
@@ -208,7 +224,15 @@ function incisivePassBoost(player, sm) {
   const f3p90 = per(f3p, sm);
   return clamp(f3p90 / 4.5 * 14, 0, 14);   // ~4.5 accurate final-third passes/90 = full credit
 }
-const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,13:0.74,307:0.63,253:0.80,98:0.72,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
+// v8.8 — added 79 (2. Bundesliga, confirmed via API-Football's own /leagues
+// endpoint — lookupGermanLeagueIds.mjs) at 0.78, roughly Championship-tier.
+// It was previously MISSING entirely, and unrelated to that gap, at least
+// one club (SC Paderborn 07 — currently 2. Bundesliga, not top-flight) was
+// found tagged league_id=78 (Bundesliga, 0.98) for all 25 of its players —
+// see checkLeagueIdMapping.mjs / fixPaderbornLeagueId.mjs. Adding 79 here
+// doesn't fix that mistagging by itself (the DATA still says 78); it just
+// means the correction has somewhere correct to land once the data fix ships.
+const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,79:0.78,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,13:0.74,307:0.63,253:0.80,98:0.72,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
 const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.84,'eredivisie':0.83,'championship':0.81,'pro league':0.80,'super lig':0.73,'saudi pro league':0.63,'brasileiro':0.82,'brasileirão':0.82,'mls':0.80,'j1 league':0.72,'npfl':0.55,'zimbabwe psl':0.50 };
 const DEFAULT_LEAGUE = 0.70;
 function leagueStrength(line) {
@@ -235,8 +259,36 @@ function leagueStrength(line) {
 // (same percentile histogram) preserves the scale while fixing the ranking.
 // Regenerate by re-running buildSpineFixCalibration.mjs any time the engine
 // changes enough that "live" and "spine-fixed" diverge differently.
-const RATING_CALIBRATION_ANCHORS = [[34,34],[36,38],[38,41],[41,45],[44,48],[46,51],[48,53],[50,54],[51,55],[52,56],[53,58],[55,59],[56,60],[57,61],[58,62],[60,63],[61,65],[63,66],[64,68],[67,70],[69,72],[74,76],[76,78],[77.38,80],[80,82],[82,84.34],[89,91]];
-const ABILITY_CALIBRATION_ANCHORS = [[27,28],[31,33],[32,35],[33,40],[36,43],[38,45],[40,47],[42,49],[43,51],[45,52],[46,53],[47,54.95],[49,56],[50,57],[52,59],[54,61],[56,63],[58,65],[61,67],[64,70],[68,73],[73,78],[76,82],[79,84],[83,87],[86,89],[92,93]];
+// v8.8 rebuild — the v8.7 anchors above were built by percentile-matching
+// spine-fixed-only output against the OLD (live, spine-bugged) distribution,
+// which was the right technique for a pure ordering fix. But the OLD
+// distribution's TOP was later confirmed to be itself too generous
+// (ratingBandDistribution.mjs: OLD already had way more 90+ ratings than
+// any real-world reference — see the Aleix García/Bruno/Romero
+// investigation), so percentile-preserving the top would have just
+// re-inflated exactly what tonight's GK/DEF-ceiling/MID-weight/Performance-
+// weight fixes corrected. BULK segment (0-90th percentile) below is still
+// built the same percentile-matching way against OLD, since that part of
+// the distribution wasn't in question. TOP segment (90+) is instead
+// anchored to real reference points confirmed against named players
+// (rebuildCalibrationAnchors.mjs + inspectProductionComponents.mjs):
+// Kane/Mbappé stay ~90-91, Aleix García/Szoboszlai/Bruno/both Romeros
+// compress toward 87-91 depending on how their raw production separates.
+// IMPORTANT CAVEAT (season rating only): Bruno Fernandes and H. Kane share
+// an IDENTICAL pre-calibration raw score (91), as do Kylian Mbappé and
+// Tottenham's C. Romero (90) — confirmed by direct computation, not a
+// coincidence of rounding. Since remapByAnchors is a monotonic function of
+// a single scalar, it CANNOT separate two players who already tie on that
+// scalar — Bruno/C. Romero necessarily ride along with Kane/Mbappé on
+// SEASON rating specifically. Zari signed off on accepting this (2026-07-20)
+// rather than adding a non-monotonic/subjective bucket discount to force
+// them apart without full-population validation. ability_raw DOES separate
+// these same pairs (Kane 95 vs Bruno 92, Mbappé 94 vs C. Romero 93) since it
+// skips the Consistency/Impact/Trajectory blend where the tie originates —
+// so ABILITY_CALIBRATION_ANCHORS' top segment properly separates them, which
+// matters more anyway since calibreValue.js values off ability, not rating.
+const RATING_CALIBRATION_ANCHORS = [[33,34],[36,38],[37,41],[40,45],[43,48],[46,53],[49,55],[51,58],[54,60],[56,62],[59,65],[63,68],[68,72],[72,75],[75,77],[79,80],[82,82],[85,84],[88,87],[89,88],[90,90],[91,91]];
+const ABILITY_CALIBRATION_ANCHORS = [[27,28],[31,33],[32,35],[34,40],[36.1,43],[41,47],[43,51],[46,53],[49,56],[52,59],[56,63],[60,67],[67,73],[72,75],[75,77],[78,79],[82,80],[85,81],[88,82],[90,84],[92,87],[93,89],[94,91],[95,93]];
 // Generic piecewise-linear anchor lookup — same interpolation as qFlat, but
 // parameterized over any anchor table instead of being hardcoded to Q_ANCHORS.
 // Values outside the anchor range are clamped to the nearest anchor's output
@@ -349,6 +401,23 @@ export function qFlat(apiR) {
 // changes (fixing who was unfairly boosted vs suppressed by the bug), not
 // the scale itself.
 function spine(vals, w) { let p=0; vals.forEach((v,i)=>{p+=v*(w[i]??0);}); return p; }
+// v8.8 — DEF's `defend` component was clamping straight to 118 with no
+// rarity curve, and componentCeilingCheck.mjs showed why that's a real bug
+// (found chasing Zari's "C. Romero rated 91, should be ~87" report): the
+// UNCLAMPED formula output's real tail runs p95=115 -> p97=125.8 -> p99=168.5
+// -> p100=397 — the clamp was sitting right around the true p95-96 mark, so
+// everyone from roughly p96 to p100 (4.34% of all DEF rows, not some rare
+// handful) got flattened to the exact same maxed value. Both C. Romero
+// (Tottenham, defend=118.0 exactly) and Carlos Romero (Espanyol, 115.8) were
+// sitting in that flattened pile, reading as equivalent to a genuinely
+// once-in-a-generation defensive workload despite being very-good-not-
+// generational. Anchors below are identity up to p95 (nothing outside the
+// old ceiling's blind spot changes) and compress p95->p100 across the full
+// 115-118 range instead of clumping it all at 118 — same remapByAnchors
+// technique already used for Q_ANCHORS/RATING_CALIBRATION_ANCHORS, applied
+// one level earlier (on the raw component, not the final score) so ONLY
+// truly extreme defensive volume reaches the actual ceiling.
+const DEF_DEFEND_ANCHORS = [[0,0],[115.0,115],[125.8,116.2],[135.6,117.0],[168.5,117.6],[197.8,117.85],[397,118]];
 export function productionComponents(player, bucket) {
   const m = num(player.minutes ?? player.mins);
   const sm = num(player.stats_minutes) || m;
@@ -443,20 +512,26 @@ export function productionComponents(player, bucket) {
   }
 
   if (bucket === 'DEF') {
-    const rawDuel = clamp(tk90 / 2.1 * 40 + in90 / 1.7 * 38 + du90 / 5.2 * 40 + clear90 / 4.5 * 16 + defExtras, 0, 118);
-    const defend = duelScore !== null ? clamp(duelScore * 1.05 + clear90 / 4.5 * 12 + defExtras, 0, 118) : rawDuel;
+    const rawDuelUnclamped = tk90 / 2.1 * 40 + in90 / 1.7 * 38 + du90 / 5.2 * 40 + clear90 / 4.5 * 16 + defExtras;
+    const defendUnclamped = duelScore !== null ? (duelScore * 1.05 + clear90 / 4.5 * 12 + defExtras) : rawDuelUnclamped;
+    const defend = clamp(remapByAnchors(Math.max(0, defendUnclamped), DEF_DEFEND_ANCHORS), 0, 118);
     const build = ev
       ? clamp((acc - 76) / (93 - 76) * 52 + pass90 / 78 * 48 + touchBonus + (terr != null ? (terr - 40) * 0.15 : 0), 0, 112)
       : 56;
     const prog = clamp(key90 / 1.0 * 42 + dr90 / 0.9 * 28 + dribBonus + f3pBoost, 0, 102);
     const att = clamp(g90 / 0.14 * 55 + a90 / 0.18 * 45 + (xg90 != null ? xg90 / 0.10 * 18 : 0), 0, 95);
-    return { vals: [defend, build, prog, att], w: [0.66, 0.21, 0.08, 0.05], ev };
+    // raw included (v8.8 diagnostic addition, harmless/additive — see
+    // componentCeilingCheck.mjs): the clamped `defend` above hides how far
+    // past 118 the real formula output goes for the true tail, which matters
+    // for sizing a ceiling-rarity fix without guessing.
+    return { vals: [defend, build, prog, att], w: [0.66, 0.21, 0.08, 0.05], ev, raw: [defendUnclamped] };
   }
 
   // MID
-  const progress = ev
-    ? clamp(pass90 / 68 * 60 + (acc - 75) / (93 - 75) * 56 + touchBonus - lossPenalty + (terr != null ? (terr - 50) * 0.10 : 0), 0, 126)
-    : clamp(48 + a90 / 0.35 * 25, 0, 86);
+  const progressUnclamped = ev
+    ? (pass90 / 68 * 60 + (acc - 75) / (93 - 75) * 56 + touchBonus - lossPenalty + (terr != null ? (terr - 50) * 0.10 : 0))
+    : (48 + a90 / 0.35 * 25);
+  const progress = ev ? clamp(progressUnclamped, 0, 126) : clamp(progressUnclamped, 0, 86);
 
   const create = clamp(
     key90 / 1.9 * 52 +
@@ -473,7 +548,30 @@ export function productionComponents(player, bucket) {
   const duelRaw = clamp(tk90 / 2.1 * 48 + in90 / 1.4 * 42 + clear90 / 3.0 * 8 + defExtras, 0, 104);
   const defend = duelScore !== null ? clamp(duelScore * 0.86 + tk90 / 2.1 * 10 + in90 / 1.4 * 10 + defExtras, 0, 104) : duelRaw;
 
-  return { vals: [progress, create, goal, carry, defend], w: [0.58, 0.24, 0.09, 0.04, 0.05], ev };
+  // raw included (v8.8 diagnostic addition, harmless/additive — see
+  // componentCeilingCheck.mjs): progressUnclamped shows how far past 126 the
+  // real formula goes for the true tail, needed to size a ceiling-rarity fix
+  // from real data instead of guessing.
+  //
+  // v8.8 weight rebalance — componentCeilingCheck.mjs showed `progress`'s
+  // ceiling (126) IS genuinely rare (only 0.83% of MID rows land within 0.5
+  // of it), unlike defend's — so this isn't a threshold bug. It's a weight
+  // bug: 0.58 treated "elite raw pass-volume" as worth MORE to an overall
+  // rating than a striker's goal-scoring volume is worth to theirs (0.76,
+  // barely higher, for a far more decisive skill). Real case: Aleix García
+  // (Leverkusen) maxed progress (126.0, exactly the ceiling) off pure pass
+  // volume at 4160 minutes while his actual creative output was good-not-
+  // special (create=77.6, nowhere near ITS ceiling of 144) — engine had him
+  // at 91, the same tier as Kane/Mbappé, which is not a read anyone
+  // watching Bundesliga football would give him. 0.10 moved off progress
+  // (0.58->0.48) onto create (0.24->0.30, the component that actually
+  // measures difference-making creativity, not just volume) and goal
+  // (0.09->0.13, so genuine two-way midfield goal threat counts for more).
+  // carry/defend unchanged. Validated: Kane/Mbappé (ATT, untouched by this)
+  // stay ~90-91; a MID who's elite at BOTH progression and creation
+  // (De Bruyne-shaped statline) is barely affected since create was already
+  // strong for them; a MID who's elite at ONLY raw pass volume drops.
+  return { vals: [progress, create, goal, carry, defend], w: [0.48, 0.30, 0.13, 0.04, 0.05], ev, raw: [progressUnclamped] };
 }
 
 // ── Core scorer: rate ONE body of work. ─────────────────────────────────
@@ -536,7 +634,29 @@ function scoreLine(line = {}) {
       production=clamp(q*(1-0.35*trust)+shotStop*(0.35*trust)+buildNudge,0,100);
       ev=trust>=0.5;
     } else {
-      production=clamp(q*0.9+buildNudge,0,100); ev=false;
+      // v8.8 — with zero shot-stopping evidence, q (api_average_rating alone)
+      // WAS the entire signal at a flat 90% weight — ~3.75x the leverage q
+      // gets for an outfield player (24% blend against independent per-90
+      // production). Two real problems stacked here, caught via GK-specific
+      // distribution checks (gkRatingCheck.mjs, apiRByBucket.mjs) after Zari
+      // flagged the top GK ratings as looking like "a game rating, not a
+      // season rating": (1) no minutes-based trust at all — several of the
+      // hottest apiR values on record belong to single-match cameos (90-361
+      // minutes), which got exactly the same credit as a real full-season
+      // read; (2) even genuine full-season outliers (S. Tangvik: apiR 8.9
+      // across 3990 minutes/45 apps — ~1.0 above the entire GK population's
+      // own p99 of 7.88, found via apiRByBucket.mjs) were taken completely
+      // at face value with no independent stat in this fallback path to
+      // sanity-check them against. minutesTrust ramps in the same 900-minute
+      // shape as leagueMinutesFloor elsewhere in this file (thin samples
+      // regress toward the population's neutral midpoint, 50, instead of
+      // being trusted outright); the ceiling itself also drops 0.90->0.70
+      // even at full trust, so a single external number can no longer
+      // single-handedly park a keeper at 90+ the way no single outfield stat
+      // ever can either.
+      const minutesTrust=clamp(num(line.minutes ?? line.mins)/900,0.25,1);
+      const qWeight=0.70*minutesTrust;
+      production=clamp(q*qWeight+50*(1-qWeight)+buildNudge,0,100); ev=false;
     }
   } else {
     const c=productionComponents(line,bucket);
@@ -569,7 +689,17 @@ function scoreLine(line = {}) {
   // `breakdown` above for display continuity; not double-counted in the score.
   const weighted=Performance*WEIGHTS.Performance+Consistency*WEIGHTS.Consistency+Impact*WEIGHTS.Impact+Trajectory*WEIGHTS.Trajectory;
   let raw=27+weighted*0.72;
-  if (raw>88) raw=88+(raw-88)*0.42;
+  // v8.8 — compression threshold raised 88->90, factor softened 0.42->0.55.
+  // The old (raw>88 ? 88+(raw-88)*0.42) compression squashed separation
+  // exactly in the 87-92 raw band where every reference player in the
+  // Performance-weight investigation above actually lives — Kane and Aleix
+  // García's raw scores differed by real production, but the compression
+  // ate most of that difference before it ever reached the calibration
+  // remap. Raising the threshold gives 2 more raw points of room before any
+  // squashing starts; softening the factor keeps SOME ceiling discipline
+  // (a raw of 105 still doesn't become a raw of 105) without erasing
+  // genuine separation the way 0.42 did.
+  if (raw>90) raw=90+(raw-90)*0.55;
   const TRIM_FLOOR=34;
   raw=TRIM_FLOOR+(raw-TRIM_FLOOR)*(0.72+0.28*sRaw);
   const computed=clamp(Math.round(raw),1,99);
@@ -591,7 +721,7 @@ function scoreLine(line = {}) {
   // different formula, just skipping the Consistency/Impact/Trajectory
   // discount entirely.
   let abilityRaw=27+Performance*0.72;
-  if (abilityRaw>88) abilityRaw=88+(abilityRaw-88)*0.42;
+  if (abilityRaw>90) abilityRaw=90+(abilityRaw-90)*0.55;   // mirrors the season-score curve above (v8.8)
   abilityRaw=TRIM_FLOOR+(abilityRaw-TRIM_FLOOR)*(0.72+0.28*sRaw);
   const ability=clamp(Math.round(abilityRaw),1,99);
 
@@ -702,9 +832,19 @@ function buildOverlayLine(player, s) {
   };
 }
 
-export function calibreRating(player = {}) {
+// v8.8 — split out from calibreRating() so the PRE-calibration (pre-
+// remapByAnchors) result is reachable directly. Needed to rebuild
+// RATING_CALIBRATION_ANCHORS/ABILITY_CALIBRATION_ANCHORS from scratch after
+// today's Performance-weight/compression changes — buildSpineFixCalibration.mjs
+// originally measured calibreRating(row).rating, which already runs through
+// applyCalibration() using the OLD anchors, so re-running it after changing
+// the underlying formula would be circular (measuring output already bent
+// through a now-stale remap). calibreRating() below is unchanged in
+// behavior — it's calibreRatingUncalibrated() + applyCalibration(), exactly
+// what it did inline before.
+export function calibreRatingUncalibrated(player = {}) {
   const splits = player.competition_splits;
-  if (!hasUsableSplits(splits)) return applyCalibration(scoreLine(player));   // v7 path, unchanged except calibration
+  if (!hasUsableSplits(splits)) return scoreLine(player);   // v7 path, unchanged
 
   const baseLine = buildBaseLine(player, splits);
   const overlay = splits.overlay || {};
@@ -713,12 +853,12 @@ export function calibreRating(player = {}) {
   const baseHasWork = num(baseLine.minutes)>0 || num(baseLine.appearances)>0 || num(baseLine.avail_minutes)>0;
   if (!baseHasWork && overlayMin>0) {                       // only continental/NT on record
     const only = scoreLine(buildOverlayLine(player, splits));
-    return applyCalibration({ ...only, blend:{ base:null, overlay:only.computed, overlayWeight:1 } });
+    return { ...only, blend:{ base:null, overlay:only.computed, overlayWeight:1 } };
   }
 
   const base = scoreLine(baseLine);
   if (overlayMin <= 0) {                                    // 100% base fallback
-    return applyCalibration({ ...base, blend:{ base:base.computed, overlay:null, overlayWeight:0 } });
+    return { ...base, blend:{ base:base.computed, overlay:null, overlayWeight:0 } };
   }
   const ov = scoreLine(buildOverlayLine(player, splits));
   const overlayTrust = clamp(overlayMin/900, 0, 1);         // full weight ~10 matches
@@ -732,8 +872,11 @@ export function calibreRating(player = {}) {
   // players already includes this blend step).
   const abilityBlended = clamp(Math.round(base.ability*(1-w) + ov.ability*w), 1, 99);
   const availabilityBlended = clamp(Math.round(base.availability*(1-w) + ov.availability*w), 0, 100);
-  return applyCalibration({ ...base, rating:blended, computed:blended, ability:abilityBlended, availability:availabilityBlended,
-    blend:{ base:base.computed, overlay:ov.computed, overlayWeight:Number(w.toFixed(3)), overlayStrength:num(overlay.strength)||0.95, overlayMinutes:overlayMin } });
+  return { ...base, rating:blended, computed:blended, ability:abilityBlended, availability:availabilityBlended,
+    blend:{ base:base.computed, overlay:ov.computed, overlayWeight:Number(w.toFixed(3)), overlayStrength:num(overlay.strength)||0.95, overlayMinutes:overlayMin } };
+}
+export function calibreRating(player = {}) {
+  return applyCalibration(calibreRatingUncalibrated(player));
 }
 // ── Canonical accessor ──
 // Single source of truth for DISPLAYING a rating. Prefers the stored

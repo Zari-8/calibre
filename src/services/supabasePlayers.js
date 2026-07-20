@@ -24,6 +24,8 @@ const PLAYER_SELECT = [
   'primary_role',
   'shirt_number',
   'rating',
+  'ability_rating',
+  'availability_score',
   'archetype',
   'img',
   'image',
@@ -32,6 +34,8 @@ const PLAYER_SELECT = [
   'minutes',
   'goals',
   'assists',
+  'yellow_cards',
+  'red_cards',
   'api_average_rating',
   // ── event stats (required by the v6 rating engine) ──
   'stats_minutes',
@@ -68,6 +72,12 @@ const PLAYER_SELECT = [
   'pressures',
   'progressive_carries',
   'clearances',
+  // ── availability / injury signals (backfillPlayerInjuries.mjs) ──
+  'injured',
+  'injury_days_last_365',
+  'major_injuries_count',
+  'injury_source',
+  'injuries_synced_at',
   'dispossessed',
   'aerial_duels_won',
   'possession_lost',
@@ -196,6 +206,14 @@ function normalizePlayer(row){
     pressures:row.pressures ?? null,
     statsapi_enriched_at:row.statsapi_enriched_at ?? null,
 
+    // Availability / injury (backfillPlayerInjuries.mjs) — real, or null if
+    // that team hasn't been backfilled yet. Never guessed.
+    injured:row.injured ?? null,
+    injury_days_last_365:row.injury_days_last_365 ?? null,
+    major_injuries_count:row.major_injuries_count ?? null,
+    injury_source:row.injury_source ?? null,
+    injuries_synced_at:row.injuries_synced_at ?? null,
+
   };
 }
 
@@ -243,6 +261,23 @@ export async function getSupabasePlayers({
   }
 
   const { data, error } = await query.order('name',{ascending:true});
+  if(error) throw error;
+  return (data || []).map(normalizePlayer);
+}
+
+// A real, rotating pool of top-rated players for the Players landing page's
+// "Featured Players" strip — see getSupabaseTopPlayers usage in Players.jsx.
+// Ordered by ability_rating (falls back to rating) so it's an honest "best
+// players in the bank" cut, not a hand-picked list.
+export async function getSupabaseTopPlayers({limit=80}={}){
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .or('hidden.is.null,hidden.eq.false')
+    .not('ability_rating','is',null)
+    .order('ability_rating',{ascending:false,nullsFirst:false})
+    .limit(limit);
   if(error) throw error;
   return (data || []).map(normalizePlayer);
 }
@@ -354,20 +389,166 @@ export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
   return (namePartial||[]).map(normalizePlayer);
 }
 
-// Real distinct-nationality count for the Players page's "Nations" stat card
-// — replaces a hardcoded "200+" with an actual count from the DB. Selects
-// only the nationality column (not full rows) to keep the payload small, and
-// counts distinct values client-side since PostgREST has no simple built-in
-// distinct-count. If your Postgres row cap truncates this below the true
-// total, raise the .limit() below — this never falls back to a guessed number.
-export async function getSupabaseNationCount(){
+// Club search — lets a user find a club by name and then browse its roster,
+// same pattern as searchSupabasePlayers (ilike on team/club, both columns
+// checked since different enrichment passes have populated one or the other
+// for different rows). Returns distinct club names, not player rows — the
+// caller then fetches the roster for whichever club is picked via
+// getSupabasePlayersByClub below.
+export async function searchSupabaseClubs(search,{limit=8}={}){
   const client = requireSupabase();
+  const query = String(search || '').trim();
+  if(query.length<2) return [];
+
   const { data, error } = await client
     .from('players')
-    .select('nationality')
-    .not('nationality','is',null)
-    .limit(100000);
+    .select('team,club')
+    .or(`team.ilike.%${query}%,club.ilike.%${query}%`)
+    .or('hidden.is.null,hidden.eq.false')
+    .limit(200); // dedupe client-side below; a name match can hit many player rows for the same club
+
   if(error) throw error;
-  const distinct = new Set((data||[]).map(r => String(r.nationality || '').trim().toLowerCase()).filter(Boolean));
+
+  const seen = new Set();
+  const clubs = [];
+  for(const row of data || []){
+    const name = row.team || row.club;
+    if(!name || seen.has(name)) continue;
+    seen.add(name);
+    clubs.push(name);
+    if(clubs.length >= limit) break;
+  }
+  return clubs;
+}
+
+// Full roster for a club name resolved via searchSupabaseClubs above — exact
+// match (not ilike) since the caller already picked a real, disambiguated
+// club name from the dropdown, not a free-text guess.
+export async function getSupabasePlayersByClub(clubName,{limit=100}={}){
+  const client = requireSupabase();
+  const name = String(clubName || '').trim();
+  if(!name) return [];
+
+  const { data, error } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .or(`team.eq.${name},club.eq.${name}`)
+    .or('hidden.is.null,hidden.eq.false')
+    .order('rating',{ascending:false,nullsFirst:false})
+    .limit(limit);
+
+  if(error) throw error;
+  return (data || []).map(normalizePlayer);
+}
+
+// Real comparison pool for the player pop-up's "Advanced Stats" percentile
+// bars. Pulls enriched, rated players from the same rough position group
+// (matched on the free-text pos/position/raw_position columns, same trick
+// positionBucket() in calibreRating.js uses) so a percentile reads as "vs
+// other forwards/mids/defenders in the bank," not vs the whole player pool.
+// leagueIds narrows to a given tier (top-5 leagues by default) when supplied.
+// Real rows only — an empty/short pool just means the modal shows fewer
+// percentile bars, never a fabricated one.
+const POSITION_MATCH = {
+  ATT: 'attack,forward,striker,winger,wing,cf,st,rw,lw,fwd',
+  MID: 'midfield,cam,cdm,cm,mid',
+  DEF: 'defen,back,cb,rb,lb,wing-back,wingback',
+  GK: 'keeper,goalkeeper,gk',
+};
+export async function getSupabasePositionPool({ bucket, leagueIds = null, limit = 300 } = {}) {
+  const client = requireSupabase();
+  const terms = (POSITION_MATCH[bucket] || '').split(',').filter(Boolean);
+  if (!terms.length) return [];
+
+  let query = client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .or('hidden.is.null,hidden.eq.false')
+    .not('rating', 'is', null)
+    .or(terms.map(t => `position.ilike.%${t}%`).concat(terms.map(t => `pos.ilike.%${t}%`)).join(','))
+    .order('minutes', { ascending: false, nullsFirst: false })
+    .limit(limit);
+
+  if (Array.isArray(leagueIds) && leagueIds.length) {
+    query = query.in('league_id', leagueIds);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return (data || []).map(normalizePlayer);
+}
+
+// Shared full-table pagination for the landing-page stat cards below. A
+// plain `.select(col).limit(N)` with no ORDER BY has no guaranteed row order
+// on a 400k+ row table — Postgres can hand back a different arbitrary N-row
+// slice on every call (parallel seq scan, no index to walk), which is why
+// the Nations stat was flickering between ~73 and ~102 on refresh and the
+// Leagues stat was stuck at an implausible "2" (the unordered slice happened
+// to land on rows from just one or two import batches). Paginating by the
+// primary key in fixed windows makes every call walk the SAME rows in the
+// SAME order, so a full pass sees every row exactly once — a true count,
+// not a lucky/unlucky sample. 100k-row pages keep this to ~5 requests for
+// the full bank rather than one single (unreliable) giant `.limit()` call.
+async function fetchAllColumnValues(column){
+  const client = requireSupabase();
+  const pageSize = 100000;
+  const values = [];
+  let from = 0;
+  while(true){
+    const { data, error } = await client
+      .from('players')
+      .select(column)
+      .not(column,'is',null)
+      .order('id',{ ascending:true })
+      .range(from, from + pageSize - 1);
+    if(error) throw error;
+    if(!data || !data.length) break;
+    for(const row of data) values.push(row[column]);
+    if(data.length < pageSize) break;
+    from += pageSize;
+  }
+  return values;
+}
+
+// Real distinct-nationality count for the Players page's "Nations" stat card
+// — replaces a hardcoded "200+" with an actual count from the DB, walking
+// the full table (see fetchAllColumnValues) so it's a stable true count
+// rather than a flickering sample.
+export async function getSupabaseNationCount(){
+  const values = await fetchAllColumnValues('nationality');
+  const distinct = new Set(values.map(v => String(v || '').trim().toLowerCase()).filter(Boolean));
   return distinct.size;
+}
+
+// Real distinct-league count for the Players page's "Leagues covered" stat
+// card — replaces a hardcoded count that was actually just the length of the
+// quick-filter dropdown (LEAGUE_OPTIONS, 9 curated top leagues), not the real
+// number of leagues represented in the player bank. league_id is the only
+// reliable league identifier stored per row (no league-name column).
+export async function getSupabaseLeagueCount(){
+  const values = await fetchAllColumnValues('league_id');
+  const distinct = new Set(values.filter(v => v != null));
+  return distinct.size;
+}
+
+// Real "season coverage" for the Players page stat card — replaces a
+// date-computed CURRENT_SEASON guess that flips on July 1 even though most
+// leagues (and the bulk data sync) don't catch up until August, which is why
+// the landing page could claim "26/27" while every player modal was still
+// correctly falling back to 25/26 data. This returns the season value that
+// actually has the most rows synced in the bank right now (the mode of the
+// `season` column), so the badge matches what visitors actually see.
+export async function getSupabaseCoverageSeason(){
+  const values = await fetchAllColumnValues('season');
+  const counts = new Map();
+  for(const v of values){
+    const s = Number(v);
+    if(!Number.isFinite(s)) continue;
+    counts.set(s, (counts.get(s) || 0) + 1);
+  }
+  let best = null, bestCount = -1;
+  for(const [season, count] of counts){
+    if(count > bestCount){ best = season; bestCount = count; }
+  }
+  return best;
 }

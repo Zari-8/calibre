@@ -410,6 +410,7 @@ Updating player 75/617: Abdulbaset Hindi
 Updating player 100/617: Kewin
 Updating player 125/617: Saad Al-Mousa
 Updating player 150/617: Abdulaziz Al Hatila
+  update error Fahad Al Abdulrazzaq: TypeError: fetch failed
 Updating player 175/617: Romell Quioto
 Updating player 200/617: Marwane Saadane
 Updating player 225/617: Othman Al-Othman
@@ -430,8 +431,8 @@ Updating player 575/617: Youssef En-Nesyri
 Updating player 600/617: Amidou Traore
 
 ── Summary ──────────────────
-Enriched players : 206
+Enriched players : 205
 No Supabase match: 411
-Update errors    : 0
+Update errors    : 1
 Team aggregates  : 18 not written yet
 Dry run          : no

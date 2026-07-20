@@ -140,8 +140,26 @@ function integerOrNull(value) {
   return number === null ? null : Math.round(number);
 }
 
+// Same bug class found in scripts/repairBaseStats.mjs: summing every
+// statistics entry API-Football returns — including friendlies/exhibitions —
+// inflates goals/assists/appearances/minutes above the real competitive
+// total. enrichPlayerStats.mjs already excludes these via isCompetitive();
+// this script runs "after the squad importer" (i.e. whenever new players/
+// teams get onboarded), so without the same filter it would silently
+// re-introduce the exact corruption that was just repaired, the next time
+// someone imports a squad.
+const FRIENDLY_LEAGUE_IDS = new Set([10, 667, 666]);
+function isCompetitive(stat) {
+  const id = Number(stat?.league?.id);
+  const name = String(stat?.league?.name || '').toLowerCase();
+  if (FRIENDLY_LEAGUE_IDS.has(id)) return false;
+  return !(name.includes('friendl') || name.includes('exhibition') || name.includes('testimonial'));
+}
+
 function mergeStatistics(statistics = []) {
-  if (!statistics.length) {
+  const competitive = statistics.filter(isCompetitive);
+
+  if (!competitive.length) {
     return {
       appearances: null,
       starts: null,
@@ -159,7 +177,7 @@ function mergeStatistics(statistics = []) {
   let assists = 0;
   const ratings = [];
 
-  for (const stat of statistics) {
+  for (const stat of competitive) {
     appearances += integerOrNull(stat?.games?.appearences ?? stat?.games?.appearances) || 0;
     starts += integerOrNull(stat?.games?.lineups) || 0;
     minutes += integerOrNull(stat?.games?.minutes) || 0;

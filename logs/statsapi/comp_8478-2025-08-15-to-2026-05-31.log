@@ -8,4 +8,4 @@ Error: HTTP 400 — /matches?date_from=2025-08-15&date_to=2025-08-21&competition
     at api (file:///Users/mac/Desktop/calibre-github/scripts/enrichStatsAPI.mjs:131:11)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
     at async fetchMatches (file:///Users/mac/Desktop/calibre-github/scripts/enrichStatsAPI.mjs:153:20)
-    at async main (file:///Users/mac/Desktop/calibre-github/scripts/enrichStatsAPI.mjs:539:19)
+    at async main (file:///Users/mac/Desktop/calibre-github/scripts/enrichStatsAPI.mjs:565:19)

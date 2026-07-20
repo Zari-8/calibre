@@ -8,7 +8,7 @@ import CommissionForm from '../components/CommissionForm.jsx';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
-import { calibreRating } from '../services/calibreRating.js';
+import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 import { SYSTEM_TEAMS, computeSystemFit, scoreRoleFit, scoreFormationFit } from '../data/systemFitData.js';
 import { calibreValue, valuationVerdict } from '../services/calibreValue.js';
@@ -625,13 +625,44 @@ export default function Transfers() {
   const [askingPrice, setAskingPrice] = useState(100);
   const [activeTab, setActiveTab] = useState('System Fit');
   const [selectedTeam, setSelectedTeam] = useState(null);
+
+  // Safety net, same pattern used on System Fit's card: every place above that
+  // sets selectedPlayer (search select, quick-pick spotlight, curated default
+  // state) only ever sets `rating` (Season Score) — none of them resolve
+  // ability_rating/availability_score. calibreRating.js is explicit that
+  // Transfers needs Calibre (ability), not Season Score, for "how good is
+  // this player" — a player recovering from injury or out of favour isn't
+  // worse at football, just less selected. Without this, valuation below
+  // silently used the wrong number for any player where the two diverge.
+  useEffect(() => {
+    const apiId = selectedPlayer?.apiPlayerId;
+    if (!apiId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const rows = await getSupabasePlayersByApiIds([apiId]);
+        const db = rows && rows[0];
+        if (!alive || !db) return;
+        const scored = resolveRating(db);
+        setSelectedPlayer(prev => {
+          if (prev?.apiPlayerId !== apiId) return prev; // selection changed again before this resolved
+          const nextAbility = scored.ability ?? prev.ability_rating;
+          const nextAvailability = scored.availability ?? prev.availability_score;
+          if (prev.ability_rating === nextAbility && prev.availability_score === nextAvailability) return prev;
+          return { ...prev, ability_rating: nextAbility, availability_score: nextAvailability };
+        });
+      } catch { /* keep whatever selectedPlayer already had */ }
+    })();
+    return () => { alive = false; };
+  }, [selectedPlayer?.apiPlayerId]);
+
   // System Fit recalculates whenever player OR team changes
   const sysFit = selectedTeam ? computeSystemFit(selectedPlayer, selectedTeam) : null;
   const systemFitScore = sysFit ? sysFit.score : null;
 
   // ── Calibre valuation: base value (Piece 1) → fit-adjusted (Piece 2) → verdict ──
   const valuation = useMemo(() => calibreValue({
-    rating: selectedPlayer?.rating,
+    rating: selectedPlayer?.ability_rating ?? selectedPlayer?.rating,
     age: selectedPlayer?.age,
     position: selectedPlayer?.pos || selectedPlayer?.position,
     league: selectedPlayer?.league || selectedPlayer?.competition || LEAGUE_ID_TO_NAME[selectedPlayer?.league_id],
@@ -1025,7 +1056,7 @@ export default function Transfers() {
                   <div><span>Apps</span><b>{selectedPlayer?.appearances ?? '—'}</b></div>
                   <div><span>Goals</span><b>{selectedPlayer?.goals ?? '—'}</b></div>
                   <div><span>Assists</span><b>{selectedPlayer?.assists ?? '—'}</b></div>
-                  <div><span>Calibre</span><b style={{ color: 'var(--l)' }}>{selectedPlayer?.rating ? Math.round(selectedPlayer.rating) : '—'}</b></div>
+                  <div><span>Calibre</span><b style={{ color: 'var(--l)' }}>{(selectedPlayer?.ability_rating ?? selectedPlayer?.rating) ? Math.round(selectedPlayer?.ability_rating ?? selectedPlayer?.rating) : '—'}</b></div>
                 </div>
                 <div className="tr2-kpis">
                   <div className="tr2-kpi"><span>{selectedTeam ? `Value to ${selectedTeam.short || selectedTeam.name}` : 'Calibre Value'}</span><b style={{ color: 'var(--l)' }}>€{selectedTeam ? fit.fitAdjustedValue : valuation.estimatedValue}M</b></div>
@@ -1036,7 +1067,7 @@ export default function Transfers() {
                   <div className="tr2-note" style={{ marginBottom: 10 }}>Base (club-agnostic) value €{valuation.estimatedValue}M, adjusted to €{fit.fitAdjustedValue}M for {selectedTeam.short || selectedTeam.name}'s system fit ({systemFitScore}/100) — the verdict below is based on this adjusted figure.</div>
                 )}
                 {dealVerdict.premium > 300 && (
-                  <div className="tr2-note" style={{ color: '#e8b13a', marginBottom: 8 }}>⚠ A premium this large usually means the resolved Calibre rating ({selectedPlayer?.rating ?? '—'}) looks too low for this player, not that the fee is unreasonable — worth checking the player record.</div>
+                  <div className="tr2-note" style={{ color: '#e8b13a', marginBottom: 8 }}>⚠ A premium this large usually means the resolved Calibre rating ({selectedPlayer?.ability_rating ?? selectedPlayer?.rating ?? '—'}) looks too low for this player, not that the fee is unreasonable — worth checking the player record.</div>
                 )}
                 {canBreakdown ? (
                   <div className="tr2-note">Max sensible bid: <b style={{ color: 'var(--l)' }}>€{fit.clubMaxSensibleBid}M</b> · Fair range €{fit.fitFairRange.low}–{fit.fitFairRange.high}M</div>
@@ -1146,7 +1177,7 @@ export default function Transfers() {
                     <div><label>Goals / 90</label><b>{per90(selectedPlayer?.goals) ?? '—'}</b></div>
                     <div><label>Assists / 90</label><b>{per90(selectedPlayer?.assists) ?? '—'}</b></div>
                     <div><label>Pass Acc %</label><b>{selectedPlayer?.pass_accuracy ?? '—'}</b></div>
-                    <div><label>Calibre</label><b style={{ color: 'var(--l)' }}>{selectedPlayer?.rating ? Math.round(selectedPlayer.rating) : '—'}</b></div>
+                    <div><label>Calibre</label><b style={{ color: 'var(--l)' }}>{(selectedPlayer?.ability_rating ?? selectedPlayer?.rating) ? Math.round(selectedPlayer?.ability_rating ?? selectedPlayer?.rating) : '—'}</b></div>
                   </div>
                   <p className="tr2-note">{dealVerdict.why}</p>
                 </>

@@ -411,6 +411,7 @@ Updating player 50/609: Dominik Kohr
 Updating player 75/609: Arnaud Nordin
 Updating player 100/609: Filippo Mané
 Updating player 125/609: Vincenzo Grifo
+  update error Yuito Suzuki: TypeError: fetch failed
 Updating player 150/609: Phillip Tietz
 Updating player 175/609: Jan Schöppner
 Updating player 200/609: Yannik Wagner
@@ -432,8 +433,8 @@ Updating player 575/609: Maycon Cardozo
 Updating player 600/609: Felix Götze
 
 ── Summary ──────────────────
-Enriched players : 420
+Enriched players : 419
 No Supabase match: 189
-Update errors    : 0
+Update errors    : 1
 Team aggregates  : 19 not written yet
 Dry run          : no

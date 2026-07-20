@@ -38,10 +38,28 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Load SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / API_FOOTBALL_KEY etc. from
+// .env / .env.local in the repo root if present, same loader used across the
+// other scripts — lets this run without exporting keys inline on every call.
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+for (const f of ['.env', '.env.local']) {
+  const p = join(ROOT, f);
+  if (!existsSync(p)) continue;
+  for (const line of readFileSync(p, 'utf8').split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#') || !trimmed.includes('=')) continue;
+    const [key, ...rest] = trimmed.split('=');
+    process.env[key.trim()] ??= rest.join('=').trim().replace(/^["']|["']$/g, '');
+  }
+}
 
 // ── config ────────────────────────────────────────────────────────────────
-const SUPABASE_URL  = process.env.SUPABASE_URL;
-const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL  = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY  = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const API_KEY       = process.env.API_FOOTBALL_KEY;
 
 const SEASON          = String(process.env.SEASON || '2025');
@@ -56,7 +74,22 @@ const PASS_ACCURACY_OVERRIDE = {
   335051: 89.3,   // João Neves — API-Football ~82%; FBref/FotMob ~89%, UEFA CL ~93%
 };
 
-const TARGET_UUIDS_RAW = (process.env.TARGET_UUIDS || '').split(',').map(s => s.trim()).filter(Boolean);
+// TARGET_UUIDS_FILE — a file of internal players.id UUIDs (comma- and/or
+// newline-separated, blank lines ok), e.g. the output of
+// scripts/findRealGapPlayers.mjs. Avoids having to paste hundreds/thousands
+// of ids as a single TARGET_UUIDS env var on the command line.
+const TARGET_UUIDS_FILE_PATH = process.env.TARGET_UUIDS_FILE || null;
+const TARGET_UUIDS_FROM_FILE = TARGET_UUIDS_FILE_PATH && existsSync(TARGET_UUIDS_FILE_PATH)
+  ? readFileSync(TARGET_UUIDS_FILE_PATH, 'utf8').split(/[\s,]+/).map(s => s.trim()).filter(Boolean)
+  : [];
+if (TARGET_UUIDS_FILE_PATH && !existsSync(TARGET_UUIDS_FILE_PATH)) {
+  console.error(`TARGET_UUIDS_FILE not found: ${TARGET_UUIDS_FILE_PATH}`);
+  process.exit(1);
+}
+const TARGET_UUIDS_RAW = [...new Set([
+  ...(process.env.TARGET_UUIDS || '').split(',').map(s => s.trim()).filter(Boolean),
+  ...TARGET_UUIDS_FROM_FILE,
+])];
 const MAX_PLAYERS     = Number(process.env.MAX_PLAYERS || (TARGET_UUIDS_RAW.length ? TARGET_UUIDS_RAW.length : 250));
 const REFRESH_DAYS    = Number(process.env.REFRESH_DAYS || 7);
 const DELAY_MS        = Number(process.env.DELAY_MS || 250);
@@ -89,6 +122,25 @@ if (SEASON_LADDER.some(s => !Number.isFinite(Number(s)))) {
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Same transient-network test used for the API/Supabase read retries below,
+// now also applied to the final per-row write — previously a bare
+// TypeError: fetch failed on this last update() call had zero retries and
+// fell straight into the outer catch as a permanent "failed" row (this is
+// what accounted for the 1 transient failure out of 5049 in the gap-player
+// run). Retries up to 3 times with backoff before giving up for real.
+const TRANSIENT_WRITE = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated/i;
+async function updateWithRetry(query, maxAttempts = 4) {
+  let lastErr = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const { error } = await query();
+    if (!error) return { error: null };
+    lastErr = error;
+    if (!TRANSIENT_WRITE.test(String(error.message || '')) || attempt === maxAttempts) break;
+    await sleep(800 * attempt);
+  }
+  return { error: lastErr };
+}
 const num = (v, d = 0) => { const n = Number(v); return Number.isFinite(n) ? n : d; };
 
 // strip accents/punctuation for name matching
@@ -430,35 +482,65 @@ async function main() {
     let q = supabase
       .from('players')
       .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at');
-    if (TARGET_UUIDS.length) {
-      // Explicit UUID targeting bypasses the api_player_id-not-null gate —
-      // rows with a null api_player_id are only reachable this way.
-      q = q.in('id', TARGET_UUIDS);
-    } else {
-      q = q.not('api_player_id', 'is', null).gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
-      if (LEAGUE_ID) q = q.eq('league_id', LEAGUE_ID);
-      if (NATIONALITY) q = q.ilike('nationality', `%${NATIONALITY}%`);
-      if (PLAYER_IDS.length) q = q.in('api_player_id', PLAYER_IDS);
-      else if (PLAYER_NAMES) q = q.or(PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(','));
-    }
+    q = q.not('api_player_id', 'is', null).gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
+    if (LEAGUE_ID) q = q.eq('league_id', LEAGUE_ID);
+    if (NATIONALITY) q = q.ilike('nationality', `%${NATIONALITY}%`);
+    if (PLAYER_IDS.length) q = q.in('api_player_id', PLAYER_IDS);
+    else if (PLAYER_NAMES) q = q.or(PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(','));
     return q.order('stats_updated_at', { ascending: true, nullsFirst: true }).limit(MAX_PLAYERS);
+  }
+
+  // TARGET_UUIDS is read via `.in('id', [...])`, which PostgREST sends as a
+  // GET with the id list in the query string. A few thousand UUIDs blows
+  // past Cloudflare's URL length limit (414 Request-URI Too Large) in one
+  // shot, so this batches the read into chunks and concatenates the rows —
+  // same explicit-UUID targeting, no manual splitting required.
+  async function fetchByIdsChunked(ids, chunkSize = 300) {
+    const all = [];
+    const chunks = Math.ceil(ids.length / chunkSize);
+    for (let i = 0; i < ids.length; i += chunkSize) {
+      const chunk = ids.slice(i, i + chunkSize);
+      const chunkNum = Math.floor(i / chunkSize) + 1;
+      let data = null, err = null;
+      for (let attempt = 1; attempt <= 4; attempt++) {
+        const { data: d, error } = await supabase
+          .from('players')
+          .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at')
+          .in('id', chunk)
+          .order('stats_updated_at', { ascending: true, nullsFirst: true });
+        if (!error) { data = d; break; }
+        err = error;
+        const transient = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket/i.test(String(error.message));
+        if (!transient || attempt === 4) break;
+        console.warn(`  ↻ Supabase read (chunk ${chunkNum}/${chunks}): ${error.message} — retry ${attempt}/3`);
+        await sleep(800 * attempt);
+      }
+      if (data == null) { console.error(`Supabase read failed on chunk ${chunkNum}/${chunks}:`, err?.message || 'unknown'); process.exit(1); }
+      all.push(...data);
+      console.log(`  fetched ${chunkNum}/${chunks} (${data.length} rows, ${all.length} total)`);
+    }
+    return all;
   }
 
   if (TARGET_UUIDS.length) console.log(`Targeting ${TARGET_UUIDS.length} player(s) by internal id (bypasses api_player_id filter)`);
   else if (PLAYER_IDS.length) console.log(`Targeting ${PLAYER_IDS.length} player(s) by api_player_id: ${PLAYER_IDS.join(', ')}`);
 
-  // Retry the read on transient connection drops (fetch failed) before giving up.
   let rows = null, readErr = null;
-  for (let attempt = 1; attempt <= 4; attempt++) {
-    const { data, error } = await buildRead();
-    if (!error) { rows = data; break; }
-    readErr = error;
-    const transient = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket/i.test(String(error.message));
-    if (!transient || attempt === 4) break;
-    console.warn(`  ↻ Supabase read: ${error.message} — retry ${attempt}/3`);
-    await sleep(800 * attempt);
+  if (TARGET_UUIDS.length) {
+    rows = await fetchByIdsChunked(TARGET_UUIDS);
+  } else {
+    // Retry the read on transient connection drops (fetch failed) before giving up.
+    for (let attempt = 1; attempt <= 4; attempt++) {
+      const { data, error } = await buildRead();
+      if (!error) { rows = data; break; }
+      readErr = error;
+      const transient = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket/i.test(String(error.message));
+      if (!transient || attempt === 4) break;
+      console.warn(`  ↻ Supabase read: ${error.message} — retry ${attempt}/3`);
+      await sleep(800 * attempt);
+    }
+    if (!rows) { console.error('Supabase read failed:', readErr?.message || 'unknown'); process.exit(1); }
   }
-  if (!rows) { console.error('Supabase read failed:', readErr?.message || 'unknown'); process.exit(1); }
 
   const cutoff = Date.now() - REFRESH_DAYS * 86400000;
   let enriched = 0, remapped = 0, skipped = 0, empty = 0, failed = 0, calls = 0;
@@ -533,9 +615,9 @@ async function main() {
 
       if (!season || !line || line.stats_minutes === 0) {
         if (!DRY_RUN) {
-          const { error: e } = await supabase.from('players')
+          const { error: e } = await updateWithRetry(() => supabase.from('players')
             .update({ stats_season: null, stats_updated_at: new Date().toISOString() })
-            .eq('id', row.id);
+            .eq('id', row.id));
           if (e) throw new Error(e.message);
         }
         empty++;
@@ -600,7 +682,7 @@ async function main() {
       if (didRemap) update.api_player_id = usedId;
 
       if (!DRY_RUN) {
-        const { error: e } = await supabase.from('players').update(update).eq('id', row.id);
+        const { error: e } = await updateWithRetry(() => supabase.from('players').update(update).eq('id', row.id));
         if (e) throw new Error(e.message);
       }
 

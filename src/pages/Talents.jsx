@@ -178,8 +178,16 @@ function registryTalentFromProfile(profile) {
   // Calibre rating from the shared engine (one number, every page). Honors a
   // stored 0-99 rating if the model has written one; otherwise computes from
   // minutes, output, role, league and age. Form & Impact are proxied for now.
+  //
+  // Deliberately ability, not Season Score: Season Score discounts for low
+  // minutes/selection (its Consistency component), which is exactly the
+  // wrong signal on a TALENT DISCOVERY page built to surface promising
+  // players who haven't been trusted with consistent senior minutes yet.
+  // readiness/potential below already apply their own, separate discount
+  // for low experience and start-rate — using Season Score here too would
+  // double-penalize the exact players this page exists to find.
   const scored = resolveRating(profile);
-  const rating = scored.rating != null ? scored.rating : '—';
+  const rating = scored.ability != null ? scored.ability : (scored.rating != null ? scored.rating : '—');
   const ratingProvisional = scored.provisional === true && scored.rating != null;
   const breakdown = scored.breakdown;
   const hasEvidence = minutes > 0 || appearances > 0 || apiRating > 0;

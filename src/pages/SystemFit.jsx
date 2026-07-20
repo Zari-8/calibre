@@ -88,6 +88,15 @@ function normalizeDbPlayer(player) {
     position: player.position || 'Profile pending',
     archetype: deriveArchetype(player),
     rating: scored.rating ?? SYSTEM_PLAYERS[0].rating,
+    // Explicit, not just carried through the `...player` spread above — a
+    // stale/never-scored row's raw ability_rating/availability_score column
+    // can be null even when resolveRating() can still derive a live value
+    // (calibreRating() fallback). Without this, Ability silently fell back
+    // to equal Season Score for any player whose stored column was empty,
+    // which is exactly the Calibre/Season Score collision seen on the main
+    // System Fit card for curated/never-recomputed players.
+    ability_rating: scored.ability ?? player.ability_rating ?? null,
+    availability_score: scored.availability ?? player.availability_score ?? null,
     traits,
     roleMetrics,
     source: 'db',
@@ -481,7 +490,7 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger, canFit
       <div className="sf-dashboard-grid">
         <section className="sf-panel sf-fit-breakdown-panel">
           <div className="sf-panel-head"><div><Activity size={17} /><span>FIT BREAKDOWN</span></div><b>MODEL OUTPUT</b></div>
-          {report.breakdown.slice(0, 6).map(item => <MetricBar key={item.label} label={item.label} value={item.value} compare={Math.max(58, item.value - 8)} />)}
+          {report.breakdown.slice(0, 7).map(item => <MetricBar key={item.label} label={item.label} value={item.value} compare={Math.max(58, item.value - 8)} />)}
           <div className="sf-panel-legend"><span><i className="lime" />player score</span><span><i className="marker" />system avg</span></div>
         </section>
 
@@ -910,6 +919,17 @@ function PlayerProfileModal({ player, report, onClose }) {
   const p = data;
   const dash = v => (v == null || v === '' || v === '—') ? '—' : v;
   const pick = (...keys) => { for (const k of keys) { const v = p[k]; if (typeof v === 'number' || (typeof v === 'string' && v !== '' && v !== '—')) return v; } return '—'; };
+  // Raw counting stats read as season totals, which makes a 20-appearance
+  // starter and a 5-appearance sub look directly comparable when they aren't.
+  // Convert to per-90 using whichever minutes figure is available; only
+  // MINUTES and GAMES PLAYED stay as totals (that's the point of showing them
+  // — context for how much of a sample the per-90 figures rest on).
+  const minutesForRate = Number(pick('stats_minutes', 'minutes')) || 0;
+  const per90 = (...keys) => {
+    const raw = Number(pick(...keys));
+    if (!Number.isFinite(raw) || minutesForRate <= 0) return '—';
+    return ((raw / minutesForRate) * 90).toFixed(2);
+  };
   const bio = [
     ['COUNTRY', dash(p.country || p.nationality || p.nation)],
     ['AGE', dash(p.age)],
@@ -919,18 +939,29 @@ function PlayerProfileModal({ player, report, onClose }) {
     ['CLUB', dash(p.team || p.club)],
   ];
   const stats = [
+    ['GAMES PLAYED', pick('appearances', 'apps')],
+    ['MINUTES', pick('minutes', 'stats_minutes')],
     ['GOALS', pick('goals', '_goals')],
     ['ASSISTS', pick('assists', '_assists')],
     ['xG / 90', pick('xg_per_90', 'xg_per90', 'xgPer90', 'xg')],
-    ['KEY PASSES', pick('key_passes', 'keyPasses')],
-    ['SHOTS', pick('shots', 'total_shots', 'shots_total')],
-    ['DRIBBLES', pick('dribbles_success', 'successful_dribbles', 'dribbles', 'dribbles_completed')],
-    ['DUELS WON', pick('duels_won', 'duel_win_pct', 'duelsWon')],
-    ['TACKLES', pick('tackles')],
-    ['INTERCEPTIONS', pick('interceptions')],
+    ['KEY PASSES / 90', per90('key_passes', 'keyPasses')],
+    ['SHOTS / 90', per90('shots', 'total_shots', 'shots_total')],
+    ['DRIBBLES / 90', per90('dribbles_success', 'successful_dribbles', 'dribbles', 'dribbles_completed')],
+    ['DUELS WON / 90', per90('duels_won', 'duelsWon')],
+    ['TACKLES / 90', per90('tackles')],
+    ['INTERCEPTIONS / 90', per90('interceptions')],
     ['PASS ACC %', pick('pass_accuracy', 'passAccuracy')],
-    ['MINUTES', pick('minutes', 'stats_minutes')],
-    ['CALIBRE', dash(p.rating)],
+  ];
+  // Season Score vs Calibre vs Selection — see calibreRating.js. Season Score
+  // folds in how much he's actually played this year (what he contributed
+  // across the whole campaign); Calibre is the same production/quality
+  // signal with that discount removed (how good he actually is); Selection
+  // surfaces the workload/selection-frequency signal on its own (how much
+  // he was used) instead of hiding it inside Season Score.
+  const scores = [
+    ['SEASON SCORE', dash(p.rating)],
+    ['CALIBRE', dash(p.ability_rating)],
+    ['SELECTION', dash(p.availability_score)],
   ];
   const chips = sf2Tokens(p.position).slice(0, 3);
   return createPortal(
@@ -944,11 +975,12 @@ function PlayerProfileModal({ player, report, onClose }) {
             <h3>{p.name}</h3>
             <div className="sf2-modal-tags">{chips.map(c => <span key={c}>{c}</span>)}{p.archetype && <em>{p.archetype}</em>}</div>
           </div>
-          <div className="sf2-modal-rating"><strong>{p.rating ?? '—'}</strong><span>CALIBRE</span></div>
+          <div className="sf2-modal-rating"><strong>{p.ability_rating ?? p.rating ?? '—'}</strong><span>CALIBRE</span></div>
         </div>
+        <div className="sf2-modal-sec"><small>RATING BREAKDOWN</small><div className="sf2-modal-grid">{scores.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
         <div className="sf2-modal-sec"><small>BIO</small><div className="sf2-modal-grid">{bio.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
         <div className="sf2-modal-sec"><small>PERFORMANCE</small><div className="sf2-modal-grid sf2-modal-grid--stats">{stats.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
-        <p className="sf2-modal-note">{loading ? 'Loading live stats from the connected player dataset\u2026' : 'Stats populate from the connected player dataset \u2014 blanks fill in as data syncs.'}</p>
+        <p className="sf2-modal-note">{loading ? 'Loading live stats from the connected player dataset\u2026' : 'SEASON SCORE is what he contributed across the whole campaign; CALIBRE strips out selection/minutes to show how good he actually is; SELECTION is how much he was used, shown on its own. Stats populate from the connected player dataset \u2014 blanks fill in as data syncs.'}</p>
       </section>
     </div>,
     document.body
@@ -957,19 +989,21 @@ function PlayerProfileModal({ player, report, onClose }) {
 
 function AttributeCard({ player, report }) {
   const [open, setOpen] = useState(false);
-  const rating = player.rating ?? '—';
+  const rating = player.ability_rating ?? player.rating ?? '—';
   const chips = sf2Tokens(player.position).slice(0, 3);
   const grid = [
     ['NATIONALITY', player.nationality || player.country || null],
     ['AGE', player.age && player.age !== '—' ? player.age : null],
     ['CLUB', player.team],
     ['TOP ROLE', report.primaryRoles?.[0]],
+    ['SEASON SCORE', player.rating ?? null],
+    ['SELECTION', player.availability_score ?? null],
   ].filter(([, v]) => v != null && v !== '');
   return (
     <section className="sf2-card sf2-attr">
       <div className="sf2-attr-top">
         <div className="sf2-attr-photo"><ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name) ?? player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} /></div>
-        <div className="sf2-attr-rating"><strong>{rating}</strong><span>CALIBRE RATING</span><div className="sf2-attr-chips">{chips.map(c => <em key={c}>{c}</em>)}</div></div>
+        <div className="sf2-attr-rating"><strong>{rating}</strong><span>CALIBRE</span><div className="sf2-attr-chips">{chips.map(c => <em key={c}>{c}</em>)}</div></div>
       </div>
       <div className="sf2-attr-pos">
         <div><small>POSITION</small><b>{player.position || '—'}</b></div>
@@ -1019,7 +1053,11 @@ function PositionalFitMap({ report, player }) {
 }
 
 function FitBreakdownRow({ report }) {
-  const items = report.breakdown.slice(0, 5);
+  // 6, not 5 — the array now has 'Defensive workload fit' as a real sixth
+  // dimension (see buildSystemFitReport in systemFitData.js). Dropping it
+  // here would silently hide the exact number that usually explains why the
+  // overall score reads lower than the other visible sub-scores.
+  const items = report.breakdown.slice(0, 6);
   return (
     <section className="sf2-card sf2-breakdown">
       <div className="sf2-card-head"><span>FIT BREAKDOWN</span><b>MODEL OUTPUT · /100</b></div>
@@ -1138,6 +1176,47 @@ export default function SystemFit() {
       } catch { /* keep default selection */ }
     })();
   }, []);
+
+  // Live-score safety net. normalizeDbPlayer() already patches ability_rating/
+  // availability_score for search-selected players, but selectedPlayer can also
+  // come from paths that skip it entirely — the default useState(SYSTEM_PLAYERS[0]),
+  // and curated quick-pick clicks (Trending Fits etc.) that set a raw SYSTEM_PLAYERS
+  // entry directly. Those carry only the old single `rating` field, so the main
+  // card's Calibre headline fell back to equalling Season Score — while the
+  // profile popup (which always does its own fresh Supabase fetch) showed the
+  // real, different Ability value for the same player at the same time. This
+  // re-fetches and patches in the authoritative values for whichever player is
+  // selected, regardless of how it got selected, so the two views can't disagree.
+  useEffect(() => {
+    // Curated quick-pick entries (SYSTEM_PLAYERS) carry an `id` that's just an
+    // arbitrary array index, NOT an API-Football id — it was never safe to
+    // treat it as one. Vinícius Júnior's curated id (278) happens to collide
+    // with Mbappé's REAL apiPlayerId (per playerIds.js), so falling back to
+    // Number(id) could silently pull a different player's live stats onto
+    // the card. Resolve through the verified name registry instead — same
+    // one SystemFit's own profile modal already uses for this exact reason.
+    const apiId = selectedPlayer.apiPlayerId ?? playerIdFor(selectedPlayer.name) ?? null;
+    if (!apiId) return;
+    let alive = true;
+    (async () => {
+      try {
+        const rows = await getSupabasePlayersByApiIds([apiId]);
+        const db = rows && rows[0];
+        if (!alive || !db) return;
+        const scored = resolveRating(db);
+        setSelectedPlayer(prev => {
+          const prevId = prev.apiPlayerId ?? playerIdFor(prev.name) ?? null;
+          if (prevId !== apiId) return prev; // player changed again before this resolved
+          const nextRating = scored.rating ?? prev.rating;
+          const nextAbility = scored.ability ?? prev.ability_rating;
+          const nextAvailability = scored.availability ?? prev.availability_score;
+          if (prev.rating === nextRating && prev.ability_rating === nextAbility && prev.availability_score === nextAvailability) return prev;
+          return { ...prev, rating: nextRating, ability_rating: nextAbility, availability_score: nextAvailability };
+        });
+      } catch { /* keep whatever selectedPlayer already had */ }
+    })();
+    return () => { alive = false; };
+  }, [selectedPlayer.apiPlayerId, selectedPlayer.id, selectedPlayer.name]);
 
   const report = useMemo(() => buildSystemFitReport(selectedPlayer, selectedTeam), [selectedPlayer, selectedTeam]);
   const comparison = useMemo(() => buildPlayerComparison(selectedPlayer, challenger, selectedTeam), [selectedPlayer, challenger, selectedTeam]);

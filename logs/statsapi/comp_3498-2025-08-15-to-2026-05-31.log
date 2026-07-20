@@ -315,13 +315,13 @@ Updating player 275/1303: Bence Ötvös
 Updating player 300/1303: Musa Qurbanlı
 Updating player 325/1303: Tomás Araújo
 Updating player 350/1303: Anthony Elanga
-  update error Joe Willock: TypeError: fetch failed
 Updating player 375/1303: Alex Murphy
 Updating player 400/1303: Alisson Santos
 Updating player 425/1303: Eren Elmalı
 Updating player 450/1303: Metehan Baltacı
 Updating player 475/1303: Giovanni Di Lorenzo
 Updating player 500/1303: Eliesse Ben Seghir
+  update error Robert Andrich: TypeError: fetch failed
 Updating player 525/1303: Eric Dier
 Updating player 550/1303: Hakan Çalhanoğlu
 Updating player 575/1303: Yann Bisseck
@@ -329,7 +329,6 @@ Updating player 600/1303: Daniel Maldini
 Updating player 625/1303: Nicola Zalewski
 Updating player 650/1303: Nicolás González
 Updating player 675/1303: Robert Sánchez
-  update error Serge Gnabry: TypeError: fetch failed
 Updating player 700/1303: Leon Goretzka
 Updating player 725/1303: Youssoupha Mbodji
 Updating player 750/1303: Lorenzo Pirola
@@ -343,7 +342,6 @@ Updating player 925/1303: Piero Hincapié
 Updating player 950/1303: Armando Obispo
 Updating player 975/1303: Rob Schoofs
 Updating player 1000/1303: Ben White
-  update error Ibon Sánchez: TypeError: fetch failed
 Updating player 1025/1303: Victor Osimhen
 Updating player 1050/1303: Ademola Lookman
 Updating player 1075/1303: Joshua Wynder
@@ -358,8 +356,8 @@ Updating player 1275/1303: Niccolò Rizzo
 Updating player 1300/1303: Erblin Osmani
 
 ── Summary ──────────────────
-Enriched players : 727
+Enriched players : 729
 No Supabase match: 573
-Update errors    : 3
+Update errors    : 1
 Team aggregates  : 36 not written yet
 Dry run          : no

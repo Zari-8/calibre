@@ -62,6 +62,21 @@ const COMPETITIONS = [
   { name: 'Pro League', id: 'comp_8531' },
   { name: 'Liga Portugal', id: 'comp_8385' },
   { name: 'Brasileirão', id: 'comp_4795' },
+  // Phase 2 — next 10, added 2026-07-13. Ids confirmed live via
+  // scripts/listStatsAPICompetitions.mjs (149-competition catalog), not
+  // guessed. Rounds out the "big five" second tiers plus other globally
+  // significant top flights; Saudi Pro League specifically closes the gap
+  // that caused the Ruben Neves position-data miss earlier this session.
+  { name: 'Championship', id: 'comp_8321' },  // England, 2nd tier
+  { name: 'LaLiga 2', id: 'comp_0976' },  // Spain, 2nd tier (Segunda División)
+  { name: '2. Bundesliga', id: 'comp_0406' },  // Germany, 2nd tier
+  { name: 'Serie B', id: 'comp_5450' },  // Italy, 2nd tier
+  { name: 'Ligue 2', id: 'comp_9777' },  // France, 2nd tier
+  { name: 'Saudi Pro League', id: 'comp_45025' },
+  { name: 'MLS', id: 'comp_9799' },  // USA
+  { name: 'Trendyol Süper Lig', id: 'comp_9235' }, // Turkey
+  { name: 'Scottish Premiership', id: 'comp_6387' },
+  { name: 'Liga Profesional de Fútbol', id: 'comp_4540' }, // Argentina
 ];
 
 const TARGET_COMP_IDS = new Set(
@@ -531,11 +546,14 @@ function dropMissingColumn(fields, message) {
   return { fields: copy, column: col };
 }
 
+const TRANSIENT_WRITE = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated/i;
+
 async function updatePlayer(rowId, fields) {
   if (DRY_RUN) return { ok: true, dropped: [] };
 
   let current = { ...fields };
   const dropped = [];
+  let transientAttempts = 0;
 
   for (let i = 0; i < 40; i++) {
     const { error } = await sb.from('players').update(current).eq('id', rowId);
@@ -547,13 +565,26 @@ async function updatePlayer(rowId, fields) {
       msg.includes('schema cache') ||
       msg.includes('Could not find');
 
-    if (!isColumnIssue) return { ok: false, error, dropped };
+    if (isColumnIssue) {
+      const next = dropMissingColumn(current, msg);
+      if (!next) return { ok: false, error, dropped };
+      dropped.push(next.column);
+      current = next.fields;
+      continue;
+    }
 
-    const next = dropMissingColumn(current, msg);
-    if (!next) return { ok: false, error, dropped };
+    // Network-level blips (Cloudflare/Supabase hiccups) are worth a few
+    // retries before giving up — this is what silently ate 2 players'
+    // stats in the 19-competition live run (Nikolai Soyset Hopland,
+    // Maximiliano Puig) since this loop previously only retried on
+    // column-schema errors, not transient fetch failures.
+    if (TRANSIENT_WRITE.test(msg) && transientAttempts < 4) {
+      transientAttempts++;
+      await new Promise((r) => setTimeout(r, 800 * transientAttempts));
+      continue;
+    }
 
-    dropped.push(next.column);
-    current = next.fields;
+    return { ok: false, error, dropped };
   }
 
   return { ok: false, error: new Error('Too many missing-column retries'), dropped };
@@ -561,6 +592,22 @@ async function updatePlayer(rowId, fields) {
 
 const nameCache = new Map();
 const statsapiIdCache = new Map();
+
+// Same first/last-name comparison helpers as scripts/reconcileNames.mjs's
+// (fixed) findPlayer() — exact token match, or either side abbreviated to
+// its initial. NOT substring containment.
+function firstNameMatches(a, b) {
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.length === 1) return b[0] === a;
+  if (b.length === 1) return a[0] === b;
+  return false;
+}
+function lastNameMatches(searchLast, candidateLastToken) {
+  if (!searchLast || !candidateLastToken) return false;
+  if (candidateLastToken === searchLast) return true;
+  return candidateLastToken.split('-').includes(searchLast);
+}
 
 async function findPlayer({ statsapiPlayerId, playerName }) {
   if (statsapiPlayerId) {
@@ -582,16 +629,45 @@ async function findPlayer({ statsapiPlayerId, playerName }) {
   if (!key) return null;
   if (nameCache.has(key)) return nameCache.get(key);
 
+  // Strategy 1: exact full-name match (case-insensitive) — safe, requires
+  // literal equality.
   let { data } = await sb.from('players')
     .select('id, name, statsapi_player_id')
     .ilike('name', playerName)
     .limit(1);
 
+  // Strategy 2 (fallback): the ORIGINAL version here did
+  // `.ilike('name', '%${key}%').limit(1)` — a raw substring search across
+  // the whole name with NO ranking (arbitrary row order) and NO name-token
+  // verification at all. That's the same class of bug fixed in
+  // reconcileNames.mjs, but with even less protection (no minutes-based
+  // ranking, not even a first-name check). Confirmed as a real, separate
+  // corruption source live 2026-07-14 via cross-script audit (e.g. "Ian
+  // Struyf" / "Karim Dermane" linked to unrelated "J. Struyf" / "A.
+  // Lindermane" rows with no shared first name). Replaced with the same
+  // surname-pool + strict first/last token matching used in
+  // reconcileNames.mjs's Strategy 0.
   if (!data?.length) {
-    ({ data } = await sb.from('players')
-      .select('id, name, statsapi_player_id')
-      .ilike('name', `%${key}%`)
-      .limit(1));
+    const parts = key.split(' ').filter(Boolean);
+    const last = parts[parts.length - 1];
+    const first = parts[0];
+    if (last && last.length > 2) {
+      const { data: pool } = await sb.from('players')
+        .select('id, name, statsapi_player_id, minutes, api_player_id')
+        .ilike('name', `%${last}%`)
+        .order('minutes', { ascending: false, nullsFirst: false })
+        .limit(25);
+      const narrowed = (pool || []).filter(p => {
+        const tokens = norm(p.name).split(' ').filter(Boolean);
+        const pFirst = tokens[0] || '';
+        const pLast = tokens[tokens.length - 1] || '';
+        return lastNameMatches(last, pLast) && firstNameMatches(first, pFirst);
+      });
+      const best = narrowed
+        .filter(p => (p.minutes > 0) || p.api_player_id)
+        .sort((a, b) => (b.minutes || 0) - (a.minutes || 0))[0];
+      data = best ? [best] : [];
+    }
   }
 
   const row = data?.[0] || null;

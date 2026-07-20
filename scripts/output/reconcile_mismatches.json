@@ -1,0 +1,1130 @@
+[
+  {
+    "statsapi_player_id": "pl_9898384",
+    "statsapi_real_name": "Kepa Arrizabalaga",
+    "statsapi_team": "Arsenal",
+    "stored_row_id": "51fa6294-a2fb-455f-a3ac-c5a6341d0c79",
+    "stored_name": "Ibón García Arrizabalaga",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_57929743",
+    "statsapi_real_name": "Ian Maatsen",
+    "statsapi_team": "Aston Villa",
+    "stored_row_id": "040dd5aa-8d07-4912-ba84-3357a6602d1b",
+    "stored_name": "Dalian Maatsen",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08355220",
+    "statsapi_real_name": "Marc Guéhi",
+    "statsapi_team": "Manchester City",
+    "stored_row_id": "f9832923-42c2-40fb-9efc-f0aa129b488d",
+    "stored_name": "Sekala Siolkion Amiel Guehi",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_9464363",
+    "statsapi_real_name": "Luke O'Nien",
+    "statsapi_team": "Sunderland",
+    "stored_row_id": "5111cef2-b9a4-41ac-bede-11032d5a260d",
+    "stored_name": "G. ValikonienÄ",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_3621481",
+    "statsapi_real_name": "James Ward-Prowse",
+    "statsapi_team": "West Ham United",
+    "stored_row_id": "78114704-1c0c-4ba7-a0e0-c287eebf652f",
+    "stored_name": "Ashley James Ward Vickers",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_30810365",
+    "statsapi_real_name": "Íñigo Lekue",
+    "statsapi_team": "Athletic Club",
+    "stored_row_id": "e098270e-394a-4e53-981c-7d3bb74f32c8",
+    "stored_name": "Lekue",
+    "stored_team": "Athletic Club"
+  },
+  {
+    "statsapi_player_id": "pl_187954",
+    "statsapi_real_name": "Wojciech Szczęsny",
+    "statsapi_team": "Barcelona",
+    "stored_row_id": "28db1d22-5569-4aac-a9b7-b598c39ecd57",
+    "stored_name": "J. Szczesny",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_40522280",
+    "statsapi_real_name": "Jones El-Abdellaoui",
+    "statsapi_team": "Celta Vigo",
+    "stored_row_id": "a3b8f9fb-abd4-453c-b144-37b3ed8e715f",
+    "stored_name": "O. Elabdellaoui",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_0911834",
+    "statsapi_real_name": "Antonio Sivera",
+    "statsapi_team": "Deportivo Alavés",
+    "stored_row_id": "9ced34d9-e1c5-43f9-a5b1-b75eae6f7137",
+    "stored_name": "Sivera",
+    "stored_team": "Alaves"
+  },
+  {
+    "statsapi_player_id": "pl_01338459",
+    "statsapi_real_name": "Coba da Costa",
+    "statsapi_team": "Getafe",
+    "stored_row_id": "12b96890-4cb7-4c0e-898f-17cac55d6e86",
+    "stored_name": "David Dacoba Costa",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_9269036",
+    "statsapi_real_name": "Djené",
+    "statsapi_team": "Getafe",
+    "stored_row_id": "3bf2faed-0fe6-49cb-977a-3c6eeaefffc2",
+    "stored_name": "Amza Djenepo",
+    "stored_team": "Rahimo"
+  },
+  {
+    "statsapi_player_id": "pl_04408500",
+    "statsapi_real_name": "Jandro García",
+    "statsapi_team": "Mallorca",
+    "stored_row_id": "c904a374-cd33-499f-8aa2-c372475b82a2",
+    "stored_name": "Alejandro Garcia",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_57995226",
+    "statsapi_real_name": "Lucas Bergström",
+    "statsapi_team": "Mallorca",
+    "stored_row_id": "ff017864-cdc8-4fc5-9976-faaf995b8763",
+    "stored_name": "Emmanuel Bergstrom",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_5799538",
+    "statsapi_real_name": "Sergi Darder",
+    "statsapi_team": "Mallorca",
+    "stored_row_id": "911412bb-c070-4f06-af79-7cba09580d7e",
+    "stored_name": "Francesc Darder Pizà",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_29161399",
+    "statsapi_real_name": "Jon Moncayola",
+    "statsapi_team": "Osasuna",
+    "stored_row_id": "b1ae089d-d614-4921-8961-35729a870813",
+    "stored_name": "Moncayola",
+    "stored_team": "Osasuna"
+  },
+  {
+    "statsapi_player_id": "pl_29103828",
+    "statsapi_real_name": "Andrei Rațiu",
+    "statsapi_team": "Rayo Vallecano",
+    "stored_row_id": "965cc49f-c034-423d-aad3-d338ce7af9f0",
+    "stored_name": "Deogratius Judika",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_9784249",
+    "statsapi_real_name": "Antonio Rüdiger",
+    "statsapi_team": "Real Madrid",
+    "stored_row_id": "3bc22bb7-b85a-4170-b9b3-6df64e9d34b3",
+    "stored_name": "Rudiger Gilbert",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_02873775",
+    "statsapi_real_name": "Iñaki Rupérez",
+    "statsapi_team": "Real Sociedad",
+    "stored_row_id": "84888a9c-7bdc-425b-9dcc-46cba7705c8e",
+    "stored_name": "Luis Novo Ruperez",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_19344150",
+    "statsapi_real_name": "Javier Guerra",
+    "statsapi_team": "Valencia",
+    "stored_row_id": "b55a69c7-6dea-4f39-ba7a-c8a1d5a470ac",
+    "stored_name": "Francisco Javier Guerra Wiliams",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_1764300",
+    "statsapi_real_name": "Timo Hübers",
+    "statsapi_team": "1. FC Köln",
+    "stored_row_id": "0647beec-36ee-461b-a99b-51743273e9e7",
+    "stored_name": "Y. Hubers",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_30232804",
+    "statsapi_real_name": "Hyun-Seok Hong",
+    "statsapi_team": "1. FSV Mainz 05",
+    "stored_row_id": "bbd6b0e6-2906-4738-a734-618f52cb0661",
+    "stored_name": "Seok Hong",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_61541194",
+    "statsapi_real_name": "Jessic Ngankam",
+    "statsapi_team": "Eintracht Frankfurt",
+    "stored_row_id": "bfb714a2-a3cf-4196-8c2a-f3034e5eb7fc",
+    "stored_name": "Roussel-Fidele Ngankam-Hontcheu",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_61334154",
+    "statsapi_real_name": "Kristijan Jakić",
+    "statsapi_team": "FC Augsburg",
+    "stored_row_id": "30ba4c7c-e8bc-44e5-adc1-06a7a6306ff8",
+    "stored_name": "Armin Mujakic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_97219297",
+    "statsapi_real_name": "Mert Kömür",
+    "statsapi_team": "FC Augsburg",
+    "stored_row_id": "0400734f-b351-476d-b39c-7a54c2954c3c",
+    "stored_name": "Y. Komura",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_51661696",
+    "statsapi_real_name": "Bruno Ogbus",
+    "statsapi_team": "SC Freiburg",
+    "stored_row_id": "824fe773-69cc-46ac-8f66-884b2579aab1",
+    "stored_name": "I. Ogbus",
+    "stored_team": "SC Freiburg"
+  },
+  {
+    "statsapi_player_id": "pl_7900172",
+    "statsapi_real_name": "Lucas Höler",
+    "statsapi_team": "SC Freiburg",
+    "stored_row_id": "084c7b3b-a924-4b60-a766-cf237ee4aea3",
+    "stored_name": "Dominik  Winterholer",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_97644024",
+    "statsapi_real_name": "Skelly Alvero",
+    "statsapi_team": "SV Werder Bremen",
+    "stored_row_id": "47b87fa8-0a5c-4972-948d-153b9fb40bb9",
+    "stored_name": "Antonio Jesús Alvero Cordero",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_3006407",
+    "statsapi_real_name": "Andrej Kramarić",
+    "statsapi_team": "TSG Hoffenheim",
+    "stored_row_id": "1a972fd1-4e6f-4877-9acf-53283abffe0f",
+    "stored_name": "T. Kramarics",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_3765652",
+    "statsapi_real_name": "Mario Pašalić",
+    "statsapi_team": "Atalanta",
+    "stored_row_id": "0fdda0b6-072c-4aea-9156-d8c844706c14",
+    "stored_name": "Anton Pasalic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_8390883",
+    "statsapi_real_name": "Sead Kolašinac",
+    "statsapi_team": "Atalanta",
+    "stored_row_id": "8c1df66f-ccd1-4772-aa52-7816b1fbe4db",
+    "stored_name": "Jasmin Kolasinac",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_650949",
+    "statsapi_real_name": "Łukasz Skorupski",
+    "statsapi_team": "Bologna",
+    "stored_row_id": "b1d617d2-4ac6-4eac-95e2-22fab0435a3d",
+    "stored_name": "Ł. Skorupski",
+    "stored_team": "Bologna"
+  },
+  {
+    "statsapi_player_id": "pl_57371238",
+    "statsapi_real_name": "Anastasios Douvikas",
+    "statsapi_team": "Como",
+    "stored_row_id": "48bf7879-b892-4518-88f1-f6eac16ef24f",
+    "stored_name": "T. Douvikas",
+    "stored_team": "Como"
+  },
+  {
+    "statsapi_player_id": "pl_72742021",
+    "statsapi_real_name": "Daniel Mosquera",
+    "statsapi_team": "Hellas Verona",
+    "stored_row_id": "03777c6d-34fa-44ce-bb40-ece7cd262b40",
+    "stored_name": "Erick Daniel Mosquera Quejada",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_61349040",
+    "statsapi_real_name": "Grigoris Kastanos",
+    "statsapi_team": "Hellas Verona",
+    "stored_row_id": "0c6e7326-27c5-4fa2-b10e-e3a0d4b0c02b",
+    "stored_name": "Tziovanis Kastanos",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_4018019",
+    "statsapi_real_name": "Arkadiusz Milik",
+    "statsapi_team": "Juventus",
+    "stored_row_id": "0cc3400f-8018-4a1f-9d08-ce23dacfa3b5",
+    "stored_name": "Filip Milikić",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_13635463",
+    "statsapi_real_name": "Loïs Openda",
+    "statsapi_team": "Juventus",
+    "stored_row_id": "ede43aad-0f21-44ed-87bb-915cd28b5f4d",
+    "stored_name": "R. Openda",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_7996179",
+    "statsapi_real_name": "Adam Marušić",
+    "statsapi_team": "Lazio",
+    "stored_row_id": "f0000b68-abb5-49d4-a3bd-3ba2ff2096b0",
+    "stored_name": "Salvador Alcázar Marusic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_72565112",
+    "statsapi_real_name": "Hans Nicolussi Caviglia",
+    "statsapi_team": "Parma",
+    "stored_row_id": "111ef63c-e398-4b45-a43f-cd4875aed4da",
+    "stored_name": "L. Caviglia",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_57987225",
+    "statsapi_real_name": "Filip Stojilković",
+    "statsapi_team": "Pisa",
+    "stored_row_id": "c271729f-1f06-4e47-8166-8a8be11f168b",
+    "stored_name": "S. Stojilkovic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_36537413",
+    "statsapi_real_name": "Tarik Muharemović",
+    "statsapi_team": "Sassuolo",
+    "stored_row_id": "1bbd0d4b-2da9-4670-b101-b5e4c4924b21",
+    "stored_name": "Mustafa Muharemovic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_6583356",
+    "statsapi_real_name": "Nikola Vlašić",
+    "statsapi_team": "Torino",
+    "stored_row_id": "00393c74-21f3-4972-a921-ea3c25dc85fc",
+    "stored_name": "Dániel Vlasics",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_62930394",
+    "statsapi_real_name": "Lamine Camara",
+    "statsapi_team": "AS Monaco",
+    "stored_row_id": "65a386f4-77ed-42b6-9719-b2d84fea3b96",
+    "stored_name": "Mohamed Lamine Camara",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_83067439",
+    "statsapi_real_name": "Ethan Mbappé",
+    "statsapi_team": "Lille",
+    "stored_row_id": "a8704600-3f4c-420b-95ef-5649376b5e57",
+    "stored_name": "M. Mbappe",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_19850049",
+    "statsapi_real_name": "Malang Gomes",
+    "statsapi_team": "Nantes",
+    "stored_row_id": "23d000d4-6c2c-4226-b450-4bceecd2784d",
+    "stored_name": "Diockoumalang Gomes",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_30215250",
+    "statsapi_real_name": "Ali Abdi",
+    "statsapi_team": "Nice",
+    "stored_row_id": "d90e6739-c5d1-4f01-a408-217bef44fa90",
+    "stored_name": "Abdiwali Abdirahman Mohamed",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_72796536",
+    "statsapi_real_name": "Kevin Carlos Omoruyi",
+    "statsapi_team": "Nice",
+    "stored_row_id": "d196b2f1-6a75-4d50-adbc-8bccabcb9ba5",
+    "stored_name": "W. Omoruyi",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_01970988",
+    "statsapi_real_name": "Andrija Bulatovic",
+    "statsapi_team": "RC Lens",
+    "stored_row_id": "eab0b898-5929-4ba6-9665-06d8c2de71df",
+    "stored_name": "S. Bulatovic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_30323255",
+    "statsapi_real_name": "Ismael Doukouré",
+    "statsapi_team": "RC Strasbourg",
+    "stored_row_id": "de3ea907-1d4d-425c-be18-a1b1e6de3f4f",
+    "stored_name": "L. Doukoure",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_51679685",
+    "statsapi_real_name": "Yassir Zabiri",
+    "statsapi_team": "Stade Rennais",
+    "stored_row_id": "5816aed6-bddd-4372-9fe9-b39034e70257",
+    "stored_name": "M. Zabiri",
+    "stored_team": "Rennes"
+  },
+  {
+    "statsapi_player_id": "pl_58936946",
+    "statsapi_real_name": "Tygo Grotenhuis",
+    "statsapi_team": "De Graafschap",
+    "stored_row_id": "8d636edf-6b47-4d95-bdec-2fb0d43d9ff2",
+    "stored_name": "Charlie Ten-Grotenhuis",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_98202390",
+    "statsapi_real_name": "Jerolldino Bergraaf",
+    "statsapi_team": "Excelsior",
+    "stored_row_id": "f00f2cec-b2b9-4f34-a405-1b39c6b7fbe1",
+    "stored_name": "Raoul Bergraaf",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_25807083",
+    "statsapi_real_name": "Gijs Besselink",
+    "statsapi_team": "FC Twente",
+    "stored_row_id": "b99ae015-ec61-4e3c-b46a-df4f43ae93c2",
+    "stored_name": "R. Besselink",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_19605977",
+    "statsapi_real_name": "Daan Bisschops",
+    "statsapi_team": "Fortuna Sittard",
+    "stored_row_id": "0266b53d-2fcc-45b6-852b-dbcb23ff1426",
+    "stored_name": "Dean Bisschops",
+    "stored_team": "Fortuna Sittard"
+  },
+  {
+    "statsapi_player_id": "pl_72991962",
+    "statsapi_real_name": "Jeff Reine-Adélaïde",
+    "statsapi_team": "Heracles Almelo",
+    "stored_row_id": "ffdbe1c6-9b37-4fcf-ac98-2bec1e15ba7b",
+    "stored_name": "M. Adelaide",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_02374842",
+    "statsapi_real_name": "Daan Van Reeuwijk",
+    "statsapi_team": "NAC Breda",
+    "stored_row_id": "2747e86c-d7db-42c4-8e96-add80000ab30",
+    "stored_name": "H. Reeuwijk",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_161413",
+    "statsapi_real_name": "Ivan Perišić",
+    "statsapi_team": "PSV Eindhoven",
+    "stored_row_id": "995b068b-4928-45e8-a0a4-d8d92488a8e1",
+    "stored_name": "M. Perisic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08383432",
+    "statsapi_real_name": "Navajo Bakboord",
+    "statsapi_team": "RKC Waalwijk",
+    "stored_row_id": "a9d8598e-dae9-4059-b426-8591e45c757f",
+    "stored_name": "Reilly Bakboord",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_96447623",
+    "statsapi_real_name": "Daniel Lajud",
+    "statsapi_team": "Roda JC Kerkrade",
+    "stored_row_id": "4a5afdde-e980-4882-ae53-8d16a89c6be9",
+    "stored_name": "Nemer Lajud Bojalil",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_29112761",
+    "statsapi_real_name": "Amine Et-Taibi",
+    "statsapi_team": "Willem II Tilburg",
+    "stored_row_id": "0a391d32-bb62-4a44-85c8-9b1db1fdff69",
+    "stored_name": "N. Ettaibi",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_26951088",
+    "statsapi_real_name": "Ryan Adewusi",
+    "statsapi_team": "FCV Dender",
+    "stored_row_id": "f9bb8985-696d-46cb-955a-5dbd173b2643",
+    "stored_name": "Olufade Adewusi Kabir",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_29127067",
+    "statsapi_real_name": "Łukasz Łakomy",
+    "statsapi_team": "Oud-Heverlee Leuven",
+    "stored_row_id": "8fbfd148-3661-4633-9b4f-64b9ecc2325c",
+    "stored_name": "Ł. Łakomy",
+    "stored_team": "OH Leuven"
+  },
+  {
+    "statsapi_player_id": "pl_30428246",
+    "statsapi_real_name": "Bryan Soumaré",
+    "statsapi_team": "RAAL La Louvière",
+    "stored_row_id": "84702a98-7d04-491d-8227-414b18353140",
+    "stored_name": "Bakary Soumare",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_5239943",
+    "statsapi_real_name": "Patrick Pflücke",
+    "statsapi_team": "RC Sporting Charleroi",
+    "stored_row_id": "1a36fe56-65b5-4cf2-8548-66d7ff80495c",
+    "stored_name": "Christopher Aldair Cavero Pflucker",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_6211633",
+    "statsapi_real_name": "Tomané",
+    "statsapi_team": "AVS - Futebol SAD",
+    "stored_row_id": "bf0d84b2-b6db-45c1-9f12-c310eb8adc61",
+    "stored_name": "M. Tomanek",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_40590188",
+    "statsapi_real_name": "Georgiy Sudakov",
+    "statsapi_team": "Benfica",
+    "stored_row_id": "7e2931b7-074f-4590-83f2-4252dc82d051",
+    "stored_name": "H. Sudakov",
+    "stored_team": "Benfica"
+  },
+  {
+    "statsapi_player_id": "pl_25776982",
+    "statsapi_real_name": "Joel Silva",
+    "statsapi_team": "CD Nacional",
+    "stored_row_id": "a56c54a6-1992-4659-bce1-267c3157ea2c",
+    "stored_name": "Maximiliano Joel Silva",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_7421904",
+    "statsapi_real_name": "André Geraldes",
+    "statsapi_team": "Casa Pia",
+    "stored_row_id": "9390e633-b09e-4ad4-8860-a354b2e3a07c",
+    "stored_name": "Geraldes",
+    "stored_team": "Casa Pia"
+  },
+  {
+    "statsapi_player_id": "pl_36608522",
+    "statsapi_real_name": "Oluwakorede Osundina",
+    "statsapi_team": "Casa Pia",
+    "stored_row_id": "1ea2ae9a-dd30-4f3a-9e04-9e238f9ac289",
+    "stored_name": "K. Osundina",
+    "stored_team": "Casa Pia"
+  },
+  {
+    "statsapi_player_id": "pl_62050835",
+    "statsapi_real_name": "Luis Gomes",
+    "statsapi_team": "Estoril Praia",
+    "stored_row_id": "374a52f0-0cea-4b44-8630-bfa9a1655d99",
+    "stored_name": "Guilherme Luis Gomes da Silva",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_83490589",
+    "statsapi_real_name": "Romualdas Jansonas",
+    "statsapi_team": "FC Arouca",
+    "stored_row_id": "fc8b3826-71a6-4c03-a1c5-578da506e836",
+    "stored_name": "Dovydas Jansonas",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_57366368",
+    "statsapi_real_name": "Stephen Eustaquio",
+    "statsapi_team": "FC Porto",
+    "stored_row_id": "b0b5d0ef-c610-492c-9568-05d68e775095",
+    "stored_name": "Mauro Eustaquio",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08977358",
+    "statsapi_real_name": "Lazar Carević",
+    "statsapi_team": "Famalicão",
+    "stored_row_id": "ce0e4128-1db3-4cec-9e8e-06d08059f4ad",
+    "stored_name": "S. Cicarevic",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_30424403",
+    "statsapi_real_name": "Facundo Cáseres",
+    "statsapi_team": "Gil Vicente",
+    "stored_row_id": "bf829241-2ecb-4c4b-8f15-8224b83408c2",
+    "stored_name": "Ezequiel Caseres",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_73972960",
+    "statsapi_real_name": "Alysson Silva",
+    "statsapi_team": "Santa Clara",
+    "stored_row_id": "a5d70b2a-6812-45ea-8cfd-9f3a3cfa72c8",
+    "stored_name": "Talysson Silva Fernandes",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08984952",
+    "statsapi_real_name": "Pedro Gonçalves",
+    "statsapi_team": "Sporting",
+    "stored_row_id": "cffa312f-7f7c-44cd-9c12-11c39c62242c",
+    "stored_name": "José Pedro Goncalves Monteiro",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_47806299",
+    "statsapi_real_name": "Renan Peixoto Nepomuceno",
+    "statsapi_team": "Athletico",
+    "stored_row_id": "d049026f-892e-4cc2-a36b-a7891866fdda",
+    "stored_name": "Janderson de Almeida Nepomuceno",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_57939984",
+    "statsapi_real_name": "Santiago Ramos Mingo",
+    "statsapi_team": "Bahia",
+    "stored_row_id": "a5eb1d72-2698-4327-a03e-8e3101c7a355",
+    "stored_name": "Laro De Domingo Santiago",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_6496211",
+    "statsapi_real_name": "Bastos",
+    "statsapi_team": "Botafogo",
+    "stored_row_id": "aa24f1f4-4671-432c-b4e5-19193fb3ec6b",
+    "stored_name": "A. Bastos",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08308294",
+    "statsapi_real_name": "Jacy Maranhão",
+    "statsapi_team": "Coritiba",
+    "stored_row_id": "d41bfbfd-daab-42bd-bbe3-b8eb616862f7",
+    "stored_name": "Maranhao",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_62030836",
+    "statsapi_real_name": "Pedro Morisco",
+    "statsapi_team": "Coritiba",
+    "stored_row_id": "9437af0a-a47f-4ecc-b5cd-e0544aa60da7",
+    "stored_name": "Rafael Morisco",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_83883469",
+    "statsapi_real_name": "Otávio Costa",
+    "statsapi_team": "Cruzeiro",
+    "stored_row_id": "eff2a9fa-87ae-48b5-b23e-138fb68c5f58",
+    "stored_name": "Paulo Otavio Felix Da Costa",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_51258274",
+    "statsapi_real_name": "Riquelme Felipe",
+    "statsapi_team": "Fluminense",
+    "stored_row_id": "25dd53f2-900f-4cb2-a60d-456d327490ef",
+    "stored_name": "Felipe Cristóbal Urra Riquelme",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_6219868",
+    "statsapi_real_name": "Gabriel Mercado",
+    "statsapi_team": "Internacional",
+    "stored_row_id": "12318208-08d8-4017-8c49-9519eb2a7213",
+    "stored_name": "Taylor Gabriel Mercado Jiménez",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_57579858",
+    "statsapi_real_name": "Ramón Sosa",
+    "statsapi_team": "Palmeiras",
+    "stored_row_id": "9b3fb857-fc20-4fc9-be69-9b6a236eb85b",
+    "stored_name": "Alberto Ramon Sosa Morel",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_73917596",
+    "statsapi_real_name": "Luis Osorio",
+    "statsapi_team": "São Paulo",
+    "stored_row_id": "c692dde6-3e0c-4422-8ef0-b6aefa645364",
+    "stored_name": "Janos Luis Osorio Lanci",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_46896245",
+    "statsapi_real_name": "Nicolas Bosshardt",
+    "statsapi_team": "São Paulo",
+    "stored_row_id": "3a46ddab-af7e-49f9-a170-d0d289524396",
+    "stored_name": "J. Bosshardt",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_02759194",
+    "statsapi_real_name": "Euder",
+    "statsapi_team": "Vasco da Gama",
+    "stored_row_id": "e97a9613-ee5d-4e62-8106-3bbee19a21c1",
+    "stored_name": "Daan Schreuders",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_40940585",
+    "statsapi_real_name": "Nathan Mendes",
+    "statsapi_team": "Vitória",
+    "stored_row_id": "55c178b6-9bfe-46d4-8d2d-a680257d7d7e",
+    "stored_name": "Jonathan Mendes",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08501123",
+    "statsapi_real_name": "Liam Thompson",
+    "statsapi_team": "Derby County",
+    "stored_row_id": "5f54127e-c247-4459-807f-e843c680522e",
+    "stored_name": "Glyn William Thompson",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_51913568",
+    "statsapi_real_name": "George Evans",
+    "statsapi_team": "Millwall",
+    "stored_row_id": "d0c825b7-219b-4852-a33f-a60741f95f6b",
+    "stored_name": "Adam George Evans",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_0110001",
+    "statsapi_real_name": "Ben Mee",
+    "statsapi_team": "Sheffield United",
+    "stored_row_id": "98bd52df-327c-48da-8fe4-ede1619c1d16",
+    "stored_name": "Sieben Meeusen",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_13149636",
+    "statsapi_real_name": "Bosun Lawal",
+    "statsapi_team": "Stoke City",
+    "stored_row_id": "01af9b16-6264-4731-98bc-4c74d461ab04",
+    "stored_name": "Mohammed Olabosun Lawal",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_96664424",
+    "statsapi_real_name": "Anuar",
+    "statsapi_team": "AD Ceuta",
+    "stored_row_id": "001b4e66-8f64-4688-b379-ae1469597cb8",
+    "stored_name": "Zairo Anuar bin Zailani",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_62099551",
+    "statsapi_real_name": "Pery",
+    "statsapi_team": "AD Ceuta",
+    "stored_row_id": "8211c9fc-e039-4025-8e2a-2c6a78810fae",
+    "stored_name": "Axel Appery",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_45170909",
+    "statsapi_real_name": "Chumi",
+    "statsapi_team": "Almería",
+    "stored_row_id": "1e8251b6-872d-4072-b8ff-80f35a2af5fc",
+    "stored_name": "T. Schumi",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_45744488",
+    "statsapi_real_name": "Curro",
+    "statsapi_team": "Burgos Club de Fútbol",
+    "stored_row_id": "3de9c232-5418-4c1e-a6a1-5b60a77dcca3",
+    "stored_name": "Paco Curro",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_19408355",
+    "statsapi_real_name": "Varo",
+    "statsapi_team": "CD Castellón",
+    "stored_row_id": "f2ddda15-cd5b-40d4-930d-72d1f0125798",
+    "stored_name": "Álvaro David Arévalo Ayala",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_2768167",
+    "statsapi_real_name": "Gerard Gumbau",
+    "statsapi_team": "Granada",
+    "stored_row_id": "38ee3798-af42-4bad-9bb4-fa078d29e39a",
+    "stored_name": "Gumbau",
+    "stored_team": "Rayo Vallecano"
+  },
+  {
+    "statsapi_player_id": "pl_64528693",
+    "statsapi_real_name": "Daniel Martín",
+    "statsapi_team": "Huesca",
+    "stored_row_id": "673d52f9-6abb-481c-8f25-5258d74a85c5",
+    "stored_name": "Mário Daniel Martins Carvalho",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_83767967",
+    "statsapi_real_name": "Adam Arvelo",
+    "statsapi_team": "Las Palmas",
+    "stored_row_id": "38b23efe-0336-43f7-a567-f0fca160b135",
+    "stored_name": "José Adam Arvelo López",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08949294",
+    "statsapi_real_name": "Manuel Fuster",
+    "statsapi_team": "Las Palmas",
+    "stored_row_id": "0894162b-095c-408f-aa5a-1c1fe5b39fb9",
+    "stored_name": "Juan Manuel Fuster Navarro",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_25909601",
+    "statsapi_real_name": "Sanoussy Ba",
+    "statsapi_team": "Eintracht Braunschweig",
+    "stored_row_id": "7284ab56-68e0-47b3-8232-1c6c079eed67",
+    "stored_name": "Mamadou Sanoussy Baldé",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_19487536",
+    "statsapi_real_name": "Christian Gomis",
+    "statsapi_team": "FC Schalke 04",
+    "stored_row_id": "3fb1581d-cd52-4c99-9b9f-ef98b46104cd",
+    "stored_name": "Jean Christian Gomis",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_29771985",
+    "statsapi_real_name": "Claudio Gomes",
+    "statsapi_team": "Palermo",
+    "stored_row_id": "6698f409-f235-40fa-8116-5826b2074c2d",
+    "stored_name": "Délcio Claudio Gomes",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_40914964",
+    "statsapi_real_name": "Martín Suárez",
+    "statsapi_team": "Reggiana",
+    "stored_row_id": "c78359c1-b36a-4efe-88f5-62400ab1f05f",
+    "stored_name": "Juan Martin Suarez Polo",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08334792",
+    "statsapi_real_name": "Antonio Candela",
+    "statsapi_team": "Spezia",
+    "stored_row_id": "455cf0e9-b119-4060-b4c1-adb81faf8ccd",
+    "stored_name": "Francisco Antonio Candela Pascual",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_25371367",
+    "statsapi_real_name": "John Patrick",
+    "statsapi_team": "Stade de Reims",
+    "stored_row_id": "72e29255-4eb2-4d6f-9962-10a0a1d24f0f",
+    "stored_name": "Francis John Patrick Collin",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_04873710",
+    "statsapi_real_name": "Amadou Diakité",
+    "statsapi_team": "Troyes",
+    "stored_row_id": "eacb85a9-65fb-40d3-85b4-867dd05d4dff",
+    "stored_name": "Mamadou Diakite",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_874862",
+    "statsapi_real_name": "Ibrahim Kone",
+    "statsapi_team": "US Boulogne Côte-d'Opale",
+    "stored_row_id": "c47b25f5-74e3-4398-a7cb-cf3cc3996227",
+    "stored_name": "Nabi Ibrahim Kone",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_8642423",
+    "statsapi_real_name": "Yassine Bounou",
+    "statsapi_team": "Al-Hilal",
+    "stored_row_id": "c11a7743-49e3-4fda-a4b7-72645ded1879",
+    "stored_name": "Jorge Ariel Delbono",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_7327635",
+    "statsapi_real_name": "Rebocho",
+    "statsapi_team": "Al-Khaleej",
+    "stored_row_id": "0a6bfbd1-3a48-4450-a8f4-1c7c906bd2a5",
+    "stored_name": "Paulo Renato Rebocho Ferreira",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_29712671",
+    "statsapi_real_name": "Teddy Okou",
+    "statsapi_team": "Al-Riyadh",
+    "stored_row_id": "5a238336-dea2-49f5-a0cc-60f55571eace",
+    "stored_name": "Roland Teddy Okouri",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_96237464",
+    "statsapi_real_name": "Facundo Torres",
+    "statsapi_team": "Austin FC",
+    "stored_row_id": "41c961ae-8f21-41e2-8feb-cb62ae92f15f",
+    "stored_name": "Alan Facundo Torres",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_15581685",
+    "statsapi_real_name": "Aron John",
+    "statsapi_team": "Charlotte FC",
+    "stored_row_id": "ee31a8be-64d8-4d50-b393-f7e3c0f343e7",
+    "stored_name": "Alexander Aaron John Baptiste",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_25918091",
+    "statsapi_real_name": "Ian Murphy",
+    "statsapi_team": "Colorado Rapids",
+    "stored_row_id": "acfb890e-d8ba-47e7-8233-23d43c0bf099",
+    "stored_name": "Cian Murphy",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_40918474",
+    "statsapi_real_name": "Gilberto Flores",
+    "statsapi_team": "FC Cincinnati",
+    "stored_row_id": "a002233c-8cee-4968-bca9-35da0ba523e7",
+    "stored_name": "Jeffri Gilberto Flores Fernández",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_61095516",
+    "statsapi_real_name": "Ibrahim Aliyu",
+    "statsapi_team": "Houston Dynamo",
+    "stored_row_id": "97af79b2-117a-4311-a830-7365d046f560",
+    "stored_name": "A. Ibrahim Aliyu",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_36513883",
+    "statsapi_real_name": "Ahmed Qasem",
+    "statsapi_team": "Nashville SC",
+    "stored_row_id": "0f0fdd53-455d-4726-8b59-507eb92e1579",
+    "stored_name": "Mohammed Ahmed Qasem",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_96310714",
+    "statsapi_real_name": "Alonso Martínez",
+    "statsapi_team": "New York City FC",
+    "stored_row_id": "c34f69dd-ece2-406a-97ae-9d27e2670ca0",
+    "stored_name": "Pablo Alonso Martinez Martínez",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_46945989",
+    "statsapi_real_name": "Iago Silva",
+    "statsapi_team": "Orlando City SC",
+    "stored_row_id": "a1b977dc-d4f8-4111-87d8-75d6d61a2b01",
+    "stored_name": "Tiago Silva",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_02207471",
+    "statsapi_real_name": "Ian James",
+    "statsapi_team": "Sporting Kansas City",
+    "stored_row_id": "82d45ae3-e9a5-4496-a06a-8cc574b2e1a7",
+    "stored_name": "Kristian James",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_13183918",
+    "statsapi_real_name": "Emre Bilgin",
+    "statsapi_team": "Beşiktaş",
+    "stored_row_id": "f1aa1c57-956c-4522-b023-583eae346d0e",
+    "stored_name": "Nihat Emre Bilgin",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_04240225",
+    "statsapi_real_name": "Eren Yagmur",
+    "statsapi_team": "Konyaspor",
+    "stored_row_id": "dfb24637-8122-4625-aa4e-5db8b38ae4ec",
+    "stored_name": "Cemali Yagmur Eren",
+    "stored_team": "Konyaspor"
+  },
+  {
+    "statsapi_player_id": "pl_40940244",
+    "statsapi_real_name": "Dane Murray",
+    "statsapi_team": "Celtic",
+    "stored_row_id": "b989f31c-ee2c-4543-9fd5-43afad293e41",
+    "stored_name": "Rodane Murray",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_46855266",
+    "statsapi_real_name": "Martin Garcia",
+    "statsapi_team": "Aldosivi",
+    "stored_row_id": "e4f9d0df-b3ec-4565-be0e-60b580cc3154",
+    "stored_name": "Luis Martin Garcia",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_40940697",
+    "statsapi_real_name": "Manuel Duarte",
+    "statsapi_team": "Barracas Central",
+    "stored_row_id": "633740d3-2062-486d-a5b5-b89ad2f4f3d9",
+    "stored_name": "Caio Manuel Duarte Mota",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_40946182",
+    "statsapi_real_name": "Maximiliano Puig",
+    "statsapi_team": "Barracas Central",
+    "stored_row_id": "4beeb045-80eb-498c-a97b-5e4853f4b204",
+    "stored_name": "Leandro Maximiliano Puig",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_96461621",
+    "statsapi_real_name": "Leonardo Morales",
+    "statsapi_team": "Belgrano",
+    "stored_row_id": "500d9ecd-1699-485a-9625-2f2bfce49fb6",
+    "stored_name": "José Leonardo Morales Lares",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_7402104",
+    "statsapi_real_name": "Rodrigo Rey",
+    "statsapi_team": "CA Independiente",
+    "stored_row_id": "14f6485c-7596-4100-8194-df7fcc3f9604",
+    "stored_name": "Alexis Rodrigo Reyes Ñanculef",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08570595",
+    "statsapi_real_name": "Alexander Díaz",
+    "statsapi_team": "Deportivo Riestra",
+    "stored_row_id": "e7b9e4d0-49f5-4247-ac95-0122bff99467",
+    "stored_name": "Redy Alexander Diaz Gonzales",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_8626037",
+    "statsapi_real_name": "Ezequiel Piovi",
+    "statsapi_team": "Estudiantes de La Plata",
+    "stored_row_id": "73132e40-c7ae-4b3a-9a56-641f9629bc31",
+    "stored_name": "Lucas Ezequiel Piovi",
+    "stored_team": "Estudiantes L.P."
+  },
+  {
+    "statsapi_player_id": "pl_40961985",
+    "statsapi_real_name": "Santiago Flores",
+    "statsapi_team": "Estudiantes de La Plata",
+    "stored_row_id": "ec15b02b-397d-4e00-b8fa-4d5986c86970",
+    "stored_name": "Andrés Santiago Flores Gonzáles",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08957573",
+    "statsapi_real_name": "Enzo Martínez",
+    "statsapi_team": "Gimnasia y Esgrima",
+    "stored_row_id": "2af7222b-0453-4853-8b7f-126e41715eac",
+    "stored_name": "Renzo Martinez",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_74431935",
+    "statsapi_real_name": "Luciano Paredes",
+    "statsapi_team": "Gimnasia y Esgrima Mendoza",
+    "stored_row_id": "0071684a-3e7d-41b4-abac-acb685766a1c",
+    "stored_name": "Gastón Luciano Paredes",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_72659324",
+    "statsapi_real_name": "Luis Sequeira",
+    "statsapi_team": "Independiente Rivadavia",
+    "stored_row_id": "6c81087c-7ea6-4ef5-8434-99abc9bece26",
+    "stored_name": "Exequiel Jorge Luis Sequeira",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08789289",
+    "statsapi_real_name": "Pacha",
+    "statsapi_team": "Racing Club",
+    "stored_row_id": "fa5f6ba6-b950-4edb-a967-4295862e95ce",
+    "stored_name": "A. Espino",
+    "stored_team": "Rayo Vallecano"
+  },
+  {
+    "statsapi_player_id": "pl_61834481",
+    "statsapi_real_name": "Rafael Borré",
+    "statsapi_team": "River Plate",
+    "stored_row_id": "e9baf167-ffaa-4076-9868-964c93743704",
+    "stored_name": "Carlos Rafael Moreno Borrero",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_4814709",
+    "statsapi_real_name": "Ezequiel Cerutti",
+    "statsapi_team": "San Lorenzo",
+    "stored_row_id": "22aff5c9-121f-46db-b339-fd17af3f3ebd",
+    "stored_name": "Mauro Ezequiel Cerutti",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_08549293",
+    "statsapi_real_name": "Carlos Villalba",
+    "statsapi_team": "Sarmiento",
+    "stored_row_id": "3ed69e29-80d4-4383-9930-d5bdd72a946e",
+    "stored_name": "Juan Carlos Villalba Verdugo",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_13000981",
+    "statsapi_real_name": "Gabriel Báez",
+    "statsapi_team": "Talleres",
+    "stored_row_id": "f8a1b57c-a564-476a-86f9-1e66034ae2b2",
+    "stored_name": "Angel Gabriel Baeza Castañeda",
+    "stored_team": null
+  },
+  {
+    "statsapi_player_id": "pl_52311123",
+    "statsapi_real_name": "Alexis Pereyra",
+    "statsapi_team": "Vélez Sarsfield",
+    "stored_row_id": "b54d8bf7-9181-4ae0-971a-bfc09d9bd13f",
+    "stored_name": "Rodrigo Alexis Pereyra",
+    "stored_team": null
+  }
+]

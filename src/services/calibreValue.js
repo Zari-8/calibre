@@ -11,8 +11,20 @@
 //   arrives in the `rating` slot and flows through untouched. Value is a LAYER
 //   on top of the rating, not a multiple of it.
 //
+// v2 — values off ABILITY, not season score. players.rating folds in how much
+// a manager actually played someone this season (Consistency/Impact); a
+// transfer fee is a bet on what a player is CAPABLE of, not a discount for an
+// injury or a distrustful manager that has nothing to do with skill. So the
+// base curve now reads player.ability_rating (falling back to player.rating
+// if it's missing — e.g. old data, or a row calibreRating.js hasn't scored
+// yet). The season/ability GAP moves into risk instead: a player who hasn't
+// proven his ceiling on the pitch this season carries real acquisition risk
+// (unproven durability, adaptation uncertainty) even if his ability is real —
+// that's what riskDiscount() now prices in, rather than silently baking it
+// into the headline number the way the season score used to.
+//
 // THE STACK (each term visible + inspectable in the breakdown):
-//   base curve(rating)  →  × position  →  × league/club  →  × age  →  − risk
+//   base curve(ability)  →  × position  →  × league/club  →  × age  →  − risk
 //   = Calibre Estimated Value
 //   ...with a fair range, a max sensible bid (scaled by scarcity; fit extends it
 //   in Piece 2), and a confidence score reported separately.
@@ -145,9 +157,18 @@ function ageMultiplier(ageRaw) {
   return 1.0;
 }
 
-// ── 5) RISK DISCOUNT (light in v1) ───────────────────────────────────────────
-// Only the data we genuinely hold: thin minutes → a modest haircut. League-jump,
-// injury and resale risk are richer terms for later / the fit layer.
+// ── 5) RISK DISCOUNT ──────────────────────────────────────────────────────
+// Thin minutes → a modest haircut (unchanged from v1). League-jump, injury
+// and resale risk are richer terms for later / the fit layer.
+//
+// v2 addition — Ability/Season gap. Valuing off ability_rating (above) means
+// the discount for "hasn't proven it on the pitch this season" needs to live
+// somewhere, or an injury-recovering or heavily-rotated player would be
+// valued identically to someone who delivered the same quality across a full
+// season — which isn't right either. A big gap (ability well above season
+// score) is genuine acquisition risk: you're buying what he's shown he CAN
+// do, not what he reliably HAS done recently. Capped so it discounts, never
+// erases, the ability-based valuation.
 function riskDiscount(player) {
   const mins = Number(player.minutes);
   let d = 0;
@@ -155,7 +176,58 @@ function riskDiscount(player) {
     if (mins < 600) d += 0.10;
     else if (mins < 1200) d += 0.05;
   }
-  return Math.min(d, 0.20);
+
+  const ability = Number(player.ability_rating);
+  const season = Number(player.rating);
+  if (Number.isFinite(ability) && Number.isFinite(season) && ability > season) {
+    const gap = ability - season;               // e.g. Fati: 80 - 73 = 7
+    d += clamp(gap / 100, 0, 0.15);              // 15-pt gap -> +15% risk, capped
+  }
+
+  return Math.min(d, 0.30);
+}
+
+// ── 5b) INJURY / DURABILITY RISK ─────────────────────────────────────────────
+// Separate from riskDiscount() above on purpose — that's short-horizon (this
+// season's minutes, this season's ability/season gap). This reads a longer
+// track record. Real case that exposed the gap: Ansu Fati's actual €11m
+// Monaco fee was a purchase-option price fixed in the ORIGINAL LOAN
+// AGREEMENT (summer 2025), before he'd played a match for them — priced off
+// his injury-hampered reputation and Barcelona needing his wages off their
+// books, not off any season's output. Neither ability nor season score
+// explains that number; durability track record does.
+//
+// UNKNOWN (never synced) -> neutral, zero discount, a confidence hit instead
+// of inventing a number — same v1-stub philosophy as the rest of this file.
+// Known -> real discount from days lost in the trailing 12 months (current
+// durability) plus a track-record count of major injuries (repeat-injury
+// pattern, not just a recent bad year).
+//
+// Two sources feed this now (scripts/backfillPlayerInjuries.mjs, hybrid):
+// TheStatsAPI real records (start_date/reason, player.injury_source ===
+// 'statsapi_real') when a player has one, else an API-Football fixture-miss
+// reconstruction ('api_football_estimate') for full-squad coverage. Both
+// populate the same columns, so the discount math doesn't change — only
+// `verified` differs, so downstream (confidence()) can tell a real record
+// from an estimate without treating them as equally reliable.
+function injuryRisk(player) {
+  const synced = player.injuries_synced_at != null;
+  if (!synced) return { discount: 0, known: false, verified: false, note: 'Not yet synced — pending injury backfill' };
+
+  const days = Number(player.injury_days_last_365) || 0;
+  const major = Number(player.major_injuries_count) || 0;
+  const verified = player.injury_source === 'statsapi_real';
+
+  // 0 days -> no discount. ~90+ days out in the last year (a serious lay-off)
+  // approaches the cap. Capped well short of erasing the value outright.
+  let d = clamp(days / 365, 0, 1) * 0.25;
+  d += clamp(major * 0.04, 0, 0.15);
+
+  const note = (days > 0 || major > 0)
+    ? `${days}d out (12mo) · ${major} major injur${major === 1 ? 'y' : 'ies'} on record${verified ? ' (verified)' : ' (estimated)'}`
+    : 'No recorded injury time';
+
+  return { discount: clamp(d, 0, 0.30), known: true, verified, note };
 }
 
 // ── 6) CONFIDENCE ────────────────────────────────────────────────────────────
@@ -175,6 +247,9 @@ function confidence(player) {
   const leagueKnown = LEAGUE_MULT[String(player.league || '').trim().toLowerCase()] != null;
   if (!leagueKnown)                                  { c -= 7;  drivers.push(['League proof', 'Uncalibrated']); }
   else                                                 drivers.push(['League proof', 'Calibrated']);
+  if (player.injuries_synced_at == null)             { c -= 6;  drivers.push(['Injury history', 'Not yet synced']); }
+  else if (player.injury_source === 'statsapi_real')   drivers.push(['Injury history', 'Known (verified)']);
+  else                                                { c -= 2;  drivers.push(['Injury history', 'Known (estimated)']); }
   return { score: clamp(Math.round(c), 25, 92), drivers };
 }
 
@@ -185,7 +260,8 @@ function scarcity(player) {
   const age = Number(player.age);
   const ageS = !Number.isFinite(age) ? 0.5
     : age <= 20 ? 1.0 : age <= 23 ? 0.8 : age <= 26 ? 0.6 : age <= 29 ? 0.4 : 0.2;
-  const r = Number(player.rating) || 70;
+  const abilityForScarcity = Number(player.ability_rating);
+  const r = (Number.isFinite(abilityForScarcity) && abilityForScarcity > 0) ? abilityForScarcity : (Number(player.rating) || 70);
   const ratS = r >= 88 ? 1.0 : r >= 85 ? 0.8 : r >= 80 ? 0.6 : r >= 75 ? 0.4 : 0.25;
   return clamp(0.40 * posS + 0.30 * ageS + 0.30 * ratS, 0, 1);
 }
@@ -195,18 +271,29 @@ function clamp(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
 const round1 = (n) => Math.round(n * 10) / 10;
 
 export function calibreValue(player = {}) {
-  const rating = Number(player.rating) || 70;
+  const seasonScore = Number(player.rating) || 70;
+  const abilityRaw = Number(player.ability_rating);
+  // Value off Ability (current true skill), not Season score (this year's
+  // realized, availability-discounted output). Falls back to rating if
+  // ability_rating isn't populated yet (old rows, or calibreRating.js hasn't
+  // scored this player) so nothing breaks before a full backfill.
+  const rating = (Number.isFinite(abilityRaw) && abilityRaw > 0) ? abilityRaw : seasonScore;
   const posMult = positionMultiplier(player.position);
   const lgMult = leagueMultiplier(player.league, player.club);
   const ageMult = ageMultiplier(player.age);
   const risk = riskDiscount(player);
+  const injury = injuryRisk(player);
 
-  // stack — each step's marginal € effect feeds the breakdown
+  // stack — each step's marginal € effect feeds the breakdown. Injury risk is
+  // applied as its own sequential step (not summed into riskDiscount) so its
+  // € impact is isolated and inspectable on its own breakdown row, same as
+  // every other factor here.
   const base = curveBaseValue(rating);
   const afterPos = base * posMult;
   const afterLeague = afterPos * lgMult;
   const afterAge = afterLeague * ageMult;
-  const rawValue = afterAge * (1 - risk);
+  const afterRisk = afterAge * (1 - risk);
+  const rawValue = afterRisk * (1 - injury.discount);
   const floor = rating >= 70 ? FLOOR_AT_70 : FLOOR_BELOW_70;
   const value = Math.max(rawValue, floor);
 
@@ -222,12 +309,20 @@ export function calibreValue(player = {}) {
   // max sensible bid: walk-away ceiling, scaled by scarcity (fit extends in Piece 2)
   const maxSensibleBid = round1(value * (1.20 + sc * 0.40));
 
+  const gap = (Number.isFinite(abilityRaw) && abilityRaw > 0) ? Math.max(0, abilityRaw - seasonScore) : 0;
+  const riskNote = gap > 0 && risk > 0.10
+    ? `Ability ${Math.round(abilityRaw)} vs Season ${Math.round(seasonScore)} — unproven this year`
+    : gap > 0
+    ? `Ability ${Math.round(abilityRaw)} vs Season ${Math.round(seasonScore)}`
+    : risk > 0 ? 'Thin sample' : 'No flags (v1)';
+
   const breakdown = [
-    factor('Performance Level', rating, base, 'Rating-derived base value'),
+    factor('Ability (base curve input)', rating, base, (Number.isFinite(abilityRaw) && abilityRaw > 0) ? 'Skill/quality, decoupled from minutes played' : 'Rating-derived base value (ability_rating not yet populated)'),
     factor('Position Scarcity', scoreFromMult(posMult, 0.55, 1.30), afterPos - base, positionGroup(player.position)),
     factor('League Strength', Math.round(lgMult * 100), afterLeague - afterPos, prettyLeague(player.league, player.club)),
     factor('Age Curve', scoreFromMult(ageMult, 0.38, 1.40), afterAge - afterLeague, Number.isFinite(Number(player.age)) ? `${player.age} yrs` : 'age unknown'),
-    factor('Risk Discount', Math.round((1 - risk) * 100), rawValue - afterAge, risk > 0 ? 'Thin sample' : 'No flags (v1)'),
+    factor('Risk Discount', Math.round((1 - risk) * 100), afterRisk - afterAge, riskNote),
+    factor('Injury / Durability Risk', injury.known ? Math.round((1 - injury.discount) * 100) : null, injury.known ? (rawValue - afterRisk) : 0, injury.note, !injury.known),
     // v1 stubs — neutral € impact, surfaced so the card is complete and honest
     factor('Minutes / Sample', null, 0, sampleLabel(player.minutes), true),
     factor('International Status', null, 0, 'Not modelled (v1)', true),
@@ -243,7 +338,7 @@ export function calibreValue(player = {}) {
     confidenceDrivers: conf.drivers,
     scarcity: Math.round(sc * 100),
     breakdown,
-    inputs: { rating, posMult, lgMult: round2(lgMult), ageMult: round2(ageMult), risk },
+    inputs: { rating, seasonScore, abilityGap: round1(gap), posMult, lgMult: round2(lgMult), ageMult: round2(ageMult), risk, injuryRisk: round2(injury.discount), injuryKnown: injury.known },
   };
 }
 
@@ -301,6 +396,18 @@ if (isMain) {
     { name: 'Madrid winger (override)', rating: 87, age: 23, position: 'RW', league: 'La Liga', club: 'Real Madrid', minutes: 2500, hasContractData: true },
     { name: 'Eredivisie wonderkid', rating: 79, age: 18, position: 'AM', league: 'Eredivisie', club: 'Ajax', minutes: 1500, hasContractData: false },
     { name: 'Thin-sample teen (unknown mins)', rating: 80, age: 18, position: 'ST', league: 'Ligue 1', club: 'Monaco' },
+    // v2 demo — Fati-shaped profile: high ability, season score dragged down
+    // by limited starts. No ability_rating -> falls back to rating (identical
+    // to v1 behaviour); WITH ability_rating -> values off the higher ceiling,
+    // with the gap priced into risk instead of silently discounting the base.
+    { name: 'Rotated but able (rating only, v1 fallback)', rating: 73, age: 23, position: 'ST', league: 'Ligue 1', club: 'Monaco', minutes: 1321, hasContractData: true },
+    { name: 'Rotated but able (ability_rating: 80)', rating: 73, ability_rating: 80, age: 23, position: 'ST', league: 'Ligue 1', club: 'Monaco', minutes: 1321, hasContractData: true },
+    // v2b demo — same profile, now with injury history synced (plausible
+    // Fati-shaped record: a couple of significant injuries, ~2 months out
+    // this year). Should pull the €36.8m estimate down meaningfully, closer
+    // to the €15m Transfermarkt reads him at, without collapsing to the
+    // distressed €11m loan-to-buy figure that predates his season entirely.
+    { name: 'Rotated but able + known injury history', rating: 73, ability_rating: 80, age: 23, position: 'ST', league: 'Ligue 1', club: 'Monaco', minutes: 1321, hasContractData: true, injuries_synced_at: '2026-07-01', injury_days_last_365: 60, major_injuries_count: 2 },
   ];
   const pad = (s, n) => String(s).padEnd(n);
   console.log('\nCALIBRE VALUATION ENGINE v1 — self-test\n' + '─'.repeat(96));

@@ -4,6 +4,19 @@
 // output at each percentile so the compression is visible directly.
 
 import { createClient } from '@supabase/supabase-js';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+for (const f of ['.env', '.env.local']) {
+  const p = join(ROOT, f);
+  if (!existsSync(p)) continue;
+  for (const l of readFileSync(p, 'utf8').split('\n')) {
+    const m = l.match(/^([^#=]+)=(.*)/);
+    if (m) process.env[m[1].trim()] ??= m[2].trim().replace(/^["']|["']$/g, '');
+  }
+}
 
 const URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;

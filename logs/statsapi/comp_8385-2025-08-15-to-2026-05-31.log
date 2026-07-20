@@ -137,6 +137,7 @@ Fetching enrichment for mt_010310103
 Fetching enrichment for mt_191691549
 Fetching enrichment for mt_838038922
 Fetching enrichment for mt_252752030
+  player-stats: fetch failed
 Fetching enrichment for mt_626926486
 Fetching enrichment for mt_363163705
 Fetching enrichment for mt_747547324
@@ -347,6 +348,7 @@ Fetching enrichment for mt_252121785
 Fetching enrichment for mt_747676562
 Fetching enrichment for mt_838787072
 Fetching enrichment for mt_404242811
+  shotmap: fetch failed
 Fetching enrichment for mt_363434123
 Fetching enrichment for mt_626060950
 Fetching enrichment for mt_010505393
@@ -392,42 +394,43 @@ Fetching enrichment for mt_626608985
 Fetching enrichment for mt_747676029
 Fetching enrichment for mt_155098547
 
-Aggregated players: 668
+Aggregated players: 667
 Aggregated teams  : 19
-player-stats OK   : 300
-shotmap OK        : 300
-Match errors      : 0
-Updating player 1/668: Alberto Costa
-Updating player 25/668: Stephen Eustaquio
-Updating player 50/668: Gonçalo Inácio
-Updating player 75/668: Eduardo Quaresma
-Updating player 100/668: Marcelo
-Updating player 125/668: Bright Arrey-Mbi
-Updating player 150/668: Nabil Touaizi
-Updating player 175/668: Nikolaos Athanasiou
-Updating player 200/668: Anatoliy Trubin
-Updating player 225/668: Henrique Araújo
-Updating player 250/668: Charles
-Updating player 275/668: Martin Turk
-Updating player 300/668: Tom Van De Looi
-Updating player 325/668: Fahem Benaissa-Yahia
-Updating player 350/668: Nenê
-Updating player 375/668: Rafa Soares
-Updating player 400/668: Lucas Cañizares
-Updating player 425/668: Maximiliano Araújo
-Updating player 450/668: Eric da Silva Moreira
-Updating player 475/668: Fodé Pascoal
-Updating player 500/668: Rodrigo Ribeiro
-Updating player 525/668: Luiz Otávio Ferreira Viana
-Updating player 550/668: Rafael Nel
-Updating player 575/668: Melvin Costa
-Updating player 600/668: Kevyn Monteiro
-Updating player 625/668: Jakub Vinarčík
-Updating player 650/668: Musa Drammeh
+player-stats OK   : 299
+shotmap OK        : 299
+Match errors      : 2
+Updating player 1/667: Alberto Costa
+Updating player 25/667: Stephen Eustaquio
+Updating player 50/667: Gonçalo Inácio
+Updating player 75/667: Eduardo Quaresma
+Updating player 100/667: Marcelo
+Updating player 125/667: Bright Arrey-Mbi
+Updating player 150/667: Nabil Touaizi
+Updating player 175/667: Nikolaos Athanasiou
+Updating player 200/667: Anatoliy Trubin
+Updating player 225/667: Henrique Araújo
+Updating player 250/667: Charles
+Updating player 275/667: Martin Turk
+Updating player 300/667: Tom Van De Looi
+Updating player 325/667: Fahem Benaissa-Yahia
+Updating player 350/667: Nenê
+Updating player 375/667: Rafa Soares
+  update error Matías Rocha: TypeError: fetch failed
+Updating player 400/667: Lucas Cañizares
+Updating player 425/667: Maximiliano Araújo
+Updating player 450/667: Eric da Silva Moreira
+Updating player 475/667: Xander Severina
+Updating player 500/667: Adriel Guilherme de Moraes
+Updating player 525/667: Afonso Patrão
+Updating player 550/667: Lucão
+Updating player 575/667: Nile John
+Updating player 600/667: Luis Gomes
+Updating player 625/667: Jonatás Noro
+Updating player 650/667: Luis Quintero
 
 ── Summary ──────────────────
-Enriched players : 532
+Enriched players : 530
 No Supabase match: 136
-Update errors    : 0
+Update errors    : 1
 Team aggregates  : 19 not written yet
 Dry run          : no

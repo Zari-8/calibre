@@ -58,7 +58,7 @@ Fetching matches 2026-02-06 → 2026-02-12
 Fetching matches 2026-02-13 → 2026-02-19
   2 target matches
 Fetching matches 2026-02-20 → 2026-02-26
-  10 target matches
+  9 target matches
 Fetching matches 2026-02-27 → 2026-03-05
   0 target matches
 Fetching matches 2026-03-06 → 2026-03-12
@@ -88,7 +88,7 @@ Fetching matches 2026-05-22 → 2026-05-28
 Fetching matches 2026-05-29 → 2026-05-31
   10 target matches
 
-Unique target matches: 382
+Unique target matches: 381
 xG available matches : 379
 
 Fetching enrichment for mt_191177505
@@ -330,8 +330,6 @@ Fetching enrichment for mt_732019992
 Fetching enrichment for mt_986401111
 Fetching enrichment for mt_028974449
 Fetching enrichment for mt_894625552
-Fetching enrichment for mt_517362224
-  player-stats: HTTP 404 — /matches/mt_517362224/player-stats — Player statistics not found for this match
 Fetching enrichment for mt_465197761
   player-stats: HTTP 404 — /matches/mt_465197761/player-stats — Player statistics not found for this match
 Fetching enrichment for mt_028974423
@@ -481,7 +479,7 @@ Aggregated players: 1468
 Aggregated teams  : 40
 player-stats OK   : 379
 shotmap OK        : 379
-Match errors      : 3
+Match errors      : 2
 Updating player 1/1468: Lucas Freitas
 Updating player 25/1468: Gabriel Souza
 Updating player 50/1468: Matheus Pereira

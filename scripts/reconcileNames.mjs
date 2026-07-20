@@ -37,6 +37,21 @@ const COMPETITIONS = [
   { name: 'Pro League',     id: 'comp_8531' },
   { name: 'Liga Portugal',  id: 'comp_8385' },
   { name: 'Brasileirão',    id: 'comp_4795' },
+  // Phase 2 — next 10, added 2026-07-13. Ids confirmed live via
+  // scripts/listStatsAPICompetitions.mjs (149-competition catalog), not
+  // guessed. Rounds out the "big five" second tiers plus other globally
+  // significant top flights; Saudi Pro League specifically closes the gap
+  // that caused the Ruben Neves position-data miss earlier this session.
+  { name: 'Championship',   id: 'comp_8321' },  // England, 2nd tier
+  { name: 'LaLiga 2',       id: 'comp_0976' },  // Spain, 2nd tier (Segunda División)
+  { name: '2. Bundesliga',  id: 'comp_0406' },  // Germany, 2nd tier
+  { name: 'Serie B',        id: 'comp_5450' },  // Italy, 2nd tier
+  { name: 'Ligue 2',        id: 'comp_9777' },  // France, 2nd tier
+  { name: 'Saudi Pro League', id: 'comp_45025' },
+  { name: 'MLS',            id: 'comp_9799' },  // USA
+  { name: 'Trendyol Süper Lig', id: 'comp_9235' }, // Turkey
+  { name: 'Scottish Premiership', id: 'comp_6387' },
+  { name: 'Liga Profesional de Fútbol', id: 'comp_4540' }, // Argentina
 ];
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -73,6 +88,39 @@ async function findPlayer(name) {
   // Strategy 0: surname-substring pool, disambiguated by real-player signal
   // (minutes played and/or an already-linked api_player_id), not by which
   // row's stored name string happens to match verbatim.
+  //
+  // firstNameMatches() does an exact/initial comparison of first NAME TOKENS
+  // only — not substring containment. The original version checked
+  // `n.includes(` ${first[0]}`.trim())`, but .trim() strips the leading
+  // space that was the whole point of that check, degrading it to "does the
+  // candidate's full name contain this one letter anywhere" — which is true
+  // for nearly every name. That let a famous namesake with far more minutes
+  // silently swallow enrichment meant for an obscure player sharing only a
+  // surname (confirmed live 2026-07-13: "Liam Palmer" (Sheffield Wednesday)
+  // resolved to "C. Palmer" / Cole Palmer because both names contain "l").
+  function firstNameMatches(a, b) {
+    if (!a || !b) return false;
+    if (a === b) return true;
+    if (a.length === 1) return b[0] === a; // search is abbreviated ("L")
+    if (b.length === 1) return a[0] === b; // candidate stored abbreviated ("C.")
+    return false;
+  }
+
+  // The initial DB pool (`.ilike('name', '%${last}%')`) is a raw substring
+  // match against the WHOLE stored name string, so a candidate whose surname
+  // merely CONTAINS the search surname mid-word slips into the pool — e.g.
+  // searching "rio" (from "Martin Rio") matches "Barrios" because "rio" sits
+  // inside "bar-RIO-s", even though the actual surnames are unrelated.
+  // Confirmed live 2026-07-13 ("Martin Rio" -> "M. Barrios"). This checks
+  // that the search surname is genuinely the candidate's OWN last token —
+  // exact match, or a whole hyphen-separated component of it (so legitimate
+  // compound surnames like "Fernandez-Pardo" still match on "Fernandez").
+  function lastNameMatches(searchLast, candidateLastToken) {
+    if (!searchLast || !candidateLastToken) return false;
+    if (candidateLastToken === searchLast) return true;
+    return candidateLastToken.split('-').includes(searchLast);
+  }
+
   if (last.length > 2) {
     const { data } = await sb.from('players')
       .select('id,name,minutes,api_player_id')
@@ -81,11 +129,17 @@ async function findPlayer(name) {
       .limit(25);
     const candidates = data || [];
     const narrowed = candidates.filter(p => {
-      const n = norm(p.name);
-      return n.includes(first) || (first[0] && n.includes(` ${first[0]}`.trim()));
+      const tokens = norm(p.name).split(' ').filter(Boolean);
+      const pFirst = tokens[0] || '';
+      const pLast  = tokens[tokens.length - 1] || '';
+      return lastNameMatches(last, pLast) && firstNameMatches(first, pFirst);
     });
-    const pool = narrowed.length ? narrowed : candidates;
-    const best = pool
+    // No fallback to the unnarrowed pool: if nothing survives the name
+    // checks, that's a real "no confident surname-pool match," not a reason
+    // to grab whoever has the most minutes regardless of name — that
+    // fallback was the exact bug above. Fall through to the full-name
+    // strategies below instead.
+    const best = narrowed
       .filter(p => (p.minutes > 0) || p.api_player_id)
       .sort((a, b) => (b.minutes || 0) - (a.minutes || 0))[0];
     if (best) return set(key, best);
@@ -108,27 +162,41 @@ async function findPlayer(name) {
     if (row) return set(key, row);
   }
 
-  // Strategy 4: surname only (only if > 4 chars and unique)
+  // Strategy 4: surname only, requires BOTH a genuine last-token match AND a
+  // consistent first name — previously "exactly one surname-only hit" was
+  // accepted with NO first-name check at all, which is how completely
+  // unrelated players sharing only a surname got linked (confirmed live
+  // 2026-07-13: "Kepa Arrizabalaga" -> "Ibón García Arrizabalaga" — different
+  // first names entirely, accepted only because it was the sole "Arrizabalaga"
+  // row on file at match time). "Unique" must mean unique among genuine
+  // full-name matches, not unique among raw substring hits.
   if (last.length > 4) {
     const { data } = await sb.from('players').select('id,name')
-      .ilike('name', `%${last}%`).limit(4);
-    if (data?.length === 1) return set(key, data[0]);
-    // If 2-3 results, try to narrow with first name
-    if (data?.length <= 3 && data?.length > 1) {
-      const narrow = data.filter(p => norm(p.name).includes(first[0]));
-      if (narrow.length === 1) return set(key, narrow[0]);
-    }
+      .ilike('name', `%${last}%`).limit(10);
+    const matched = (data || []).filter(p => {
+      const tokens = norm(p.name).split(' ').filter(Boolean);
+      const pFirst = tokens[0] || '';
+      const pLast  = tokens[tokens.length - 1] || '';
+      return lastNameMatches(last, pLast) && firstNameMatches(first, pFirst);
+    });
+    if (matched.length === 1) return set(key, matched[0]);
   }
 
-  // Strategy 5: handle hyphenated surnames "Alexander-Arnold" → "arnold"
+  // Strategy 5: handle hyphenated surnames "Alexander-Arnold" → "arnold".
+  // Same fix as Strategy 4 — require the first name to actually match rather
+  // than blindly accepting a lone substring hit.
   if (name.includes('-')) {
     const hyph = name.split('-');
     for (const part of hyph) {
       const n = norm(part);
       if (n.length > 5) {
         const { data } = await sb.from('players').select('id,name')
-          .ilike('name', `%${n}%`).limit(3);
-        if (data?.length === 1) return set(key, data[0]);
+          .ilike('name', `%${n}%`).limit(6);
+        const matched = (data || []).filter(p => {
+          const pFirst = norm(p.name).split(' ').filter(Boolean)[0] || '';
+          return firstNameMatches(first, pFirst);
+        });
+        if (matched.length === 1) return set(key, matched[0]);
       }
     }
   }
@@ -152,11 +220,29 @@ async function sbSearch(term) {
 function set(key, val) { cache.set(key, val); return val; }
 
 // ── TheStatsAPI helpers ───────────────────────────────────────────
+// Bare fetch/network failures (ECONNRESET, "fetch failed", etc.) used to
+// throw straight out of api() with no retry, and fetchAll() would just log
+// "fetchAll: fetch failed" and silently truncate the page loop — confirmed
+// live 2026-07-13 across a long multi-competition run (Liga Profesional de
+// Fútbol, Trendyol Süper Lig both lost teams partway through and needed
+// manual re-runs). Same TRANSIENT/backoff pattern already used elsewhere in
+// this codebase (recomputeArchetypes.mjs, enrichStatsAPI.mjs).
+const TRANSIENT = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated/i;
+
 async function api(path, attempt = 0) {
   await sleep(800);
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { Authorization: `Bearer ${API_KEY}` },
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, { headers: { Authorization: `Bearer ${API_KEY}` } });
+  } catch (e) {
+    if (TRANSIENT.test(String(e.message || e)) && attempt < 4) {
+      const wait = 1500 * (attempt + 1);
+      console.log(`  [transient] ${e.message} — retry ${attempt + 1}/4 in ${wait}ms`);
+      await sleep(wait);
+      return api(path, attempt + 1);
+    }
+    throw e;
+  }
   if (res.status === 429) {
     const wait = [10000, 20000, 40000][Math.min(attempt, 2)];
     console.log(`  [429] wait ${wait/1000}s`);
@@ -175,7 +261,7 @@ async function fetchAll(path) {
   while (true) {
     let json;
     try { json = await api(`${path}${sep}per_page=50&page=${page}`); }
-    catch (e) { console.error(`  fetchAll: ${e.message}`); break; }
+    catch (e) { console.error(`  fetchAll: ${e.message} (page ${page}, giving up on this endpoint after retries)`); break; }
     all.push(...(Array.isArray(json.data) ? json.data : []));
     if (!json.meta?.total_pages || page >= json.meta.total_pages) break;
     page++;
@@ -201,8 +287,13 @@ function buildFields(player, stats, compId, seasonId) {
   const pa = stats.passing||{}, du = stats.duels||{}, de = stats.defending||{};
   const assists = sc.goals_assists_sum != null && sc.goals != null
     ? sc.goals_assists_sum - sc.goals : null;
+  // Clamped at 100 — TheStatsAPI's shots_on_target and total_shots have
+  // occasionally disagreed in scope for a given player (e.g. Lewandowski
+  // showed 108%), which is an upstream data quirk, not something we can
+  // correct at the source. A shot-accuracy figure above 100% is never
+  // meaningful, so guard against it here rather than surfacing it raw.
   const shotAcc = sh.total_shots > 0
-    ? Math.round(sh.shots_on_target/sh.total_shots*100) : null;
+    ? Math.min(100, Math.round(sh.shots_on_target/sh.total_shots*100)) : null;
   return {
     statsapi_player_id:player.id, statsapi_season_id:seasonId,
     statsapi_competition_id:compId, statsapi_enriched_at:new Date().toISOString(),

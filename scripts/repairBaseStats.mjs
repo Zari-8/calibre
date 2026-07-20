@@ -42,13 +42,27 @@ const sb    = createClient(SUPABASE_URL, SUPABASE_KEY);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 const BASE  = 'https://v3.football.api-sports.io';
 
+// API-Football returns HTTP 200 even when the daily/minute quota is
+// exhausted — it just comes back with an `errors` object and an empty
+// `response` array. Previously that looked IDENTICAL to "this player
+// genuinely has no stats," which is how a quota exhaustion silently
+// mislabeled ~6,400 players (including Bernardo Silva, Mbappé, Vinícius,
+// Yamal — players who obviously have data) as "no stats" in one run.
+// Flag it as a distinct, loud error instead of swallowing it.
+class QuotaError extends Error {}
+
 async function apf(path) {
   await sleep(1200); // API-Football rate limit
   const res = await fetch(`${BASE}${path}`, {
     headers: { 'x-apisports-key': API_KEY },
   });
+  if (res.status === 429) throw new QuotaError(`rate limited (429) ${path}`);
   if (!res.ok) throw new Error(`HTTP ${res.status} ${path}`);
-  return res.json();
+  const json = await res.json();
+  if (json?.errors && Object.keys(json.errors).length) {
+    throw new QuotaError(JSON.stringify(json.errors));
+  }
+  return json;
 }
 
 async function repairPlayer(row) {
@@ -57,6 +71,7 @@ async function repairPlayer(row) {
   try {
     json = await apf(`/players?id=${row.api_player_id}&season=${season}`);
   } catch (e) {
+    if (e instanceof QuotaError) throw e; // let main() see this and abort the run
     return { ok: false, reason: e.message };
   }
 
@@ -69,7 +84,10 @@ async function repairPlayer(row) {
       const s2 = j2?.response?.[0]?.statistics;
       if (!s2?.length) return { ok: false, reason: 'no stats' };
       return repairFromStats(row, s2);
-    } catch { return { ok: false, reason: 'no stats' }; }
+    } catch (e) {
+      if (e instanceof QuotaError) throw e;
+      return { ok: false, reason: 'no stats' };
+    }
   }
 
   return repairFromStats(row, stats);
@@ -78,12 +96,29 @@ async function repairPlayer(row) {
 // Matches the accumulation logic in enrichPlayerStats.mjs exactly
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 
+// This did NOT actually match enrichPlayerStats.mjs — that script excludes
+// friendlies/exhibitions/testimonials before summing (isCompetitive()), but
+// this one summed every entry API-Football returned, unfiltered. That let
+// friendly-fixture goals/assists/appearances/minutes silently stack onto the
+// competitive totals, so this row's flat fields drifted out of sync with its
+// own competition_splits (which WAS computed with the filter). Confirmed via
+// Jude Bellingham (api_player_id 129718): competition_splits shows
+// base 6 + overlay 3 = 9 goals for the season, but this script had
+// overwritten the flat `goals` column to 22.
+const FRIENDLY_LEAGUE_IDS = new Set([10, 667, 666]);
+function isCompetitive(s) {
+  const id = num(s?.league?.id);
+  const name = String(s?.league?.name || '').toLowerCase();
+  if (FRIENDLY_LEAGUE_IDS.has(id)) return false;
+  return !(name.includes('friendl') || name.includes('exhibition') || name.includes('testimonial'));
+}
+
 function repairFromStats(row, statistics) {
   let minutes=0, apps=0, starts=0, goals=0, assists=0;
   let passes=0, key=0, dribS=0, dribA=0, tackles=0, inter=0, duelsWon=0, shots=0;
   let accSum=0, accW=0, ratingSum=0, ratingW=0;
 
-  for (const s of statistics) {
+  for (const s of statistics.filter(isCompetitive)) {
     const m = num(s?.games?.minutes);
     minutes  += m;
     apps     += num(s?.games?.appearences); // API typo preserved
@@ -158,7 +193,28 @@ async function main() {
     const row = affected[i];
     process.stdout.write(`[${i+1}/${affected.length}] ${row.name}... `);
 
-    const result = await repairPlayer(row);
+    let result;
+    try {
+      result = await repairPlayer(row);
+    } catch (e) {
+      if (e instanceof QuotaError) {
+        console.log(`\n\n── STOPPED: API-Football quota/rate limit hit ──`);
+        console.log(e.message);
+        console.log(`Processed ${i} of ${affected.length} before stopping.`);
+        console.log(`Repaired so far : ${repaired}`);
+        console.log(`Failed so far    : ${failed}`);
+        console.log(`\nThis is NOT the same as those players having no data — the API stopped`);
+        console.log(`answering. Wait for your quota to reset (check your API-Football dashboard`);
+        console.log(`for the reset window), then re-run this script — it will pick up where`);
+        console.log(`the earlier pass left off since already-repaired rows will just get`);
+        console.log(`re-verified, not corrupted.`);
+        process.exit(1);
+      }
+      console.log(`✗ ${e.message}`);
+      failed++;
+      continue;
+    }
+
     if (result.ok) {
       if (!DRY_RUN) {
         const { error } = await sb.from('players').update(result.update).eq('id', row.id);

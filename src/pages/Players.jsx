@@ -1,25 +1,37 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Search, ArrowRight, Crown, Star, TrendingUp, X, LoaderCircle, Plus, Database, GitCompareArrows, SlidersHorizontal, Info } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Search, ArrowRight, Crown, Star, TrendingUp, X, LoaderCircle, Plus, Database, GitCompareArrows, SlidersHorizontal, Info, Activity, Users, ShieldAlert } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
+import ApiLeagueLogo from '../components/ApiLeagueLogo.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
-import { CURRENT_SEASON, getLeaguePlayers, getPlayerProfile, getPlayerStats, searchPlayerProfiles, teamLogoUrl } from '../services/apiFootball.js';
-import { getSupabasePlayerCount, getSupabaseNationCount, getSupabasePlayers, getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
-import { calibreRating, resolveRating } from '../services/calibreRating.js';
+import { CURRENT_SEASON, getLeaguePlayers, getPlayerProfile, getPlayerStats, getPlayerStatsWithFallback, getPlayerCareerSeasons, getRecentPlayerForm, getNationalTeamId, searchPlayerProfiles, teamLogoUrl } from '../services/apiFootball.js';
+import { getSupabasePlayerCount, getSupabaseNationCount, getSupabaseLeagueCount, getSupabaseCoverageSeason, getSupabaseTopPlayers, getSupabasePlayers, getSupabasePlayersByApiIds, getSupabasePositionPool, searchSupabasePlayers, searchSupabaseClubs, getSupabasePlayersByClub } from '../services/supabasePlayers.js';
+import { calibreRating, resolveRating, positionBucket as ratingPositionBucket } from '../services/calibreRating.js';
+import { calibreValue } from '../services/calibreValue.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
 import { getWatchlist, isWatched, toggleWatch, removeWatch, WATCHLIST_EVENT, bindWatchlistUser, mergeLocalIntoAccount, loadWatchlist } from '../services/watchlist.js';
 
+// archetype below is only ever a fallback — mergeCuratedWithSupabase prefers
+// the live, trait-engine-derived value from Supabase (see deriveArchetype in
+// services/playerTraits.js) whenever a DB row is found, which for these ten
+// well-known players is essentially always. It only surfaces on the very
+// first render before the Supabase fetch resolves, or if a row's archetype
+// genuinely hasn't been computed yet. Values here are pulled from that same
+// canonical vocabulary (ARCHETYPE_LABELS) instead of a since-abandoned label
+// set ("Pure Striker", "Box Crasher", "Wide Creator", "Controller",
+// "Pressing Engine") that doesn't exist anywhere else in the app.
 const CURATED_PLAYERS = [
-  { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Pure Striker' },
+  { rank:1, name:'Kylian Mbappé', apiPlayerId:278, age:27, club:'Real Madrid', pos:'ST', rating:91, buzz:96, fanRating:4.8, potential:94, img:'/assets/players/kylian-mbappe.jpg', archetype:'Second Striker' },
   { rank:2, name:'Erling Haaland', apiPlayerId:1100, age:25, club:'Manchester City', pos:'ST', rating:90, buzz:95, fanRating:4.7, potential:93, img:'/assets/players/neutral-player.svg', archetype:'Poacher' },
-  { rank:3, name:'Jude Bellingham', apiPlayerId:129718, age:22, club:'Real Madrid', pos:'CM', rating:86, buzz:92, fanRating:4.7, potential:93, img:'/assets/players/jude-bellingham.jpg', archetype:'Box Crasher' },
+  { rank:3, name:'Jude Bellingham', apiPlayerId:129718, age:22, club:'Real Madrid', pos:'CM', rating:86, buzz:92, fanRating:4.7, potential:93, img:'/assets/players/jude-bellingham.jpg', archetype:'Advanced Playmaker' },
   { rank:4, name:'Vinícius Júnior', apiPlayerId:762, age:25, club:'Real Madrid', pos:'LW', rating:85, buzz:90, fanRating:4.6, potential:91, img:'/assets/players/vinicius-junior.jpg', archetype:'Inside Forward' },
   { rank:5, name:'Phil Foden', apiPlayerId:631, age:26, club:'Manchester City', pos:'CAM', rating:85, buzz:88, fanRating:4.5, potential:90, img:'/assets/players/neutral-player.svg', archetype:'Advanced Playmaker' },
-  { rank:6, name:'Bukayo Saka', apiPlayerId:1460, age:24, club:'Arsenal', pos:'RW', rating:84, buzz:87, fanRating:4.6, potential:90, img:'/assets/players/neutral-player.svg', archetype:'Wide Creator' },
-  { rank:7, name:'Rodri', apiPlayerId:44, age:29, club:'Manchester City', pos:'CDM', rating:84, buzz:85, fanRating:4.6, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Controller' },
-  { rank:8, name:'Federico Valverde', apiPlayerId:756, age:27, club:'Real Madrid', pos:'CM', rating:83, buzz:83, fanRating:4.4, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Pressing Engine' },
+  { rank:6, name:'Bukayo Saka', apiPlayerId:1460, age:24, club:'Arsenal', pos:'RW', rating:84, buzz:87, fanRating:4.6, potential:90, img:'/assets/players/neutral-player.svg', archetype:'Winger' },
+  { rank:7, name:'Rodri', apiPlayerId:44, age:29, club:'Manchester City', pos:'CDM', rating:84, buzz:85, fanRating:4.6, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Central Midfielder' },
+  { rank:8, name:'Federico Valverde', apiPlayerId:756, age:27, club:'Real Madrid', pos:'CM', rating:83, buzz:83, fanRating:4.4, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Box-to-Box Midfielder' },
   { rank:9, name:'Martin Ødegaard', apiPlayerId:37127, age:27, club:'Arsenal', pos:'CAM', rating:83, buzz:82, fanRating:4.4, potential:88, img:'/assets/players/neutral-player.svg', archetype:'Advanced Playmaker' },
   { rank:10, name:'Mohamed Salah', apiPlayerId:306, age:33, club:'Liverpool', pos:'RW', rating:82, buzz:80, fanRating:4.6, potential:84, img:'/assets/players/neutral-player.svg', archetype:'Inside Forward' },
 ];
@@ -215,6 +227,13 @@ function mergeCuratedWithSupabase(curatedRows,dbRows){
       position:specificPosition(databasePlayer.position,specificPosition(databasePlayer.pos,curated.pos)),
       img:databasePlayer.img || curated.img,
       image:databasePlayer.image || databasePlayer.img || curated.img,
+      // Same class of bug already fixed on the profile-modal merge below
+      // (openProfile's archetype fallback) — a plain `{...curated,
+      // ...databasePlayer}` spread lets a null DB archetype silently clobber
+      // a perfectly good curated one, since spread copies the key regardless
+      // of its value. Every other display field here already guards against
+      // this (age/club/img/rating); archetype was the one left exposed.
+      archetype:databasePlayer.archetype || curated.archetype,
       rating:ratingOf(databasePlayer) ?? curated.rating,
       buzz:curated.buzz,
       fanRating:curated.fanRating,
@@ -293,96 +312,864 @@ function lineToRatingInput(player, stat){
 }
 
 function ppmStat(v, dp = 0) {
-  if (v == null || v === '') return '\u2014';
+  if (v == null || v === '') return '—';
   const n = Number(v);
   if (!Number.isFinite(n)) return String(v);
   return dp ? n.toFixed(dp) : String(n);
 }
-// Exact replica of the System Fit player pop-up (sf2-modal): 560px, #a6ff00 lime,
-// #8d929b muted, IBM Plex Mono labels, BIO (3-col) + PERFORMANCE (4-col).
-function PlayerProfileModal({ player, loading, onClose, onCompare, watched, onToggleWatch, canWatch }) {
+
+// ── Player pop-up v3 ─ competition breakdown, per-90 percentiles, form,
+// availability, similar players. Every number below is either read straight
+// off the player row / the already-fetched API-Football statistics array, or
+// computed from them (per-90 rates, percentiles vs a real position pool,
+// nearest-neighbour similarity). Nothing here is a placeholder label — a
+// field with no evidence yet renders '—', same convention as the rest of
+// this file, rather than a guessed number.
+
+const PPM_TABS = ['Overview', 'Season', 'Career', 'Advanced Stats', 'Form', 'Scout Report', 'Compare'];
+
+// Real per-90 "Key Stats" config. Every key here is a genuine column in the
+// Supabase player bank (see PLAYER_SELECT in supabasePlayers.js) — most are
+// TheStatsAPI enrichment fields that were already being collected but never
+// surfaced anywhere in the UI before this pop-up.
+const KEY_STAT_FIELDS = [
+  { key: 'goals', label: 'Goals', dp: 2 },
+  { key: 'xg', label: 'xG', dp: 2, per90Field: 'xg_per_90' },
+  { key: 'xa', label: 'xA', dp: 2, per90Field: 'xa_per_90' },
+  { key: 'shots', label: 'Shots', dp: 2 },
+  { key: 'shots_on_target', label: 'Shots on Target', dp: 2 },
+  { key: 'pass_accuracy', label: 'Pass Accuracy', dp: 1, rate: true, suffix: '%' },
+  { key: 'touches', label: 'Touches', dp: 1 },
+  { key: 'duels_won', label: 'Duels Won', dp: 2 },
+  { key: 'aerial_duels_won', label: 'Aerial Won', dp: 2 },
+  { key: 'pressures', label: 'Pressures', dp: 2 },
+  { key: 'progressive_carries', label: 'Progressive Runs', dp: 2 },
+];
+
+function statMinutesOf(row) { return Number(row?.stats_minutes) || Number(row?.minutes) || 0; }
+
+function per90Value(row, field) {
+  const m = statMinutesOf(row);
+  const raw = row?.[field];
+  if (raw == null || !(m > 0)) return null;
+  return cmpPer90(raw, m);
+}
+
+function keyStatValue(row, def) {
+  if (def.rate) { return numOrNullPPM(row?.[def.key]); }
+  if (def.per90Field && row?.[def.per90Field] != null) return Number(row[def.per90Field]);
+  return per90Value(row, def.key);
+}
+function numOrNullPPM(v) { if (v == null || v === '') return null; const n = Number(v); return Number.isFinite(n) ? n : null; }
+
+function percentileRank(value, pool) {
+  if (value == null || !Array.isArray(pool) || pool.length < 8) return null;
+  const below = pool.filter(v => v < value).length;
+  return Math.round((below / pool.length) * 100);
+}
+
+// Real nearest-neighbour similarity — four real, weighted signals, not one:
+//   1. Position bucket (hard filter — the pool passed in is already scoped
+//      to ATT/MID/DEF/GK, so this is enforced before any scoring happens).
+//   2. Archetype match (30%) — same tactical role label (Poacher, Advanced
+//      Playmaker, etc.), a genuine categorical field on the row.
+//   3. Playing-style distance (40%) — a real per-90 output vector (goals,
+//      assists, key passes, dribbles, tackles, interceptions, duels), so two
+//      players with the same rating but opposite job descriptions (e.g. a
+//      poacher vs a false nine) don't score as near-identical just because
+//      their headline number matches.
+//   4. Rating + age proximity (30%) — the coarse "same tier, same career
+//      stage" signal the old version used alone.
+const STYLE_METRICS = ['goals', 'assists', 'key_passes', 'dribbles_success', 'tackles', 'interceptions', 'duels_won'];
+const STYLE_SCALE = { goals: 0.7, assists: 0.4, key_passes: 2.5, dribbles_success: 2.5, tackles: 2.5, interceptions: 1.8, duels_won: 5 };
+function styleDistance(a, b) {
+  let sumSq = 0, n = 0;
+  for (const k of STYLE_METRICS) {
+    const av = per90Value(a, k), bv = per90Value(b, k);
+    if (av == null && bv == null) continue;
+    const scale = STYLE_SCALE[k] || 1;
+    const d = ((av ?? 0) - (bv ?? 0)) / scale;
+    sumSq += d * d;
+    n++;
+  }
+  return n ? Math.sqrt(sumSq / n) : null; // null = no overlapping per-90 evidence
+}
+function similarPlayers(player, pool, limit = 4) {
+  if (!Array.isArray(pool) || !pool.length) return [];
+  const r = Number(player.ability_rating ?? player.rating) || 0;
+  const age = Number(player.age) || 0;
+  const arch = String(player.archetype || '').trim().toLowerCase();
+  const selfKey = player.apiPlayerId ?? player.api_player_id ?? player.name;
+  return pool
+    .filter(cand => (cand.apiPlayerId ?? cand.api_player_id ?? cand.name) !== selfKey)
+    .map(cand => {
+      const cr = Number(cand.ability_rating ?? cand.rating) || 0;
+      const cAge = Number(cand.age) || 0;
+      const ratingScore = clampPPM(1 - Math.abs(r - cr) / 40, 0, 1);
+      const ageScore = clampPPM(1 - Math.abs(age - cAge) / 20, 0, 1);
+      const archMatch = arch && String(cand.archetype || '').trim().toLowerCase() === arch ? 1 : 0;
+      const dist = styleDistance(player, cand);
+      const styleScore = dist == null ? 0.5 : clampPPM(1 - dist / 2.5, 0, 1); // no evidence -> neutral, not zero
+      const score = Math.round(archMatch * 30 + styleScore * 40 + ratingScore * 20 + ageScore * 10);
+      return { player: cand, score };
+    })
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+}
+function clampPPM(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+function daysAgo(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr).getTime();
+  if (!Number.isFinite(d)) return null;
+  return Math.max(0, Math.round((Date.now() - d) / 86400000));
+}
+
+function PlayerProfileModal({ player, stats, loading, onClose, onCompare, onCompareWith, watched, onToggleWatch, canWatch }) {
+  const [tab, setTab] = useState('Season');
+  const [pool, setPool] = useState([]);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const [form, setForm] = useState([]);
+  const [formLoading, setFormLoading] = useState(false);
+  const [career, setCareer] = useState([]);
+  const [careerLoading, setCareerLoading] = useState(false);
+  const [careerNationalTeamId, setCareerNationalTeamId] = useState(null);
+  const [seasonPick, setSeasonPick] = useState(null); // null = use the auto-resolved default season
+  const [pickedStats, setPickedStats] = useState(null);
+  const [pickedLoading, setPickedLoading] = useState(false);
+
+  const apiId = apiIdFor(player);
+  const bucket = player ? ratingPositionBucket(player) : null;
+
+  // Reset every player-scoped state when the identity actually changes — not
+  // just the tab. Without this, career/pool/form stayed populated with the
+  // PREVIOUS player's data forever: the Career effect below only fetches
+  // when `career.length` is 0, so opening Messi right after Haaland left
+  // Haaland's career rows on screen under Messi's name, since the array was
+  // never cleared and the guard silently skipped the refetch.
+  useEffect(() => {
+    setTab('Season');
+    setCareer([]);
+    setCareerLoading(false);
+    setCareerNationalTeamId(null);
+    setPool([]);
+    setForm([]);
+    setSeasonPick(null);
+    setPickedStats(null);
+  }, [player?.name, player?.apiPlayerId]);
+
+  // Season picker (Season tab) — the default season is whatever
+  // getPlayerStatsWithFallback resolved (`stats` prop), but the user can pick
+  // any of the last few seasons to see that season's competition breakdown
+  // instead. Only fetches when the pick actually differs from the default
+  // season already sitting in `stats`.
+  const defaultSeason = stats?.__season ?? CURRENT_SEASON;
+  useEffect(() => {
+    if (seasonPick == null || seasonPick === defaultSeason || !apiId) { setPickedStats(null); return; }
+    let alive = true;
+    setPickedLoading(true);
+    getPlayerStats(apiId, seasonPick)
+      .then(data => { if (alive) setPickedStats(data); })
+      .catch(() => { if (alive) setPickedStats(null); })
+      .finally(() => { if (alive) setPickedLoading(false); });
+    return () => { alive = false; };
+  }, [seasonPick, defaultSeason, apiId]);
+
+  // Position pool — powers percentile bars (Season / Advanced Stats) and the
+  // similar-players list (Season / Compare). Fetched once per player.
+  useEffect(() => {
+    if (!player || !bucket) return;
+    let alive = true;
+    setPoolLoading(true);
+    getSupabasePositionPool({ bucket, limit: 300 })
+      .then(rows => { if (alive) setPool(rows); })
+      .catch(() => { if (alive) setPool([]); })
+      .finally(() => { if (alive) setPoolLoading(false); });
+    return () => { alive = false; };
+  }, [player?.name, player?.apiPlayerId, bucket]);
+
+  // Recent form — real match-by-match ratings via /fixtures + /fixtures/players.
+  // Needs a real API-Football team id, which curated/search rows carry as
+  // apiTeamId once resolved against the DB. Also resolves the player's
+  // NATIONAL team id from nationality and merges those fixtures in — a club
+  // fixture-only query is blind to World Cup / international matches, which
+  // meant a player's actual most recent game (e.g. a WC knockout tie) was
+  // silently dropped in favour of an older club match.
+  useEffect(() => {
+    const teamId = player?.apiTeamId ?? player?.api_team_id;
+    if (!teamId || !apiId) { setForm([]); return; }
+    let alive = true;
+    setFormLoading(true);
+    (async () => {
+      let nationalTeamId = null;
+      try { nationalTeamId = await getNationalTeamId(player?.nationality); } catch { /* falls back to club-only below */ }
+      if (!alive) return null;
+      return getRecentPlayerForm(teamId, apiId, 8, nationalTeamId);
+    })()
+      .then(rows => { if (alive && rows) setForm(rows); })
+      .catch(() => { if (alive) setForm([]); })
+      .finally(() => { if (alive) setFormLoading(false); });
+    return () => { alive = false; };
+  }, [player?.name, apiId, player?.apiTeamId, player?.api_team_id, player?.nationality]);
+
+  // Career history — only fetched once the Career tab is actually opened
+  // (up to ~25 extra API-Football calls otherwise, not worth it for a tab
+  // most people never click). Goes back to 2002, which covers essentially
+  // any pro career API-Football has records for; seasons with no evidence
+  // are dropped by getPlayerCareerSeasons itself, so this is "whole career
+  // on file," not a fabricated fixed window. Also resolves the player's
+  // national team id so country caps (World Cup, qualifiers, continental
+  // tournaments, friendlies) can be tagged and shown alongside club stats
+  // instead of being silently collapsed into a single club-only line.
+  useEffect(() => {
+    if (tab !== 'Career' || !apiId || career.length || careerLoading) return;
+    let alive = true;
+    setCareerLoading(true);
+    Promise.all([
+      getPlayerCareerSeasons(apiId, CURRENT_SEASON - 2002 + 1),
+      getNationalTeamId(player?.nationality).catch(() => null),
+    ])
+      .then(([rows, natId]) => { if (alive) { setCareer(rows); setCareerNationalTeamId(natId); } })
+      .catch(() => { if (alive) setCareer([]); })
+      .finally(() => { if (alive) setCareerLoading(false); });
+    return () => { alive = false; };
+  }, [tab, apiId, player?.nationality]);
+
   if (!player) return null;
+
   const arch = player.archetype || '';
   const chips = String(player.position || player.pos || '').split(/[\/,]/).map(t => t.trim()).filter(Boolean).slice(0, 3);
+  const headlineRating = player.ability_rating ?? player.rating;
+  const scores = [
+    ['SEASON SCORE', displayRating(player.rating)],
+    ['CALIBRE', displayRating(player.ability_rating)],
+    ['SELECTION', displayRating(player.availability_score)],
+  ];
   const bio = [
-    ['COUNTRY', player.nationality || player.country || '\u2014'],
-    ['AGE', player.age || '\u2014'],
-    ['HEIGHT', player.height ? String(player.height) : '\u2014'],
-    ['WEIGHT', player.weight ? String(player.weight) : '\u2014'],
-    ['FOOT', player.foot || '\u2014'],
-    ['CLUB', player.club || player.team || '\u2014'],
+    ['COUNTRY', player.nationality || player.country || '—'],
+    ['AGE', player.age || '—'],
+    ['HEIGHT', player.height ? String(player.height) : '—'],
+    ['WEIGHT', player.weight ? String(player.weight) : '—'],
+    ['FOOT', player.foot || '—'],
+    ['CLUB', player.club || player.team || '—'],
   ];
-  const stats = [
-    ['GOALS', ppmStat(player.goals)],
-    ['ASSISTS', ppmStat(player.assists)],
-    ['xG / 90', ppmStat(player.xg_per_90, 3)],
-    ['KEY PASSES', ppmStat(player.key_passes)],
-    ['SHOTS', ppmStat(player.shots)],
-    ['DRIBBLES', ppmStat(player.dribbles_success ?? player.successful_dribbles)],
-    ['DUELS WON', ppmStat(player.duels_won)],
-    ['TACKLES', ppmStat(player.tackles)],
-    ['INTERCEPTIONS', ppmStat(player.interceptions)],
-    ['PASS ACC %', ppmStat(player.pass_accuracy)],
-    ['MINUTES', ppmStat(player.minutes)],
-    ['CALIBRE', displayRating(player.rating)],
-  ];
+
+  let value = null;
+  try { value = calibreValue(player); } catch { value = null; }
+
+  // Competition breakdown — straight off the already-fetched API-Football
+  // `stats.statistics` array (one row per competition), same source the
+  // rest of the app aggregates via pickLeagueLine. Friendlies excluded, same
+  // rule pickLeagueLine uses.
+  const seasonInFlight = seasonPick != null && seasonPick !== defaultSeason;
+  const seasonStats = seasonInFlight ? pickedStats : stats;
+  const compRows = (Array.isArray(seasonStats?.statistics) ? seasonStats.statistics : []).filter(s => {
+    if (!s?.games) return false;
+    const n = String(s?.league?.name || '').toLowerCase();
+    return ![10, 667, 666].includes(Number(s?.league?.id)) && !n.includes('friendl') && !n.includes('exhibition');
+  });
+  const compTotal = compRows.length ? pickLeagueLine(compRows) : null;
+  const compLoading = seasonInFlight ? pickedLoading : loading;
+  // Last 6 seasons, newest first, for the season picker.
+  const seasonOptions = Array.from({ length: 6 }, (_, i) => CURRENT_SEASON - i);
+
+  const keyStats = KEY_STAT_FIELDS.map(def => {
+    const val = keyStatValue(player, def);
+    const poolVals = pool.map(row => keyStatValue(row, def)).filter(v => v != null);
+    return { ...def, value: val, pct: percentileRank(val, poolVals) };
+  });
+  const goalsN = Number(player.goals), shotsN = Number(player.shots ?? player.total_shots);
+  const conversion = (Number.isFinite(goalsN) && shotsN > 0) ? clampPPM((goalsN / shotsN) * 100, 0, 100) : null;
+
+  const ratedForm = form.filter(m => m.rating);
+  const formAvgRating = ratedForm.length ? (ratedForm.reduce((s, m) => s + m.rating, 0) / ratedForm.length) : null;
+  const formGoals = form.reduce((s, m) => s + (m.goals || 0), 0);
+  const formAssists = form.reduce((s, m) => s + (m.assists || 0), 0);
+  const lastMatchDaysAgo = form.length ? daysAgo(form[form.length - 1]?.date) : null;
+  const recentMinutesAvg = form.length ? form.slice(-4).reduce((s, m) => s + (m.minutes || 0), 0) / Math.min(4, form.length) : null;
+  const workload = recentMinutesAvg == null ? '—' : recentMinutesAvg >= 75 ? 'High' : recentMinutesAvg >= 45 ? 'Normal' : 'Low';
+  const injuryKnown = player.injury_days_last_365 != null || player.injured != null;
+  const injuryStatus = player.injured === true ? 'Injured' : player.injured === false ? 'Fit' : injuryKnown ? 'Fit' : '—';
+  const similar = similarPlayers(player, pool, 4);
+  // Which season the competition breakdown is actually showing — falls back
+  // to a prior season when the current one has no evidence yet (see
+  // getPlayerStatsWithFallback), so the heading never claims a season that's
+  // sitting empty just because it hasn't kicked off. A manual pick from the
+  // season selector always wins over the auto fallback.
+  const statsSeason = seasonPick ?? defaultSeason;
+  const statsSeasonIsFallback = seasonPick == null && stats?.__season != null && stats.__season !== CURRENT_SEASON;
+
+  const spinnerNote = loading ? 'Loading live stats from the connected player dataset…' : 'Stats populate from the connected player dataset — blanks fill in as data syncs.';
+
   return (
-    <div className="ppm2" role="presentation" onMouseDown={onClose}>
-      <section className="ppm2-card" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
-        <style>{`
-          .ppm2 { position:fixed; inset:0; z-index:1000; background:rgba(3,5,7,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:center; justify-content:center; padding:40px 20px; overflow:auto; }
-          .ppm2 * { box-sizing:border-box; }
-          .ppm2-card { --l:#a6ff00; --muted:#8d929b; position:relative; width:min(560px,100%); background:rgba(11,15,18,.97); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.65); padding:22px; }
-          .ppm2-close { position:absolute; top:14px; right:14px; width:30px; height:30px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03); color:#c4c9ce; cursor:pointer; }
-          .ppm2-close:hover { background:rgba(255,255,255,.08); color:#fff; }
-          .ppm2-head { display:flex; align-items:center; gap:14px; padding-right:34px; }
-          .ppm2-photo { width:70px; height:84px; border-radius:9px; overflow:hidden; flex:none; background:#0a0d10; }
-          .ppm2-photo img { width:100%; height:100%; object-fit:cover; object-position:top; }
-          .ppm2-id { flex:1; min-width:0; }
-          .ppm2-kicker { color:var(--l); font:800 10px/1 "IBM Plex Mono",monospace; letter-spacing:.15em; text-transform:uppercase; }
-          .ppm2-id h3 { margin:6px 0 0; color:#fff; font:900 24px/1 "Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.01em; }
-          .ppm2-tags { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-          .ppm2-tags span { padding:3px 8px; border:1px solid rgba(255,255,255,.14); border-radius:4px; color:#c4c9ce; font:700 9px/1 "IBM Plex Mono",monospace; }
-          .ppm2-tags em { padding:3px 8px; border:1px solid rgba(166,255,0,.3); border-radius:4px; color:var(--l); font:800 9px/1 "IBM Plex Mono",monospace; font-style:normal; }
-          .ppm2-rating { text-align:center; flex:none; }
-          .ppm2-rating strong { display:block; color:var(--l); font:900 40px/.85 "Barlow Condensed",sans-serif; }
-          .ppm2-rating span { display:block; margin-top:4px; color:var(--muted); font:800 8px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; }
-          .ppm2-sec { margin-top:18px; }
-          .ppm2-sec > small { display:block; color:var(--muted); font:800 9px/1 "IBM Plex Mono",monospace; letter-spacing:.12em; margin-bottom:11px; }
-          .ppm2-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 10px; }
-          .ppm2-grid--stats { grid-template-columns:repeat(4,1fr); }
-          .ppm2-grid > div { min-width:0; }
-          .ppm2-grid span { display:block; color:var(--muted); font:700 8px/1.2 "IBM Plex Mono",monospace; letter-spacing:.05em; }
-          .ppm2-grid b { display:block; margin-top:5px; color:#fff; font:800 15px/1 "Barlow Condensed",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-          .ppm2-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:18px; }
-          .ppm2-note { margin:18px 0 0; color:#6f757e; font:500 10.5px/1.4 "Barlow",sans-serif; }
-          @media(max-width:760px){ .ppm2-grid, .ppm2-grid--stats { grid-template-columns:repeat(2,1fr); } }
-        `}</style>
-        <button className="ppm2-close" type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
-        <div className="ppm2-head">
-          <div className="ppm2-photo"><ApiPlayerImage playerId={apiIdFor(player)} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name} /></div>
-          <div className="ppm2-id">
-            <div className="ppm2-kicker">Player profile</div>
-            <h3>{player.name}</h3>
-            <div className="ppm2-tags">{chips.map(c => <span key={c}>{c}</span>)}{arch && <em>{arch}</em>}</div>
+    <div className="ppm3" role="presentation" onMouseDown={onClose}>
+      <section className="ppm3-card" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
+        <style>{PPM3_CSS}</style>
+
+        <div className="ppm3-topbar">
+          <div className="ppm3-brand"><img src="/assets/calibre-logo.png" alt="" /> CALIBRE</div>
+          <div className="ppm3-topbar-actions">
+            <ShareBar text={`${player.name} — Calibre ${displayRating(headlineRating)}${arch ? `, ${arch}` : ''}.`} url={shareUrl('/players')} label={false} />
+            <button className="ppm3-close" type="button" onClick={onClose} aria-label="Close"><X size={16} /></button>
           </div>
-          <div className="ppm2-rating"><strong>{displayRating(player.rating)}</strong><span>CALIBRE</span></div>
         </div>
-        <div className="ppm2-sec"><small>BIO</small><div className="ppm2-grid">{bio.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
-        <div className="ppm2-sec"><small>PERFORMANCE</small><div className="ppm2-grid ppm2-grid--stats">{stats.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
-        <div className="ppm2-actions">
-          <button type="button" className="btn btn--outline btn--sm" onClick={() => onCompare(player)}><Plus size={13} /> Add to compare</button>
-          <button type="button" className={`btn btn--sm ${watched ? 'btn--lime' : 'btn--outline'}`} onClick={onToggleWatch} title={canWatch ? (watched ? 'Remove from watchlist' : 'Add to watchlist') : 'Watchlist is a Pro feature'}><Star size={13} /> {watched ? 'Watching' : 'Watch'}</button>
+
+        <div className="ppm3-head">
+          <div className="ppm3-photo"><ApiPlayerImage playerId={apiId} name={player.name} preferredSrc={portraitFor(player)} fallbackSrc={fallbackFor(player)} alt={player.name} /></div>
+          <div className="ppm3-id">
+            <div className="ppm3-kicker">{[player.pos || player.position, player.club || player.team].filter(Boolean).join(' · ') || 'Player profile'}</div>
+            <h3>{player.name}</h3>
+            <div className="ppm3-tags">
+              {chips.map(c => <span key={c}>{c}</span>)}
+              {arch && <em>{arch}</em>}
+            </div>
+            <div className="ppm3-bioline">
+              {player.nationality && <span>{player.nationality}</span>}
+              {player.age ? <span>{player.age} yrs</span> : null}
+              {player.height ? <span>{player.height}</span> : null}
+              {player.foot ? <span>{player.foot}</span> : null}
+              {(player.club || player.team) ? <span>{player.club || player.team}</span> : null}
+            </div>
+          </div>
+          <div className="ppm3-rating">
+            <strong>{displayRating(headlineRating)}</strong>
+            <span>CALIBRE</span>
+            <em className="ppm3-rating-sub">Season {displayRating(player.rating)} · Avail {displayRating(player.availability_score)}</em>
+          </div>
+          <div className="ppm3-value">
+            <span className="ppm3-value-label">Calibre value</span>
+            <strong>{value ? `€${value.estimatedValue}M` : '—'}</strong>
+            <span className="ppm3-value-sub">{chips[0] || player.position || 'Position'} · Fair range {value ? `€${value.fairRange.low}–${value.fairRange.high}M` : '—'}</span>
+          </div>
+        </div>
+
+        <div className="ppm3-tabs">
+          {PPM_TABS.map(t => <button key={t} type="button" className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>{t}</button>)}
+        </div>
+
+        <div className="ppm3-body">
+          {tab === 'Overview' && (
+            <>
+              <div className="ppm3-sec"><small>RATING BREAKDOWN</small><div className="ppm3-grid">{scores.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
+              <div className="ppm3-sec"><small>BIO</small><div className="ppm3-grid">{bio.map(([k, v]) => <div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div>
+              <div className="ppm3-sec">
+                <small>SEASON SNAPSHOT {CURRENT_SEASON}/{String(CURRENT_SEASON + 1).slice(2)}</small>
+                <div className="ppm3-grid ppm3-grid--4">
+                  <div><span>Appearances</span><b>{ppmStat(player.appearances)}</b></div>
+                  <div><span>Minutes</span><b>{ppmStat(player.minutes)}</b></div>
+                  <div><span>Goals</span><b>{ppmStat(player.goals)}</b></div>
+                  <div><span>Assists</span><b>{ppmStat(player.assists)}</b></div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'Season' && (
+            <>
+              <div className="ppm3-row2">
+                <div className="ppm3-sec">
+                  <div className="ppm3-sec-head">
+                    <small>SEASON {statsSeason}/{String(statsSeason + 1).slice(2)}{statsSeasonIsFallback ? ' (last completed)' : ''} — COMPETITION BREAKDOWN</small>
+                    <select
+                      className="ppm3-season-pick"
+                      value={statsSeason}
+                      onChange={e => setSeasonPick(Number(e.target.value))}
+                      aria-label="Season"
+                    >
+                      {seasonOptions.map(s => (
+                        <option key={s} value={s}>{s}/{String(s + 1).slice(2)}{s === defaultSeason ? ' (default)' : ''}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="ppm3-table-wrap">
+                    <table className="ppm3-table">
+                      <thead><tr><th>Competition</th><th className="num">Apps</th><th className="num">Mins</th><th className="num">Goals</th><th className="num">Assists</th><th className="num">G/A</th><th className="num">G/90</th><th className="num">Rating</th></tr></thead>
+                      <tbody>
+                        {compRows.map((s, i) => {
+                          const mins = Number(s.games?.minutes) || 0;
+                          const g = Number(s.goals?.total) || 0, a = Number(s.goals?.assists) || 0;
+                          const g90 = mins > 0 ? (g / mins) * 90 : 0;
+                          const rating = Number.parseFloat(s.games?.rating) || null;
+                          return (
+                            <tr key={i}>
+                              <td><div className="ppm3-comp"><ApiLeagueLogo id={s.league?.id} src={s.league?.logo} name={s.league?.name} className="ppm3-comp-logo" />{s.league?.name || '—'}</div></td>
+                              <td className="num">{Number(s.games?.appearences ?? s.games?.appearances) || 0}</td>
+                              <td className="num">{mins}</td>
+                              <td className="num">{g}</td>
+                              <td className="num">{a}</td>
+                              <td className="num">{g + a}</td>
+                              <td className="num">{g90.toFixed(2)}</td>
+                              <td className="num"><span className="ppm3-pill">{rating ? rating.toFixed(2) : '—'}</span></td>
+                            </tr>
+                          );
+                        })}
+                        {!compRows.length && <tr><td colSpan={8} className="ppm3-empty">{compLoading ? 'Loading season statistics…' : 'No competition data synced yet for this season.'}</td></tr>}
+                        {compTotal && (
+                          <tr className="ppm3-total">
+                            <td>Total</td>
+                            <td className="num">{Number(compTotal.games?.appearences) || 0}</td>
+                            <td className="num">{Number(compTotal.games?.minutes) || 0}</td>
+                            <td className="num">{Number(compTotal.goals?.total) || 0}</td>
+                            <td className="num">{Number(compTotal.goals?.assists) || 0}</td>
+                            <td className="num">{(Number(compTotal.goals?.total) || 0) + (Number(compTotal.goals?.assists) || 0)}</td>
+                            <td className="num">{compTotal.games?.minutes > 0 ? ((Number(compTotal.goals?.total) || 0) / compTotal.games.minutes * 90).toFixed(2) : '0.00'}</td>
+                            <td className="num"><span className="ppm3-pill">{compTotal.games?.rating ? compTotal.games.rating.toFixed(2) : '—'}</span></td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="ppm3-foot">All stats per 90 minutes<Info size={11} /></p>
+                </div>
+
+                <div className="ppm3-sec">
+                  <small>KEY STATS (PER 90)</small>
+                  <div className="ppm3-key-grid">
+                    {keyStats.map(k => (
+                      <div key={k.key}>
+                        <span>{k.label}</span>
+                        <b>{k.value == null ? '—' : k.value.toFixed(k.dp)}{k.suffix || ''}</b>
+                        <em>{k.pct != null ? `${k.pct}th %ile` : '—'}</em>
+                      </div>
+                    ))}
+                    <div><span>Conversion %</span><b>{conversion != null ? `${conversion.toFixed(1)}%` : '—'}</b><em>—</em></div>
+                  </div>
+                  <p className="ppm3-foot">Percentile ranks vs {bucket || 'position'} players in the Calibre bank{poolLoading ? ' — loading…' : ` (n=${pool.length})`}<Info size={11} /></p>
+                </div>
+              </div>
+
+              <div className="ppm3-row3">
+                <div className="ppm3-sec ppm3-sec--wide">
+                  <small><Activity size={11} /> FORM (LAST {form.length || 8} MATCHES)</small>
+                  {form.length ? (
+                    <>
+                      <div className="ppm3-sparkline ppm3-sparkline--lg">
+                        {form.map((m, i) => (
+                          <div key={i} className={`ppm3-spark-col${m.international ? ' ppm3-spark-col--intl' : ''}`} title={`${m.competition ? m.competition + ' — ' : ''}${m.opponentName} — ${m.rating ?? '—'}`}>
+                            {m.opponentLogo ? <img src={m.opponentLogo} alt="" /> : <span className="ppm3-spark-dot" />}
+                            <b className={m.rating >= 7.5 ? 'hi' : m.rating && m.rating < 6.2 ? 'lo' : ''}>{m.rating ? m.rating.toFixed(1) : '—'}</b>
+                            <em>{m.opponentName}</em>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="ppm3-grid ppm3-grid--4">
+                        <div><span>Avg Rating</span><b>{formAvgRating ? formAvgRating.toFixed(1) : '—'}</b></div>
+                        <div><span>Goals</span><b>{formGoals}</b></div>
+                        <div><span>Assists</span><b>{formAssists}</b></div>
+                        <div><span>Days Since Last Match</span><b>{lastMatchDaysAgo != null ? lastMatchDaysAgo : '—'}</b></div>
+                      </div>
+                    </>
+                  ) : <p className="ppm3-empty">{formLoading ? 'Loading recent fixtures…' : 'Recent match ratings need a resolved team id — not yet synced for this player.'}</p>}
+                </div>
+
+                <div className="ppm3-sec">
+                  <small><ShieldAlert size={11} /> AVAILABILITY</small>
+                  <ul className="ppm3-avail">
+                    <li><span>Minutes Played</span><b>{ppmStat(player.minutes)}</b></li>
+                    <li><span>Injury Status</span>{injuryStatus === '—' ? <b>—</b> : <em className={`ppm3-status ppm3-status--${injuryStatus === 'Injured' ? 'bad' : 'good'}`}>{injuryStatus}</em>}</li>
+                    <li><span>Days Out (365d)</span><b>{player.injury_days_last_365 != null ? player.injury_days_last_365 : '—'}</b></li>
+                    <li><span>Major Injuries</span><b>{player.major_injuries_count != null ? player.major_injuries_count : '—'}</b></li>
+                    <li><span>Workload</span>{workload === '—' ? <b>—</b> : <em className={`ppm3-status ppm3-status--${workload === 'High' ? 'warn' : workload === 'Low' ? 'dim' : 'good'}`}>{workload}</em>}</li>
+                  </ul>
+                </div>
+
+                <div className="ppm3-sec">
+                  <small><Users size={11} /> PLAYER COMPARISON</small>
+                  {poolLoading ? <p className="ppm3-empty">Loading similar players…</p> : similar.length ? (
+                    <div className="ppm3-similar">
+                      {similar.map(({ player: cand, score }) => (
+                        <button type="button" key={cand.apiPlayerId ?? cand.name} onClick={() => setTab('Compare')}>
+                          <ApiPlayerImage playerId={apiIdFor(cand)} name={cand.name} preferredSrc={portraitFor(cand)} fallbackSrc={fallbackFor(cand)} />
+                          <span>{cand.name}</span>
+                          <div className="ppm3-simbar"><i style={{ width: `${score}%` }} /></div>
+                          <em>{score}%</em>
+                        </button>
+                      ))}
+                    </div>
+                  ) : <p className="ppm3-empty">No comparable {bucket || ''} players synced yet.</p>}
+                  <p className="ppm3-foot">Weighted match: archetype, playing style, rating &amp; age — within {bucket || 'position'}.</p>
+                </div>
+              </div>
+            </>
+          )}
+
+          {tab === 'Career' && (() => {
+            // Every competition entry API-Football has on file per season —
+            // club league, domestic cups, continental, AND national team
+            // (World Cup, qualifiers, continental tournaments, friendlies).
+            // Previously this collapsed each season into one club-only line
+            // via pickLeagueLine (which also stripped friendlies), hiding
+            // international duty entirely. Now each entry is its own row,
+            // tagged INTL when it's the player's national team.
+            const careerLines = career
+              .flatMap(({ season, data }) => (Array.isArray(data?.statistics) ? data.statistics : [])
+                .filter(s => s?.games && (Number(s.games?.appearences ?? s.games?.appearances) > 0 || Number(s.games?.minutes) > 0))
+                .map(s => ({
+                  season,
+                  s,
+                  isNational: careerNationalTeamId != null && Number(s.team?.id) === Number(careerNationalTeamId),
+                })))
+              .sort((a, b) => b.season - a.season || (Number(b.s.games?.minutes) || 0) - (Number(a.s.games?.minutes) || 0));
+            const seasonCount = new Set(careerLines.map(r => r.season)).size;
+            const totals = careerLines.reduce((acc, { s }) => {
+              acc.apps += Number(s.games?.appearences ?? s.games?.appearances) || 0;
+              acc.mins += Number(s.games?.minutes) || 0;
+              acc.goals += Number(s.goals?.total) || 0;
+              acc.assists += Number(s.goals?.assists) || 0;
+              const r = Number.parseFloat(s.games?.rating);
+              const mins = Number(s.games?.minutes) || 0;
+              if (Number.isFinite(r) && mins > 0) { acc.ratingWeighted += r * mins; acc.ratedMins += mins; }
+              return acc;
+            }, { apps: 0, mins: 0, goals: 0, assists: 0, ratingWeighted: 0, ratedMins: 0 });
+            const avgRating = totals.ratedMins ? totals.ratingWeighted / totals.ratedMins : null;
+            return (
+            <div className="ppm3-sec">
+              <small>CAREER — CLUB &amp; COUNTRY, ALL COMPETITIONS{seasonCount ? ` — ${seasonCount} SEASON${seasonCount === 1 ? '' : 'S'} SINCE 2002` : ' SINCE 2002'}</small>
+              <div className="ppm3-table-wrap">
+                <table className="ppm3-table">
+                  <thead><tr><th>Season</th><th>Team</th><th>Competition</th><th className="num">Apps</th><th className="num">Mins</th><th className="num">Goals</th><th className="num">Assists</th><th className="num">G/90</th><th className="num">G+A/90</th><th className="num">Rating</th></tr></thead>
+                  <tbody>
+                    {careerLines.map(({ season, s, isNational }, i) => {
+                      const mins = Number(s.games?.minutes) || 0;
+                      const g = Number(s.goals?.total) || 0;
+                      const a = Number(s.goals?.assists) || 0;
+                      const g90 = mins > 0 ? (g / mins) * 90 : null;
+                      const ga90 = mins > 0 ? ((g + a) / mins) * 90 : null;
+                      return (
+                      <tr key={`${season}-${s.team?.id}-${s.league?.id}-${i}`}>
+                        <td>{season}/{String(season + 1).slice(2)}</td>
+                        <td>{s.team?.name || '—'}{isNational && <em className="ppm3-intl-tag">INTL</em>}</td>
+                        <td>{s.league?.name || '—'}</td>
+                        <td className="num">{Number(s.games?.appearences ?? s.games?.appearances) || 0}</td>
+                        <td className="num">{mins}</td>
+                        <td className="num">{g}</td>
+                        <td className="num">{a}</td>
+                        <td className="num">{g90 == null ? '—' : g90.toFixed(2)}</td>
+                        <td className="num">{ga90 == null ? '—' : ga90.toFixed(2)}</td>
+                        <td className="num"><span className="ppm3-pill">{s.games?.rating ? Number.parseFloat(s.games.rating).toFixed(2) : '—'}</span></td>
+                      </tr>
+                      );
+                    })}
+                    {!careerLines.length && <tr><td colSpan={10} className="ppm3-empty">{careerLoading ? 'Loading career history…' : 'No prior-season data synced yet.'}</td></tr>}
+                    {careerLines.length > 0 && (
+                      <tr className="ppm3-total">
+                        <td colSpan={3}>Career total</td>
+                        <td className="num">{totals.apps}</td>
+                        <td className="num">{totals.mins}</td>
+                        <td className="num">{totals.goals}</td>
+                        <td className="num">{totals.assists}</td>
+                        <td className="num">{totals.mins > 0 ? ((totals.goals / totals.mins) * 90).toFixed(2) : '—'}</td>
+                        <td className="num">{totals.mins > 0 ? (((totals.goals + totals.assists) / totals.mins) * 90).toFixed(2) : '—'}</td>
+                        <td className="num"><span className="ppm3-pill">{avgRating ? avgRating.toFixed(2) : '—'}</span></td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            );
+          })()}
+
+          {tab === 'Advanced Stats' && (
+            <div className="ppm3-sec">
+              <small>ADVANCED METRICS — {defaultSeason ? `${defaultSeason}/${String(defaultSeason + 1).slice(2)}${(stats?.__season != null && stats.__season !== CURRENT_SEASON) ? ' (LAST COMPLETED)' : ''} — ` : ''}PERCENTILE VS {(bucket || 'POSITION').toUpperCase()} ({poolLoading ? '…' : pool.length} PLAYERS)</small>
+              <div className="ppm3-bars">
+                {keyStats.map(k => (
+                  <div className="ppm3-bar-row" key={k.key}>
+                    <span>{k.label}</span>
+                    <div className="ppm3-bar"><i style={{ width: `${k.pct ?? 0}%` }} /></div>
+                    <b>{k.value == null ? '—' : k.value.toFixed(k.dp)}{k.suffix || ''}</b>
+                    <em>{k.pct != null ? `${k.pct}th` : '—'}</em>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {tab === 'Form' && (
+            <div className="ppm3-sec">
+              <small><Activity size={11} /> MATCH-BY-MATCH FORM</small>
+              {form.length ? (
+                <div className="ppm3-table-wrap">
+                  <table className="ppm3-table">
+                    <thead><tr><th>Date</th><th>Competition</th><th>Opponent</th><th className="num">Mins</th><th className="num">Goals</th><th className="num">Assists</th><th className="num">Rating</th></tr></thead>
+                    <tbody>
+                      {form.map((m, i) => (
+                        <tr key={i}>
+                          <td>{m.date ? new Date(m.date).toLocaleDateString() : '—'}</td>
+                          <td>{m.competition || '—'}{m.international && <em className="ppm3-intl-tag">INTL</em>}</td>
+                          <td>{m.opponentName}</td>
+                          <td className="num">{m.minutes}</td>
+                          <td className="num">{m.goals}</td>
+                          <td className="num">{m.assists}</td>
+                          <td className="num"><span className="ppm3-pill">{m.rating ? m.rating.toFixed(2) : '—'}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : <p className="ppm3-empty">{formLoading ? 'Loading recent fixtures…' : 'Recent match ratings need a resolved team id — not yet synced for this player.'}</p>}
+            </div>
+          )}
+
+          {tab === 'Scout Report' && (
+            <div className="ppm3-sec">
+              <small>SCOUT REPORT</small>
+              {(() => {
+                const ranked = keyStats.filter(k => k.pct != null).sort((a, b) => b.pct - a.pct);
+                const strengths = ranked.slice(0, 3);
+                const weaknesses = ranked.slice(-2).reverse();
+                return (
+                  <>
+                    <p className="ppm3-scout-lede">
+                      {player.name}{arch ? `, deployed as a ${arch.toLowerCase()},` : ''} carries a Calibre of {displayRating(headlineRating)}{compTotal?.games?.rating ? ` and a ${compTotal.games.rating.toFixed(2)} average match rating across ${Number(compTotal.games?.appearences) || 0} appearances this season.` : '.'}
+                    </p>
+                    <div className="ppm3-row2">
+                      <div>
+                        <small>STRENGTHS</small>
+                        {strengths.length ? strengths.map(k => <div className="ppm3-scout-row" key={k.key}><span>{k.label}</span><b>{k.pct}th percentile</b></div>) : <p className="ppm3-empty">Not enough position-pool data yet.</p>}
+                      </div>
+                      <div>
+                        <small>WATCH AREAS</small>
+                        {weaknesses.length ? weaknesses.map(k => <div className="ppm3-scout-row" key={k.key}><span>{k.label}</span><b>{k.pct}th percentile</b></div>) : <p className="ppm3-empty">Not enough position-pool data yet.</p>}
+                      </div>
+                    </div>
+                    <p className="ppm3-foot">Generated from real per-90 percentiles vs the {bucket || 'position'} pool — not editorial scouting notes.</p>
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
+          {tab === 'Compare' && (
+            <div className="ppm3-sec">
+              <small><Users size={11} /> SIMILAR PLAYERS</small>
+              {poolLoading ? <p className="ppm3-empty">Loading…</p> : similar.length ? (
+                <div className="ppm3-similar ppm3-similar--lg">
+                  {similar.map(({ player: cand, score }) => (
+                    <div className="ppm3-similar-row" key={cand.apiPlayerId ?? cand.name}>
+                      <ApiPlayerImage playerId={apiIdFor(cand)} name={cand.name} preferredSrc={portraitFor(cand)} fallbackSrc={fallbackFor(cand)} />
+                      <div className="ri"><strong>{cand.name || 'Unnamed player'}</strong><span>{cand.club || cand.team || '—'} · Calibre {displayRating(cand.rating)}</span></div>
+                      <div className="ppm3-simbar"><i style={{ width: `${score}%` }} /></div>
+                      <em>{score}%</em>
+                      <button type="button" className="btn btn--outline btn--sm" onClick={() => onCompareWith(cand)}><Plus size={12} /> Compare</button>
+                    </div>
+                  ))}
+                </div>
+              ) : <p className="ppm3-empty">No comparable {bucket || ''} players synced yet.</p>}
+            </div>
+          )}
+        </div>
+
+        <div className="ppm3-actions">
+          <button type="button" className={`btn btn--sm ${watched ? 'btn--lime' : 'btn--outline'}`} onClick={onToggleWatch} title={canWatch ? (watched ? 'Remove from watchlist' : 'Add to watchlist') : 'Watchlist is a Pro feature'}><Star size={13} /> {watched ? 'Watching' : 'Add to Watchlist'}</button>
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => onCompare(player)}><GitCompareArrows size={13} /> Compare Player</button>
           <button type="button" className="btn btn--outline btn--sm" onClick={() => navigateTo(`/system-fit?player=${encodeURIComponent(player.name)}`)}>Run System Fit <ArrowRight size={13} /></button>
-          <ShareBar text={`${player.name} \u2014 Calibre ${displayRating(player.rating)}${arch ? `, ${arch}` : ''}.`} url={shareUrl('/players')} label={false} />
+          <button type="button" className="btn btn--outline btn--sm" onClick={() => setTab('Scout Report')}>View Scout Report</button>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={onClose}>Close</button>
         </div>
-        <p className="ppm2-note">{loading ? 'Loading live stats from the connected player dataset\u2026' : 'Stats populate from the connected player dataset \u2014 blanks fill in as data syncs.'}</p>
+        <p className="ppm3-note">{spinnerNote}</p>
       </section>
     </div>
   );
 }
+
+const PPM3_CSS = `
+  .ppm3 { position:fixed; inset:0; z-index:1000; background:rgba(3,5,7,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:flex-start; justify-content:center; padding:40px 20px; overflow:auto; }
+  .ppm3 * { box-sizing:border-box; }
+  .ppm3-card { --l:#a6ff00; --muted:#8d929b; position:relative; width:min(920px,100%); background:rgba(11,15,18,.97); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.65); padding:20px 22px 22px; }
+  .ppm3-topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .ppm3-brand { display:flex; align-items:center; gap:7px; color:#c4c9ce; font:800 11px/1 "IBM Plex Mono",monospace; letter-spacing:.14em; text-transform:uppercase; }
+  .ppm3-brand img { width:18px; height:18px; object-fit:contain; }
+  .ppm3-topbar-actions { display:flex; align-items:center; gap:8px; }
+  .ppm3-close { width:28px; height:28px; display:grid; place-items:center; border-radius:8px; border:1px solid rgba(255,255,255,.10); background:rgba(255,255,255,.03); color:#c4c9ce; cursor:pointer; }
+  .ppm3-close:hover { background:rgba(255,255,255,.08); color:#fff; }
+  .ppm3-head { display:flex; align-items:flex-start; gap:14px; padding:12px 0; border-top:1px solid rgba(255,255,255,.06); border-bottom:1px solid rgba(255,255,255,.06); margin-bottom:12px; }
+  .ppm3-photo { width:70px; height:84px; border-radius:9px; overflow:hidden; flex:none; background:#0a0d10; }
+  .ppm3-photo img { width:100%; height:100%; object-fit:cover; object-position:top; }
+  .ppm3-id { flex:1; min-width:0; }
+  .ppm3-kicker { color:var(--l); font:800 10px/1 "IBM Plex Mono",monospace; letter-spacing:.12em; text-transform:uppercase; }
+  .ppm3-id h3 { margin:6px 0 0; color:#fff; font:900 26px/1 "Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.01em; }
+  .ppm3-tags { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .ppm3-tags span { padding:3px 8px; border:1px solid rgba(255,255,255,.14); border-radius:4px; color:#c4c9ce; font:700 9px/1 "IBM Plex Mono",monospace; }
+  .ppm3-tags em { padding:3px 8px; border:1px solid rgba(166,255,0,.3); border-radius:4px; color:var(--l); font:800 9px/1 "IBM Plex Mono",monospace; font-style:normal; }
+  .ppm3-bioline { display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
+  .ppm3-bioline span { color:var(--muted); font:600 10.5px "Barlow",sans-serif; }
+  .ppm3-rating { text-align:center; flex:none; padding:0 18px; border-left:1px solid rgba(255,255,255,.08); }
+  .ppm3-rating strong { display:block; color:var(--l); font:900 38px/.85 "Barlow Condensed",sans-serif; text-shadow:0 0 22px rgba(166,255,0,.25); }
+  .ppm3-rating span { display:block; margin-top:4px; color:var(--muted); font:800 8px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; }
+  .ppm3-rating-sub { display:block; margin-top:6px; color:var(--muted); font:600 8.5px/1.3 "Barlow",sans-serif; font-style:normal; white-space:nowrap; }
+  .ppm3-value { text-align:center; flex:none; width:132px; padding-left:18px; border-left:1px solid rgba(255,255,255,.08); }
+  .ppm3-value-label { display:block; color:var(--muted); font:700 8px/1 "IBM Plex Mono",monospace; letter-spacing:.08em; text-transform:uppercase; }
+  .ppm3-value strong { display:block; margin:3px 0 6px; color:var(--l); font:800 18px/1 "Barlow Condensed",sans-serif; }
+  .ppm3-value-sub { display:block; margin-top:2px; color:var(--muted); font:600 9.5px "Barlow",sans-serif; }
+  .ppm3-tabs { display:flex; gap:2px; flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:14px; }
+  .ppm3-tabs button { background:none; border:none; border-radius:6px 6px 0 0; border-bottom:2px solid transparent; color:var(--muted); font:700 11.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:9px 10px; cursor:pointer; transition:background .12s,color .12s; }
+  .ppm3-tabs button:hover { color:#eef1f4; background:rgba(255,255,255,.03); }
+  .ppm3-tabs button.on { color:var(--l); border-bottom-color:var(--l); background:rgba(166,255,0,.05); }
+  .ppm3-body { max-height:56vh; overflow:auto; padding-right:4px; }
+  .ppm3-body::-webkit-scrollbar { width:7px; }
+  .ppm3-body::-webkit-scrollbar-track { background:transparent; }
+  .ppm3-body::-webkit-scrollbar-thumb { background:rgba(166,255,0,.22); border-radius:8px; }
+  .ppm3-body::-webkit-scrollbar-thumb:hover { background:rgba(166,255,0,.4); }
+  .ppm3-sec { margin-bottom:14px; border:1px solid rgba(255,255,255,.07); background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01)); border-radius:12px; padding:14px 16px 16px; }
+  .ppm3-sec > small { display:flex; align-items:center; gap:6px; color:var(--muted); font:800 9px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; margin:-2px 0 12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .ppm3-sec-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:-2px 0 12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.06); }
+  .ppm3-sec-head > small { margin:0; padding-bottom:0; border-bottom:none; flex:1 1 auto; }
+  .ppm3-season-pick { flex:none; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.12); border-radius:6px; color:#cfd4da; font:700 10px "IBM Plex Mono",monospace; padding:4px 8px; cursor:pointer; }
+  .ppm3-season-pick:hover { border-color:rgba(255,255,255,.24); }
+  .ppm3-season-pick:focus { outline:none; border-color:var(--l); }
+  .ppm3-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:12px 10px; }
+  .ppm3-grid--4 { grid-template-columns:repeat(4,1fr); }
+  .ppm3-grid--3 { grid-template-columns:repeat(3,1fr); }
+  .ppm3-grid > div span { display:block; color:var(--muted); font:700 8px/1.2 "IBM Plex Mono",monospace; letter-spacing:.05em; }
+  .ppm3-grid > div b { display:block; margin-top:5px; color:#fff; font:800 15px/1 "Barlow Condensed",sans-serif; }
+  .ppm3-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .ppm3-row3 { display:grid; grid-template-columns:1.7fr 1fr 1fr; gap:12px; }
+  .ppm3-sec--wide { min-width:0; }
+  @media(max-width:820px){ .ppm3-row2, .ppm3-row3 { grid-template-columns:1fr 1fr; } }
+  .ppm3-table-wrap { overflow-x:auto; }
+  .ppm3-table { width:100%; border-collapse:collapse; }
+  .ppm3-table th { text-align:left; padding:6px 8px; color:var(--muted); font:700 8.5px/1 "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; border-bottom:1px solid rgba(255,255,255,.09); white-space:nowrap; }
+  .ppm3-table th.num, .ppm3-table td.num { text-align:center; }
+  .ppm3-table td { padding:7px 8px; border-bottom:1px solid rgba(255,255,255,.05); color:#cfd4da; font:500 11.5px "Barlow",sans-serif; white-space:nowrap; }
+  .ppm3-table tbody tr:not(.ppm3-total):hover { background:rgba(255,255,255,.025); }
+  .ppm3-table tr.ppm3-total td { font-weight:800; color:#fff; border-top:1px solid rgba(166,255,0,.25); background:rgba(166,255,0,.05); }
+  .ppm3-pill { display:inline-block; padding:1px 6px; border-radius:4px; background:rgba(166,255,0,.12); color:var(--l); font-weight:800; }
+  .ppm3-comp { display:flex; align-items:center; gap:8px; }
+  .ppm3-comp-logo { width:16px; height:16px; object-fit:contain; flex:none; }
+  .ppm3-status { display:inline-block; padding:2px 8px; border-radius:20px; font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.02em; font-style:normal; }
+  .ppm3-status--good { background:rgba(166,255,0,.14); color:var(--l); }
+  .ppm3-status--bad { background:rgba(255,138,107,.14); color:#ff8a6b; }
+  .ppm3-status--warn { background:rgba(255,190,90,.14); color:#ffbe5a; }
+  .ppm3-status--dim { background:rgba(255,255,255,.06); color:var(--muted); }
+  .ppm3-empty { padding:14px 0; color:var(--muted); font:500 11.5px "Barlow",sans-serif; text-align:center; }
+  .ppm3-foot { display:flex; align-items:center; gap:5px; margin:8px 0 0; color:#6f757e; font:500 10px/1.3 "Barlow",sans-serif; }
+  .ppm3-key-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .ppm3-key-grid > div { min-width:0; }
+  .ppm3-key-grid span { display:block; color:var(--muted); font:700 8px/1.2 "IBM Plex Mono",monospace; letter-spacing:.03em; }
+  .ppm3-key-grid b { display:block; margin-top:4px; color:#fff; font:800 16px/1 "Barlow Condensed",sans-serif; }
+  .ppm3-key-grid em { display:block; margin-top:2px; color:var(--l); font:700 9px "IBM Plex Mono",monospace; font-style:normal; }
+  .ppm3-sparkline { display:flex; gap:8px; align-items:flex-end; padding:4px 0 10px; }
+  .ppm3-sparkline--lg { gap:12px; padding:8px 0 16px; }
+  .ppm3-spark-col { display:flex; flex-direction:column; align-items:center; gap:5px; flex:1; }
+  .ppm3-spark-col img { width:18px; height:18px; object-fit:contain; }
+  .ppm3-spark-col em { font:600 8px "Barlow",sans-serif; color:var(--muted); font-style:normal; text-align:center; max-width:56px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ppm3-spark-dot { width:6px; height:6px; border-radius:50%; background:var(--muted); }
+  .ppm3-spark-col b { font:800 11px "Barlow Condensed",sans-serif; color:#cfd4da; }
+  .ppm3-spark-col b.hi { color:var(--l); } .ppm3-spark-col b.lo { color:#ff8a6b; }
+  .ppm3-spark-col--intl { position:relative; }
+  .ppm3-spark-col--intl::before { content:"INTL"; display:block; margin-bottom:3px; color:#7dd3fc; font:800 6.5px "IBM Plex Mono",monospace; letter-spacing:.06em; }
+  .ppm3-intl-tag { margin-left:6px; padding:1px 5px; border-radius:3px; background:rgba(125,211,252,.14); color:#7dd3fc; font:800 8px "IBM Plex Mono",monospace; font-style:normal; }
+  .ppm3-avail { list-style:none; margin:0; padding:0; display:grid; gap:8px; }
+  .ppm3-avail li { display:flex; align-items:center; justify-content:space-between; }
+  .ppm3-avail span { color:var(--muted); font:600 10.5px "Barlow",sans-serif; }
+  .ppm3-avail b { color:#eef1f4; font:800 12px "Barlow Condensed",sans-serif; }
+  .ppm3-avail b.warn { color:#ff8a6b; }
+  .ppm3-similar { display:grid; gap:6px; }
+  .ppm3-similar button { display:flex; align-items:center; gap:8px; width:100%; background:none; border:1px solid transparent; border-radius:8px; padding:4px 6px; cursor:pointer; text-align:left; transition:background .12s,border-color .12s; }
+  .ppm3-similar button:hover { background:rgba(255,255,255,.03); border-color:rgba(255,255,255,.08); }
+  .ppm3-similar button img { width:24px; height:24px; border-radius:50%; object-fit:cover; object-position:top; flex:none; border:1px solid rgba(255,255,255,.12); }
+  .ppm3-similar button span { flex:none; width:76px; color:#cfd4da; font:600 10.5px "Barlow",sans-serif; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ppm3-simbar { flex:1; height:5px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden; }
+  .ppm3-simbar i { display:block; height:100%; background:var(--l); }
+  .ppm3-similar button em, .ppm3-similar-row > em { flex:none; width:34px; text-align:right; color:var(--l); font:800 10px "IBM Plex Mono",monospace; font-style:normal; }
+  .ppm3-similar--lg { gap:10px; }
+  .ppm3-similar-row { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid rgba(255,255,255,.08); border-radius:9px; flex-wrap:nowrap; }
+  .ppm3-similar-row img { width:34px; height:34px; border-radius:50%; object-fit:cover; object-position:top; border:1px solid rgba(255,255,255,.12); flex:0 0 34px; }
+  .ppm3-similar-row .ri { flex:1 1 0%; min-width:60px; max-width:100%; overflow:hidden; }
+  .ppm3-similar-row .ri strong { display:block; color:#eef1f4; font:700 12.5px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ppm3-similar-row .ri span { display:block; color:var(--muted); font:500 10px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ppm3-similar-row .ppm3-simbar { flex:0 0 70px; width:70px; }
+  .ppm3-similar-row > em { flex:0 0 34px; }
+  .ppm3-similar-row > button { flex:0 0 auto; }
+  @media(max-width:700px){ .ppm3-similar-row .ppm3-simbar { display:none; } }
+  .ppm3-bars { display:grid; gap:10px; }
+  .ppm3-bar-row { display:grid; grid-template-columns:120px 1fr 60px 44px; align-items:center; gap:10px; }
+  .ppm3-bar-row span { color:var(--muted); font:600 11px "Barlow",sans-serif; }
+  .ppm3-bar { height:7px; border-radius:4px; background:rgba(255,255,255,.08); overflow:hidden; }
+  .ppm3-bar i { display:block; height:100%; background:var(--l); }
+  .ppm3-bar-row b { color:#eef1f4; font:800 12px "Barlow Condensed",sans-serif; text-align:right; }
+  .ppm3-bar-row em { color:var(--l); font:700 10px "IBM Plex Mono",monospace; font-style:normal; text-align:right; }
+  .ppm3-scout-lede { color:#d8dde2; font:500 13px/1.5 "Barlow",sans-serif; margin:0 0 14px; }
+  .ppm3-scout-row { display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid rgba(255,255,255,.06); font:600 11.5px "Barlow",sans-serif; color:#cfd4da; }
+  .ppm3-scout-row b { color:var(--l); }
+  .ppm3-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; padding-top:14px; border-top:1px solid rgba(255,255,255,.08); }
+  .ppm3-note { margin:10px 0 0; color:#6f757e; font:500 10.5px/1.4 "Barlow",sans-serif; }
+  @media(max-width:760px){ .ppm3-grid, .ppm3-grid--4, .ppm3-key-grid { grid-template-columns:repeat(2,1fr); } .ppm3-row3 { grid-template-columns:1fr; } .ppm3-row2 { grid-template-columns:1fr; } }
+`;
+// Renders its children through a portal straight to document.body, fixed-
+// positioned from the anchor's live screen coordinates. Needed because
+// .plp2-search and the filter <select> elements both use backdrop-filter,
+// which creates its own CSS stacking context — a known browser gotcha where
+// an absolutely-positioned dropdown child gets trapped/misordered behind
+// other blurred siblings regardless of z-index. Escaping to a portal
+// sidesteps the whole stacking-context problem rather than fighting it.
+function PortalDropdown({ anchorRef, open, children }) {
+  const [rect, setRect] = useState(null);
+  useEffect(() => {
+    if (!open || !anchorRef.current) { setRect(null); return undefined; }
+    const update = () => setRect(anchorRef.current.getBoundingClientRect());
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [open, anchorRef]);
+  if (!open || !rect) return null;
+  return createPortal(
+    <div className="plp2-dropdown" style={{ position: 'fixed', left: rect.left, top: rect.bottom + 4, width: rect.width, zIndex: 9999 }}>
+      {children}
+    </div>,
+    document.body
+  );
+}
+// Real per-90 rate — same convention as the System Fit / Players profile
+// cards: raw counting stats are only comparable per-90, since a 20-appearance
+// starter and a 5-appearance sub otherwise look directly comparable when
+// they aren't.
+function cmpPer90(raw, minutes) {
+  const n = Number(raw), m = Number(minutes);
+  if (!Number.isFinite(n) || !(m > 0)) return null;
+  return (n / m) * 90;
+}
+function cmpFmt(v, dp = 0) {
+  if (v == null || v === '' || Number.isNaN(Number(v))) return '—';
+  return dp ? Number(v).toFixed(dp) : String(Math.round(Number(v)));
+}
+// Row definitions for the comparison table. `dir` controls which side gets
+// the winner highlight: 'higher' (most stats), 'lower' (cards — fewer is
+// better), or 'neutral' (context stats like minutes/games where more isn't
+// inherently better, just a bigger sample).
+function compareRows(p) {
+  const m = Number(p.minutes) || 0;
+  return {
+    'SEASON SCORE': { v: p.rating, dir: 'higher' },
+    'CALIBRE': { v: p.ability_rating, dir: 'higher' },
+    'SELECTION': { v: p.availability_score, dir: 'higher' },
+    'GOALS': { v: p.goals, dir: 'higher' },
+    'ASSISTS': { v: p.assists, dir: 'higher' },
+    'GAMES PLAYED': { v: p.appearances, dir: 'neutral' },
+    'MINUTES': { v: p.minutes, dir: 'neutral' },
+    'xG / 90': { v: p.xg_per_90 ?? p.xg_per90 ?? p.xgPer90 ?? p.xg, dir: 'higher', dp: 2 },
+    'KEY PASSES / 90': { v: cmpPer90(p.key_passes, m), dir: 'higher', dp: 2 },
+    'SHOTS / 90': { v: cmpPer90(p.shots ?? p.total_shots, m), dir: 'higher', dp: 2 },
+    'DRIBBLES / 90': { v: cmpPer90(p.dribbles_success ?? p.successful_dribbles, m), dir: 'higher', dp: 2 },
+    'DUELS WON / 90': { v: cmpPer90(p.duels_won, m), dir: 'higher', dp: 2 },
+    'TACKLES / 90': { v: cmpPer90(p.tackles, m), dir: 'higher', dp: 2 },
+    'INTERCEPTIONS / 90': { v: cmpPer90(p.interceptions, m), dir: 'higher', dp: 2 },
+    'PASS ACC %': { v: p.pass_accuracy, dir: 'higher' },
+    'YELLOW CARDS': { v: p.yellow_cards, dir: 'lower' },
+    'RED CARDS': { v: p.red_cards, dir: 'lower' },
+  };
+}
 function CompareModal({players,onClose}){
   if(players.length<2) return null;
+  const [a, b] = players;
+  const rowsA = compareRows(a), rowsB = compareRows(b);
+  const labels = Object.keys(rowsA);
 
   return (
     <div className="player-profile-modal" role="presentation" onMouseDown={onClose}>
@@ -402,7 +1189,42 @@ function CompareModal({players,onClose}){
           )}
         </div>
 
-        <p className="player-profile-modal__note">This beta workspace now receives real player profiles. The full comparison report will apply Calibre’s performance, consistency, form, impact and trajectory weights after the statistics pipeline is complete.</p>
+        <div className="pcmp-table">
+          <div className="pcmp-row pcmp-row--head">
+            <span>{a.name}</span>
+            <span></span>
+            <span>{b.name}</span>
+          </div>
+          {labels.map(label => {
+            const ra = rowsA[label], rb = rowsB[label];
+            const va = Number(ra.v), vb = Number(rb.v);
+            const bothKnown = Number.isFinite(va) && Number.isFinite(vb);
+            let winA = false, winB = false;
+            if (bothKnown && ra.dir !== 'neutral' && va !== vb) {
+              const aWins = ra.dir === 'higher' ? va > vb : va < vb;
+              winA = aWins; winB = !aWins;
+            }
+            return (
+              <div className="pcmp-row" key={label}>
+                <span className={winA ? 'pcmp-win' : ''}>{cmpFmt(ra.v, ra.dp)}</span>
+                <small>{label}</small>
+                <span className={winB ? 'pcmp-win' : ''}>{cmpFmt(rb.v, rb.dp)}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="player-profile-modal__note">Live comparison from each player's Calibre profile — Season Score/Calibre/Selection plus per-90 output. Highlighted values mark the stronger side per row (cards: fewer is better). Blanks mean that stat hasn't synced for this player yet.</p>
+        <style>{`
+          .pcmp-table { margin-top:16px; border:1px solid rgba(255,255,255,.08); border-radius:10px; overflow:hidden; }
+          .pcmp-row { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; padding:8px 12px; border-bottom:1px solid rgba(255,255,255,.06); }
+          .pcmp-row:last-child { border-bottom:none; }
+          .pcmp-row--head { background:rgba(255,255,255,.03); }
+          .pcmp-row--head span { font:800 11px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; color:#eef1f4; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+          .pcmp-row span { font:700 13px "IBM Plex Mono",monospace; color:#c4c9ce; text-align:center; }
+          .pcmp-row small { font:700 9px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; color:#8d929b; text-align:center; }
+          .pcmp-win { color:var(--lime,#a6ff00); font-weight:800; }
+        `}</style>
       </section>
     </div>
   );
@@ -534,6 +1356,11 @@ export default function Players(){
   const [browseRows,setBrowseRows] = useState([]);
   const [searching,setSearching] = useState(false);
   const [searchError,setSearchError] = useState('');
+  const [clubQuery,setClubQuery] = useState('');
+  const [clubMatches,setClubMatches] = useState([]);
+  const [clubSearching,setClubSearching] = useState(false);
+  const playerSearchRef = useRef(null);
+  const clubSearchRef = useRef(null);
   const [activePlayer,setActivePlayer] = useState(null);
   const [activeStats,setActiveStats] = useState(null);
   const { user } = useAuth();
@@ -567,6 +1394,9 @@ export default function Players(){
   const [supabaseRows,setSupabaseRows] = useState([]);
   const [supabaseTotal,setSupabaseTotal] = useState(0);
   const [nationCount,setNationCount] = useState(null);
+  const [leagueCount,setLeagueCount] = useState(null);
+  const [coverageSeason,setCoverageSeason] = useState(null);
+  const [topPool,setTopPool] = useState([]);
   const [supabaseError,setSupabaseError] = useState('');
   const [supabaseLoading,setSupabaseLoading] = useState(true);
 
@@ -584,7 +1414,6 @@ export default function Players(){
     [supabaseRows]
   );
 
-  const featured = landingPlayers[weekIndex(landingPlayers.length)];
   const hasLiveQuery = search.trim().length>=3;
 
   useEffect(()=>{
@@ -623,13 +1452,25 @@ export default function Players(){
     };
   },[]);
 
-  // Separate, non-blocking: the nation count reads more rows than the main
-  // fetch above, so it shouldn't delay featured players from showing.
+  // Separate, non-blocking: these read more rows than the main fetch above,
+  // so they shouldn't delay featured players from showing.
   useEffect(()=>{
     let active = true;
     getSupabaseNationCount()
       .then(n => { if(active) setNationCount(n); })
       .catch(() => { /* stat card falls back to a loading dash, never a guess */ });
+    getSupabaseLeagueCount()
+      .then(n => { if(active) setLeagueCount(n); })
+      .catch(() => { /* falls back to the curated filter count below */ });
+    getSupabaseCoverageSeason()
+      .then(s => { if(active) setCoverageSeason(s); })
+      .catch(() => { /* falls back to the date-computed CURRENT_SEASON below */ });
+    // Real, larger pool for Featured Players to rotate through — see
+    // featuredList below. Falls back to the small hardcoded CURATED_PLAYERS
+    // shortlist if this never loads.
+    getSupabaseTopPlayers({limit:80})
+      .then(rows => { if(active) setTopPool(rows); })
+      .catch(() => { /* featuredList below falls back to the curated list */ });
     return () => { active = false; };
   },[]);
 
@@ -670,6 +1511,43 @@ export default function Players(){
       clearTimeout(timer);
     };
   },[search]);
+
+  useEffect(()=>{
+    const query = clubQuery.trim();
+    if(query.length<2){
+      setClubMatches([]);
+      setClubSearching(false);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async()=>{
+      setClubSearching(true);
+      try{
+        const clubs = await searchSupabaseClubs(query,{limit:8});
+        if(!cancelled) setClubMatches(clubs);
+      }catch{
+        if(!cancelled) setClubMatches([]);
+      }finally{
+        if(!cancelled) setClubSearching(false);
+      }
+    },350);
+    return ()=>{ cancelled = true; clearTimeout(timer); };
+  },[clubQuery]);
+
+  async function pickClub(clubName){
+    setClubQuery('');
+    setClubMatches([]);
+    setSearching(true);
+    try{
+      const rows = await getSupabasePlayersByClub(clubName,{limit:100});
+      setBrowseRows(rows);
+      setNotice(`Showing ${rows.length} player${rows.length===1?'':'s'} from ${clubName}.`);
+    }catch{
+      setNotice(`Could not load ${clubName}'s roster. Try again.`);
+    }finally{
+      setSearching(false);
+    }
+  }
 
   async function applyFilters(){
     setSearching(true);
@@ -769,6 +1647,7 @@ export default function Players(){
     if(!apiId) return;
 
     setProfileLoading(true);
+    let nationality = player?.nationality || null;
 
     // Reconcile against the enriched DB row for bio + performance stats, but
     // — same pattern as System Fit's pop-up — let curated identity fields
@@ -782,6 +1661,7 @@ export default function Players(){
       const dbRows = await getSupabasePlayersByApiIds([apiId]);
       const db = dbRows && dbRows[0];
       if (db) {
+        nationality = db.nationality || nationality;
         const scored = resolveRating(db);
         setActivePlayer(prev => ({
           ...db,
@@ -793,6 +1673,14 @@ export default function Players(){
           position: (prev && (prev.position || prev.pos)) || db.position || db.pos || '',
           pos: (prev && (prev.pos || prev.position)) || db.pos || db.position || '',
           rating: (prev && prev.rating != null) ? prev.rating : ((scored && scored.rating != null) ? scored.rating : (db.rating ?? null)),
+          // Calibre/Selection aren't curated per-card the way rating is — always
+          // trust the freshly-resolved DB values here, otherwise a `prev` object
+          // from a search row/featured card that carries a stale or null
+          // ability_rating/availability_score silently wins the spread above and
+          // the profile pop-up shows blank Calibre/Selection (same class of bug
+          // already fixed on System Fit's card).
+          ability_rating: (scored && scored.ability != null) ? scored.ability : (db.ability_rating ?? (prev && prev.ability_rating) ?? null),
+          availability_score: (scored && scored.availability != null) ? scored.availability : (db.availability_score ?? (prev && prev.availability_score) ?? null),
           archetype: (prev && prev.archetype) || db.archetype || null,
           league_id: db.league_id ?? (prev && prev.league_id) ?? null,
         }));
@@ -809,11 +1697,14 @@ export default function Players(){
           nationality: prev?.nationality || prof.nationality || null,
           image: prev?.image || prof.image || null,
         }));
+        nationality = nationality || prof.nationality || null;
       }
     } catch { /* keep DB bio if the profile lookup fails */ }
 
     try{
-      setActiveStats(await getPlayerStats(apiId));
+      let nationalTeamId = null;
+      try { nationalTeamId = await getNationalTeamId(nationality); } catch { /* club-evidence check just degrades to "any evidence" below */ }
+      setActiveStats(await getPlayerStatsWithFallback(apiId, undefined, nationalTeamId));
     }finally{
       setProfileLoading(false);
     }
@@ -833,6 +1724,18 @@ export default function Players(){
     setActivePlayer(null);
   }
 
+  // Compare tab's "+ Compare" on a similar player: the person's clear intent
+  // is "show me THIS player vs THAT one", not "silently queue one player and
+  // close the pop-up" (which is what reusing addToCompare alone did — it
+  // looked broken because nothing visibly happened). Load both sides and
+  // open the real comparison immediately.
+  function compareWithSimilar(candidate){
+    if(!activePlayer) return;
+    setComparePlayers([activePlayer, candidate]);
+    setCompareOpen(true);
+    setActivePlayer(null);
+  }
+
   const filteredRows = useMemo(()=>sourceRows.filter(p=>{
     const posVal = p.position || p.pos || '';
     const posOk = !posVal || posMatches(posVal,filters.position);
@@ -842,7 +1745,21 @@ export default function Players(){
     return ageInRange(p.age,filters.age) && posOk && natOk && archOk && ratingOk;
   }),[sourceRows,filters]);
   const rankingRows = useMemo(()=>sortCurated(filteredRows,rankTab),[filteredRows,rankTab]);
-  const featuredList = useMemo(()=>sortCurated(landingPlayers,'Calibre Rating').slice(0,8),[landingPlayers]);
+  // Featured Players — a rotating window into a real, larger pool (top ~80
+  // by ability_rating) instead of a fixed top-8-of-10 cut of a hardcoded
+  // shortlist. weekIndex() existed in this file already but was never wired
+  // to anything; it now picks which 8-player window shows this week, so the
+  // set changes on a weekly cadence instead of being static. Falls back to
+  // the curated shortlist if the live pool hasn't loaded yet (e.g. first
+  // paint, or Supabase unreachable) so the section is never empty.
+  const featuredList = useMemo(()=>{
+    if(topPool.length>=8){
+      const windows = Math.max(1,Math.floor(topPool.length/8));
+      const start = weekIndex(windows)*8;
+      return topPool.slice(start,start+8);
+    }
+    return sortCurated(landingPlayers,'Calibre Rating').slice(0,8);
+  },[topPool,landingPlayers]);
   const [rankPage,setRankPage] = useState(1);
   const [pageSize,setPageSize] = useState(10);
   useEffect(()=>{ setRankPage(1); },[rankTab,filters,search,notice]);
@@ -854,7 +1771,6 @@ export default function Players(){
     { key:'search', icon:Search, label:'Advanced Search', run:()=>document.querySelector('.plp2-filters')?.scrollIntoView({behavior:'smooth'}) },
     { key:'watch', icon:Star, label:'My Watchlist', run:()=>setWatchlistOpen(true) },
     { key:'top', icon:Crown, label:'Top 100 Players', run:()=>{ setRankTab('Calibre Rating'); setFilters(f=>({...f,rating:'all'})); document.querySelector('.plp2-rankings')?.scrollIntoView({behavior:'smooth'}); } },
-    { key:'wonder', icon:TrendingUp, label:'Wonderkids (U21)', run:()=>{ setFilters(f=>({...f,age:'16-21'})); document.querySelector('.plp2-rankings')?.scrollIntoView({behavior:'smooth'}); } },
     { key:'free', icon:Database, label:'Free Agents', run:()=>setNotice('Free-agent data connects with the transfers feed — coming soon.') },
   ];
 
@@ -979,15 +1895,44 @@ export default function Players(){
 
       <div className="plp2-stats">
         <div className="plp2-stat"><b>{supabaseError ? '—' : supabaseLoading ? '…' : supabaseTotal.toLocaleString()}</b><span>Players indexed</span></div>
-        <div className="plp2-stat"><b>{LEAGUE_OPTIONS.length - 1}</b><span>Leagues covered</span></div>
+        <div className="plp2-stat"><b>{leagueCount != null ? leagueCount : '…'}</b><span>Leagues covered</span></div>
         <div className="plp2-stat"><b>{nationCount != null ? nationCount : '…'}</b><span>Nations</span></div>
         <div className="plp2-stat"><b>{supabaseLoading ? '…' : formatCompact(supabaseTotal * METRIC_FIELDS.length)}</b><span>Data points</span></div>
-        <div className="plp2-stat"><b>{String(CURRENT_SEASON).slice(2)}/{String(CURRENT_SEASON + 1).slice(2)}</b><span>Season coverage</span></div>
+        <div className="plp2-stat"><b>{String(coverageSeason ?? CURRENT_SEASON).slice(2)}/{String((coverageSeason ?? CURRENT_SEASON) + 1).slice(2)}</b><span>Season coverage</span></div>
       </div>
 
       <div className="plp2-searchrow">
-        <div className="plp2-search"><Search size={16} /><input placeholder="Search player by name — Gordon, Messi, Bellingham…" value={search} onChange={e => setSearch(e.target.value)} />{searching && <LoaderCircle className="player-live-spinner" size={15} />}</div>
+        <div className="plp2-search" ref={playerSearchRef}>
+          <Search size={16} /><input placeholder="Search player by name — Gordon, Messi, Bellingham…" value={search} onChange={e => setSearch(e.target.value)} />{searching && <LoaderCircle className="player-live-spinner" size={15} />}
+          <PortalDropdown anchorRef={playerSearchRef} open={hasLiveQuery && liveRows.length > 0}>
+            {liveRows.slice(0, 8).map(p => (
+              <button type="button" key={p.id || p.apiPlayerId || p.name} onClick={() => { openProfile(p); setSearch(''); }}>
+                <ApiPlayerImage playerId={apiIdFor(p)} name={p.name} preferredSrc={portraitFor(p)} fallbackSrc={fallbackFor(p)} alt="" />
+                <span><b>{p.name}</b><small>{[p.position || p.pos, p.team || p.club].filter(Boolean).join(' · ')}</small></span>
+                {p.rating != null && <em>{Math.round(p.rating)}</em>}
+              </button>
+            ))}
+          </PortalDropdown>
+        </div>
+        <div className="plp2-search" ref={clubSearchRef}>
+          <Search size={16} /><input placeholder="Search by club — Barcelona, Arsenal…" value={clubQuery} onChange={e => setClubQuery(e.target.value)} />{clubSearching && <LoaderCircle className="player-live-spinner" size={15} />}
+          <PortalDropdown anchorRef={clubSearchRef} open={clubMatches.length > 0}>
+            {clubMatches.map(name => (
+              <button type="button" key={name} onClick={() => pickClub(name)}><span><b>{name}</b></span></button>
+            ))}
+          </PortalDropdown>
+        </div>
         <button className="btn btn--outline" type="button" onClick={() => document.querySelector('.plp2-filters')?.scrollIntoView({ behavior: 'smooth' })}><SlidersHorizontal size={14} /> Advanced Filters</button>
+        <style>{`
+          .plp2-dropdown { max-height:280px; overflow:auto; background:rgba(10,14,17,.98); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,.10); border-radius:10px; box-shadow:0 20px 50px rgba(0,0,0,.6); }
+          .plp2-dropdown button { display:flex; align-items:center; gap:9px; width:100%; padding:9px 11px; text-align:left; border-bottom:1px solid rgba(255,255,255,.05); background:none; cursor:pointer; }
+          .plp2-dropdown button:last-child { border-bottom:none; }
+          .plp2-dropdown button:hover { background:rgba(166,255,0,.06); }
+          .plp2-dropdown img { width:30px; height:30px; border-radius:50%; object-fit:cover; object-position:top; border:1px solid rgba(255,255,255,.12); flex:none; }
+          .plp2-dropdown b { display:block; color:#fff; font:700 12px/1.1 "Barlow",sans-serif; }
+          .plp2-dropdown small { display:block; margin-top:3px; color:#8d929b; font:600 9.5px/1 "Barlow",sans-serif; }
+          .plp2-dropdown em { margin-left:auto; flex:none; font:800 13px "Barlow Condensed",sans-serif; color:#a6ff00; font-style:normal; }
+        `}</style>
       </div>
 
       <div className="plp2-filters">
@@ -1090,7 +2035,7 @@ export default function Players(){
         <button type="button" className="btn btn--lime" onClick={() => navigateTo('/pricing')}>EXPLORE PLANS <ArrowRight size={14} /></button>
       </div>
 
-      <PlayerProfileModal player={activePlayer} stats={activeStats} loading={profileLoading} onClose={() => setActivePlayer(null)} onCompare={addToCompare} watched={activePlayer ? isWatched(activePlayer.apiPlayerId ?? activePlayer.id) : false} onToggleWatch={() => handleToggleWatch(activePlayer)} canWatch={canWatch} />
+      <PlayerProfileModal player={activePlayer} stats={activeStats} loading={profileLoading} onClose={() => setActivePlayer(null)} onCompare={addToCompare} onCompareWith={compareWithSimilar} watched={activePlayer ? isWatched(activePlayer.apiPlayerId ?? activePlayer.id) : false} onToggleWatch={() => handleToggleWatch(activePlayer)} canWatch={canWatch} />
       {compareOpen && <CompareModal players={comparePlayers} onClose={() => setCompareOpen(false)} />}
       {watchlistOpen && <WatchlistModal items={watchlist} onOpen={pl => { setWatchlistOpen(false); openProfile(pl); }} onRemove={id => removeWatch(id)} onClose={() => setWatchlistOpen(false)} />}
     </div>

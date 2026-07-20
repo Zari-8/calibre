@@ -230,6 +230,135 @@ export async function getPlayerStats(playerId, season = CURRENT_SEASON) {
   return data?.response?.[0] ?? null;
 }
 
+// The pop-up's Season tab defaults to CURRENT_SEASON, but CURRENT_SEASON
+// flips to the new season on July 1 even though most leagues don't kick off
+// again until August — so for roughly six weeks a year (and for any player
+// whose league genuinely hasn't started yet) a straight CURRENT_SEASON call
+// comes back with zero statistics rows even though last season's real data
+// exists one call away. Walk backwards until a season actually has evidence
+// (real appearances/minutes), and tag the result with which season it is so
+// the UI can label it correctly instead of silently claiming CURRENT_SEASON.
+//
+// A season can have REAL evidence that's entirely international (World Cup
+// qualifiers, a tournament) while the player's actual club season sits one
+// year back — e.g. Haaland already has Norway minutes tagged under 2026
+// while Man City's 2026/27 hasn't kicked off, so a plain "any evidence"
+// check stopped right there and the Season tab showed 7 caps for Norway as
+// his whole season, silently hiding a full Premier League campaign one call
+// away. When nationalTeamId is supplied, prefer a season with CLUB evidence
+// specifically; only fall back to an international-only season if no season
+// in the list has club evidence anywhere (better than showing nothing).
+export async function getPlayerStatsWithFallback(playerId, seasons = [CURRENT_SEASON, CURRENT_SEASON - 1], nationalTeamId = null) {
+  let bestAnyEvidence = null;
+  for (const season of seasons) {
+    const data = await getPlayerStats(playerId, season);
+    const rows = Array.isArray(data?.statistics) ? data.statistics : [];
+    const hasRealGames = s => { const g = s?.games; return g && (Number(g.appearences ?? g.appearances) > 0 || Number(g.minutes) > 0); };
+    const hasClubEvidence = rows.some(s => hasRealGames(s) && (nationalTeamId == null || Number(s?.team?.id) !== Number(nationalTeamId)));
+    if (hasClubEvidence) return { ...data, __season: season };
+    if (!bestAnyEvidence && rows.some(hasRealGames)) bestAnyEvidence = { ...data, __season: season };
+  }
+  return bestAnyEvidence;
+}
+
+// Career tab: real season-by-season lines, one API-Football call per season
+// (same /players endpoint the Season tab already uses, just walked backwards
+// a few years). Runs in parallel and drops any season with no evidence
+// (player not at a tracked club / pre-debut / API gap) rather than showing a
+// fabricated blank row.
+export async function getPlayerCareerSeasons(playerId, seasonsBack = 5) {
+  if (!playerId) return [];
+  const seasons = Array.from({ length: seasonsBack }, (_, i) => CURRENT_SEASON - i);
+  const rows = await Promise.all(seasons.map(season => getPlayerStats(playerId, season).catch(() => null)));
+  return seasons
+    .map((season, i) => ({ season, data: rows[i] }))
+    .filter(row => row.data && Array.isArray(row.data.statistics) && row.data.statistics.some(s => s?.games));
+}
+
+// Form tab: last N finished fixtures for a team, then this player's own line
+// out of each fixture's player-stats payload (API-Football /fixtures/players
+// is fixture-scoped — one call per match, no per-player season shortcut).
+// Returns real match ratings only; a fixture where this player didn't
+// feature (rest/injury/bench-only) is simply omitted, never zero-filled.
+export async function getTeamRecentFixtures(teamId, last = 8) {
+  if (!teamId) return [];
+  const data = await apiFetch('fixtures', { team: teamId, last, status: 'FT' }, { ttl: 15 * 60 * 1000 });
+  return data?.response ?? [];
+}
+
+export async function getFixturePlayerMatchStats(fixtureId, apiPlayerId) {
+  if (!fixtureId || !apiPlayerId) return null;
+  const data = await apiFetch('fixtures/players', { fixture: fixtureId }, { ttl: 60 * 60 * 1000 });
+  for (const teamBlock of data?.response ?? []) {
+    const hit = (teamBlock.players || []).find(p => Number(p.player?.id) === Number(apiPlayerId));
+    if (hit) {
+      const s = hit.statistics?.[0] || {};
+      return {
+        rating: Number.parseFloat(s.games?.rating) || null,
+        minutes: Number(s.games?.minutes) || 0,
+        goals: Number(s.goals?.total) || 0,
+        assists: Number(s.goals?.assists) || 0,
+        position: s.games?.position || null,
+      };
+    }
+  }
+  return null;
+}
+
+// Resolves a player's NATIONAL team id from their nationality (e.g.
+// "Norway" -> Norway men's national team), so Form/Days Since Last Match
+// aren't blind to international fixtures. API-Football's /teams?search=
+// returns both the country's national side and any club sharing the name;
+// `team.national === true` is the real discriminator. Cached for 24h via
+// apiFetch's normal TTL handling since a country's team id never changes.
+export async function getNationalTeamId(nationality) {
+  const name = String(nationality || '').trim();
+  if (!name) return null;
+  const data = await apiFetch('teams', { search: name }, { ttl: 24 * 60 * 60 * 1000 });
+  const rows = data?.response ?? [];
+  const national = rows.find(r => r.team?.national === true);
+  return national?.team?.id ?? null;
+}
+
+// Merges club + national-team fixtures by date so a player's "recent form"
+// and "days since last match" reflect whichever they actually played most
+// recently — a World Cup match doesn't get silently dropped just because it
+// wasn't played under the club's team id. Falls back to club-only when no
+// national team id is available (curated rows without a resolved
+// nationality, or a player with no senior caps on record).
+export async function getRecentPlayerForm(teamId, apiPlayerId, last = 8, nationalTeamId = null) {
+  const [clubFixtures, ntFixtures] = await Promise.all([
+    getTeamRecentFixtures(teamId, last),
+    nationalTeamId ? getTeamRecentFixtures(nationalTeamId, last) : Promise.resolve([]),
+  ]);
+
+  const tagged = [
+    ...clubFixtures.map(fx => ({ fx, refTeamId: teamId })),
+    ...ntFixtures.map(fx => ({ fx, refTeamId: nationalTeamId })),
+  ]
+    .sort((a, b) => new Date(b.fx.fixture?.date || 0) - new Date(a.fx.fixture?.date || 0))
+    .slice(0, last * 2); // cap the per-fixture lookup fan-out before we know who actually featured
+
+  const results = await Promise.all(tagged.map(async ({ fx, refTeamId }) => {
+    const stats = await getFixturePlayerMatchStats(fx.fixture?.id, apiPlayerId).catch(() => null);
+    if (!stats || !stats.minutes) return null; // didn't feature — omit, don't zero-fill
+    const home = fx.teams?.home?.id === refTeamId;
+    const opponent = home ? fx.teams?.away : fx.teams?.home;
+    return {
+      date: fx.fixture?.date || null,
+      competition: fx.league?.name || '',
+      international: refTeamId === nationalTeamId,
+      opponentName: opponent?.name || '—',
+      opponentLogo: opponent?.logo || '',
+      ...stats,
+    };
+  }));
+
+  return results.filter(Boolean)
+    .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0))
+    .slice(-last);
+}
+
 export async function getAllLeagueStandings() {
   const results = {};
   const launchLeagues = Object.entries(LEAGUE_IDS).filter(([name]) => !['Champions League', 'Europa League'].includes(name));
@@ -250,6 +379,22 @@ export async function getAllTopScorers() {
   return results;
 }
 
+// Defensive relevance filter for external search results. API-Football's
+// search endpoints have been observed returning loosely-matched or outright
+// unrelated rows for a query with no real substring match anywhere (e.g. a
+// typo like "bernaldo silva" — genuinely not a substring of "Bernardo
+// Silva" once the transposed letters are accounted for — came back with
+// three unrelated players instead of an honest empty result). Requires at
+// least one real query word (3+ chars, so single initials like "B." don't
+// force everything to pass) to actually appear as a substring in the
+// candidate's name. An honest "no matches" beats a confidently wrong list.
+function relevant(query, name) {
+  const words = String(query || '').toLowerCase().split(/\s+/).filter(w => w.length >= 3);
+  if (!words.length) return true; // nothing meaningful to check against — don't over-filter short/initial-only queries
+  const target = String(name || '').toLowerCase();
+  return words.some(w => target.includes(w));
+}
+
 export async function searchTeams(query) {
   const search = String(query || '').trim();
   if (search.length < 3) return [];
@@ -261,7 +406,7 @@ export async function searchTeams(query) {
     crestUrl: team.logo,
     venue: venue?.name ?? '',
     source: 'api',
-  }));
+  })).filter(row => relevant(search, row.name));
 }
 
 export async function searchPlayers(query, season = CURRENT_SEASON, options = {}) {
@@ -277,7 +422,7 @@ export async function searchPlayers(query, season = CURRENT_SEASON, options = {}
     team: statistics?.[0]?.team?.name ?? '',
     position: statistics?.[0]?.games?.position ?? '',
     source: 'api',
-  }));
+  })).filter(row => relevant(search, row.name));
 }
 
 
@@ -310,7 +455,7 @@ export async function searchPlayerProfiles(query, options = {}) {
       image: player.photo || playerPhotoUrl(player.id),
       source: 'api-profile',
     };
-  }).filter(player => player.id && player.name);
+  }).filter(player => player.id && player.name && relevant(search, player.name));
 }
 
 export async function getPlayerProfile(playerId) {

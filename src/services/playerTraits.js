@@ -67,7 +67,12 @@ function positionBucket(player) {
   if (/(goalkeeper|keeper|\bgk\b)/.test(t)) textBucket = 'GK';
   else if (/(wing.?back|full.?back|\brb\b|\blb\b|\brwb\b|\blwb\b)/.test(t)) textBucket = 'FB';
   else if (/(back|defender|centre.?back|center.?back|\bcb\b|\bdef\b)/.test(t)) textBucket = 'DEF';
-  else if (/(wing|\brw\b|\blw\b|winger)/.test(t)) textBucket = 'WIDE';
+  // RM/LM ("Right/Left Midfielder") is a real-world wide role, not a central
+  // one — a player lined up there is functionally a winger. Previously only
+  // rw/lw/"wing"/"winger" matched, so anyone tagged RM/LM (e.g. Saka) fell
+  // through to the plain MID default and got scored as a Central
+  // Midfielder/Mezzala candidate instead of a Winger/Inside Forward one.
+  else if (/(wing|\brw\b|\blw\b|\brm\b|\blm\b|winger)/.test(t)) textBucket = 'WIDE';
   else if (/(forward|striker|\bcf\b|\bst\b|\bfwd\b|\batt\b|attacker|poacher)/.test(t)) textBucket = 'ATT';
   else if (/(defensive mid|\bdm\b|\bcdm\b|anchor|holding|ball-winning)/.test(t)) textBucket = 'DM';
 

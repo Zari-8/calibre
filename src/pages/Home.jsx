@@ -81,7 +81,12 @@ const lanes = [
 
 function withComputed(row){
   const r = resolveRating(row);
-  return { ...row, rating: r.rating, bucket: r.bucket, provisional: r.provisional };
+  // rating (Season Score) stays as-is — it's the right signal for the Top
+  // Players ranking below (realized performance leaderboard). ability is
+  // exposed separately for the Scouting Radar / talent teaser, which needs
+  // "how good is this player," not a number discounted for the low minutes
+  // young prospects often haven't been given yet.
+  return { ...row, rating: r.rating, ability: r.ability, bucket: r.bucket, provisional: r.provisional };
 }
 function displayRating(rating){
   const n = Number(rating);
@@ -145,7 +150,7 @@ export default function Home() {
 
   const talents = useMemo(
     () => rows.filter(r => !r.provisional && Number(r.age) > 0 && Number(r.age) <= 21)
-              .sort((a, b) => b.rating - a.rating)
+              .sort((a, b) => (b.ability ?? b.rating) - (a.ability ?? a.rating))
               .slice(0, 3),
     [rows]);
 
@@ -354,8 +359,8 @@ export default function Home() {
                 <h3>{talent.name}</h3>
                 <p>{talent.role}</p>
                 <div className="talent-card__bottom">
-                  <span><ShieldCheck size={14} />{talentTier(talent.rating)}</span>
-                  <b>{displayRating(talent.rating)}</b>
+                  <span><ShieldCheck size={14} />{talentTier(talent.ability ?? talent.rating)}</span>
+                  <b>{displayRating(talent.ability ?? talent.rating)}</b>
                 </div>
               </div>
             </button>

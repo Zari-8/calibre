@@ -232,7 +232,33 @@ function incisivePassBoost(player, sm) {
 // see checkLeagueIdMapping.mjs / fixPaderbornLeagueId.mjs. Adding 79 here
 // doesn't fix that mistagging by itself (the DATA still says 78); it just
 // means the correction has somewhere correct to land once the data fix ships.
-export const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,79:0.78,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,13:0.74,307:0.63,253:0.80,98:0.72,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
+// v8.8.2 — removed 13 (CONMEBOL Copa Libertadores), 12 (CAF Champions
+// League), and 949 (Copa Libertadores Femenina) from this map. These are
+// CONTINENTAL CLUB CUPS, not domestic leagues — they were only ever meant to
+// carry a strength value in enrichPlayerStats.mjs's separate
+// CONTINENTAL_STRENGTH map (used for the overlay blend), but someone had
+// also copied them in here at some point, which let them function as a
+// (wrong) domestic-league strength for any player whose flat
+// players.league_id happened to be tagged 13/12/949. Found via
+// sampleTeamsByLeagueId.mjs / inspectContinentalMistag.mjs, 2026-07-20:
+// ~1,380 players (Flamengo, Boca Juniors, Peñarol, Al Ahly, Mamelodi
+// Sundowns, etc. — a giveaway multi-country mix under a single "league")
+// had this flat mistag. Where competition_splits is already populated,
+// buildBaseLine() already prefers the correctly-resolved domestic
+// base.league_id and this never mattered — but for rows without splits yet
+// (about half the sample), scoreLine()'s v7 fallback path was scoring a
+// player's WHOLE real domestic season (verified via minutes: 6,000-8,900 for
+// id=13, clearly a full season, not a ~6-13-game cup run) at continental-cup
+// strength (0.74 / 0.66) instead of their real domestic league's. None of
+// their real domestic leagues (Uruguay, Paraguay, Chile, Egypt, Tunisia,
+// South Africa, Tanzania, Ghana...) are in this map yet — that needs live
+// API-Football lookups to do properly (blocked by today's quota) — so this
+// is the bounded interim fix: removing the wrong specific number so those
+// rows fall through to DEFAULT_LEAGUE (0.70) instead, same treatment any
+// other untracked domestic league already gets (see Eliteserien/Tangvik).
+// Not a full fix (Flamengo's real ~0.82 is still better than 0.70), but
+// removes the specific, confirmed-wrong continental-cup number.
+export const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,79:0.78,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,307:0.63,253:0.80,98:0.72,281:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86 };
 const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.84,'eredivisie':0.83,'championship':0.81,'pro league':0.80,'super lig':0.73,'saudi pro league':0.63,'brasileiro':0.82,'brasileirão':0.82,'mls':0.80,'j1 league':0.72,'npfl':0.55,'zimbabwe psl':0.50 };
 export const DEFAULT_LEAGUE = 0.70;
 // Same lookup leagueStrength() below does for `line.league_id`, exposed as a

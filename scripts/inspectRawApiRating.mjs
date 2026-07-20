@@ -61,7 +61,7 @@ if (!row.api_player_id) { console.log(`${row.name} has no api_player_id on recor
 
 console.log(`${row.name} (${row.team ?? '—'}) — api_player_id=${row.api_player_id}, stored api_average_rating=${row.api_average_rating}\n`);
 
-const seasons = [2026, 2025]; // current + prior, in case the season ladder picked an unexpected year
+const seasons = [2026, 2025, 2024]; // current + prior two, in case a player has a thin/injury-hit current season and we need to fall back to a real prior-season sample
 for (const season of seasons) {
   const res = await fetch(`${API_HOST}/players?id=${row.api_player_id}&season=${season}`, { headers: { 'x-apisports-key': API_KEY } });
   if (!res.ok) { console.log(`season=${season}: request failed (${res.status})`); continue; }
@@ -70,15 +70,20 @@ for (const season of seasons) {
   if (!entry) { console.log(`season=${season}: no data.`); continue; }
 
   console.log(`── season=${season} — ${entry.statistics?.length ?? 0} competition entries ──`);
-  let ratingSum = 0, ratingW = 0;
+  let ratingSum = 0, ratingW = 0, totalMinutes = 0, totalSaves = 0, totalConceded = 0, hasGk = false;
   for (const s of entry.statistics ?? []) {
     const m = Number(s.games?.minutes) || 0;
     const r = parseFloat(s.games?.rating);
     const league = s.league?.name ?? '—';
     const apps = s.games?.appearences ?? s.games?.appearances ?? '—';
-    console.log(`  league="${league}"  rating=${Number.isFinite(r) ? r : '—'}  minutes=${m}  apps=${apps}`);
+    const saves = s.goals?.saves, conceded = s.goals?.conceded;
+    if (saves != null || conceded != null) hasGk = true;
+    console.log(`  league="${league}"  rating=${Number.isFinite(r) ? r : '—'}  minutes=${m}  apps=${apps}  saves=${saves ?? '—'}  conceded=${conceded ?? '—'}`);
     if (Number.isFinite(r) && m > 0) { ratingSum += r * m; ratingW += m; }
+    totalMinutes += m;
+    if (saves != null) totalSaves += Number(saves) || 0;
+    if (conceded != null) totalConceded += Number(conceded) || 0;
   }
   const blended = ratingW > 0 ? (ratingSum / ratingW).toFixed(2) : '—';
-  console.log(`  -> minutes-weighted blend across ALL entries above: ${blended}  (this is what ratingSum/ratingW in enrichPlayerStats.mjs would compute)\n`);
+  console.log(`  -> minutes-weighted blend: rating=${blended}  totalMinutes=${totalMinutes}${hasGk ? `  saves=${totalSaves}  conceded=${totalConceded}` : ''}  (this is what enrichPlayerStats.mjs would compute/store for this season)\n`);
 }

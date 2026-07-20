@@ -41,6 +41,12 @@ import { createClient } from '@supabase/supabase-js';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+// Single source of truth for domestic league strength, shared with the
+// rating engine — needed here (v8.8.1) to compute a minutes-weighted blended
+// strength for the `base` competition group when a player's base minutes
+// span more than one distinct domestic league_id this season (a cross-league
+// mid-season transfer). See leagueStrengthById()'s comment in calibreRating.js.
+import { leagueStrengthById } from '../src/services/calibreRating.js';
 
 // Load SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY / API_FOOTBALL_KEY etc. from
 // .env / .env.local in the repo root if present, same loader used across the
@@ -328,6 +334,24 @@ export function competitionSplits(stats, preferredLeagueId) {
   const base = accumulate(groups.base);
   base.league_id = baseLid;
   base.league_name = primary?.league?.name || null;
+  // v8.8.1 — "league decay" fix (S. Tangvik case, 2026-07-20): groups.base
+  // can contain entries from MORE than one distinct domestic league_id when
+  // a player transferred cross-league mid-season (e.g. 2700 min Eliteserien
+  // + 90 min Bundesliga, both classified 'base'). Previously the whole
+  // group's production got scored at whichever ONE league base.league_id
+  // resolved to (the primary/current-club entry), so 97% of his minutes at
+  // Eliteserien strength got credited at Bundesliga strength instead. Only
+  // matters when >1 distinct league_id is actually present — for the normal
+  // single-league case this equals leagueStrengthById(baseLid) exactly, so
+  // it's a safe no-op for the vast majority of rows.
+  {
+    let bW = 0, bWt = 0;
+    for (const s of groups.base) {
+      const m = num(s?.games?.minutes);
+      if (m > 0) { bW += leagueStrengthById(s?.league?.id) * m; bWt += m; }
+    }
+    base.strength = bWt > 0 ? Math.round((bW / bWt) * 1000) / 1000 : null;
+  }
 
   const friendly = accumulate(groups.friendly);
 

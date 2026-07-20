@@ -232,9 +232,26 @@ function incisivePassBoost(player, sm) {
 // see checkLeagueIdMapping.mjs / fixPaderbornLeagueId.mjs. Adding 79 here
 // doesn't fix that mistagging by itself (the DATA still says 78); it just
 // means the correction has somewhere correct to land once the data fix ships.
-const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,79:0.78,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,13:0.74,307:0.63,253:0.80,98:0.72,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
+export const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,79:0.78,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,13:0.74,307:0.63,253:0.80,98:0.72,281:0.66,12:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86,949:0.74 };
 const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.84,'eredivisie':0.83,'championship':0.81,'pro league':0.80,'super lig':0.73,'saudi pro league':0.63,'brasileiro':0.82,'brasileirão':0.82,'mls':0.80,'j1 league':0.72,'npfl':0.55,'zimbabwe psl':0.50 };
-const DEFAULT_LEAGUE = 0.70;
+export const DEFAULT_LEAGUE = 0.70;
+// Same lookup leagueStrength() below does for `line.league_id`, exposed as a
+// standalone by-id helper so ingestion (enrichPlayerStats.mjs) can compute a
+// minutes-weighted blended strength across MULTIPLE domestic leagues within
+// one player's `base` competition group — needed for the "league decay"
+// case: a player who transferred cross-league mid-season (e.g. Eliteserien
+// -> Bundesliga) has competitionSplits() merge both leagues' minutes into
+// one `base` line tagged with a SINGLE league_id (whichever is "primary" —
+// usually the current/most-recent club), which previously meant 2700
+// Eliteserien minutes got scored at Bundesliga strength (0.98) instead of
+// Eliteserien's own (untabulated -> DEFAULT_LEAGUE 0.70). See S. Tangvik,
+// 2026-07-20: 2700 min Eliteserien + 90 min Bundesliga, base.league_id
+// resolved to Bundesliga alone before this fix.
+export function leagueStrengthById(id) {
+  const n = num(id);
+  if (n && LEAGUE_ID_STRENGTH[n] != null) return LEAGUE_ID_STRENGTH[n];
+  return DEFAULT_LEAGUE;
+}
 function leagueStrength(line) {
   const id = num(line.league_id ?? line.leagueId);
   if (id && LEAGUE_ID_STRENGTH[id] != null) return LEAGUE_ID_STRENGTH[id];
@@ -772,7 +789,17 @@ function advancedFields(player) {
 function buildBaseLine(player, s) {
   const b=s.base||{}, f=s.friendly||{};
   const fMin=num(f.minutes), fApps=num(f.appearances), fStarts=num(f.starts);
+  // v8.8.1 — "league decay" fix: if enrichPlayerStats.mjs computed a
+  // minutes-weighted blended strength across the base group (a player whose
+  // base minutes span more than one distinct domestic league_id this season,
+  // e.g. a cross-league transfer), use that instead of leagueStrength()'s
+  // single-league_id lookup, which would otherwise score 100% of a season's
+  // base minutes at whichever league the PRIMARY (usually current-club)
+  // entry belongs to. Absent for the normal single-league case, so this is a
+  // no-op for the vast majority of rows. See leagueStrengthById() above.
+  const blendedStrength = Number.isFinite(Number(b.strength)) ? Number(b.strength) : undefined;
   return { ...carryMeta(player), ...advancedFields(player),
+    _strengthOverride: blendedStrength,
     league_id:num(b.league_id)||num(player.league_id), league:player.league, league_name:player.league_name,
     api_average_rating:num(b.api_average_rating)||num(player.api_average_rating),
     minutes:num(b.minutes), stats_minutes:num(b.stats_minutes)||num(b.minutes),

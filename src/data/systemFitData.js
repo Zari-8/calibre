@@ -1,4 +1,4 @@
-import { playerTraits } from '../services/playerTraits.js';
+import { playerTraits, POSITION_BASELINES } from '../services/playerTraits.js';
 
 export const SYSTEM_TEAMS = [
   // ── Premier League ──
@@ -132,6 +132,76 @@ function average(values) {
 const FIT_DIMS = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
 const FIT_WEIGHTS = { control: 1.4, transition: 1.3, pressing: 1.3, width: 0.9, tempo: 0.8, defensiveLoad: 1.1 };
 
+// ── FIT v3 — directional supply axes + adaptation-risk haircut ─────────
+// See docs/system-fit-v3-proposal.md. Three ideas, layered on top of the
+// v2 weighted-distance base:
+//
+// (a) Directional supply axes. control/tempo are TEAM-PROVIDED quantities —
+//     a team's aggregate control is a collective property (the whole side
+//     circulating the ball), not something one player personally registers.
+//     A team AT OR ABOVE the player here is a benefit (it feeds him more of
+//     that resource than his individual numbers show) and must never be
+//     penalized the way a genuine mismatch is. Only a shortfall — the player
+//     wanting MORE than the team supplies (a controller stranded at a direct
+//     side) — counts, via a one-sided hinge on the gap. This is the fix for
+//     the original bug: Barcelona's control:94 no longer manufactures a
+//     penalty against a Barcelona player whose individual control reads 88.
+// (b) Native anchor. A player at his current club is a proven fit by
+//     evidence, not projection — floored high (93) rather than scored purely
+//     on trait alignment, which used to treat a homegrown player like a
+//     cold transfer.
+// (c) Adaptation-risk haircut. For every OTHER club, subtract a capped
+//     penalty proportional to how far that destination's style (transition/
+//     pressing/width/defensiveLoad — the axes that must genuinely match)
+//     departs from the player's ORIGIN club's style. This is the
+//     environmental-jump risk: a stylistically-plausible but radically
+//     different dressing room/system still gets marked down for the real
+//     adjustment risk, even when the raw trait alignment looks fine.
+//
+// v4 update — resolved by real-data backtest (Haaland's and Griezmann's
+// actual per-90 stats at their actual current clubs, both undisputed elite
+// fits): "collective vs individual" isn't a fixed property of an axis, it's
+// a property of axis-times-ROLE. A lone striker's pressing, width, and
+// defensive workload really are supplied by the rest of a well-built team —
+// his job is to finish what they create, not to personally generate those
+// three things — and treating them as symmetric was scoring Haaland's real
+// stats a 32 ("Poor fit") at Man City. A winger's pressing is NOT the same:
+// his job in most systems genuinely includes the press trigger on the
+// touchline, so it stays a symmetric, must-genuinely-match axis for the
+// WIDE bucket (this is the honest reading of Yamal's real friction at a
+// high-press club — that one's a genuine tactical cost, not a category
+// error). So the ATT bucket gets the wider hinge; other buckets keep the
+// original control/tempo-only default until similarly backtested.
+const SUPPLY_AXES = new Set(['control', 'tempo']);
+const SUPPLY_AXES_ATT = new Set([...SUPPLY_AXES, 'pressing', 'width', 'defensiveLoad']);
+const STYLE_AXES = ['transition', 'pressing', 'width', 'defensiveLoad'];
+const STYLE_AXES_ATT = ['transition']; // the only axis a lone striker must personally match environment-to-environment
+const ADAPT_SLOPE = 0.5;   // haircut points per point of average style departure from origin
+const ADAPT_CAP = 12;      // max points the adaptation-risk term can remove
+
+// Native floor is now evidence-conditioned (v4), not a blanket override —
+// backtest evidence (Coutinho/Griezmann/Isco, all real, all documented poor
+// fits while nominally "at" the club) showed a hard floor is wrong exactly
+// when it matters: it can't distinguish "still fits" from "system has moved
+// past him." Full proven-fit credit (93) requires the RAW trait-alignment
+// score to first clear a sanity threshold; below that, a smaller, capped
+// bonus credits roster stability without asserting "Elite," and the raw
+// number is surfaced in the report (see fitDetail's `rawAlignment`) rather
+// than hidden — a native player whose alignment has quietly collapsed is
+// exactly the signal worth showing, not suppressing.
+const NATIVE_FLOOR = 93;
+const NATIVE_FLOOR_THRESHOLD = 58;   // raw alignment must clear this for full native credit
+const NATIVE_PARTIAL_BONUS = 14;     // roster-stability credit when alignment is below threshold
+const NATIVE_PARTIAL_CAP = 80;       // capped below "Elite"/"Strong" territory — signals drift, doesn't hide it
+
+// Specialist-profile detection (v4) — a player whose traits deviate sharply
+// from his position's typical baseline (a pure poacher, a pure destroyer)
+// is exactly the case where a resemblance-style score is least trustworthy;
+// worth flagging explicitly rather than presenting with false confidence.
+// Threshold picked from Haaland's real computed traits vs the ATT baseline
+// (RMS deviation ~15.7) — a first-pass cut, not a rigorously tuned value.
+const SPECIALIST_RMS_THRESHOLD = 14;
+
 // Does this team carry a real tactical profile (curated or derived),
 // as opposed to a generic API placeholder with no traits?
 function teamHasProfile(team) {
@@ -139,18 +209,74 @@ function teamHasProfile(team) {
 }
 
 // Raw weighted-distance score from two trait sets. Assumes both are real.
-function rawFit(traits, teamTraits) {
+// Supply axes use a one-sided hinge — only a shortfall (player wants more
+// than the team/template supplies) counts; a team that gives MORE than the
+// player individually shows is a benefit, never a penalty. Style axes stay
+// full symmetric distance. `bucket` widens the supply set for the ATT
+// bucket (see SUPPLY_AXES_ATT above); omitted/other buckets keep the
+// original control/tempo-only default, so role/formation-template scoring
+// (which doesn't pass a bucket) is unchanged.
+function rawFit(traits, teamTraits, bucket) {
+  const supply = bucket === 'ATT' ? SUPPLY_AXES_ATT : SUPPLY_AXES;
   let acc = 0, wsum = 0;
   for (const k of FIT_DIMS) {
     const p = traits[k] ?? 70;
     const t = teamTraits[k] ?? 70;
-    const d = Math.abs(p - t);
+    const d = supply.has(k) ? Math.max(0, p - t) : Math.abs(p - t);
     acc += FIT_WEIGHTS[k] * (d * d);
     wsum += FIT_WEIGHTS[k];
   }
   const rmsd = Math.sqrt(acc / wsum);            // ~0..50 in "points"
   const score = Math.round(99 - rmsd * 2.0 - (rmsd * rmsd) / 40);
   return Math.max(32, Math.min(99, score));
+}
+
+// Shared club-name normalizer for exact-match club identity checks
+// (isCurrentClub, originTeamFor). Strips accents BEFORE the a-z filter —
+// found via the backtest against real registry data: the old version here
+// filtered straight to [a-z] with no accent-folding step, so "Atlético
+// Madrid" (SYSTEM_TEAMS' hand-authored name, é) normalized to "atlticomadrid"
+// while the real DB value "Atletico Madrid" (no accent, as commonly stored)
+// normalized to "atleticomadrid" — one character apart, never equal. That
+// silently broke isCurrentClub() AND originTeamFor() for Atlético specifically
+// (and any other accented club name stored unaccented in the registry): the
+// native floor never engaged and the adaptation-risk origin lookup always
+// came back null, for a real player at his real, current club. Confirmed
+// with Griezmann's actual per-90 stats at his actual current club (Atlético)
+// scoring as an unfloored raw fit instead of a recognized native one.
+function normClubName(s) {
+  return String(s || '')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')   // fold accents (e-acute -> e, etc.)
+    .toLowerCase()
+    .replace(/\b(fc|cf|sc|ac|afc|cp|club|de|the)\b/g, '')
+    .replace(/[^a-z]/g, '');
+}
+
+// Find the player's current club in the team universe, so we can measure
+// how far a destination departs from where he actually plays now. Exact
+// normalized-name match only (same rule as isCurrentClub below, for the
+// same prefix-collision reasons — "Inter" must not match "Inter Miami").
+function originTeamFor(player) {
+  if (!player?.team) return null;
+  const p = normClubName(player.team);
+  if (!p) return null;
+  return TEAM_UNIVERSE.find(t => [t?.name, t?.short].map(normClubName).filter(Boolean).some(n => n === p)) || null;
+}
+
+// Average absolute departure between two teams' STYLE axes, converted to a
+// capped haircut. Returns 0 (no penalty) when the origin club is unknown —
+// we skip the adaptation-risk term rather than guessing at it. `bucket`
+// narrows the style-axes set to just `transition` for ATT, consistent with
+// rawFit's hinge above — a lone striker doesn't personally have to close an
+// environment's pressing/width/defensiveLoad gap, so a destination
+// departing from his origin on those axes isn't HIS adaptation risk.
+function adaptationRisk(originTraits, destTraits, bucket) {
+  if (!originTraits || !destTraits) return 0;
+  const axes = bucket === 'ATT' ? STYLE_AXES_ATT : STYLE_AXES;
+  let acc = 0;
+  for (const k of axes) acc += Math.abs((originTraits[k] ?? 70) - (destTraits[k] ?? 70));
+  const avgDeparture = acc / axes.length;
+  return Math.min(ADAPT_CAP, avgDeparture * ADAPT_SLOPE);
 }
 
 // Backwards-compatible signature: returns a number. Used by existing call
@@ -188,15 +314,53 @@ export function fitDetail(player, team, hasStats) {
   }
 
   const tt = team.traits;
-  const score = rawFit(pt, tt);
-  // Per-axis gap detail, for the read.
+  const bucket = playerBucket(player);
+  const rawAlignment = rawFit(pt, tt, bucket);
+  let score = rawAlignment;
+
+  // v3/v4: native club is a proven fit, evidence-conditioned; every other
+  // club takes an adaptation-risk haircut proportional to how far it
+  // departs in STYLE from where the player actually plays now. Applied here
+  // (not just in buildSystemFitReport) so the System Fit page and the
+  // Transfers page — both of which route through this function — see the
+  // identical number for the same player x club, per this module's
+  // one-formula guarantee.
+  const nativeClub = isCurrentClub(player, team);
+  if (nativeClub) {
+    // Full proven-fit credit only when the raw alignment itself still
+    // clears a sanity bar. Below that, a smaller capped bonus for roster
+    // stability — NOT a blanket 93 — so a genuinely declining native fit
+    // (Isco/Coutinho pattern) shows up as declining rather than being
+    // hidden behind a confident "Elite fit."
+    score = rawAlignment >= NATIVE_FLOOR_THRESHOLD
+      ? Math.max(rawAlignment, NATIVE_FLOOR)
+      : Math.min(NATIVE_PARTIAL_CAP, rawAlignment + NATIVE_PARTIAL_BONUS);
+  } else {
+    const origin = originTeamFor(player);
+    const haircut = adaptationRisk(origin?.traits, tt, bucket);
+    score = Math.max(32, Math.round(score - haircut));
+  }
+
+  // Specialist-profile check: how far this player's real traits deviate
+  // from what's typical for his position. A big deviation (a pure poacher,
+  // a pure destroyer) is exactly the case where a resemblance-style score
+  // is least trustworthy — worth flagging explicitly rather than presenting
+  // with false confidence (see buildSystemFitReport's caveat copy).
+  const baseline = POSITION_BASELINES[bucket] || POSITION_BASELINES.MID;
+  let devAcc = 0;
+  for (const k of FIT_DIMS) devAcc += Math.pow((pt[k] ?? 70) - (baseline[k] ?? 70), 2);
+  const specialistProfile = Math.sqrt(devAcc / FIT_DIMS.length) >= SPECIALIST_RMS_THRESHOLD;
+
+  // Per-axis gap detail, for the read. Reflects the raw trait gap (not the
+  // hinge/haircut-adjusted score) so the breakdown still shows the honest
+  // per-axis distance driving the read.
   const gaps = FIT_DIMS.map(k => ({
     axis: k,
     player: pt[k] ?? 70,
     team: tt[k] ?? 70,
     gap: (pt[k] ?? 70) - (tt[k] ?? 70),
   }));
-  return { score, confidence: 'high', note: null, gaps };
+  return { score, confidence: 'high', note: null, gaps, nativeClub, bucket, rawAlignment, specialistProfile };
 }
 
 function compatibility(player, team) {
@@ -208,16 +372,41 @@ function compatibility(player, team) {
 // Transfers system-fit readout consumes.
 export function computeSystemFit(player, team) {
   if (!player || !team) return null;
-  const { traits } = playerTraits(player);
+  // Prefer traits already attached to the player (what buildSystemFitReport
+  // reads via fitDetail's `pt = player?.traits || {}`) and only derive fresh
+  // ones when they're missing. This call site used to unconditionally
+  // re-run playerTraits(player) even when player.traits was already set —
+  // harmless for real DB/API players (playerTraits is deterministic over the
+  // same underlying stat fields, so it reproduced the same numbers), but for
+  // the hand-authored SYSTEM_PLAYERS seed/demo records (which carry a
+  // curated `traits` object but none of the raw per-90 fields playerTraits
+  // needs), it silently threw away the curated vector and fell back to a
+  // generic position-baseline guess — so the same seed player scored
+  // differently here than on the System Fit page, contradicting this
+  // module's "same formula on both pages" guarantee below.
+  const hasRealTraits = player.traits && Object.keys(player.traits).length >= 4;
+  const traits = hasRealTraits ? player.traits : playerTraits(player).traits;
   const tt = team.traits || {};
+  // v3: route through fitDetail (not the bare systemFitScore fallback) so
+  // the Transfers page picks up the native floor + adaptation-risk haircut
+  // too — previously this call site skipped both, so the same player x club
+  // could score differently here than on the System Fit page, contradicting
+  // this module's "same formula on both pages" guarantee above.
+  const detail = fitDetail({ ...player, traits }, team, player?._hasStats !== false);
   return {
-    score: systemFitScore(traits, team),
+    score: detail.score ?? systemFitScore(traits, team),
     traits,
     teamTraits: tt,
     pressing: Math.round(((traits.pressing ?? 70) + (tt.pressing ?? 70)) / 2),
     transition: Math.round(((traits.transition ?? 70) + (tt.transition ?? 70)) / 2),
     boxThreat: Math.round(((traits.width ?? 70) + (tt.tempo ?? 70)) / 2),
   };
+}
+
+// Human-readable label for a positional bucket, used in specialist-profile copy.
+const BUCKET_LABEL = { GK: 'goalkeeper', DEF: 'centre-back', FB: 'full-back', DM: 'defensive midfielder', MID: 'midfielder', WIDE: 'winger', ATT: 'striker' };
+function bucketLabel(bucket) {
+  return BUCKET_LABEL[bucket] || 'player';
 }
 
 function verdictFor(score) {
@@ -279,8 +468,7 @@ function readFromGaps(player, team, gaps) {
 // scores on trait alignment alone, which treats a homegrown player like an
 // incoming transfer. isCurrentClub lets us floor the score to a native fit.
 function isCurrentClub(player, team) {
-  const norm = s => String(s || '').toLowerCase().replace(/\b(fc|cf|sc|ac|afc|cp|club|de|the)\b/g, '').replace(/[^a-z]/g, '');
-  const p = norm(player?.team);
+  const p = normClubName(player?.team);
   if (!p) return false;
   // Exact match only. The old n.includes(p)/p.includes(n) fallback (meant to
   // catch abbreviations like "Man Utd" vs "Manchester United") never actually
@@ -292,16 +480,22 @@ function isCurrentClub(player, team) {
   // he's never played for that club. Same risk for Real Madrid/Real Sociedad,
   // Racing Club/Racing Santander, Sporting CP/Sporting Gijón, etc. Exact
   // normalized equality is the only safe test here.
-  return [team?.name, team?.short].map(norm).filter(Boolean).some(n => n === p);
+  return [team?.name, team?.short].map(normClubName).filter(Boolean).some(n => n === p);
 }
 
 export function buildSystemFitReport(player, team) {
   const detail = fitDetail(player, team, player?._hasStats !== false);
-  let score = detail.score;
-  const nativeClub = isCurrentClub(player, team);
+  const score = detail.score;
+  // v3: native floor + adaptation-risk haircut are both applied inside
+  // fitDetail() now (see there), so `score` above is already final —
+  // nothing further to layer on here.
+  const nativeClub = detail.nativeClub ?? isCurrentClub(player, team);
 
   // When we can't honestly score (thin player or unprofiled club), return a
-  // report that says so rather than inventing an elite verdict.
+  // report that says so rather than inventing an elite verdict. Role fit
+  // doesn't need the destination team's profile at all — it's the player's
+  // real traits against positional templates — so it's still worth showing
+  // here even when team-aggregate fit can't be computed.
   if (score == null) {
     return {
       generatedAt: new Date().toISOString(),
@@ -309,6 +503,10 @@ export function buildSystemFitReport(player, team) {
       score: null,
       verdict: 'Insufficient data',
       note: detail.note,
+      rawAlignment: null,
+      specialistProfile: null,
+      specialistNote: null,
+      roleFit: player ? scoreRoleFit(player) : [],
       breakdown: [],
       rolePulse: player?.roleMetrics ? Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })) : [],
       alternativeFits: TEAM_UNIVERSE
@@ -324,9 +522,6 @@ export function buildSystemFitReport(player, team) {
       conclusion: detail.note,
     };
   }
-
-  // A homegrown / current-club player is a proven fit — floor to a native level.
-  if (nativeClub) score = Math.min(97, Math.max(score, 89));
 
   const gaps = detail.gaps;
   // Breakdown now reflects the REAL dimensional alignment, not score+4.
@@ -366,28 +561,57 @@ export function buildSystemFitReport(player, team) {
 
   const alternativeFits = TEAM_UNIVERSE
     .map(candidate => {
+      // v3: fitDetail() already applies the native floor / adaptation-risk
+      // haircut per candidate, so no floor recompute needed here.
       const d = fitDetail(player, candidate, player?._hasStats !== false);
-      let s = d.score;
-      if (s != null && isCurrentClub(player, candidate)) s = Math.min(97, Math.max(s, 89));
-      return { ...candidate, score: s, verdict: s == null ? '—' : verdictFor(s) };
+      return { ...candidate, score: d.score, verdict: d.score == null ? '—' : verdictFor(d.score) };
     })
     .filter(c => c.score != null)
     .sort((a, b) => b.score - a.score);
 
   const { strengths, risks } = readFromGaps(player, team, gaps);
 
+  // Native conclusion now branches on the RAW alignment, not just the
+  // native flag — a player whose alignment has genuinely drifted below the
+  // floor threshold gets told so, instead of the same confident "embedded,
+  // proven fit" line regardless of how far the underlying numbers have
+  // moved (the Isco/Coutinho/Araújo pattern: on the books is not the same
+  // evidence as still fitting).
   const conclusion = nativeClub
-    ? `${player.name} is already embedded in ${team.short}'s system — this reads as a native, proven fit rather than a projection, which is why the profile grades so highly here.`
+    ? (detail.rawAlignment < NATIVE_FLOOR_THRESHOLD
+        ? `${player.name} is officially part of ${team.short}'s squad, but his underlying trait alignment with the CURRENT system has drifted to ${detail.rawAlignment}/100 — worth reading as a possible role or system mismatch rather than a settled, proven fit.`
+        : `${player.name} is already embedded in ${team.short}'s system — this reads as a native, proven fit rather than a projection, which is why the profile grades so highly here.`)
     : score >= 76
     ? `${player.name} improves ${team.short} because the profile changes the attack without breaking the structure — the decisive actions get the right platform.`
     : score >= 64
     ? `${player.name} can work at ${team.short}, but the system would have to bend around his best actions. The talent is clear; the role design is the real question.`
     : `${player.name} is a poor structural fit for ${team.short} as currently set up — the tactical demands pull against his strengths rather than with them.`;
 
+  // Specialist-profile caveat: an outlier trait vector (a pure poacher, a
+  // pure destroyer) is exactly the case where trait-overlap-with-the-team
+  // is the least trustworthy signal — the honest read depends more on
+  // whether a coach builds a specific role around him. Surfaced as its own
+  // field so the UI can show it as a caveat rather than burying it in prose.
+  const specialistNote = detail.specialistProfile
+    ? `${player.name}'s profile is a real outlier for a ${bucketLabel(detail.bucket)} — this score is closer to a role-design question than a like-for-like trait comparison. See "Role fit" below for what specific job actually suits him.`
+    : null;
+
+  // Role-template fit: the same weighted comparison, run against this
+  // player's positional role templates instead of a specific team's
+  // aggregate. Surfaced as its own facet (not folded into the headline
+  // score) because a low team-aggregate match doesn't mean a bad fit if a
+  // coach is willing to build a specific role around him — the Haaland/Pep
+  // point, made concrete instead of left as prose.
+  const roleFit = scoreRoleFit(player);
+
   return {
     generatedAt: new Date().toISOString(),
     player, team, score,
     verdict: verdictFor(score),
+    rawAlignment: detail.rawAlignment,
+    specialistProfile: detail.specialistProfile,
+    specialistNote,
+    roleFit,
     breakdown,
     rolePulse: Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })),
     alternativeFits,

@@ -87,7 +87,10 @@ function positionBucket(player) {
   return textBucket;
 }
 
-// Position baselines for the aggregate fallback (no event data).
+// Position baselines for the aggregate fallback (no event data). Exported as
+// POSITION_BASELINES too — System Fit's specialist-profile check (how far a
+// player's real traits deviate from what's typical for his position) reuses
+// this same reference rather than keeping a second, driftable copy.
 const BASE = {
   GK:   { control: 68, transition: 38, pressing: 38, width: 28, tempo: 48, defensiveLoad: 86 },
   DEF:  { control: 76, transition: 60, pressing: 72, width: 46, tempo: 64, defensiveLoad: 92 },
@@ -310,4 +313,5 @@ export function deriveArchetype(player = {}) {
   return best && bestScore > 3 ? best : config.default;
 }
 
+export { BASE as POSITION_BASELINES };
 export default playerTraits;

@@ -9,7 +9,7 @@ import { getPlayerProfile, searchPlayerProfiles as searchApiPlayers, searchTeams
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
 import { getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
-import { loadDerivedTeams, enrichFromDerived, allDerivedTeams, searchDerivedTeams } from '../services/derivedTeams.js';
+import { enrichFromDerived, searchDerivedTeams, warmTeamUniverse } from '../services/derivedTeams.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
 import { playerIdFor } from '../data/playerIds.js';
@@ -18,7 +18,6 @@ import { playerTraits, deriveArchetype } from '../services/playerTraits.js';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams, TRANSFER_STORYLINES, pickTransferStoryline, buildTransferSpotlight,
-  registerTeamUniverse,
 } from '../data/systemFitData.js';
 import {
   exportComparisonCsv, exportComparisonPdf, exportFitCsv, exportFitPdf,
@@ -1137,31 +1136,12 @@ export default function SystemFit() {
   const [mode, setMode] = useState('fit');
 
   useEffect(() => {
-    // Warm the derived-team cache, then register the MERGED team universe so
+    // Warm the derived-team cache and register the MERGED team universe so
     // System Fit's picker and alternative-fit ranking see every measured club
-    // in the DB — not just the hand-authored 54. Merge rule: measured traits
-    // win (that's the whole point of the DNA pipeline), but marquee clubs keep
-    // their hand-authored brand colours + philosophy prose, which the derived
-    // rows don't carry. Fire-and-forget; on failure the universe stays as
-    // SYSTEM_TEAMS so nothing regresses.
-    loadDerivedTeams().then(() => {
-      const byId = new Map(allDerivedTeams().map(t => [Number(t.id), { ...t }]));
-      for (const s of SYSTEM_TEAMS) {
-        const measured = byId.get(Number(s.id));
-        if (measured) {
-          byId.set(Number(s.id), {
-            ...measured,                       // measured traits + categoricals
-            accent: s.accent,                  // hand-authored brand colours
-            secondary: s.secondary,
-            philosophy: s.philosophy || measured.philosophy,
-            short: s.short || measured.short,
-          });
-        } else {
-          byId.set(Number(s.id), s);           // hand-authored-only club (no measured row yet)
-        }
-      }
-      registerTeamUniverse([...byId.values()]);
-    }).catch(() => {});
+    // in the DB — not just the hand-authored 54. Shared with the Transfers
+    // page (see warmTeamUniverse in derivedTeams.js) so both pages warm the
+    // same universe the same way and can't drift out of sync again.
+    warmTeamUniverse().catch(() => {});
   }, []);
 
   useEffect(() => {

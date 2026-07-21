@@ -10,7 +10,8 @@ import { resolveTier, can } from '../services/access.js';
 import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { SYSTEM_TEAMS, computeSystemFit, scoreRoleFit, scoreFormationFit } from '../data/systemFitData.js';
+import { computeSystemFit, scoreRoleFit, scoreFormationFit, searchLocalTeams, getTeamUniverse } from '../data/systemFitData.js';
+import { warmTeamUniverse } from '../services/derivedTeams.js';
 import { calibreValue, valuationVerdict } from '../services/calibreValue.js';
 import { fitAdjustedValue, fitVerdict } from '../services/calibreFitValue.js';
 
@@ -35,15 +36,15 @@ function namesMatch(queryName, row) {
 }
 
 // ── Team search ──────────────────────────────────────────────────────────────
+// v3 fix: this used to filter the raw hand-authored SYSTEM_TEAMS (54 clubs)
+// directly and never called the derived-team warm-up at all, so this page's
+// buying-club picker was structurally incapable of surfacing any club with a
+// real measured profile — regardless of how much data existed in
+// derived_team_profiles. searchLocalTeams() reads the same MERGED universe
+// the System Fit page uses (warmed below), so every club we have data on is
+// reachable here too, not just the curated 54.
 function searchTeams(query) {
-  const q = String(query || '').trim().toLowerCase();
-  if (!q) return SYSTEM_TEAMS.slice(0, 8);
-  return SYSTEM_TEAMS.filter(t =>
-    t.name.toLowerCase().includes(q) ||
-    t.short.toLowerCase().includes(q) ||
-    t.country.toLowerCase().includes(q) ||
-    t.league.toLowerCase().includes(q)
-  ).slice(0, 8);
+  return searchLocalTeams(query).slice(0, 8);
 }
 
 // ── System Fit calculator — runs player traits against team traits ────────────
@@ -511,7 +512,7 @@ function PlayerSearch({ value, onChange, onSelect, onEnter }) {
   );
 }
 
-// ── Team search — local SYSTEM_TEAMS dataset, real tactical profiles ──────────
+// ── Team search — merged universe (measured DB clubs + hand-authored 54) ──────
 function TeamSearch({ value, onChange, onSelect }) {
   const [results, setResults] = useState([]);
   const [open, setOpen] = useState(false);
@@ -576,6 +577,14 @@ export default function Transfers() {
   const canDossier = can(tier, 'valuation.dossier');
   const canBreakdown = can(tier, 'valuation.breakdown');
   const canComparables = can(tier, 'valuation.comparables');
+
+  useEffect(() => {
+    // Warm the derived-team cache so searchTeams() / the destination
+    // auto-select above see every measured club, not just the hand-authored
+    // 54 — same warm-up the System Fit page runs, shared via derivedTeams.js
+    // so the two pages can't drift out of sync on this again.
+    warmTeamUniverse().catch(() => {});
+  }, []);
 
   useEffect(() => {
     // Load all live data in parallel
@@ -734,9 +743,10 @@ export default function Transfers() {
   async function handleAnalyseRecent(transfer) {
     setPlayerQuery(transfer.name);
     if (transfer.fee) setAskingPrice(transfer.fee);
-    // Try to auto-select destination team from SYSTEM_TEAMS by name match
+    // Try to auto-select destination team from the merged universe (not just
+    // the hand-authored 54 — same v3 fix as searchTeams above).
     if (transfer.to && transfer.to !== '—') {
-      const teamMatch = SYSTEM_TEAMS.find(t =>
+      const teamMatch = getTeamUniverse().find(t =>
         t.name.toLowerCase().includes(transfer.to.toLowerCase()) ||
         t.short.toLowerCase().includes(transfer.to.toLowerCase()) ||
         transfer.to.toLowerCase().includes(t.short.toLowerCase())

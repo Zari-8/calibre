@@ -1,10 +1,16 @@
 // ============================================================
 // derivedTeams.js  —  read layer for derived_team_profiles
 // ------------------------------------------------------------
-// The System Fit page resolves a club in this order:
-//   1. SYSTEM_TEAMS (hand-authored 54)  — always wins
-//   2. derived_team_profiles (this file) — real traits from API-Football
-//   3. generic API normalize             — last-resort "pending" placeholder
+// A club resolves in this order once warmTeamUniverse() has run:
+//   1. derived_team_profiles (this file) — measured traits win; this is the
+//      whole point of the DNA pipeline, and covers every club we've
+//      actually enriched, not just the hand-authored 54.
+//   2. SYSTEM_TEAMS (hand-authored 54) — kept ONLY for brand colours and
+//      philosophy prose on marquee clubs (measured rows don't carry those),
+//      and as the profile for a curated club we haven't measured yet.
+//   3. generic API normalize — last-resort "pending" placeholder.
+// (This used to say "SYSTEM_TEAMS always wins" — that was the pre-Phase-1
+// behavior; warmTeamUniverse's merge below is what actually runs today.)
 //
 // This module fetches the derived rows once, caches them in memory,
 // and exposes a by-team-id lookup that returns a profile shaped
@@ -13,6 +19,7 @@
 // ============================================================
 
 import { supabase } from './supabaseClient.js';
+import { SYSTEM_TEAMS, registerTeamUniverse } from '../data/systemFitData.js';
 
 let _cache = null;       // Map<team_id, profile>
 let _loading = null;     // in-flight promise (dedupe concurrent calls)
@@ -103,4 +110,42 @@ export function enrichFromDerived(apiTeam) {
     ...hit,
     crestUrl: apiTeam.crestUrl || hit.crestUrl || null,
   };
+}
+
+// Warm the derived-team cache and register the MERGED team universe with the
+// canonical fit engine (systemFitData.js's registerTeamUniverse), so EVERY
+// page that runs System Fit — not just the System Fit page — searches and
+// ranks against every measured club in the DB, not just the hand-authored 54.
+//
+// This used to be duplicated inline inside SystemFit.jsx's mount effect only
+// — which meant the Transfers page's own team search/auto-select never
+// called it, never saw a derived club, and was structurally stuck at 54
+// clubs regardless of how much real data existed. Centralizing it here so
+// every consuming page calls the same warm-up and can't drift out of sync
+// again.
+//
+// Merge rule: measured traits win (that's the whole point of the DNA
+// pipeline); marquee clubs keep their hand-authored brand colours +
+// philosophy prose, which derived rows don't carry. Fire-and-forget-safe —
+// on failure the universe stays as SYSTEM_TEAMS so nothing regresses. Safe
+// to call from multiple pages/effects; cheap after the first call since
+// loadDerivedTeams() caches.
+export async function warmTeamUniverse() {
+  await loadDerivedTeams().catch(() => {});
+  const byId = new Map(allDerivedTeams().map(t => [Number(t.id), { ...t }]));
+  for (const s of SYSTEM_TEAMS) {
+    const measured = byId.get(Number(s.id));
+    if (measured) {
+      byId.set(Number(s.id), {
+        ...measured,               // measured traits + categoricals
+        accent: s.accent,          // hand-authored brand colours
+        secondary: s.secondary,
+        philosophy: s.philosophy || measured.philosophy,
+        short: s.short || measured.short,
+      });
+    } else {
+      byId.set(Number(s.id), s);   // hand-authored-only club (no measured row yet)
+    }
+  }
+  registerTeamUniverse([...byId.values()]);
 }

@@ -57,11 +57,31 @@ async function run() {
 
   const staleOlder = total - touchedToday - neverTouched;
 
+  console.log(`── Full API-Football directory (not the sweep's actual target) ──`);
   console.log(`Target rows (real api_player_id):     ${total}`);
-  console.log(`Touched since cutoff (this sweep):     ${touchedToday}  (${((touchedToday/total)*100).toFixed(1)}%)`);
+  console.log(`Touched since cutoff:                  ${touchedToday}  (${((touchedToday/total)*100).toFixed(1)}%)`);
   console.log(`Never enriched (stats_updated_at NULL): ${neverTouched}`);
   console.log(`Touched before cutoff (older sweep):    ${staleOlder}`);
-  console.log(`\nRemaining for this sweep to reach:      ${total - touchedToday}`);
+
+  // v2 — the scoped sweep (scores_player_uuids.txt, ~15,177 rows: real
+  // minutes/appearances/api_average_rating evidence) is what
+  // run_enrichment_loop.sh actually targets, NOT the full 401k directory
+  // above. The original version of this script only reported against that
+  // 401k number, which made 1,738 real rows processed look like 0.4%
+  // progress instead of the ~11% it actually was — misleading, since the
+  // sweep was never going to (and shouldn't) touch the other ~386k rows.
+  const scoped = await count(sb.from('players').select('id', { count: 'exact', head: true })
+    .not('api_player_id', 'is', null).gt('api_player_id', 0)
+    .or('minutes.gt.0,appearances.gt.0,api_average_rating.gt.0'));
+  const scopedTouched = await count(sb.from('players').select('id', { count: 'exact', head: true })
+    .not('api_player_id', 'is', null).gt('api_player_id', 0)
+    .or('minutes.gt.0,appearances.gt.0,api_average_rating.gt.0')
+    .gte('stats_updated_at', SINCE));
+
+  console.log(`\n── Scoped sweep target (real scored population — what run_enrichment_loop.sh actually targets) ──`);
+  console.log(`Target rows (scored population):       ${scoped}`);
+  console.log(`Touched since cutoff (this sweep):      ${scopedTouched}  (${((scopedTouched/scoped)*100).toFixed(1)}%)`);
+  console.log(`Remaining for this sweep to reach:      ${scoped - scopedTouched}`);
 }
 
 run().catch(e => { console.error('\nFatal:', e?.message ?? e); process.exit(1); });

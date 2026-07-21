@@ -46,7 +46,21 @@ const BASE_ANCHORS = [
   [85, 90],
   [90, 150],
   [94, 200],
+  [96, 220],
 ];
+// v1.3 tuning — top-end ceiling. RATING_CEIL (96) clamps the INPUT, but
+// before this anchor the curve kept extrapolating log-linearly PAST the old
+// final point [94,200] using the [90,150]->[94,200] segment's slope — so a
+// rating=96 striker (Haaland/Mbappé territory) hit ~€231m base BEFORE the
+// position multiplier even applied, and ST's 1.30x pushed the full estimate
+// to ~€290m for a peak-age big-club forward. Real anchor check against
+// Transfermarkt's own top of market (2026-07): Yamal and Haaland both sit at
+// exactly €200m despite very different profiles — the real market has a soft
+// psychological ceiling near €200-220m even for the most singular talents,
+// it doesn't keep climbing linearly. [96,220] makes 96 a real anchor instead
+// of an extrapolation, so the curve compresses (not stops) as it approaches
+// the clamp instead of blowing through every real comp at the top of the
+// distribution.
 // v1.2 tuning: softened low end (€6m@70, €12m@74) climbing to the UNTOUCHED
 // €25m@78. Below 70 the curve keeps declining — academy / low-league players are
 // genuinely cheap, so it is NOT clamped. A TIERED final floor stops absurd output:
@@ -78,8 +92,16 @@ function curveBaseValue(ratingRaw) {
 
 // ── 2) POSITION MULTIPLIER ───────────────────────────────────────────────────
 // Reference = neutral central midfielder (1.00). Forwards up, keepers down.
+// v1.3 — DM raised 0.80->0.92. The old 0.80 said an elite destroyer/deep
+// playmaker is structurally worth 20% less than an identical-caliber CM,
+// which the real 2026 market flatly contradicts: Vitinha's real €140m only
+// falls out of this engine if his ability reads ~93-94 (Mbappé/Kane tier) —
+// a CM reaches the same €140m off ~88. Elite DMs are scarce and command CM
+// (sometimes above-CM) prices today (Vitinha, Rodri-shaped profiles); 0.92
+// keeps a mild discount (DMs still touch the ball/goal less directly than a
+// CM box-to-box) without structurally mispricing the position's real scarcity.
 const POSITION_MULT = {
-  ST: 1.30, W: 1.10, AM: 1.10, CM: 1.00, FB: 0.85, CB: 0.85, DM: 0.80, GK: 0.55,
+  ST: 1.30, W: 1.10, AM: 1.10, CM: 1.00, FB: 0.85, CB: 0.85, DM: 0.92, GK: 0.55,
 };
 function positionGroup(posRaw = '') {
   const t = String(posRaw).toLowerCase();
@@ -139,6 +161,29 @@ function leagueMultiplier(leagueRaw, clubRaw) {
 
 // ── 4) AGE MULTIPLIER ────────────────────────────────────────────────────────
 // Steep: heavy youth premium, peak 24–26 = 1.00, sharp decline after 30.
+//
+// OPEN ITEM (2026-07-21, not yet actioned) — ST × late-20s overshoot. Mbappé
+// is the one real anchor available offline: this engine's OWN documented
+// ability score for him is 94 (see calibreRating.js v8.8 comment). Run
+// through calibreValue at age 27, ST, Real Madrid (La Liga, supclub floor):
+// base(94)=€200m × ST(1.30) × supclub(0.90) × age27(0.925 interpolated) ≈
+// €216m against his real Transfermarkt €180m — about +20% over. The
+// base/supclub terms aren't the suspect (they land Yamal/Vinicius/
+// Bellingham/João Neves within single digits of real prices); it's ST(1.30)
+// stacking with this curve's still-generous late-20s plateau (26→1.00,
+// 28→0.85, so 27 only costs 7.5%). Two candidate levers: trim ST toward
+// ~1.20-1.24 (closer to W/AM's 1.10), and/or give ST/W a steeper decline
+// starting at 26 instead of 28 (pace-dependent positions are understood to
+// depreciate faster post-peak than CM's game-intelligence-driven value).
+// NOT shipped yet — Mbappé is a single anchor, and his real quote may itself
+// be partly a contract/transfer-politics discount this model can't see
+// (confirmed contract length/expiry isn't available from API-Football or
+// TheStatsAPI — neither exposes it; would need a Transfermarkt scrape, see
+// club-tier-spec.md). Zari's call (2026-07-21): hold until API quota resets
+// and Haaland's + Dembélé's real engine ability scores can be pulled from
+// the DB to cross-check before touching either lever — same multi-anchor
+// discipline used for the C. Romero defend-ceiling fix and the Kane/Bruno
+// tie-break above, rather than shipping off one data point.
 const AGE_ANCHORS = [
   [19, 1.40], [22, 1.25], [24, 1.00], [26, 1.00], [28, 0.85], [30, 0.65], [32, 0.45], [34, 0.38],
 ];

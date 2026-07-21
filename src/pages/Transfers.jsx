@@ -292,7 +292,22 @@ function getSpotlightFallback() {
   return SPOTLIGHT_POOL_FALLBACK[slot % SPOTLIGHT_POOL_FALLBACK.length];
 }
 
-// ── Verdict engine ─────────────────────────────────────────────────────────────
+// ── Verdict engine (legacy) ──────────────────────────────────────────────────
+// v1.3 correction: this was FIRST flagged as fully dead and slated for
+// removal, but a downstream check caught that DealReport.jsx (the Scout-tier
+// PDF export) and Dossier.jsx (the $499 commissioned dossier) both still
+// consume this object's shape directly — fairCeiling, premiumJustified,
+// dealRisk/dealRiskClass, overpayBy, ageCurve, ratingMult, scarcity — none of
+// which `dealVerdict` (calibreFitValue.js's fitVerdict, the real on-page
+// engine) produces. Only the on-page label was dead (VerdictStamp below is
+// removed — genuinely unused, no JSX referenced it anywhere). This function
+// stays until DealReport/Dossier are migrated onto calibreFitValue's output,
+// which is a separate piece of work, not a same-session rename. NOTE its
+// `marketValue` param is now always called with `valuation.estimatedValue`
+// (Calibre's own independent estimate), not real Transfermarkt data — so
+// despite reading like a Transfermarkt-anchored model, it no longer touches
+// real market quotes at the call site; it's just an older, differently-shaped
+// scoring pass over the same Calibre estimate `dealVerdict` also uses.
 function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStrength = 0.78, position = 'MID' }) {
   if (!marketValue || !askingPrice) return null;
 
@@ -360,18 +375,10 @@ function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStren
 }
 
 // ── Sub-components ─────────────────────────────────────────────────────────────
-
-function VerdictStamp({ verdict, verdictClass }) {
-  const colors = { lime: '#c8ff00', amber: '#f59e0b', red: '#ef4444' };
-  const bgColors = { lime: 'rgba(200,255,0,0.08)', amber: 'rgba(245,158,11,0.08)', red: 'rgba(239,68,68,0.08)' };
-  const borderColors = { lime: 'rgba(200,255,0,0.3)', amber: 'rgba(245,158,11,0.3)', red: 'rgba(239,68,68,0.3)' };
-  return (
-    <div style={{ border: `1px solid ${borderColors[verdictClass]}`, background: bgColors[verdictClass], borderRadius: 16, padding: '16px 20px', marginTop: 14 }}>
-      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 10, letterSpacing: '0.18em', color: colors[verdictClass], textTransform: 'uppercase', marginBottom: 4 }}>Calibre Verdict</div>
-      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 42, fontWeight: 800, color: colors[verdictClass], textTransform: 'uppercase', lineHeight: 1 }}>{verdict}</div>
-    </div>
-  );
-}
+// VerdictStamp removed here (v1.3) — confirmed genuinely dead: computed
+// nowhere, no JSX referenced <VerdictStamp>. The page displays
+// `verdictDisplay`/`verdictClass`, derived from `dealVerdict`
+// (calibreFitValue.js's fitVerdict()).
 
 function MetricBar({ label, value, max = 100, color = '#c8ff00' }) {
   return (
@@ -680,6 +687,9 @@ export default function Transfers() {
   // WALK AWAY vocabulary using the same real tone the engine already computed.
   // The full reasoning (dealVerdict.why) still reflects the real verdict.
   const verdictDisplay = dealVerdict.tone === 'good' ? 'DEAL' : dealVerdict.tone === 'warn' ? 'NEGOTIATE' : dealVerdict.tone === 'bad' ? 'WALK AWAY' : dealVerdict.label;
+  // Legacy verdict object — still the shape DealReport.jsx (PDF export) and
+  // Dossier.jsx read for fields dealVerdict doesn't carry (fairCeiling,
+  // dealRisk, overpayBy, etc). See computeVerdict()'s comment above.
   const verdict = computeVerdict({
     marketValue: valuation.estimatedValue,
     askingPrice,

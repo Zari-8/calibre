@@ -258,8 +258,67 @@ function incisivePassBoost(player, sm) {
 // other untracked domestic league already gets (see Eliteserien/Tangvik).
 // Not a full fix (Flamengo's real ~0.82 is still better than 0.70), but
 // removes the specific, confirmed-wrong continental-cup number.
-export const LEAGUE_ID_STRENGTH = { 39:1.00,140:1.00,78:0.98,79:0.78,135:0.96,61:0.92,94:0.84,88:0.83,71:0.82,144:0.80,40:0.81,203:0.73,128:0.80,307:0.63,253:0.80,98:0.72,281:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86 };
-const LEAGUE_STRENGTH = { 'la liga':1.00,'premier league':1.00,'bundesliga':0.98,'serie a':0.96,'ligue 1':0.92,'primeira liga':0.84,'eredivisie':0.83,'championship':0.81,'pro league':0.80,'super lig':0.73,'saudi pro league':0.63,'brasileiro':0.82,'brasileirão':0.82,'mls':0.80,'j1 league':0.72,'npfl':0.55,'zimbabwe psl':0.50 };
+// v8.9 — full rebuild against LIVE Opta Power Rankings data (pulled
+// 2026-07-21 via dataviz.theanalyst.com/opta-power-rankings — the same
+// hierarchical Elo system, 2.5M+ matches since 1990, that a past session
+// already used for the MLS>Saudi ordering). Formula: strength = clamp(0.55 +
+// (opta_league_average-60)/33*0.45, 0.55, 1.00) — a linear rescale anchored
+// so the Premier League's live average (92.6) lands at our existing ceiling
+// (1.00). Entries listed in the comment block below with "Opta X" were
+// computed this way from that live average; entries with NO comment have no
+// fresh Opta read yet and are UNCHANGED from before (not guessed/rescaled).
+//
+// Zari's objection mid-process: La Liga dropping from 1.00 to 0.92 seemed to
+// contradict Real Madrid/Barcelona's real dominance. Checked against Opta's
+// own TEAM-level data: Barcelona (96.3) and Real Madrid (95.1) individually
+// sit in the global top 10, tier-for-tier with Arsenal/Bayern/Man City — the
+// LEAGUE average is dragged down by La Liga's weaker bottom half specifically
+// (exactly the effect the Opta methodology article describes for Portugal/
+// Belgium/Denmark too), not by the giants being overrated here. Resolved by
+// adding TEAM_STRENGTH below: a small, empirically-justified override for
+// clubs that sit >=5pts above their OWN league's Opta average, so Real
+// Madrid/Barcelona/Bayern-tier clubs still score at elite-tier strength while
+// the rest of their leagues score at the honest (lower) league average.
+export const LEAGUE_ID_STRENGTH = { 39:1.00,140:0.92,78:0.91,79:0.77,135:0.92,61:0.90,94:0.82,88:0.81,71:0.81,144:0.83,40:0.84,203:0.77,128:0.80,307:0.76,253:0.80,98:0.79,281:0.66,399:0.55,525:0.94,44:0.92,254:0.90,142:0.90,82:0.90,64:0.88,139:0.86 };
+// 39 EPL: Opta 92.6 (anchor, =1.00) · 140 La Liga: Opta 87.0 · 78 Bundesliga: Opta 86.3
+// 79 2.Bundesliga: Opta 76.2 · 135 Serie A: Opta 87.0 · 61 Ligue 1: Opta 85.5
+// 94 Primeira Liga: Opta 79.8 · 88 Eredivisie: Opta 78.8 · 71 Brasileirão: Opta 79.4
+// 144 Belgian Pro League: Opta 80.5 · 40 Championship: Opta 80.9 · 203 Süper Lig: Opta 76.2
+// 128 Liga Profesional (Arg): Opta 78.6 · 307 Saudi Pro League: Opta 75.1 (was 0.63 — biggest single correction)
+// 253 MLS: Opta 78.5 · 98 J1 League: Opta 77.9
+// 281/399/525/44/254/142/82/64/139: no fresh Opta read, unchanged.
+
+// v8.9 — the elite-club override. Criterion: club's own live Opta team
+// rating sits >=5pts above its league's Opta average (see comment above).
+// Keyed by `${normalized team name}|${league_id}`, NOT name alone — several
+// of these names collide with unrelated clubs in other leagues/countries
+// (Arsenal Tula/Kyiv, Inter Miami/Turku), and league_id is already reliably
+// on every row, so pairing on it is free disambiguation. Multiple name
+// aliases per club cover realistic stored-name variance.
+const TEAM_STRENGTH = {
+  'real madrid|140': 1.00, 'barcelona|140': 1.00,
+  'atletico madrid|140': 0.98, 'atletico de madrid|140': 0.98,
+  'bayern munchen|78': 1.00, 'bayern munich|78': 1.00, 'fc bayern munchen|78': 1.00,
+  'borussia dortmund|78': 1.00, 'bayer leverkusen|78': 0.98,
+  'paris saint germain|61': 1.00, 'psg|61': 1.00,
+  'arsenal|39': 1.00, 'manchester city|39': 1.00,
+  'internazionale|135': 1.00, 'inter milan|135': 1.00, 'inter|135': 1.00,
+  'sporting cp|94': 0.99, 'sporting lisbon|94': 0.99, 'sporting|94': 0.99,
+  'benfica|94': 0.99, 'porto|94': 0.97, 'fc porto|94': 0.97,
+  'club brugge|144': 0.98, 'club brugge kv|144': 0.98,
+  'psv|88': 0.96, 'psv eindhoven|88': 0.96,
+  'galatasaray|203': 0.93, 'fenerbahce|203': 0.92,
+};
+function normalizeTeam(s) {
+  return String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ').trim();
+}
+function teamStrengthByName(team, leagueId) {
+  const key = `${normalizeTeam(team)}|${num(leagueId)}`;
+  const v = TEAM_STRENGTH[key];
+  return v != null ? v : NaN;
+}
+const LEAGUE_STRENGTH = { 'la liga':0.92,'premier league':1.00,'bundesliga':0.91,'serie a':0.92,'ligue 1':0.90,'primeira liga':0.82,'eredivisie':0.81,'championship':0.84,'pro league':0.83,'super lig':0.77,'saudi pro league':0.76,'brasileiro':0.81,'brasileirão':0.81,'mls':0.80,'j1 league':0.79,'npfl':0.55,'zimbabwe psl':0.50 };
 export const DEFAULT_LEAGUE = 0.70;
 // Same lookup leagueStrength() below does for `line.league_id`, exposed as a
 // standalone by-id helper so ingestion (enrichPlayerStats.mjs) can compute a
@@ -632,7 +691,14 @@ function scoreLine(line = {}) {
   const age=num(line.age,0);
   const bucket=positionBucket(line);
   const ovr=num(line._strengthOverride, NaN);
-  const sRaw=Number.isFinite(ovr)?clamp(ovr,0.30,1.10):leagueStrength(line);
+  // v8.9 — team-level elite-club override (see TEAM_STRENGTH above) sits
+  // between _strengthOverride (a different, already-validated signal from the
+  // overlay/continental blend and the league-decay multi-league blend, which
+  // wins first) and the plain leagueStrength() league-average fallback.
+  const teamOvr = teamStrengthByName(line.team, line.league_id ?? line.leagueId);
+  const sRaw=Number.isFinite(ovr)?clamp(ovr,0.30,1.10)
+    :Number.isFinite(teamOvr)?teamOvr
+    :leagueStrength(line);
   const baseApps=num(line.appearances ?? line.apps);
   // Hollow-shell fingerprint: a row touched only by TheStatsAPI enrichment,
   // never resolved to a real API-Football league/rating/minutes. These

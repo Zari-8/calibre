@@ -584,11 +584,23 @@ async function main() {
       // RESOLVE_IDS gets a chance. A non-null id that throws (bad/stale id)
       // is treated the same way rather than failing the row outright.
       let season = null, line = null, stats = null;
+      // v2 — track whether the lookup THREW (API error, most commonly the
+      // daily quota) vs genuinely RETURNED zero minutes. These used to be
+      // treated identically: a caught error here fell straight through to
+      // the "no league minutes" branch below, which wrote stats_season:null
+      // and bumped stats_updated_at — permanently recording a quota failure
+      // as if it were a confirmed empty season, and (since the row now looks
+      // "recently touched") causing future non-FORCE runs to skip it forever.
+      // Discovered 2026-07-22: on that day's log, ALL 11,256 "no league
+      // minutes" results were preceded by a "request limit for the day"
+      // failure on the very same player — the sweep's "100% done" was fake.
+      let apiLookupFailed = false;
       if (row.api_player_id) {
         try {
           const res0 = await enrichById(row.api_player_id, row.league_id);
           season = res0.season; line = res0.line; stats = res0.stats; calls += res0.calls;
         } catch (e0) {
+          apiLookupFailed = true;
           console.log(`· ${row.name}: initial id ${row.api_player_id} lookup failed (${e0.message})`);
         }
       }
@@ -638,6 +650,17 @@ async function main() {
       }
 
       if (!season || !line || line.stats_minutes === 0) {
+        if (apiLookupFailed) {
+          // The initial lookup THREW (quota exhaustion, most commonly) and
+          // no remap ever produced a confirmed result — we genuinely don't
+          // know this player's minutes, so don't write anything. Leaving
+          // stats_updated_at untouched keeps the row eligible for the next
+          // run instead of being wrongly marked "checked, no minutes."
+          failed++;
+          console.log(`· ${row.name}: SKIPPED write — initial lookup failed and no confirmed remap, not a genuine no-minutes result (will retry next run)`);
+          await sleep(DELAY_MS);
+          continue;
+        }
         if (!DRY_RUN) {
           const { error: e } = await updateWithRetry(() => supabase.from('players')
             .update({ stats_season: null, stats_updated_at: new Date().toISOString() })

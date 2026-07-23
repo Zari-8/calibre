@@ -24,6 +24,19 @@ SLEEP_SECS=86400       # 24 hours between retries after a quota hit -- API-Footb
                        # value just meant burning several retry attempts hitting the
                        # same still-exhausted quota before the real reset happened.
 
+# v2 — a sustained network/wifi outage (or a Supabase blip) produces NO quota
+# message at all: every row just fails fast with something like "fetch failed"
+# (enrichPlayerStats.mjs's own apiGet retries ~5s per call, then gives up and
+# throws), the whole target list burns through quickly with nothing written,
+# and the script still exits cleanly (0). Before this fix the loop only
+# checked for the quota string, so it would misread that clean-but-fruitless
+# pass as "sweep is done" and stop for good after a wifi blip. This regex
+# catches those transient-network signatures (same ones apiGet/updateWithRetry
+# already treat as retryable internally) so the OUTER loop retries too,
+# instead of falsely declaring victory.
+NETWORK_ERR_RE='fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|Supabase read failed|socket hang up|network'
+RETRY_SHORT_SECS=900   # 15 minutes -- network blips are usually far shorter-lived than a daily quota reset
+
 if [ ! -s "$UUID_FILE" ]; then
   echo "$(date) :: $UUID_FILE missing/empty — generating it now." | tee -a "$LOG"
   # Capture stderr into the log too this time — a silent failure here
@@ -59,8 +72,15 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
     continue
   fi
 
+  if grep -qiE "$NETWORK_ERR_RE" "$TMP_OUT"; then
+    echo "$(date) :: attempt $attempt hit transient network/Supabase errors (not the daily quota) — sleeping ${RETRY_SHORT_SECS}s before retrying, in case this was a wifi/network blip." | tee -a "$LOG"
+    rm -f "$TMP_OUT"
+    sleep "$RETRY_SHORT_SECS"
+    continue
+  fi
+
   rm -f "$TMP_OUT"
-  echo "$(date) :: attempt $attempt finished with no quota hit — sweep is done." | tee -a "$LOG"
+  echo "$(date) :: attempt $attempt finished with no quota hit and no network errors — sweep is done." | tee -a "$LOG"
   echo "ALL DONE" | tee -a "$LOG"
   exit 0
 done

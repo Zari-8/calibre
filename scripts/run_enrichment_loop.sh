@@ -18,8 +18,11 @@ cd "$(dirname "$0")/.."
 
 UUID_FILE="scored_player_uuids.txt"
 LOG="enrichPlayerStats_scored_$(date +%Y%m%d).log"
-MAX_ATTEMPTS=12       # 12 attempts x 4h sleep = 48h ceiling, comfortably covers a day+ of quota resets
-SLEEP_SECS=14400       # 4 hours between retries after a quota hit
+MAX_ATTEMPTS=4        # 4 attempts x 24h sleep = 4-day ceiling
+SLEEP_SECS=86400       # 24 hours between retries after a quota hit -- API-Football's
+                       # daily quota resets once every 24h, not every 4h. The old 4h
+                       # value just meant burning several retry attempts hitting the
+                       # same still-exhausted quota before the real reset happened.
 
 if [ ! -s "$UUID_FILE" ]; then
   echo "$(date) :: $UUID_FILE missing/empty — generating it now." | tee -a "$LOG"

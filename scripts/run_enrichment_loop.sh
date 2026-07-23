@@ -36,6 +36,11 @@ SLEEP_SECS=86400       # 24 hours between retries after a quota hit -- API-Footb
 # instead of falsely declaring victory.
 NETWORK_ERR_RE='fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|Supabase read failed|socket hang up|network'
 RETRY_SHORT_SECS=900   # 15 minutes -- network blips are usually far shorter-lived than a daily quota reset
+# Network retries get their OWN budget, separate from MAX_ATTEMPTS (the
+# quota-day budget) -- they used to share one counter, so a handful of wifi
+# blips could burn through the entire multi-day quota allowance and end the
+# whole sweep in about an hour, long before a real quota reset ever happened.
+NETWORK_MAX_RETRIES=20 # 20 x 15min = 5h of network-blip tolerance per attempt, doesn't touch MAX_ATTEMPTS
 
 if [ ! -s "$UUID_FILE" ]; then
   echo "$(date) :: $UUID_FILE missing/empty — generating it now." | tee -a "$LOG"
@@ -55,34 +60,44 @@ fi
 
 for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
   echo "=== attempt $attempt/$MAX_ATTEMPTS · $(date) ===" | tee -a "$LOG"
-  # v2 — stream straight to the log via tee instead of buffering the whole
-  # attempt's output in a shell variable ($(...)) and only writing it out
-  # once the command exits. The buffered version left `tail -f` showing
-  # nothing for the entire multi-hour duration of an attempt, which looked
-  # indistinguishable from a hang. TMP_OUT keeps a copy just for this
-  # iteration's own quota-message check below (grepping the whole
-  # cumulative $LOG would also match quota hits from earlier attempts/days).
-  TMP_OUT=$(mktemp)
-  FORCE=1 SEASON=2025 DELAY_MS=250 TARGET_UUIDS_FILE="$UUID_FILE" node scripts/enrichPlayerStats.mjs 2>&1 | tee -a "$LOG" "$TMP_OUT"
 
-  if grep -qi "request limit for the day" "$TMP_OUT"; then
-    echo "$(date) :: hit the daily quota this attempt — sleeping ${SLEEP_SECS}s before retrying." | tee -a "$LOG"
+  network_retry=0
+  while true; do
+    # v2 — stream straight to the log via tee instead of buffering the whole
+    # attempt's output in a shell variable ($(...)) and only writing it out
+    # once the command exits. The buffered version left `tail -f` showing
+    # nothing for the entire multi-hour duration of an attempt, which looked
+    # indistinguishable from a hang. TMP_OUT keeps a copy just for this
+    # iteration's own quota-message check below (grepping the whole
+    # cumulative $LOG would also match quota hits from earlier attempts/days).
+    TMP_OUT=$(mktemp)
+    FORCE=1 SEASON=2025 DELAY_MS=250 TARGET_UUIDS_FILE="$UUID_FILE" node scripts/enrichPlayerStats.mjs 2>&1 | tee -a "$LOG" "$TMP_OUT"
+
+    if grep -qi "request limit for the day" "$TMP_OUT"; then
+      echo "$(date) :: hit the daily quota this attempt — sleeping ${SLEEP_SECS}s before retrying." | tee -a "$LOG"
+      rm -f "$TMP_OUT"
+      sleep "$SLEEP_SECS"
+      break   # consumes one of the outer MAX_ATTEMPTS (quota-day budget)
+    fi
+
+    if grep -qiE "$NETWORK_ERR_RE" "$TMP_OUT"; then
+      network_retry=$((network_retry + 1))
+      if [ "$network_retry" -ge "$NETWORK_MAX_RETRIES" ]; then
+        echo "$(date) :: $NETWORK_MAX_RETRIES network retries in a row with no recovery — this looks like more than a blip. Stopping; check your connection and rerun." | tee -a "$LOG"
+        rm -f "$TMP_OUT"
+        exit 1
+      fi
+      echo "$(date) :: transient network/Supabase errors (not the daily quota) — sleeping ${RETRY_SHORT_SECS}s before retrying (network retry $network_retry/$NETWORK_MAX_RETRIES, does not count against the $MAX_ATTEMPTS quota-day budget)." | tee -a "$LOG"
+      rm -f "$TMP_OUT"
+      sleep "$RETRY_SHORT_SECS"
+      continue  # stays inside this attempt, does NOT consume MAX_ATTEMPTS
+    fi
+
     rm -f "$TMP_OUT"
-    sleep "$SLEEP_SECS"
-    continue
-  fi
-
-  if grep -qiE "$NETWORK_ERR_RE" "$TMP_OUT"; then
-    echo "$(date) :: attempt $attempt hit transient network/Supabase errors (not the daily quota) — sleeping ${RETRY_SHORT_SECS}s before retrying, in case this was a wifi/network blip." | tee -a "$LOG"
-    rm -f "$TMP_OUT"
-    sleep "$RETRY_SHORT_SECS"
-    continue
-  fi
-
-  rm -f "$TMP_OUT"
-  echo "$(date) :: attempt $attempt finished with no quota hit and no network errors — sweep is done." | tee -a "$LOG"
-  echo "ALL DONE" | tee -a "$LOG"
-  exit 0
+    echo "$(date) :: attempt $attempt finished with no quota hit and no network errors — sweep is done." | tee -a "$LOG"
+    echo "ALL DONE" | tee -a "$LOG"
+    exit 0
+  done
 done
 
 echo "$(date) :: hit MAX_ATTEMPTS ($MAX_ATTEMPTS) without a clean finish — check $LOG and rerun if needed." | tee -a "$LOG"

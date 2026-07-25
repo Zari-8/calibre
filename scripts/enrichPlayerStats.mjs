@@ -505,13 +505,27 @@ async function main() {
   function buildRead() {
     let q = supabase
       .from('players')
-      .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at');
+      .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at, stats_season');
     q = q.not('api_player_id', 'is', null).gt('api_player_id', 0); // skip placeholder/0 ids (API rejects id=0)
     if (LEAGUE_ID) q = q.eq('league_id', LEAGUE_ID);
     if (NATIONALITY) q = q.ilike('nationality', `%${NATIONALITY}%`);
     if (PLAYER_IDS.length) q = q.in('api_player_id', PLAYER_IDS);
     else if (PLAYER_NAMES) q = q.or(PLAYER_NAMES.split(',').map(n => `name.ilike.%${n.trim()}%`).join(','));
-    return q.order('stats_updated_at', { ascending: true, nullsFirst: true }).limit(MAX_PLAYERS);
+    // v2 — order by stats_season nulls-first BEFORE stats_updated_at. Ordering
+    // by stats_updated_at alone (the old behavior) prioritizes "least recently
+    // touched," which is NOT the same as "still needs real data." Discovered
+    // 2026-07-26: a run that logged 5,927 genuine successes produced ZERO net
+    // change in the fully-enriched count, because most of those successes were
+    // redundant re-confirmations of rows that ALREADY had a real stats_season
+    // from an earlier (2026-07-21) sweep and simply had an older timestamp than
+    // the still-empty rows (which got touched more recently by the pre-fix
+    // quota-bug). Whole days of quota got spent re-checking already-good rows
+    // while the rows that actually still need work sat untouched. Now
+    // stats_season IS NULL rows are always processed first, regardless of how
+    // recently they were touched.
+    return q.order('stats_season', { ascending: true, nullsFirst: true })
+      .order('stats_updated_at', { ascending: true, nullsFirst: true })
+      .limit(MAX_PLAYERS);
   }
 
   // TARGET_UUIDS is read via `.in('id', [...])`, which PostgREST sends as a
@@ -527,10 +541,19 @@ async function main() {
       const chunkNum = Math.floor(i / chunkSize) + 1;
       let data = null, err = null;
       for (let attempt = 1; attempt <= 4; attempt++) {
+        // Same stats_season-first ordering as buildRead() above -- prioritize
+        // rows that still need real data over rows that already have it,
+        // instead of just "least recently touched." This ordering only
+        // applies WITHIN each 300-id chunk (chunks themselves are sliced from
+        // the UUID file in whatever order it was written, unrelated to
+        // enrichment status), but since chunk membership doesn't correlate
+        // with enrichment status either, this still meaningfully shifts quota
+        // toward the rows that need it across the whole run.
         const { data: d, error } = await supabase
           .from('players')
-          .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at')
+          .select('id, name, api_player_id, league_id, nationality, age, stats_updated_at, stats_season')
           .in('id', chunk)
+          .order('stats_season', { ascending: true, nullsFirst: true })
           .order('stats_updated_at', { ascending: true, nullsFirst: true });
         if (!error) { data = d; break; }
         err = error;

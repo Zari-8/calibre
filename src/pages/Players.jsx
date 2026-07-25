@@ -1319,6 +1319,149 @@ function FeaturedCard({ player, onOpen, watched, onToggleWatch }) {
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Scatter Explorer — plot any two per-90 metrics against each other for a
+// real position pool from the Calibre bank. This closes the "Scatter" gap
+// from the PlayerPrint competitive review: Calibre had percentile bars
+// (single metric vs. pool) but no way to see two metrics plotted against
+// each other to spot outliers/archetypes. Reuses the same KEY_STAT_FIELDS/
+// keyStatValue plumbing as the Percentile Profile panel so the numbers are
+// identical wherever they show up, and the same getSupabasePositionPool
+// bucket fetch already used there — real players, real per-90 output, not a
+// synthetic sample.
+// ─────────────────────────────────────────────────────────────────────────
+const SCATTER_BUCKETS = ['ATT', 'MID', 'DEF', 'GK'];
+const SCATTER_LIMITS = [20, 40, 80, 150];
+
+// Last "word" of the name as the on-chart label (Haaland, not Erling
+// Haaland) — short enough to sit next to a point without the chart turning
+// into a wall of text. Full name still shows in the hover tooltip.
+function scatterLabel(name) {
+  const parts = String(name || '').trim().split(/\s+/);
+  return parts[parts.length - 1] || name || '';
+}
+
+function ScatterExplorer() {
+  const [bucket, setBucket] = useState('ATT');
+  const [xKey, setXKey] = useState('shots');
+  const [yKey, setYKey] = useState('goals');
+  const [limit, setLimit] = useState(40);
+  const [pool, setPool] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [hover, setHover] = useState(null);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    getSupabasePositionPool({ bucket, limit: 300 })
+      .then(rows => { if (alive) setPool(rows); })
+      .catch(() => { if (alive) setPool([]); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [bucket]);
+
+  const xDef = KEY_STAT_FIELDS.find(f => f.key === xKey) || KEY_STAT_FIELDS[0];
+  const yDef = KEY_STAT_FIELDS.find(f => f.key === yKey) || KEY_STAT_FIELDS[1];
+
+  // A scatter with no visible names next to the dots isn't useful for
+  // actually scouting anyone — you can't tell who's who without hovering
+  // pixel-perfectly. So this ranks the pool by rating and only plots the
+  // top N (default 40, user-adjustable), and prints every point's name
+  // right on the chart rather than hiding it behind a hover-only tooltip.
+  const points = useMemo(() => {
+    const ranked = [...pool].sort((a, b) => (Number(b.ability_rating ?? b.rating) || 0) - (Number(a.ability_rating ?? a.rating) || 0));
+    return ranked.slice(0, limit).map(row => {
+      const x = keyStatValue(row, xDef);
+      const y = keyStatValue(row, yDef);
+      if (x == null || y == null || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+      return { name: row.name, label: scatterLabel(row.name), team: row.team || row.club || '', x, y };
+    }).filter(Boolean);
+  }, [pool, xDef, yDef, limit]);
+
+  const W = 700, H = 420, PAD = 46;
+  const xs = points.map(p => p.x), ys = points.map(p => p.y);
+  const xMin = xs.length ? Math.min(...xs) : 0, xMax = xs.length ? Math.max(...xs) : 1;
+  const yMin = ys.length ? Math.min(...ys) : 0, yMax = ys.length ? Math.max(...ys) : 1;
+  const xSpan = xMax - xMin || 1, ySpan = yMax - yMin || 1;
+  const sx = v => PAD + ((v - xMin) / xSpan) * (W - PAD * 2);
+  const sy = v => (H - PAD) - ((v - yMin) / ySpan) * (H - PAD * 2);
+  const fmt = (v, def) => `${v.toFixed(def?.dp ?? 2)}${def?.suffix || ''}`;
+
+  return (
+    <section className="plp2-sec plp2-scatter">
+      <div className="plp2-sec-head">
+        <h3>Scatter explorer</h3>
+        <div className="plp2-scatter-controls">
+          <select value={bucket} onChange={e => setBucket(e.target.value)} aria-label="Position pool">
+            {SCATTER_BUCKETS.map(b => <option key={b} value={b}>{b} pool</option>)}
+          </select>
+          <select value={xKey} onChange={e => setXKey(e.target.value)} aria-label="X axis metric">
+            {KEY_STAT_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label} (X)</option>)}
+          </select>
+          <select value={yKey} onChange={e => setYKey(e.target.value)} aria-label="Y axis metric">
+            {KEY_STAT_FIELDS.map(f => <option key={f.key} value={f.key}>{f.label} (Y)</option>)}
+          </select>
+          <select value={limit} onChange={e => setLimit(Number(e.target.value))} aria-label="Players shown">
+            {SCATTER_LIMITS.map(n => <option key={n} value={n}>Top {n} by rating</option>)}
+          </select>
+        </div>
+      </div>
+      <p className="plp2-scatter-note">
+        Top {limit} {bucket} players in the Calibre bank by rating, plotted by per-90 output — a raw comparison, not a trait score.{' '}
+        {loading ? 'Loading pool…' : `${points.length} of ${Math.min(limit, pool.length)} have usable data for this pairing.`}
+      </p>
+      <div className="plp2-scatter-chart">
+        <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} role="img" aria-label={`Scatter of ${xDef.label} vs ${yDef.label} for ${bucket} pool`}>
+          <line x1={PAD} y1={H - PAD} x2={W - PAD} y2={H - PAD} stroke="rgba(255,255,255,.18)" />
+          <line x1={PAD} y1={PAD} x2={PAD} y2={H - PAD} stroke="rgba(255,255,255,.18)" />
+          {points.length > 0 && <>
+            <text x={PAD} y={H - PAD + 18} fill="#8b9299" fontSize="10">{fmt(xMin, xDef)}</text>
+            <text x={W - PAD} y={H - PAD + 18} fill="#8b9299" fontSize="10" textAnchor="end">{fmt(xMax, xDef)}</text>
+            <text x={PAD - 8} y={H - PAD + 4} fill="#8b9299" fontSize="10" textAnchor="end">{fmt(yMin, yDef)}</text>
+            <text x={PAD - 8} y={PAD + 4} fill="#8b9299" fontSize="10" textAnchor="end">{fmt(yMax, yDef)}</text>
+          </>}
+          <text x={(W + PAD) / 2} y={H - 6} fill="#c3c9cf" fontSize="11" textAnchor="middle">{xDef.label}{xDef.suffix || ''} per 90</text>
+          <text x={14} y={H / 2} fill="#c3c9cf" fontSize="11" textAnchor="middle" transform={`rotate(-90 14 ${H / 2})`}>{yDef.label}{yDef.suffix || ''} per 90</text>
+          {points.map((p, i) => {
+            const cx = sx(p.x), cy = sy(p.y);
+            // Simple alternating vertical offset so labels on points that
+            // land at a similar height don't all sit on the exact same
+            // baseline — not full collision avoidance, but enough to keep
+            // a 20-80 point chart readable rather than a solid text smear.
+            const labelY = cy + (i % 2 === 0 ? -8 : 13);
+            const isHover = hover === i;
+            return (
+              <g key={`${p.name}-${i}`} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(h => (h === i ? null : h))} style={{ cursor: 'pointer' }}>
+                <circle
+                  cx={cx} cy={cy}
+                  r={isHover ? 6 : 4}
+                  fill={isHover ? '#e9ff8a' : '#a6ff00'}
+                  fillOpacity={isHover ? 1 : 0.75}
+                  stroke="rgba(5,8,11,.55)" strokeWidth="0.6"
+                >
+                  <title>{`${p.name}${p.team ? ` — ${p.team}` : ''}\n${xDef.label}: ${fmt(p.x, xDef)}\n${yDef.label}: ${fmt(p.y, yDef)}`}</title>
+                </circle>
+                <text
+                  x={cx + 6} y={labelY}
+                  fontSize={isHover ? 10.5 : 8.5}
+                  fontWeight={isHover ? 700 : 500}
+                  fill={isHover ? '#fff' : 'rgba(216,221,226,.78)'}
+                  style={{ pointerEvents: 'none', fontFamily: 'Barlow, sans-serif' }}
+                >
+                  {p.label}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+        {!loading && points.length === 0 && (
+          <p className="plp2-scatter-empty">Not enough players in this pool have both metrics recorded yet.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export default function Players(){
   const [rankTab,setRankTab] = useState('Calibre Rating');
   const [search,setSearch] = useState('');
@@ -1741,6 +1884,7 @@ export default function Players(){
     { key:'search', icon:Search, label:'Advanced Search', run:()=>document.querySelector('.plp2-filters')?.scrollIntoView({behavior:'smooth'}) },
     { key:'watch', icon:Star, label:'My Watchlist', run:()=>setWatchlistOpen(true) },
     { key:'top', icon:Crown, label:'Top 100 Players', run:()=>{ setRankTab('Calibre Rating'); setFilters(f=>({...f,rating:'all'})); document.querySelector('.plp2-rankings')?.scrollIntoView({behavior:'smooth'}); } },
+    { key:'scatter', icon:Activity, label:'Scatter Explorer', run:()=>document.querySelector('.plp2-scatter')?.scrollIntoView({behavior:'smooth'}) },
     { key:'free', icon:Database, label:'Free Agents', run:()=>setNotice('Free-agent data connects with the transfers feed — coming soon.') },
   ];
 
@@ -1829,6 +1973,13 @@ export default function Players(){
         .plp2-pages span { color:#6b7480; padding:0 3px; }
         .plp2-pagesize { display:flex; align-items:center; gap:8px; color:var(--muted); font:600 11px "Barlow",sans-serif; }
         .plp2-pagesize select { height:30px; padding:0 8px; border:1px solid var(--line); border-radius:7px; background:rgba(255,255,255,.02); color:#d8dde2; font:600 12px "Barlow",sans-serif; cursor:pointer; }
+        .plp2-scatter { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:16px; margin-top:14px; }
+        .plp2-scatter-controls { display:flex; gap:8px; flex-wrap:wrap; }
+        .plp2-scatter-controls select { height:34px; padding:0 10px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.02); color:#d8dde2; font:600 11.5px "Barlow",sans-serif; cursor:pointer; }
+        .plp2-scatter-note { margin:0 0 12px; color:var(--muted); font:500 11.5px/1.5 "Barlow",sans-serif; }
+        .plp2-scatter-chart { position:relative; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.015); padding:6px; }
+        .plp2-scatter-chart circle { cursor:pointer; transition:r .1s,fill-opacity .1s; }
+        .plp2-scatter-empty { margin:0; padding:40px 10px; text-align:center; color:var(--muted); font:500 12px "Barlow",sans-serif; }
         .plp2-rail > * { margin-bottom:14px; }
         .plp2-qa { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:14px; }
         .plp2-qa h4 { margin:0 0 10px; color:#e9edf1; font:800 11px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
@@ -1967,6 +2118,8 @@ export default function Players(){
               </div>
             </div>
           </section>
+
+          <ScatterExplorer />
         </main>
 
         <aside className="plp2-rail">

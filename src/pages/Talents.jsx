@@ -19,6 +19,7 @@ import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import playerTraits, { deriveArchetype } from '../services/playerTraits.js';
 import { leagueContext, LEAGUES } from '../data/leagues.js';
 import { loadYouthProspects } from '../services/youthProspects.js';
+import { KEY_STAT_FIELDS, keyStatValue, percentileRank } from '../services/percentiles.js';
 
 // Decode HTML entities that survive in stored/imported names ("O&apos;Reilly" → "O'Reilly").
 function cleanName(value){
@@ -81,6 +82,7 @@ const VIEW_TABS = [
   { key:'discover', label:'Discovery Pool', icon:Sparkles },
   { key:'pathways', label:'Trajectory Pathways', icon:Route },
   { key:'rankings', label:'Rising Rankings', icon:TrendingUp },
+  { key:'scout', label:'Custom Scout', icon:SlidersHorizontal },
   { key:'youth', label:'Youth Radar', icon:GraduationCap },
 ];
 const POSITION_OPTIONS = ['all','RW','LW','CM','DM','ST','FB'];
@@ -974,6 +976,143 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   );
 }
 
+// ── Custom Scout (weighted brief) ───────────────────────────────────────────
+// Same weighted-percentile scoring as the Players page's Weighted Scout, but
+// scoped to the Talent Discovery pool (age 16-22, real senior-minute
+// evidence) instead of the full player bank. This is where the "define a
+// need, find who fits it" job actually lives — a scout hunting for an
+// unproven prospect to fill a specific role has no existing tool for that on
+// this page; Discovery Pool/Rising Rankings only sort by a single fixed
+// signal (readiness/rating/trend), never a user-defined blend. Reuses the
+// already-loaded registryTalents pool (registryTalentFromProfile already
+// buckets `position` into GK/DF/CM/ST from API-Football's coarse position
+// field) so there's no extra Supabase round trip.
+const TALENT_SCOUT_BUCKETS = ['ST', 'CM', 'DF', 'GK'];
+const TALENT_SCOUT_BUCKET_LABELS = { ST: 'Attack', CM: 'Midfield', DF: 'Defense', GK: 'Goalkeeper' };
+const TALENT_SCOUT_DEFAULT_WEIGHT = 50;
+
+function TalentScout({ pool = [] }) {
+  const [bucket, setBucket] = useState('ST');
+  const [weights, setWeights] = useState(() => Object.fromEntries(KEY_STAT_FIELDS.map(f => [f.key, TALENT_SCOUT_DEFAULT_WEIGHT])));
+
+  const bucketPool = useMemo(() => pool.filter(p => p.position === bucket), [pool, bucket]);
+  const resetWeights = () => setWeights(Object.fromEntries(KEY_STAT_FIELDS.map(f => [f.key, TALENT_SCOUT_DEFAULT_WEIGHT])));
+  const zeroWeights = () => setWeights(Object.fromEntries(KEY_STAT_FIELDS.map(f => [f.key, 0])));
+
+  const ranked = useMemo(() => {
+    const poolValsByField = KEY_STAT_FIELDS.map(def => bucketPool.map(row => keyStatValue(row, def)).filter(v => v != null));
+    const activeWeightSum = KEY_STAT_FIELDS.reduce((s, f) => s + (weights[f.key] || 0), 0);
+    if (!activeWeightSum) return [];
+
+    const scored = bucketPool.map(row => {
+      let weightedSum = 0;
+      let weightUsed = 0;
+      const contributions = [];
+      KEY_STAT_FIELDS.forEach((def, i) => {
+        const w = weights[def.key] || 0;
+        if (!w) return;
+        const value = keyStatValue(row, def);
+        const pct = percentileRank(value, poolValsByField[i]);
+        if (pct == null) return;
+        weightedSum += pct * w;
+        weightUsed += w;
+        contributions.push({ label: def.label, pct });
+      });
+      if (!weightUsed) return null;
+      const composite = weightedSum / weightUsed;
+      contributions.sort((a, b) => b.pct - a.pct);
+      return { row, composite, top: contributions.slice(0, 2) };
+    }).filter(Boolean);
+
+    return scored.sort((a, b) => b.composite - a.composite).slice(0, 20);
+  }, [bucketPool, weights]);
+
+  return (
+    <section className="tsc">
+      <style>{`
+        .tsc { --l:#c8fa3c; --line:rgba(255,255,255,.09); --card:rgba(9,13,16,.5); --muted:#8b9299; }
+        .tsc * { box-sizing:border-box; }
+        .tsc-top { display:flex; gap:16px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; margin-bottom:16px; }
+        .tsc-top h2 { margin:0; color:#fff; font:800 30px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
+        .tsc-top h2 em { color:var(--l); font-style:normal; }
+        .tsc-top p { margin:6px 0 0; color:var(--muted); font:500 13px "Barlow",sans-serif; max-width:520px; }
+        .tsc-buckets { display:flex; gap:6px; }
+        .tsc-buckets button { padding:8px 16px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.02); color:#b6bcc3; font:700 12px "Barlow Condensed",sans-serif; letter-spacing:.04em; cursor:pointer; text-transform:uppercase; }
+        .tsc-buckets button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
+        .tsc-grid { display:grid; grid-template-columns:300px minmax(0,1fr); gap:16px; align-items:start; }
+        @media (max-width:900px){ .tsc-grid { grid-template-columns:1fr; } }
+        .tsc-controls, .tsc-results { border:1px solid var(--line); border-radius:14px; background:var(--card); backdrop-filter:blur(11px); -webkit-backdrop-filter:blur(11px); padding:16px; }
+        .tsc-controls { position:sticky; top:14px; }
+        .tsc-controls .h { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+        .tsc-controls .h span { color:#e9edf1; font:800 12px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
+        .tsc-controls .h div { display:flex; gap:10px; }
+        .tsc-controls .h button { background:none; border:none; color:var(--l); font:700 10px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; }
+        .tsc-slider { margin-bottom:12px; }
+        .tsc-slider label { display:flex; justify-content:space-between; color:#cfd4da; font:600 11.5px "Barlow",sans-serif; margin-bottom:5px; }
+        .tsc-slider label b { color:var(--l); }
+        .tsc-slider input[type=range] { width:100%; accent-color:var(--l); }
+        .tsc-note { border-top:1px solid var(--line); margin-top:8px; padding-top:12px; color:var(--muted); font:500 11.5px/1.5 "Barlow",sans-serif; }
+        .tsc-empty { padding:60px 18px; text-align:center; color:var(--muted); border:1px dashed rgba(255,255,255,.12); border-radius:14px; }
+        .tsc-results-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+        .tsc-results-head span { color:#e9edf1; font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+        .tsc-results-head small { color:var(--muted); font:500 11px "Barlow",sans-serif; }
+        .tsc-row { display:grid; grid-template-columns:26px minmax(0,1fr) minmax(0,1.3fr) 50px; gap:10px; align-items:center; padding:10px 4px; border-bottom:1px solid var(--line); }
+        .tsc-row:last-child { border-bottom:none; }
+        .tsc-row .rk { color:var(--muted); font:800 13px "Barlow Condensed",sans-serif; }
+        .tsc-row .nm { min-width:0; }
+        .tsc-row .nm b { display:block; color:#eef1f4; font:700 13px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tsc-row .nm small { color:var(--muted); font:500 10.5px "Barlow",sans-serif; }
+        .tsc-row .tops { display:flex; gap:6px; flex-wrap:wrap; }
+        .tsc-row .tops span { border:1px solid var(--line); border-radius:6px; padding:2px 7px; color:#b6bcc3; font:600 10px "Barlow",sans-serif; white-space:nowrap; }
+        .tsc-row .sc { text-align:right; color:var(--l); font:800 16px "Barlow Condensed",sans-serif; }
+      `}</style>
+
+      <div className="tsc-top">
+        <div>
+          <h2>Custom <em>Scout</em></h2>
+          <p>Define the brief, weight what matters, and rank the discovery pool against it — a targeted search instead of a fixed leaderboard.</p>
+        </div>
+        <div className="tsc-buckets">
+          {TALENT_SCOUT_BUCKETS.map(b => (
+            <button type="button" key={b} className={bucket === b ? 'on' : ''} onClick={() => setBucket(b)}>{TALENT_SCOUT_BUCKET_LABELS[b]}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="tsc-grid">
+        <aside className="tsc-controls">
+          <div className="h">
+            <span>Weight your brief</span>
+            <div><button type="button" onClick={resetWeights}>Reset</button><button type="button" onClick={zeroWeights}>Clear all</button></div>
+          </div>
+          {KEY_STAT_FIELDS.map(f => (
+            <div className="tsc-slider" key={f.key}>
+              <label><span>{f.label}</span><b>{weights[f.key] ?? 0}</b></label>
+              <input type="range" min={0} max={100} step={5} value={weights[f.key] ?? 0} onChange={e => setWeights(w => ({ ...w, [f.key]: Number(e.target.value) }))} />
+            </div>
+          ))}
+          <div className="tsc-note">Scored against the {bucketPool.length} {TALENT_SCOUT_BUCKET_LABELS[bucket].toLowerCase()} prospects in the discovery pool (age 16-22, real senior-minute evidence). Each metric is a real per-90 percentile inside that pool — set a weight to 0 to drop it from the brief.</div>
+        </aside>
+
+        <main className="tsc-results">
+          <div className="tsc-results-head">
+            <span>Ranked against your brief</span>
+            <small>{ranked.length ? `Top ${ranked.length}` : 'Set at least one weight above 0'}</small>
+          </div>
+          {ranked.length ? ranked.map((entry, i) => (
+            <div className="tsc-row" key={entry.row.name}>
+              <div className="rk">{i + 1}</div>
+              <div className="nm"><b>{entry.row.name}</b><small>{[entry.row.club, entry.row.age ? `${entry.row.age}y` : null].filter(Boolean).join(' · ')}</small></div>
+              <div className="tops">{entry.top.map(t => <span key={t.label}>{t.label} {t.pct}%</span>)}</div>
+              <div className="sc">{Math.round(entry.composite)}</div>
+            </div>
+          )) : <div className="tsc-empty">{bucketPool.length ? 'Raise at least one metric weight above zero to build a brief.' : 'No prospects in this position bucket yet.'}</div>}
+        </main>
+      </div>
+    </section>
+  );
+}
+
 export default function Talents() {
   const [view, setView] = useState('discover');
   const [region, setRegion] = useState('all');
@@ -1442,6 +1581,8 @@ export default function Talents() {
       )}
 
       {view === 'pathways' && <TrajectoryPathway player={selected} pool={sourceTalents} onSelect={setSelectedName} />}
+
+      {view === 'scout' && <TalentScout pool={registryTalents} />}
 
       {view === 'rankings' && <section className="rr">
         <style>{`

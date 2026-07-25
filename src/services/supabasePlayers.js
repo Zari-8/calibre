@@ -307,41 +307,40 @@ export async function getSupabasePlayersByApiIds(apiIds=[]){
     .filter(n=>Number.isInteger(n)&&n>0);
   if(!ids.length) return [];
 
-  // First pass: rows that have a rating and appearances (real enriched data)
-  const { data: enriched, error: e1 } = await client
+  // A single api_player_id can have more than one row in `players` — separate
+  // league-scoped enrichment passes insert a row per competition a player
+  // appeared in (e.g. a reserve-team player who also got a cameo for the
+  // first team ends up with a Segunda/4th-division row AND a La Liga row).
+  const { data, error } = await client
     .from('players')
     .select(PLAYER_SELECT)
     .in('api_player_id',ids)
-    .or('hidden.is.null,hidden.eq.false')
-    .not('rating','is',null)
-    .order('appearances',{ascending:false,nullsFirst:false});
+    .or('hidden.is.null,hidden.eq.false');
+  if(error) throw error;
 
-  if(e1) throw e1;
-
-  // Deduplicate — keep the best row per api_player_id
-  const seen = new Set();
-  const best = [];
-  for(const row of (enriched||[])){
+  // Deduplicate — keep whichever row has the most real playing-time evidence
+  // (minutes, then appearances as a tiebreak), NOT whichever happens to carry
+  // a non-null `rating` column. The previous version filtered to rating-having
+  // rows first, which meant a player whose big-sample season was in a
+  // competition TheStatsAPI/API-Football never posts a per-match rating for
+  // (e.g. Barca B's fourth-division football) had that entire season
+  // discarded, leaving only a single unrelated cameo — a 1-appearance row —
+  // to stand in for both "Season Score" and Calibre rating. The rating
+  // engine (calibreRating.js) already knows how to produce a legitimate,
+  // medium-confidence score from minutes/appearances/event stats alone when
+  // there's no per-match API rating, so it should get the row with the real
+  // sample, not the smallest one that happens to have a rating attached.
+  const byId = new Map();
+  for(const row of (data||[])){
     const aid = row.api_player_id;
-    if(!seen.has(aid)){ seen.add(aid); best.push(row); }
+    const existing = byId.get(aid);
+    if(!existing){ byId.set(aid,row); continue; }
+    const rowEvidence = (Number(row.minutes)||0)*1000 + (Number(row.appearances)||0);
+    const exEvidence = (Number(existing.minutes)||0)*1000 + (Number(existing.appearances)||0);
+    if(rowEvidence > exEvidence) byId.set(aid,row);
   }
 
-  // Second pass: any ids not yet resolved (no enriched row exists yet)
-  const missing = ids.filter(id => !seen.has(id));
-  if(missing.length){
-    const { data: fallback, error: e2 } = await client
-      .from('players')
-      .select(PLAYER_SELECT)
-      .in('api_player_id',missing)
-      .or('hidden.is.null,hidden.eq.false');
-    if(e2) throw e2;
-    for(const row of (fallback||[])){
-      const aid = row.api_player_id;
-      if(!seen.has(aid)){ seen.add(aid); best.push(row); }
-    }
-  }
-
-  return best.map(normalizePlayer);
+  return Array.from(byId.values()).map(normalizePlayer);
 }
 
 // Full search: matches on abbreviated name (L. Messi), full_name (Lionel Messi),

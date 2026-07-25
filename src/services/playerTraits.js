@@ -230,10 +230,32 @@ const ARCHETYPE_LABELS = {
   },
   DEF: {
     labels: [
-      { name: 'Ball-Playing Defender', traits: ['control', 'transition'] },
+      // Real case that caught this: Pau Cubarsí (Barcelona CB) — control:93
+      // (elite, +17 over the DEF baseline of 76 — matches his 91.8% pass
+      // accuracy across 4038 season passes) but transition:38, WAY below the
+      // DEF baseline of 60. transition is driven by the same dribbles/carry
+      // signal used for wide players (see the "least-worst trait" comment
+      // above) — that's the right proxy for a full-back or winger beating a
+      // man and running with it, but it's the wrong one for how a centre-
+      // back actually progresses the ball, which is almost entirely through
+      // passing, not carrying. Pairing 'Ball-Playing Defender' with
+      // transition meant an elite passer with a normal (low) CB dribble
+      // count could never clear the label's average-delta threshold — control
+      // alone is the honest signal for this archetype at this position.
+      { name: 'Ball-Playing Defender', traits: ['control'] },
       { name: 'Stopper', traits: ['pressing', 'defensiveLoad'] },
     ],
-    default: 'Stopper',
+    // Every other bucket's default is a neutral, generic label that ISN'T
+    // one of its own competing options (FB defaults to 'Full-Back', not
+    // 'Wing-Back'; MID defaults to 'Central Midfielder', not any of its 5
+    // named styles). DEF used to default to 'Stopper' — one of the two
+    // actual competing labels — so any centre-back whose profile didn't
+    // clearly clear the +3 threshold for EITHER label got auto-labelled a
+    // "Stopper" by default, even a balanced or clearly ball-playing profile
+    // that just missed the threshold. Flagged after Pau Cubarsí — a
+    // ball-playing CB by reputation — showed up as "Stopper". 'Centre-Back'
+    // is now the neutral fallback, matching the pattern everywhere else.
+    default: 'Centre-Back',
   },
   FB: {
     labels: [

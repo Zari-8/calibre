@@ -20,6 +20,7 @@
 // TheStatsAPI enrichment fields.
 export const KEY_STAT_FIELDS = [
   { key: 'goals', label: 'Goals', dp: 2 },
+  { key: 'assists', label: 'Assists', dp: 2 },
   { key: 'xg', label: 'xG', dp: 2, per90Field: 'xg_per_90' },
   { key: 'xa', label: 'xA', dp: 2, per90Field: 'xa_per_90' },
   { key: 'shots', label: 'Shots', dp: 2 },

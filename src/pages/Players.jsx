@@ -631,6 +631,9 @@ function PlayerProfileModal({ player, stats, loading, onClose, onCompare, onComp
                   <div><span>Assists</span><b>{ppmStat(player.assists)}</b></div>
                 </div>
               </div>
+              <p className="ppm3-overview-note">
+                <b>Season Score</b> is his contribution across the whole campaign, minutes and selection included. <b>Calibre</b> strips out selection/minutes to show how good he actually is, independent of how much he played. <b>Selection</b> is how much he was actually used, shown on its own — a low Selection score with a high Calibre rating usually means a good player who hasn't had the run of games yet.
+              </p>
             </>
           )}
 
@@ -994,6 +997,8 @@ const PPM3_CSS = `
   .ppm3-grid--3 { grid-template-columns:repeat(3,1fr); }
   .ppm3-grid > div span { display:block; color:var(--muted); font:700 8px/1.2 "IBM Plex Mono",monospace; letter-spacing:.05em; }
   .ppm3-grid > div b { display:block; margin-top:5px; color:#fff; font:800 15px/1 "Barlow Condensed",sans-serif; }
+  .ppm3-overview-note { margin:0; padding:12px 14px; border:1px solid rgba(255,255,255,.07); border-radius:10px; background:rgba(255,255,255,.015); color:var(--muted); font:500 11.5px/1.6 "Barlow",sans-serif; }
+  .ppm3-overview-note b { color:#c9cfd5; }
   .ppm3-row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
   .ppm3-row3 { display:grid; grid-template-columns:1.7fr 1fr 1fr; gap:12px; }
   .ppm3-sec--wide { min-width:0; }

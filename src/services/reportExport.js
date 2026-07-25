@@ -30,11 +30,32 @@ export function exportFitCsv(report) {
     ['Team', report.team.name],
     ['Overall fit score', `${report.score}%`],
     ['Verdict', report.verdict],
+  ];
+  // Raw trait alignment / specialist caveat — same fields the on-screen
+  // report already shows (System Fit v3/v4). Only worth a row when there's
+  // something to say; keeps the CSV clean for reports where they're absent.
+  if (report.rawAlignment != null && Math.abs(report.rawAlignment - report.score) >= 5) {
+    rows.push(['Raw trait alignment (pre-adjustment)', `${report.rawAlignment}%`]);
+  }
+  if (report.specialistNote) {
+    rows.push(['Specialist profile note', report.specialistNote]);
+  }
+  rows.push(
     [],
     ['FIT BREAKDOWN'],
     ['Metric', 'Score'],
     ...report.breakdown.map(item => [item.label, item.value]),
     [],
+  );
+  if (report.roleFit?.length) {
+    rows.push(
+      ['ROLE FIT'],
+      ['Role', 'Score'],
+      ...report.roleFit.map(item => [item.label, item.value]),
+      [],
+    );
+  }
+  rows.push(
     ['ROLE FIT PULSE'],
     ['Metric', 'Score'],
     ...report.rolePulse.map(item => [item.label, item.value]),
@@ -47,7 +68,7 @@ export function exportFitCsv(report) {
     ['Strengths', ...report.strengths],
     ['Risks', ...report.risks],
     ['Conclusion', report.conclusion],
-  ];
+  );
   const file = `${safeFileName(report.player.name)}-${safeFileName(report.team.short)}-system-fit.csv`;
   downloadBlob(new Blob([rowsToCsv(rows)], { type: 'text/csv;charset=utf-8;' }), file);
 }
@@ -90,6 +111,24 @@ function addHeader(doc, title, subtitle) {
   doc.text(subtitle, 14, 30);
 }
 
+// Adds a new page (with the same footer treatment) if there isn't enough
+// room left for the next block, so growing the report with more sections
+// (role fit, best-fit teams) doesn't just run text off the bottom of page 1.
+function ensureSpace(doc, y, needed) {
+  if (y + needed <= 280) return y;
+  doc.addPage();
+  return 20;
+}
+
+function addSectionHeading(doc, text, y) {
+  y = ensureSpace(doc, y, 14);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(20, 22, 24);
+  doc.text(text, 14, y);
+  return y + 7;
+}
+
 export async function exportFitPdf(report) {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -106,14 +145,30 @@ export async function exportFitPdf(report) {
   doc.setTextColor(100, 105, 112);
   doc.text(`${report.player.position} | ${report.player.archetype} | ${report.team.formation} ${report.team.philosophy}`, 42, y + 5);
   y += 17;
-  doc.setTextColor(20, 22, 24);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('FIT BREAKDOWN', 14, y);
-  y += 7;
+  // Raw trait alignment + specialist caveat — mirrors the callouts already
+  // shown on-screen in System Fit; only printed when there's a meaningful
+  // gap or a flag to report, same rule the UI uses.
+  if (report.rawAlignment != null && Math.abs(report.rawAlignment - report.score) >= 5) {
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8.5);
+    doc.setTextColor(120, 125, 132);
+    y = addWrapped(doc, `Raw trait alignment: ${report.rawAlignment}/100 before the ${report.rawAlignment < report.score ? 'proven-fit adjustment for his current club' : 'adaptation-risk adjustment for a new destination'} above.`, 14, y, 174);
+    y += 2;
+  }
+  if (report.specialistNote) {
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8.5);
+    doc.setTextColor(163, 122, 20);
+    y = addWrapped(doc, `Specialist profile: ${report.specialistNote}`, 14, y, 174);
+    y += 2;
+  }
+  y += 3;
+  y = addSectionHeading(doc, 'FIT BREAKDOWN', y);
   doc.setFontSize(9);
   report.breakdown.forEach(item => {
+    y = ensureSpace(doc, y, 8);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(20, 22, 24);
     doc.text(item.label, 14, y);
     doc.setFont('helvetica', 'bold');
     doc.text(String(item.value), 180, y, { align: 'right' });
@@ -121,31 +176,63 @@ export async function exportFitPdf(report) {
     doc.line(14, y + 2, 180, y + 2);
     y += 8;
   });
+  if (report.roleFit?.length) {
+    y += 3;
+    y = addSectionHeading(doc, 'ROLE FIT', y);
+    doc.setFontSize(9);
+    report.roleFit.forEach(item => {
+      y = ensureSpace(doc, y, 8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(20, 22, 24);
+      doc.text(item.label, 14, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(item.value), 180, y, { align: 'right' });
+      doc.setDrawColor(224, 228, 231);
+      doc.line(14, y + 2, 180, y + 2);
+      y += 8;
+    });
+  }
+  if (report.alternativeFits?.length) {
+    y += 3;
+    y = addSectionHeading(doc, 'BEST-FIT CLUB RANKING', y);
+    doc.setFontSize(9);
+    report.alternativeFits.slice(0, 6).forEach((team, index) => {
+      y = ensureSpace(doc, y, 8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(20, 22, 24);
+      doc.text(`${index + 1}. ${team.name} (${team.league}, ${team.formation})`, 14, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`${team.score}%`, 180, y, { align: 'right' });
+      doc.setDrawColor(224, 228, 231);
+      doc.line(14, y + 2, 180, y + 2);
+      y += 8;
+    });
+  }
   y += 3;
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text('DETAILED ANALYSIS', 14, y);
-  y += 7;
+  y = addSectionHeading(doc, 'DETAILED ANALYSIS', y);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.setTextColor(65, 70, 76);
+  y = ensureSpace(doc, y, 12);
   y = addWrapped(doc, report.conclusion, 14, y, 174);
   y += 7;
+  y = ensureSpace(doc, y, 10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(20, 22, 24);
   doc.text('Strengths', 14, y);
   y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(65, 70, 76);
-  report.strengths.forEach(item => { y = addWrapped(doc, `- ${item}`, 14, y, 174); y += 2; });
+  report.strengths.forEach(item => { y = ensureSpace(doc, y, 10); y = addWrapped(doc, `- ${item}`, 14, y, 174); y += 2; });
   y += 4;
+  y = ensureSpace(doc, y, 10);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(20, 22, 24);
   doc.text('Risks', 14, y);
   y += 6;
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(65, 70, 76);
-  report.risks.forEach(item => { y = addWrapped(doc, `- ${item}`, 14, y, 174); y += 2; });
+  report.risks.forEach(item => { y = ensureSpace(doc, y, 10); y = addWrapped(doc, `- ${item}`, 14, y, 174); y += 2; });
   doc.setFontSize(8);
   doc.setTextColor(130, 135, 142);
   doc.text(`Generated ${new Date(report.generatedAt).toLocaleString()} | Calibre Pro report`, 14, 287);

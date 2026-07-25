@@ -18,11 +18,21 @@ cd "$(dirname "$0")/.."
 
 UUID_FILE="scored_player_uuids.txt"
 LOG="enrichPlayerStats_scored_$(date +%Y%m%d).log"
-MAX_ATTEMPTS=4        # 4 attempts x 24h sleep = 4-day ceiling
-SLEEP_SECS=86400       # 24 hours between retries after a quota hit -- API-Football's
-                       # daily quota resets once every 24h, not every 4h. The old 4h
-                       # value just meant burning several retry attempts hitting the
-                       # same still-exhausted quota before the real reset happened.
+MAX_ATTEMPTS=4        # 4 attempts x ~1 quota-day sleep = ~4-day ceiling
+
+# v3 — API-Football's dashboard (checked 2026-07-25) confirms the Pro plan
+# resets at a FIXED clock time, 00h00 UTC, not "24h after whenever we last
+# got hit." A flat 86400s sleep drifts away from that boundary: hit the wall
+# at 6pm, sleep 24h, and you resume at 6pm the next day -- many hours after
+# the real 00:00 UTC reset already happened, wasting most of a day's quota.
+# seconds_until_utc_midnight computes the exact wait instead, so a retry
+# always lands right at (or just after) the real reset.
+seconds_until_utc_midnight() {
+  local now_epoch seconds_into_day
+  now_epoch=$(date -u +%s)
+  seconds_into_day=$(( now_epoch % 86400 ))
+  echo $(( 86400 - seconds_into_day + 120 ))   # +120s buffer past the exact boundary
+}
 
 # v2 — a sustained network/wifi outage (or a Supabase blip) produces NO quota
 # message at all: every row just fails fast with something like "fetch failed"
@@ -74,9 +84,10 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
     FORCE=1 SEASON=2025 DELAY_MS=250 TARGET_UUIDS_FILE="$UUID_FILE" node scripts/enrichPlayerStats.mjs 2>&1 | tee -a "$LOG" "$TMP_OUT"
 
     if grep -qi "request limit for the day" "$TMP_OUT"; then
-      echo "$(date) :: hit the daily quota this attempt — sleeping ${SLEEP_SECS}s before retrying." | tee -a "$LOG"
+      WAIT=$(seconds_until_utc_midnight)
+      echo "$(date) :: hit the daily quota this attempt — sleeping ${WAIT}s until just after 00:00 UTC reset (not a flat 24h) before retrying." | tee -a "$LOG"
       rm -f "$TMP_OUT"
-      sleep "$SLEEP_SECS"
+      sleep "$WAIT"
       break   # consumes one of the outer MAX_ATTEMPTS (quota-day budget)
     fi
 

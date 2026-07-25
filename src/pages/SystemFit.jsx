@@ -791,6 +791,15 @@ const SF2_POS_IDX = {
   GK: 0, CB: 1, RCB: 1, LCB: 1, LB: 1.6, RB: 1.6, LWB: 1.6, RWB: 1.6, WB: 1.6,
   DM: 2.2, CDM: 2.2, CM: 3, RCM: 3, LCM: 3, B2B: 3, LM: 3.6, RM: 3.6,
   LW: 3.8, RW: 3.8, W: 3.8, AM: 4, CAM: 4, SS: 4.4, CF: 4.7, ST: 5, FW: 5,
+  // Coarse bucket tokens — the DB's `position` column usually stores one of
+  // these 4 buckets (GK/DEF/MID/FWD), not a fine-grained token like "ST" or
+  // "CB". Without entries for them, sf2PlayerIdxs() below found no match for
+  // e.g. "FWD" and silently fell back to index 3 (CM) for every forward and
+  // defender in the database, making the Positional Fit Map score a striker
+  // like a central midfielder (e.g. Šeško showing 84% at CB instead of ~30%,
+  // and 84% at ST instead of ~96%). These map each bucket to a representative
+  // fine position so the distance math is at least directionally correct.
+  DEF: 1.3, MID: 3, FWD: 5, ATT: 5,
 };
 const SF2_GROUP = {
   GK: 'GK', CB: 'DEF', LB: 'DEF', RB: 'DEF', LWB: 'DEF', RWB: 'DEF', WB: 'DEF',

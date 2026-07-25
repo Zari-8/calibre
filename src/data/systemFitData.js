@@ -82,7 +82,15 @@ export const SYSTEM_PLAYERS = [
   { id: 762, name: 'Lamine Yamal', team: 'FC Barcelona', age: 18, position: 'RW', archetype: 'Paintbrush', image: '/assets/players/lamine-yamal.jpg', rating: 88, traits: { control: 88, transition: 96, pressing: 72, width: 98, tempo: 91, defensiveLoad: 54 }, roleMetrics: { Positioning: 84, 'Decision making': 88, 'Link-up play': 86, 'Final-third impact': 96, 'Press resistance': 91, 'Transition contribution': 93 } },
   { id: 278, name: 'Vinícius Júnior', team: 'Real Madrid', age: 25, position: 'LW', archetype: 'Dagger', image: '/assets/players/vinicius-junior.jpg', rating: 93, traits: { control: 82, transition: 99, pressing: 69, width: 96, tempo: 95, defensiveLoad: 48 }, roleMetrics: { Positioning: 87, 'Decision making': 85, 'Link-up play': 82, 'Final-third impact': 98, 'Press resistance': 89, 'Transition contribution': 99 } },
   { id: 521, name: 'Kylian Mbappé', team: 'Real Madrid', age: 27, position: 'CF / LW', archetype: 'Fox', image: '/assets/players/kylian-mbappe.jpg', rating: 94, traits: { control: 80, transition: 99, pressing: 62, width: 90, tempo: 98, defensiveLoad: 42 }, roleMetrics: { Positioning: 95, 'Decision making': 91, 'Link-up play': 79, 'Final-third impact': 99, 'Press resistance': 86, 'Transition contribution': 99 } },
-  { id: 9091, name: 'Anthony Gordon', team: 'Newcastle United', age: 25, position: 'LW / RW / AM', archetype: 'Transition Monster', image: '/assets/players/gordon.jpg', rating: 86, traits: { control: 78, transition: 95, pressing: 91, width: 92, tempo: 94, defensiveLoad: 73 }, roleMetrics: { Positioning: 83, 'Decision making': 81, 'Link-up play': 79, 'Final-third impact': 87, 'Press resistance': 76, 'Transition contribution': 96 } },
+  // image intentionally omitted — public/assets/players/gordon.jpg is a
+  // mislabeled/wrong photo (confirmed visually: not Anthony Gordon). Leaving
+  // this unset lets ApiPlayerImage fall through to its live name-search
+  // fallback (getPlayerPhotoByName, real API-Football lookup at runtime)
+  // instead of confidently showing a wrong face. No real API-Football id was
+  // available to hardcode here either — this sandbox has no network egress
+  // to verify one, and guessing a numeric id risks repeating this exact bug
+  // (see resolveApiId() in data/playerIds.js) for a different player.
+  { id: 9091, name: 'Anthony Gordon', team: 'Newcastle United', age: 25, position: 'LW / RW / AM', archetype: 'Transition Monster', rating: 86, traits: { control: 78, transition: 95, pressing: 91, width: 92, tempo: 94, defensiveLoad: 73 }, roleMetrics: { Positioning: 83, 'Decision making': 81, 'Link-up play': 79, 'Final-third impact': 87, 'Press resistance': 76, 'Transition contribution': 96 } },
 ];
 
 // ── Team universe ──────────────────────────────────────────────────
@@ -174,8 +182,24 @@ const FIT_WEIGHTS = { control: 1.4, transition: 1.3, pressing: 1.3, width: 0.9, 
 // original control/tempo-only default until similarly backtested.
 const SUPPLY_AXES = new Set(['control', 'tempo']);
 const SUPPLY_AXES_ATT = new Set([...SUPPLY_AXES, 'pressing', 'width', 'defensiveLoad']);
+// DEF (CB) bucket — added after the DEF/FB/DM/MID/WIDE real-data backtest
+// (scripts/backtestRealData.mjs) showed the SAME category error the ATT
+// hinge above was built to fix, just never extended to defenders: Van Dijk,
+// Kim Min-Jae and Marquinhos — three real, undisputed first-choice CBs —
+// all scored a broken 32/100 raw alignment at their OWN actual clubs, because
+// a centre-back's individually low transition/width was symmetric-penalized
+// against a whole-team aggregate that includes wingers and forwards. A CB
+// isn't a worse fit for having less transition/width than his front three —
+// the collective supplies that. Pressing and defensiveLoad are deliberately
+// LEFT symmetric here (not hinged): those are the axes that genuinely
+// differentiate whether a CB's real profile suits a given press-height/
+// defensive scheme (the Araújo/Flick high-line case from the earlier
+// discussion) — a low-pressing CB dropped into a high-press system is a real
+// mismatch, not something the rest of the team compensates for.
+const SUPPLY_AXES_DEF = new Set([...SUPPLY_AXES, 'transition', 'width']);
 const STYLE_AXES = ['transition', 'pressing', 'width', 'defensiveLoad'];
 const STYLE_AXES_ATT = ['transition']; // the only axis a lone striker must personally match environment-to-environment
+const STYLE_AXES_DEF = ['pressing', 'defensiveLoad']; // the only axes a CB must personally match environment-to-environment
 const ADAPT_SLOPE = 0.5;   // haircut points per point of average style departure from origin
 const ADAPT_CAP = 12;      // max points the adaptation-risk term can remove
 
@@ -217,7 +241,7 @@ function teamHasProfile(team) {
 // original control/tempo-only default, so role/formation-template scoring
 // (which doesn't pass a bucket) is unchanged.
 function rawFit(traits, teamTraits, bucket) {
-  const supply = bucket === 'ATT' ? SUPPLY_AXES_ATT : SUPPLY_AXES;
+  const supply = bucket === 'ATT' ? SUPPLY_AXES_ATT : bucket === 'DEF' ? SUPPLY_AXES_DEF : SUPPLY_AXES;
   let acc = 0, wsum = 0;
   for (const k of FIT_DIMS) {
     const p = traits[k] ?? 70;
@@ -272,7 +296,7 @@ function originTeamFor(player) {
 // departing from his origin on those axes isn't HIS adaptation risk.
 function adaptationRisk(originTraits, destTraits, bucket) {
   if (!originTraits || !destTraits) return 0;
-  const axes = bucket === 'ATT' ? STYLE_AXES_ATT : STYLE_AXES;
+  const axes = bucket === 'ATT' ? STYLE_AXES_ATT : bucket === 'DEF' ? STYLE_AXES_DEF : STYLE_AXES;
   let acc = 0;
   for (const k of axes) acc += Math.abs((originTraits[k] ?? 70) - (destTraits[k] ?? 70));
   const avgDeparture = acc / axes.length;
@@ -393,6 +417,13 @@ export function computeSystemFit(player, team) {
   // could score differently here than on the System Fit page, contradicting
   // this module's "same formula on both pages" guarantee above.
   const detail = fitDetail({ ...player, traits }, team, player?._hasStats !== false);
+  // Surface the same drift/specialist signal here that buildSystemFitReport
+  // exposes, so the Transfers page (which calls this function, not the full
+  // report) can render the same caveats instead of only ever showing the
+  // single headline number.
+  const specialistNote = detail.specialistProfile
+    ? `${player.name || 'This player'}'s profile is a real outlier for a ${bucketLabel(detail.bucket)} — closer to a role-design question than a like-for-like trait comparison.`
+    : null;
   return {
     score: detail.score ?? systemFitScore(traits, team),
     traits,
@@ -400,6 +431,10 @@ export function computeSystemFit(player, team) {
     pressing: Math.round(((traits.pressing ?? 70) + (tt.pressing ?? 70)) / 2),
     transition: Math.round(((traits.transition ?? 70) + (tt.transition ?? 70)) / 2),
     boxThreat: Math.round(((traits.width ?? 70) + (tt.tempo ?? 70)) / 2),
+    rawAlignment: detail.rawAlignment ?? null,
+    specialistProfile: detail.specialistProfile ?? false,
+    specialistNote,
+    nativeClub: detail.nativeClub ?? false,
   };
 }
 
@@ -686,17 +721,28 @@ export function buildPlayerComparison(primary, challenger, team) {
   };
 }
 
+// Accent-insensitive substring match — same NFD-fold approach as
+// normClubName() above, applied here because these two local searches did
+// plain `.toLowerCase().includes()` with no accent folding at all, so typing
+// "Sesko" never matched a curated "Šeško" entry, "Vinicius" never matched
+// "Vinícius Júnior", etc. Unlike normClubName this doesn't strip club-word
+// tokens or non-letters — it's a general search-box match, not an identity
+// comparison, so words and punctuation in the haystack should stay intact.
+function foldAccents(s) {
+  return String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 export function searchLocalTeams(query = '') {
-  const needle = query.trim().toLowerCase();
+  const needle = foldAccents(query.trim().toLowerCase());
   const pool = TEAM_UNIVERSE;
   if (!needle) return pool.slice(0, 6);
-  return pool.filter(team => `${team.name} ${team.country} ${team.league}`.toLowerCase().includes(needle)).slice(0, 12);
+  return pool.filter(team => foldAccents(`${team.name} ${team.country} ${team.league}`.toLowerCase()).includes(needle)).slice(0, 12);
 }
 
 export function searchLocalPlayers(query = '') {
-  const needle = query.trim().toLowerCase();
+  const needle = foldAccents(query.trim().toLowerCase());
   if (!needle) return SYSTEM_PLAYERS.slice(0, 6);
-  return SYSTEM_PLAYERS.filter(player => `${player.name} ${player.team} ${player.position} ${player.archetype}`.toLowerCase().includes(needle)).slice(0, 8);
+  return SYSTEM_PLAYERS.filter(player => foldAccents(`${player.name} ${player.team} ${player.position} ${player.archetype}`.toLowerCase()).includes(needle)).slice(0, 8);
 }
 
 

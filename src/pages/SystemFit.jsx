@@ -8,13 +8,14 @@ import { navigateTo } from '../components/NavLink.jsx';
 import { getPlayerProfile, searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl } from '../components/Share.jsx';
-import { getSupabasePlayersByApiIds, searchSupabasePlayers } from '../services/supabasePlayers.js';
+import { getSupabasePlayersByApiIds, searchSupabasePlayers, getSupabasePositionPool } from '../services/supabasePlayers.js';
 import { enrichFromDerived, searchDerivedTeams, warmTeamUniverse } from '../services/derivedTeams.js';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
-import { playerIdFor } from '../data/playerIds.js';
-import { calibreRating, resolveRating } from '../services/calibreRating.js';
+import { playerIdFor, resolveApiId } from '../data/playerIds.js';
+import { calibreRating, resolveRating, positionBucket as ratingPositionBucket } from '../services/calibreRating.js';
 import { playerTraits, deriveArchetype } from '../services/playerTraits.js';
+import { computeKeyStatPercentiles } from '../services/percentiles.js';
 import {
   SYSTEM_PLAYERS, SYSTEM_TEAMS, TRANSFER_SPOTLIGHTS, buildPlayerComparison, buildSystemFitReport,
   searchLocalPlayers, searchLocalTeams, TRANSFER_STORYLINES, pickTransferStoryline, buildTransferSpotlight,
@@ -69,9 +70,12 @@ function normalizeApiPlayer(player) {
 }
 
 function normalizeDbPlayer(player) {
-  const rawId = player.api_player_id ?? player.apiPlayerId ?? player.id;
-  const numId = Number(rawId);
-  const apiPlayerId = Number.isInteger(numId) && numId > 0 ? numId : null;
+  // v3 fix: this used to fall back to player.id (a Supabase ROW id) whenever
+  // api_player_id/apiPlayerId were both missing — a coincidental integer
+  // match silently attached a real but WRONG player's photo (see
+  // resolveApiId() in data/playerIds.js for the full story; this is the
+  // Anthony Gordon wrong-photo bug).
+  const apiPlayerId = resolveApiId(player);
   const { traits, roleMetrics } = playerTraits(player);
   const scored = resolveRating(player);
   return {
@@ -248,7 +252,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
       <div className="sf-search-results">
         {merged.map(item => (
           <button type="button" className="sf-search-result" key={`${kind}-${item.id}`} onClick={() => choose(item)}>
-            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage playerId={item.api_player_id ?? item.apiPlayerId ?? playerIdFor(item.name) ?? item.id} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />}
+            {kind === 'team' ? <Crest team={item.source === 'api' ? normalizeApiTeam(item) : item} size={32} /> : <ApiPlayerImage playerId={resolveApiId(item) ?? playerIdFor(item.name)} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />}
             <span><b>{item.name}</b><small>{kind === 'team' ? `${item.country} · ${item.league || 'database club'}` : `${item.team} · ${item.position}`}</small></span>
           </button>
         ))}
@@ -260,7 +264,7 @@ function SearchSidebar({ selectedTeam, selectedPlayer, setSelectedTeam, setSelec
           <div><b>{selectedTeam.name}</b><small>{selectedTeam.formation} · {selectedTeam.philosophy}</small></div>
         </div>
         <div className="sf-current-pair">
-          <ApiPlayerImage playerId={selectedPlayer.apiPlayerId ?? playerIdFor(selectedPlayer.name) ?? selectedPlayer.id} name={selectedPlayer.name} fallbackSrc={selectedPlayer.image || '/assets/players/neutral-player.svg'} alt={selectedPlayer.name} />
+          <ApiPlayerImage playerId={selectedPlayer.apiPlayerId ?? playerIdFor(selectedPlayer.name)} name={selectedPlayer.name} fallbackSrc={selectedPlayer.image || '/assets/players/neutral-player.svg'} alt={selectedPlayer.name} />
           <div><b>{selectedPlayer.name}</b><small>{selectedPlayer.position} · {selectedPlayer.archetype}</small></div>
         </div>
       </div>
@@ -297,6 +301,24 @@ function PositionBoard({ report }) {
         ))}
       </div>
     </div>
+  );
+}
+
+// Role-template fit: the player's real traits scored against specific
+// positional role templates, independent of the selected club's system
+// average. Surfaced as its own panel (not folded into the headline score)
+// because a low team-aggregate match doesn't rule out a great fit if a coach
+// builds a specific role around him — the Haaland/Pep point, made concrete.
+function RoleFitPanel({ report }) {
+  if (!report.roleFit?.length) return null;
+  return (
+    <section className="sf-panel">
+      <div className="sf-panel-head"><div><Target size={17} /><span>ROLE FIT</span></div><b>POSITION TEMPLATES</b></div>
+      <p style={{ fontSize: 11.5, color: 'var(--sf-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
+        How {report.player.name.split(' ')[0]}'s real traits match specific role templates, separate from {report.team.short || report.team.name}'s system average.
+      </p>
+      {report.roleFit.map(item => <MetricBar key={item.role} label={item.role} value={item.score} />)}
+    </section>
   );
 }
 
@@ -376,6 +398,56 @@ function KeyStats({ report }) {
   );
 }
 
+// Percentile-vs-pool profile — "how does this player's real per-90 output
+// rank against others at his position," not a trait score. Shares its
+// formula with the Players page's Advanced Stats / Scout Report tabs via
+// services/percentiles.js, so the same player reads the same percentile on
+// both pages. Requires a real Supabase-sourced pool (fetched live here) and
+// a real per-90 stat line on the player himself — curated demo players and
+// API-search-only profiles honestly show "not enough data" rather than a
+// guessed percentile, same convention as the rest of this module.
+function PercentileProfile({ player }) {
+  const [pool, setPool] = useState([]);
+  const [poolLoading, setPoolLoading] = useState(false);
+  const bucket = player ? ratingPositionBucket(player) : null;
+
+  useEffect(() => {
+    if (!player || !bucket) { setPool([]); return; }
+    let alive = true;
+    setPoolLoading(true);
+    getSupabasePositionPool({ bucket, limit: 300 })
+      .then(rows => { if (alive) setPool(rows); })
+      .catch(() => { if (alive) setPool([]); })
+      .finally(() => { if (alive) setPoolLoading(false); });
+    return () => { alive = false; };
+  }, [player?.name, player?.apiPlayerId, bucket]);
+
+  const keyStats = useMemo(() => computeKeyStatPercentiles(player, pool), [player, pool]);
+  const ranked = keyStats.filter(k => k.pct != null);
+
+  return (
+    <section className="sf-panel">
+      <div className="sf-panel-head">
+        <div><BarChart3 size={17} /><span>PERCENTILE PROFILE</span></div>
+        <b style={{ fontSize: '10px', color: 'var(--sf-muted)' }}>{poolLoading ? 'LOADING…' : `VS ${bucket || 'POSITION'} · N=${pool.length}`}</b>
+      </div>
+      <p style={{ fontSize: 11.5, color: 'var(--sf-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
+        Real per-90 output ranked against {bucket ? bucket.toLowerCase() : 'position'} players in the Calibre bank — a percentile, not a trait score.
+      </p>
+      {ranked.length ? ranked.map(k => (
+        <div className="sf-metric-row" key={k.key}>
+          <div className="sf-metric-label"><span>{k.label}</span><b>{k.value == null ? '—' : k.value.toFixed(k.dp)}{k.suffix || ''} · {k.pct}th</b></div>
+          <div className="sf-metric-track"><span className="sf-metric-fill" style={{ width: `${k.pct}%` }} /></div>
+        </div>
+      )) : (
+        <small style={{ color: 'var(--sf-muted)', fontSize: '10px', display: 'block' }}>
+          {poolLoading ? 'Loading position pool…' : 'Not enough per-90 evidence yet for this player or pool.'}
+        </small>
+      )}
+    </section>
+  );
+}
+
 function RoleRadar({ report, player }) {
   const items = report.rolePulse.slice(0, 6);
   const cx = 110, cy = 110, r = 76;
@@ -438,7 +510,7 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger, canFit
     <section className="sf-dashboard-shell">
       <div className="sf-dashboard-hero">
         <div className="sf-player-portrait sf-player-portrait--dashboard">
-          <ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name) ?? player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
+          <ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name)} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
           <div className="sf-player-portrait-fade" />
           <div className="sf-player-portrait-label"><small>{player.archetype}</small><strong>{player.name}</strong><span>{player.position} · {player.team}</span></div>
         </div>
@@ -449,6 +521,16 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger, canFit
           {report.score == null && report.note && (
             <div style={{ marginTop: 4, padding: '10px 12px', border: '1px solid rgba(255,255,255,0.10)', borderRadius: 8, background: 'rgba(255,255,255,0.03)', fontSize: 12.5, color: '#bbb', lineHeight: 1.5 }}>
               {report.note}
+            </div>
+          )}
+          {report.score != null && report.rawAlignment != null && Math.abs(report.rawAlignment - report.score) >= 5 && (
+            <div style={{ marginTop: 2, fontSize: 11.5, color: '#888' }}>
+              Raw trait alignment: <b style={{ color: '#ccc' }}>{report.rawAlignment}/100</b> before the {report.rawAlignment < report.score ? 'proven-fit adjustment for his current club' : 'adaptation-risk adjustment for a new destination'} below.
+            </div>
+          )}
+          {report.specialistNote && (
+            <div style={{ marginTop: 8, padding: '10px 12px', border: '1px solid rgba(255,196,0,0.25)', borderRadius: 8, background: 'rgba(255,196,0,0.05)', fontSize: 12.5, color: '#dcc07a', lineHeight: 1.5 }}>
+              <b style={{ color: '#ffd85c' }}>Specialist profile — </b>{report.specialistNote}
             </div>
           )}
           <div className="sf-dashboard-checks">
@@ -507,6 +589,8 @@ function FitIntelligenceDashboard({ report, mode, comparison, challenger, canFit
           </div>
         </section>
         <KeyStats report={report} />
+        <RoleFitPanel report={report} />
+        <PercentileProfile player={player} />
       </div>
       </>) : <SystemFitLock />}
     </section>
@@ -647,7 +731,7 @@ function ComparePlayers({ comparison, challenger, setChallenger }) {
           <div className="sf-search-results" style={{ marginBottom: 10 }}>
             {merged.map(item => (
               <button type="button" className="sf-search-result" key={`cmp-${item.id}`} onClick={() => choose(item)}>
-                <ApiPlayerImage playerId={item.api_player_id ?? item.apiPlayerId ?? playerIdFor(item.name) ?? item.id} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />
+                <ApiPlayerImage playerId={resolveApiId(item) ?? playerIdFor(item.name)} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />
                 <span><b>{item.name}</b><small>{item.team} \u00b7 {item.position}</small></span>
               </button>
             ))}
@@ -655,9 +739,9 @@ function ComparePlayers({ comparison, challenger, setChallenger }) {
           </div>
         )}
         <div className="sf-compare-head">
-          <div><ApiPlayerImage playerId={comparison.primary.apiPlayerId ?? playerIdFor(comparison.primary.name) ?? comparison.primary.id} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
+          <div><ApiPlayerImage playerId={comparison.primary.apiPlayerId ?? playerIdFor(comparison.primary.name)} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
           <em>VS</em>
-          <div><ApiPlayerImage playerId={comparison.challenger.apiPlayerId ?? playerIdFor(comparison.challenger.name) ?? comparison.challenger.id} name={comparison.challenger.name} fallbackSrc={comparison.challenger.image || '/assets/players/neutral-player.svg'} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
+          <div><ApiPlayerImage playerId={comparison.challenger.apiPlayerId ?? playerIdFor(comparison.challenger.name)} name={comparison.challenger.name} fallbackSrc={comparison.challenger.image || '/assets/players/neutral-player.svg'} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
         </div>
         <div className="sf-versus-bars">{comparison.dimensions.map(item => (
           <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>
@@ -821,13 +905,13 @@ function SelectorRow({ selectedPlayer, selectedTeam, setSelectedPlayer, setSelec
         {pMerged.length > 0 && pq.trim().length >= 3 && (
           <div className="sf2-dropdown">{pMerged.map(item => (
             <button type="button" key={`p-${item.id}`} onClick={() => pickPlayer(item)}>
-              <ApiPlayerImage playerId={item.api_player_id ?? item.apiPlayerId ?? playerIdFor(item.name) ?? item.id} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />
+              <ApiPlayerImage playerId={resolveApiId(item) ?? playerIdFor(item.name)} name={item.name} fallbackSrc={item.image || '/assets/players/neutral-player.svg'} alt={item.name} />
               <span><b>{item.name}</b><small>{item.team} · {item.position}</small></span>
             </button>))}</div>
         )}
       </div>
       <div className="sf2-select sf2-select--player">
-        <ApiPlayerImage playerId={selectedPlayer.apiPlayerId ?? playerIdFor(selectedPlayer.name) ?? selectedPlayer.id} name={selectedPlayer.name} fallbackSrc={selectedPlayer.image || '/assets/players/neutral-player.svg'} alt={selectedPlayer.name} />
+        <ApiPlayerImage playerId={selectedPlayer.apiPlayerId ?? playerIdFor(selectedPlayer.name)} name={selectedPlayer.name} fallbackSrc={selectedPlayer.image || '/assets/players/neutral-player.svg'} alt={selectedPlayer.name} />
         <div><b>{selectedPlayer.name}</b><small>{[selectedPlayer.position, selectedPlayer.age && selectedPlayer.age !== '—' ? `AGE ${selectedPlayer.age}` : null, selectedPlayer.team].filter(Boolean).join(' · ')}</small></div>
       </div>
       <div className="sf2-select">
@@ -968,7 +1052,7 @@ function PlayerProfileModal({ player, report, onClose }) {
       <section className="sf2-modal-card" role="dialog" aria-modal="true" onMouseDown={e => e.stopPropagation()}>
         <button className="sf2-modal-close" type="button" onClick={onClose} aria-label="Close"><X size={18} /></button>
         <div className="sf2-modal-head">
-          <div className="sf2-modal-photo"><ApiPlayerImage playerId={p.apiPlayerId ?? playerIdFor(p.name) ?? p.id} name={p.name} fallbackSrc={p.image || '/assets/players/neutral-player.svg'} alt={p.name} /></div>
+          <div className="sf2-modal-photo"><ApiPlayerImage playerId={p.apiPlayerId ?? playerIdFor(p.name)} name={p.name} fallbackSrc={p.image || '/assets/players/neutral-player.svg'} alt={p.name} /></div>
           <div className="sf2-modal-id">
             <div className="sf-kicker">PLAYER PROFILE</div>
             <h3>{p.name}</h3>
@@ -1001,7 +1085,7 @@ function AttributeCard({ player, report }) {
   return (
     <section className="sf2-card sf2-attr">
       <div className="sf2-attr-top">
-        <div className="sf2-attr-photo"><ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name) ?? player.id} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} /></div>
+        <div className="sf2-attr-photo"><ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name)} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} /></div>
         <div className="sf2-attr-rating"><strong>{rating}</strong><span>CALIBRE</span><div className="sf2-attr-chips">{chips.map(c => <em key={c}>{c}</em>)}</div></div>
       </div>
       <div className="sf2-attr-pos">

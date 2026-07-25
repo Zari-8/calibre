@@ -1148,6 +1148,16 @@ export default function Transfers() {
                     ) : (
                       <p className="tr2-note">Select a buying club above to run the real team fit.</p>
                     )}
+                    {selectedTeam && sysFit?.rawAlignment != null && systemFitScore != null && Math.abs(sysFit.rawAlignment - systemFitScore) >= 5 && (
+                      <p className="tr2-note" style={{ marginTop: 4, fontSize: 11 }}>
+                        Raw trait alignment: <b>{sysFit.rawAlignment}/100</b> before the {sysFit.rawAlignment < systemFitScore ? 'proven-fit adjustment for his current club' : 'adaptation-risk adjustment for a new destination'}.
+                      </p>
+                    )}
+                    {selectedTeam && sysFit?.specialistNote && (
+                      <p className="tr2-note" style={{ marginTop: 4, fontSize: 11, color: '#dcc07a' }}>
+                        <b style={{ color: '#ffd85c' }}>Specialist profile — </b>{sysFit.specialistNote}
+                      </p>
+                    )}
                   </div>
 
                   <div className="tr2-sf-col">

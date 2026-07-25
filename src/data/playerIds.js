@@ -45,6 +45,42 @@ export const PLAYER_IDS = {
 
 // Resolve a name (full, abbreviated like "K. Mbappé", or surname) to an id.
 // Returns null when unknown so callers can fall back to their own image.
+// Safely resolve a player-ish object's trustworthy API-Football id.
+//
+// The bug this exists to prevent: a Calibre registry/search-result row that
+// hasn't been enriched yet carries NO real api_player_id — but several call
+// sites fell back to the row's own `id` (its Supabase primary key, or a
+// merged-list array index) as if it were an API-Football id. Since both are
+// just positive integers, a coincidental match silently resolves to a REAL
+// but WRONG player's official portrait — it loads successfully, so
+// ApiPlayerImage's onError never fires and the wrong face never falls back
+// to search or the placeholder. This is what put a different player's photo
+// on Anthony Gordon's card: his row had no api_player_id yet, so `.id`
+// (a row id) got used as a "real" API id and happened to collide with
+// someone else's.
+//
+// Mirrors the equivalent local apiIdFor() guard already in Players.jsx —
+// this is the same fix, exported so every page can share ONE implementation
+// instead of re-deriving (and re-breaking) it per file.
+export function resolveApiId(item) {
+  if (!item) return null;
+  const explicit = item.apiPlayerId ?? item.api_player_id;
+  const explicitNum = Number(explicit);
+  if (Number.isInteger(explicitNum) && explicitNum > 0) return explicitNum;
+
+  // A row that carries the apiPlayerId/api_player_id KEY AT ALL (even if
+  // null — i.e. present but not yet enriched) is a Calibre bank/registry
+  // row. Its numeric `id` is a DATABASE ROW ID, never an API id — never
+  // borrow it.
+  const isBankRow = 'apiPlayerId' in item || 'api_player_id' in item;
+  if (isBankRow) return null;
+
+  // Otherwise this is a genuine, un-normalized API-Football search result,
+  // where `id` really is the real API id.
+  const idNum = Number(item.id);
+  return Number.isInteger(idNum) && idNum > 0 ? idNum : null;
+}
+
 export function playerIdFor(name) {
   if (!name) return null;
   const key = String(name).trim().toLowerCase().replace(/\s+/g, ' ');

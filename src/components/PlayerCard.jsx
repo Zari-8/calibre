@@ -3,6 +3,7 @@ import ApiPlayerImage from './ApiPlayerImage.jsx';
 import ApiTeamLogo from './ApiTeamLogo.jsx';
 import { deriveArchetype } from '../services/playerTraits.js';
 import { teamLogoUrl } from '../services/apiFootball.js';
+import { resolveApiId } from '../data/playerIds.js';
 
 function fmtRating(r) {
   const n = Number(r);
@@ -35,7 +36,9 @@ export default function PlayerCard({ player, onViewProfile }) {
   const age = (player.age ?? null) != null && player.age !== '' ? player.age : null;
   const club = player.club || player.team || null;
   const shirtNumber = player.shirt_number ?? player.shirtNumber ?? player.number ?? null;
-  const imgId = player.apiPlayerId ?? player.api_player_id ?? player.id;
+  // v3 fix: no longer falls back to player.id (a Supabase row id, not a real
+  // API-Football id) — see resolveApiId() in data/playerIds.js.
+  const imgId = resolveApiId(player);
   const preferred = player.image || player.img || player.photo || undefined;
   const teamId = player.apiTeamId ?? player.api_team_id ?? player.teamId ?? null;
   const teamLogo = teamId ? teamLogoUrl(teamId) : undefined;

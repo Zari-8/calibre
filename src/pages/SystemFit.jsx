@@ -406,6 +406,19 @@ function KeyStats({ report }) {
 // a real per-90 stat line on the player himself — curated demo players and
 // API-search-only profiles honestly show "not enough data" rather than a
 // guessed percentile, same convention as the rest of this module.
+// Plain-language tier next to the raw percentile — same idea as the
+// benchmark column on PlayerPrint's parent-facing report ("78% -> Good"),
+// so the number reads at a glance instead of requiring "is 73rd percentile
+// good?" math. Thresholds are arbitrary-but-reasonable quartile-ish cuts;
+// the label always shows alongside the real percentile, never instead of it.
+function percentileTier(pct) {
+  if (pct == null) return null;
+  if (pct >= 85) return { label: 'Elite', color: '#a6ff00' };
+  if (pct >= 65) return { label: 'Strong', color: '#7ed957' };
+  if (pct >= 35) return { label: 'Balanced', color: '#c9cfd5' };
+  return { label: 'Developing', color: '#e0a850' };
+}
+
 function PercentileProfile({ player }) {
   const [pool, setPool] = useState([]);
   const [poolLoading, setPoolLoading] = useState(false);
@@ -434,15 +447,30 @@ function PercentileProfile({ player }) {
       <p style={{ fontSize: 11.5, color: 'var(--sf-muted)', margin: '0 0 10px', lineHeight: 1.5 }}>
         Real per-90 output ranked against {bucket ? bucket.toLowerCase() : 'position'} players in the Calibre bank — a percentile, not a trait score.
       </p>
-      {ranked.length ? ranked.map(k => (
-        <div className="sf-metric-row" key={k.key}>
-          <div className="sf-metric-label"><span>{k.label}</span><b>{k.value == null ? '—' : k.value.toFixed(k.dp)}{k.suffix || ''} · {k.pct}th</b></div>
-          <div className="sf-metric-track"><span className="sf-metric-fill" style={{ width: `${k.pct}%` }} /></div>
-        </div>
-      )) : (
+      {ranked.length ? ranked.map(k => {
+        const tier = percentileTier(k.pct);
+        return (
+          <div className="sf-metric-row" key={k.key}>
+            <div className="sf-metric-label">
+              <span>{k.label}</span>
+              <b>{k.value == null ? '—' : k.value.toFixed(k.dp)}{k.suffix || ''} · {k.pct}th{tier && <em style={{ marginLeft: 6, fontStyle: 'normal', color: tier.color }}>{tier.label}</em>}</b>
+            </div>
+            <div className="sf-metric-track"><span className="sf-metric-fill" style={{ width: `${k.pct}%` }} /></div>
+          </div>
+        );
+      }) : (
         <small style={{ color: 'var(--sf-muted)', fontSize: '10px', display: 'block' }}>
           {poolLoading ? 'Loading position pool…' : 'Not enough per-90 evidence yet for this player or pool.'}
         </small>
+      )}
+      {ranked.length > 0 && (
+        <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,.06)', display: 'flex', flexWrap: 'wrap', gap: '10px 14px' }}>
+          {[{ label: 'Elite', color: '#a6ff00' }, { label: 'Strong', color: '#7ed957' }, { label: 'Balanced', color: '#c9cfd5' }, { label: 'Developing', color: '#e0a850' }].map(t => (
+            <span key={t.label} style={{ fontSize: 9.5, color: 'var(--sf-muted)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+              <i style={{ width: 6, height: 6, borderRadius: '50%', background: t.color, display: 'inline-block' }} />{t.label}
+            </span>
+          ))}
+        </div>
       )}
     </section>
   );
@@ -762,6 +790,13 @@ function DetailedAnalysis({ report }) {
         <div className="sf-panel-head"><div><FileText size={17} /><span>DETAILED ANALYSIS</span></div><b>{report.generatedAt.slice(0, 10)}</b></div>
         <div className="sf-report-copy">
           <div className="sf-report-lead"><ScoreRing score={report.score} compact /><div><h3>{report.player.name} at {report.team.name}</h3><p>{report.conclusion}</p></div></div>
+          {report.risks?.[0] && (
+            <div className="sf-priority-focus">
+              <small>PRIORITY FOCUS</small>
+              <p>{report.risks[0]}</p>
+              <span>This is the single biggest swing factor for whether this fit works — worth resolving before anything else on this page.</span>
+            </div>
+          )}
           <h4>Why the fit works</h4>{report.strengths.map(text => <p key={text}>• {text}</p>)}
           <h4>Where the model is cautious</h4>{report.risks.map(text => <p key={text}>• {text}</p>)}
           <h4>Recommended role usage</h4><p>{report.player.name} should be used primarily as a {report.primaryRoles[0].toLowerCase()}, with permission to attack the decisive phase rather than becoming a generic all-purpose midfielder.</p>

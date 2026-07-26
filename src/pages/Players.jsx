@@ -1467,119 +1467,6 @@ function ScatterExplorer() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────
-// Weighted Scout — closes the last selected PlayerPrint gap: they let you
-// weight several metrics and rank a whole filterable pool by the blend;
-// Calibre's search was closer to single-criteria filtering. Reuses the same
-// KEY_STAT_FIELDS/percentileRank plumbing as the Percentile Profile and
-// Scatter Explorer — every metric is converted to a percentile-vs-pool
-// FIRST (so a 0-2 xA scale and a 0-90 touches scale are directly
-// comparable), then blended by the user's weights into one composite score.
-// ─────────────────────────────────────────────────────────────────────────
-const SCOUT_BUCKETS = ['ATT', 'MID', 'DEF', 'GK'];
-const SCOUT_DEFAULT_WEIGHT = 50;
-
-function WeightedScout() {
-  const [bucket, setBucket] = useState('ATT');
-  const [pool, setPool] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [weights, setWeights] = useState(() => Object.fromEntries(KEY_STAT_FIELDS.map(f => [f.key, SCOUT_DEFAULT_WEIGHT])));
-
-  useEffect(() => {
-    let alive = true;
-    setLoading(true);
-    getSupabasePositionPool({ bucket, limit: 300 })
-      .then(rows => { if (alive) setPool(rows); })
-      .catch(() => { if (alive) setPool([]); })
-      .finally(() => { if (alive) setLoading(false); });
-    return () => { alive = false; };
-  }, [bucket]);
-
-  const resetWeights = () => setWeights(Object.fromEntries(KEY_STAT_FIELDS.map(f => [f.key, SCOUT_DEFAULT_WEIGHT])));
-  const zeroWeights = () => setWeights(Object.fromEntries(KEY_STAT_FIELDS.map(f => [f.key, 0])));
-
-  const ranked = useMemo(() => {
-    // Percentile pool for each metric, built once per pool (not per player) —
-    // same shape percentileRank() already expects.
-    const poolValsByField = KEY_STAT_FIELDS.map(def => pool.map(row => keyStatValue(row, def)).filter(v => v != null));
-    const activeWeightSum = KEY_STAT_FIELDS.reduce((s, f) => s + (weights[f.key] || 0), 0);
-    if (!activeWeightSum) return [];
-
-    const scored = pool.map(row => {
-      let weightedSum = 0;
-      let weightUsed = 0;
-      const contributions = [];
-      KEY_STAT_FIELDS.forEach((def, i) => {
-        const w = weights[def.key] || 0;
-        if (!w) return;
-        const value = keyStatValue(row, def);
-        const pct = percentileRank(value, poolValsByField[i]);
-        if (pct == null) return;
-        weightedSum += pct * w;
-        weightUsed += w;
-        contributions.push({ label: def.label, pct });
-      });
-      if (!weightUsed) return null;
-      const composite = weightedSum / weightUsed;
-      const coverage = weightUsed / activeWeightSum;
-      contributions.sort((a, b) => b.pct - a.pct);
-      return { row, composite, coverage, top: contributions.slice(0, 2) };
-    }).filter(Boolean);
-
-    return scored.sort((a, b) => b.composite - a.composite).slice(0, 20);
-  }, [pool, weights]);
-
-  return (
-    <section className="plp2-sec plp2-scout">
-      <div className="plp2-sec-head">
-        <h3>Weighted scout</h3>
-        <div className="plp2-scatter-controls">
-          <select value={bucket} onChange={e => setBucket(e.target.value)} aria-label="Position pool">
-            {SCOUT_BUCKETS.map(b => <option key={b} value={b}>{b} pool</option>)}
-          </select>
-          <button type="button" className="plp2-scout-reset" onClick={resetWeights}>Reset weights</button>
-          <button type="button" className="plp2-scout-reset" onClick={zeroWeights}>Clear all</button>
-        </div>
-      </div>
-      <p className="plp2-scatter-note">
-        Weight the metrics that matter for what you're scouting, then the whole {bucket} pool ranks itself by the blend — every metric is read as a percentile against the same pool first, so a passing stat and a defensive stat carry equal weight at the same slider value.
-      </p>
-      <div className="plp2-scout-body">
-        <div className="plp2-scout-sliders">
-          {KEY_STAT_FIELDS.map(def => (
-            <div className="plp2-scout-slider" key={def.key}>
-              <div className="plp2-scout-slider-head"><span>{def.label}</span><b>{weights[def.key] || 0}</b></div>
-              <input
-                type="range" min={0} max={100} step={5}
-                value={weights[def.key] || 0}
-                onChange={e => setWeights(w => ({ ...w, [def.key]: Number(e.target.value) }))}
-              />
-            </div>
-          ))}
-        </div>
-        <div className="plp2-scout-results">
-          {loading ? (
-            <p className="plp2-scatter-empty">Loading pool…</p>
-          ) : ranked.length ? (
-            <ol className="plp2-scout-list">
-              {ranked.map((r, i) => (
-                <li key={r.row.name + i}>
-                  <em>{i + 1}</em>
-                  <div className="plp2-scout-name"><b>{r.row.name}</b><span>{r.row.team || r.row.club || '—'}</span></div>
-                  <div className="plp2-scout-top">{r.top.map(t => `${t.label} ${t.pct}th`).join(' · ') || '—'}</div>
-                  <strong>{r.composite.toFixed(0)}</strong>
-                </li>
-              ))}
-            </ol>
-          ) : (
-            <p className="plp2-scatter-empty">Set at least one weight above 0 to rank the pool.</p>
-          )}
-        </div>
-      </div>
-    </section>
-  );
-}
-
 export default function Players(){
   const [rankTab,setRankTab] = useState('Calibre Rating');
   const [search,setSearch] = useState('');
@@ -2003,7 +1890,6 @@ export default function Players(){
     { key:'watch', icon:Star, label:'My Watchlist', run:()=>setWatchlistOpen(true) },
     { key:'top', icon:Crown, label:'Top 100 Players', run:()=>{ setRankTab('Calibre Rating'); setFilters(f=>({...f,rating:'all'})); document.querySelector('.plp2-rankings')?.scrollIntoView({behavior:'smooth'}); } },
     { key:'scatter', icon:Activity, label:'Scatter Explorer', run:()=>document.querySelector('.plp2-scatter')?.scrollIntoView({behavior:'smooth'}) },
-    { key:'scout', icon:SlidersHorizontal, label:'Weighted Scout', run:()=>document.querySelector('.plp2-scout')?.scrollIntoView({behavior:'smooth'}) },
     { key:'free', icon:Database, label:'Free Agents', run:()=>setNotice('Free-agent data connects with the transfers feed — coming soon.') },
   ];
 
@@ -2099,24 +1985,6 @@ export default function Players(){
         .plp2-scatter-chart { position:relative; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.015); padding:6px; }
         .plp2-scatter-chart circle { cursor:pointer; transition:r .1s,fill-opacity .1s; }
         .plp2-scatter-empty { margin:0; padding:40px 10px; text-align:center; color:var(--muted); font:500 12px "Barlow",sans-serif; }
-        .plp2-scout { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:16px; margin-top:14px; }
-        .plp2-scout-reset { height:34px; padding:0 12px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.02); color:#d8dde2; font:600 11px "Barlow",sans-serif; cursor:pointer; }
-        .plp2-scout-reset:hover { border-color:rgba(200,250,60,.4); color:#fff; }
-        .plp2-scout-body { display:grid; grid-template-columns:280px minmax(0,1fr); gap:18px; align-items:start; }
-        @media(max-width:900px){ .plp2-scout-body { grid-template-columns:1fr; } }
-        .plp2-scout-sliders { display:flex; flex-direction:column; gap:10px; }
-        .plp2-scout-slider-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; }
-        .plp2-scout-slider-head span { color:#c3c9cf; font:600 11.5px "Barlow",sans-serif; }
-        .plp2-scout-slider-head b { color:var(--l); font:800 12px "Barlow Condensed",sans-serif; }
-        .plp2-scout-slider input[type="range"] { width:100%; accent-color:var(--l); cursor:pointer; }
-        .plp2-scout-list { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; max-height:520px; overflow-y:auto; }
-        .plp2-scout-list li { display:grid; grid-template-columns:26px minmax(0,1fr) minmax(0,1.4fr) 44px; align-items:center; gap:10px; padding:9px 10px; border:1px solid rgba(255,255,255,.05); border-radius:9px; background:rgba(255,255,255,.015); }
-        .plp2-scout-list em { font:800 11px "Barlow Condensed",sans-serif; color:var(--muted); font-style:normal; text-align:center; }
-        .plp2-scout-name { display:flex; flex-direction:column; min-width:0; }
-        .plp2-scout-name b { color:#eef1f4; font:700 12.5px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .plp2-scout-name span { color:var(--muted); font:500 10.5px "Barlow",sans-serif; }
-        .plp2-scout-top { color:var(--muted); font:500 10px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .plp2-scout-list strong { color:var(--l); font:800 15px "Barlow Condensed",sans-serif; text-align:right; }
         .plp2-rail > * { margin-bottom:14px; }
         .plp2-qa { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:14px; }
         .plp2-qa h4 { margin:0 0 10px; color:#e9edf1; font:800 11px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
@@ -2257,7 +2125,6 @@ export default function Players(){
           </section>
 
           <ScatterExplorer />
-          <WeightedScout />
         </main>
 
         <aside className="plp2-rail">

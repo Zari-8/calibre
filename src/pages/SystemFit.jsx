@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
-  Activity, ArrowRight, BarChart3, CheckCircle2, CircleDot, Compass, Crown, Database,
-  Download, FileText, GitCompare, Layers3, Plus, Search, Share2, ShieldCheck, Sparkles, Star, Target, Users, X,
+  Activity, ArrowRight, BarChart3, CheckCircle2, CircleDot, Crown, Database,
+  Download, FileText, GitCompare, Layers3, Plus, Search, Share2, ShieldCheck, Sparkles, Star, Target, X,
 } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import { getPlayerProfile, searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
@@ -1061,8 +1061,6 @@ function LeftNav({ mode, setMode, canFitFull, canCompare }) {
       <span>{label}</span>{gated && <em>SCOUT</em>}
     </button>
   );
-  const qa = (icon, label, onClick) => <button type="button" className="sf2-qa" onClick={onClick}>{icon}<span>{label}</span></button>;
-  const scrollTo = sel => document.querySelector(sel)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   return (
     <aside className="sf2-nav">
       <div className="sf2-nav-block">
@@ -1070,12 +1068,6 @@ function LeftNav({ mode, setMode, canFitFull, canCompare }) {
         {item('fit', 'System Fit', false)}
         {item('compare', 'Compare Player', !canCompare)}
         {item('analysis', 'Detailed Analysis', !canFitFull)}
-      </div>
-      <div className="sf2-nav-block">
-        <div className="sf-kicker">QUICK ACTIONS</div>
-        {qa(<Users size={14} />, 'Compare Players', () => setMode('compare'))}
-        {qa(<Compass size={14} />, 'Scout Alternatives', () => scrollTo('.sf2-ranking'))}
-        {qa(<Activity size={14} />, 'Change System', () => scrollTo('.sf2-selectors'))}
       </div>
       <div className="sf2-pro">
         <b>UNLOCK PRO INSIGHTS</b><span>Deeper reports. Smarter decisions.</span>
@@ -1500,11 +1492,11 @@ export default function SystemFit() {
         .sf2-nav { display:flex; flex-direction:column; gap:14px; position:sticky; top:14px; }
         .sf2-nav-block { background:rgba(9,13,16,.46); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.08); border-radius:12px; box-shadow:0 12px 34px rgba(0,0,0,.30); padding:14px 12px; display:flex; flex-direction:column; gap:4px; }
         .sf2-nav-block .sf-kicker { margin-bottom:8px; }
-        .sf2-nav-item, .sf2-qa { display:flex; align-items:center; gap:9px; width:100%; padding:9px 10px; border-radius:8px; background:none; border:1px solid transparent; color:#c4c9ce; font:600 12.5px/1 "Barlow",sans-serif; cursor:pointer; text-align:left; }
-        .sf2-nav-item svg, .sf2-qa svg { color:#8d929b; flex:none; }
-        .sf2-nav-item span, .sf2-qa span { flex:1; }
+        .sf2-nav-item { display:flex; align-items:center; gap:9px; width:100%; padding:9px 10px; border-radius:8px; background:none; border:1px solid transparent; color:#c4c9ce; font:600 12.5px/1 "Barlow",sans-serif; cursor:pointer; text-align:left; }
+        .sf2-nav-item svg { color:#8d929b; flex:none; }
+        .sf2-nav-item span { flex:1; }
         .sf2-nav-item em { font:800 8px/1 "IBM Plex Mono",monospace; letter-spacing:.06em; color:#a6ff00; font-style:normal; }
-        .sf2-nav-item:hover, .sf2-qa:hover { background:rgba(255,255,255,.04); color:#fff; }
+        .sf2-nav-item:hover { background:rgba(255,255,255,.04); color:#fff; }
         .sf2-nav-item.is-active { background:rgba(166,255,0,.10); border-color:rgba(166,255,0,.24); color:#fff; }
         .sf2-nav-item.is-active svg { color:#a6ff00; }
         .sf2-pro { border:1px solid rgba(166,255,0,.24); border-radius:12px; background:linear-gradient(180deg,rgba(166,255,0,.06),rgba(9,13,16,.5)); padding:15px 14px; }

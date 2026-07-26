@@ -853,6 +853,31 @@ function DetailedAnalysis({ report }) {
               <span>This is the single biggest swing factor for whether this fit works — worth resolving before anything else on this page.</span>
             </div>
           )}
+          {report.valuation && (
+            <div className="sf-report-addons">
+              <div className="sf-addon-card">
+                <small>CONFIDENCE</small>
+                <strong>{report.valuation.confidence >= 70 ? 'High' : report.valuation.confidence >= 45 ? 'Medium' : 'Low'} · {report.valuation.confidence}</strong>
+                <span>{(report.valuation.confidenceDrivers || []).slice(0, 2).map(([k, v]) => `${k}: ${v}`).join(' · ') || 'Calibre Value confidence score'}</span>
+              </div>
+              <div className="sf-addon-card">
+                <small>EST. FEE BAND</small>
+                <strong>€{report.valuation.fairRange.low}m – €{report.valuation.fairRange.high}m</strong>
+                <span>Calibre Value €{report.valuation.estimatedValue}m</span>
+              </div>
+            </div>
+          )}
+          {report.decisionWorkflow && (
+            <div className="sf-decision-workflow">
+              <small>DECISION WORKFLOW</small>
+              <div className="sf-decision-grid">
+                <div><span>Recommendation</span><b>{report.decisionWorkflow.recommendation}</b></div>
+                <div><span>Owner</span><b>{report.decisionWorkflow.owner}</b></div>
+                <div><span>Next action</span><b>{report.decisionWorkflow.nextAction}</b></div>
+                <div><span>Decision deadline</span><b>{report.decisionWorkflow.deadline}</b></div>
+              </div>
+            </div>
+          )}
           <h4>Why the fit works</h4>{report.strengths.map(text => <p key={text}>• {text}</p>)}
           <h4>Where the model is cautious</h4>{report.risks.map(text => <p key={text}>• {text}</p>)}
           <h4>Recommended role usage</h4><p>{report.player.name} should be used primarily as a {report.primaryRoles[0].toLowerCase()}, with permission to attack the decisive phase rather than becoming a generic all-purpose midfielder.</p>

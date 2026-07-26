@@ -40,6 +40,21 @@ export function exportFitCsv(report) {
   if (report.specialistNote) {
     rows.push(['Specialist profile note', report.specialistNote]);
   }
+  if (report.valuation) {
+    rows.push(['Confidence', `${report.valuation.confidence}/100`]);
+    rows.push(['Estimated fee band', `€${report.valuation.fairRange.low}m - €${report.valuation.fairRange.high}m`]);
+    rows.push(['Calibre Value', `€${report.valuation.estimatedValue}m`]);
+  }
+  if (report.decisionWorkflow) {
+    rows.push(
+      [],
+      ['DECISION WORKFLOW'],
+      ['Recommendation', report.decisionWorkflow.recommendation],
+      ['Owner', report.decisionWorkflow.owner],
+      ['Next action', report.decisionWorkflow.nextAction],
+      ['Decision deadline', report.decisionWorkflow.deadline],
+    );
+  }
   rows.push(
     [],
     ['FIT BREAKDOWN'],
@@ -165,6 +180,49 @@ export async function exportFitPdf(report) {
     doc.setFontSize(8.5);
     doc.setTextColor(163, 122, 20);
     y = addWrapped(doc, `Specialist profile: ${report.specialistNote}`, 14, y, 174);
+    y += 2;
+  }
+  // Confidence + fee band and Decision Workflow — white background, dark
+  // text, same as every other block in this PDF (no fills). Printouts don't
+  // hold a black background reliably (browser/driver print settings strip
+  // it, and it's a lot of ink even when they don't), so this stays plain
+  // text on the page's default white, matching the rest of the document.
+  if (report.valuation) {
+    y = ensureSpace(doc, y, 16);
+    y += 3;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(20, 22, 24);
+    doc.text(`Confidence: ${report.valuation.confidence}/100`, 14, y);
+    doc.text(`Est. fee band: €${report.valuation.fairRange.low}m – €${report.valuation.fairRange.high}m`, 105, y);
+    y += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(120, 125, 132);
+    doc.text(`Calibre Value €${report.valuation.estimatedValue}m`, 14, y);
+    y += 4;
+  }
+  if (report.decisionWorkflow) {
+    const dw = report.decisionWorkflow;
+    y += 3;
+    y = addSectionHeading(doc, 'DECISION WORKFLOW', y);
+    doc.setFontSize(9);
+    [['Recommendation', dw.recommendation], ['Owner', dw.owner], ['Decision deadline', dw.deadline]].forEach(([label, value]) => {
+      y = ensureSpace(doc, y, 8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(20, 22, 24);
+      doc.text(label, 14, y);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(value), 180, y, { align: 'right' });
+      doc.setDrawColor(224, 228, 231);
+      doc.line(14, y + 2, 180, y + 2);
+      y += 8;
+    });
+    y = ensureSpace(doc, y, 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
+    doc.setTextColor(65, 70, 76);
+    y = addWrapped(doc, `Next action: ${dw.nextAction}`, 14, y, 174);
     y += 2;
   }
   y += 3;

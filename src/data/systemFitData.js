@@ -1,4 +1,58 @@
 import { playerTraits, POSITION_BASELINES } from '../services/playerTraits.js';
+import { calibreValue } from '../services/calibreValue.js';
+import { leagueName } from './leagues.js';
+
+// Real Calibre Value read (fair range + confidence) for the report's
+// Decision Workflow additions — same call shape Transfers.jsx already uses,
+// so a player gets the identical valuation number on both pages. No
+// fabricated fee: if the engine can't price it, the confidence score alone
+// reflects that (see calibreValue.js's own honesty-over-guessing design).
+function playerValuation(player) {
+  return calibreValue({
+    rating: player?.ability_rating ?? player?.rating,
+    age: player?.age,
+    position: player?.pos || player?.position,
+    league: player?.league || player?.competition || leagueName(player?.league_id),
+    club: player?.club || player?.team,
+    minutes: player?.minutes ?? (player?.appearances ? player.appearances * 80 : undefined),
+    hasContractData: false,
+    injuries_synced_at: player?.injuries_synced_at,
+    injury_days_last_365: player?.injury_days_last_365,
+    major_injuries_count: player?.major_injuries_count,
+    injury_source: player?.injury_source,
+  });
+}
+
+// Real, computable "decide by" date — the close of the next FIFA transfer
+// window from today, not a guessed date. Two conventional windows: winter
+// (closes Jan 31) and summer (closes Sep 1).
+function nextTransferWindowClose(now = new Date()) {
+  const year = now.getUTCFullYear();
+  const candidates = [
+    Date.UTC(year, 0, 31),
+    Date.UTC(year, 8, 1),
+    Date.UTC(year + 1, 0, 31),
+  ];
+  const nowMs = now.getTime();
+  const next = candidates.find(ms => ms > nowMs) ?? candidates[candidates.length - 1];
+  return new Date(next).toISOString().slice(0, 10);
+}
+
+// Decision Workflow block — recommendation/next action are derived from the
+// real score and the report's own top risk flag (not invented copy); owner
+// is a role label (workflow metadata, not a data claim); deadline is the
+// real next transfer-window close computed above.
+function buildDecisionWorkflow(score, risks) {
+  const recommendation = score >= 80 ? 'Proceed to bid'
+    : score >= 65 ? 'Second scouting look'
+    : score >= 50 ? 'Monitor — not a priority'
+    : 'Pass';
+  const nextAction = risks?.[0]
+    ? `Resolve: ${risks[0]}`
+    : score >= 80 ? 'Open valuation and agent-contact workstream'
+    : 'Log for the next scouting cycle';
+  return { recommendation, nextAction, owner: 'Recruitment lead', deadline: nextTransferWindowClose() };
+}
 
 export const SYSTEM_TEAMS = [
   // ── Premier League ──
@@ -541,6 +595,12 @@ export function buildSystemFitReport(player, team) {
       rawAlignment: null,
       specialistProfile: null,
       specialistNote: null,
+      // Valuation only needs the player, not a computable tactical fit, so
+      // it's still worth showing here; Decision Workflow needs a real score
+      // to recommend anything, so it's left out rather than recommending
+      // off nothing.
+      valuation: player ? playerValuation(player) : null,
+      decisionWorkflow: null,
       roleFit: player ? scoreRoleFit(player) : [],
       breakdown: [],
       rolePulse: player?.roleMetrics ? Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })) : [],
@@ -638,6 +698,7 @@ export function buildSystemFitReport(player, team) {
   // coach is willing to build a specific role around him — the Haaland/Pep
   // point, made concrete instead of left as prose.
   const roleFit = scoreRoleFit(player);
+  const valuation = playerValuation(player);
 
   return {
     generatedAt: new Date().toISOString(),
@@ -646,6 +707,8 @@ export function buildSystemFitReport(player, team) {
     rawAlignment: detail.rawAlignment,
     specialistProfile: detail.specialistProfile,
     specialistNote,
+    valuation,
+    decisionWorkflow: buildDecisionWorkflow(score, risks),
     roleFit,
     breakdown,
     rolePulse: Object.entries(player.roleMetrics).map(([label, value]) => ({ label, value })),

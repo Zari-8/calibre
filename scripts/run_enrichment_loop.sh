@@ -66,6 +66,16 @@ NETWORK_MAX_RETRIES=20 # 20 x 15min = 5h of network-blip tolerance per attempt, 
 
 # Regenerate the still-unenriched list right now, before the loop even
 # starts, so the very first attempt already targets only what's left.
+#
+# v5 — CRITICAL bug found 2026-07-26, cost a full relaunch cycle for nothing:
+# this used to just check "is the file empty" to decide whether the sweep
+# was done. But if the export query itself fails (transient Supabase error,
+# e.g. from firing several queries back-to-back right after a kill+relaunch),
+# exportUnenrichedPlayerUuids.mjs exits non-zero and produces an EMPTY file
+# as a side effect of failing early -- which looked IDENTICAL to "genuinely
+# 0 players left," so the loop declared false victory and exited in seconds,
+# doing zero work. Now checks the export command's own exit code FIRST: a
+# real failure is treated as a transient error and retried, never as "done."
 regenerate_uuid_file() {
   echo "$(date) :: regenerating $UUID_FILE (players still missing real stats_season)..." | tee -a "$LOG"
   # Capture stderr into the log too — a silent failure here previously left
@@ -73,9 +83,25 @@ regenerate_uuid_file() {
   # stderr was going to /dev/null, so a transient Supabase hiccup never got
   # recorded anywhere).
   node scripts/exportUnenrichedPlayerUuids.mjs > "$UUID_FILE" 2>> "$LOG"
+  return $?
 }
 
-regenerate_uuid_file
+# Retries the export itself on failure (separate from the network-retry
+# budget below, since this can happen before enrichPlayerStats.mjs even
+# starts) -- up to 5 tries, 30s apart, before giving up for good.
+regenerate_uuid_file_or_die() {
+  for try in 1 2 3 4 5; do
+    if regenerate_uuid_file; then
+      return 0
+    fi
+    echo "$(date) :: regenerating $UUID_FILE FAILED (exit code from exportUnenrichedPlayerUuids.mjs) -- this is NOT the same as 'nothing left to enrich.' Retry $try/5 in 30s." | tee -a "$LOG"
+    sleep 30
+  done
+  echo "$(date) :: FATAL — regenerating $UUID_FILE failed 5 times in a row. Not declaring the sweep done (that would be wrong); stopping instead so this doesn't silently look like completion. Check $LOG and rerun." | tee -a "$LOG"
+  exit 1
+}
+
+regenerate_uuid_file_or_die
 UUID_COUNT=$(wc -l < "$UUID_FILE" | tr -d ' ')
 echo "$(date) :: target list has $UUID_COUNT still-unenriched players." | tee -a "$LOG"
 if [ "$UUID_COUNT" -eq 0 ]; then
@@ -88,7 +114,7 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
   # lands from the previous attempt, so a retry never re-targets rows that
   # just succeeded.
   if [ "$attempt" -gt 1 ]; then
-    regenerate_uuid_file
+    regenerate_uuid_file_or_die
     UUID_COUNT=$(wc -l < "$UUID_FILE" | tr -d ' ')
     if [ "$UUID_COUNT" -eq 0 ]; then
       echo "$(date) :: nothing left to enrich — every scored player already has real data. ALL DONE." | tee -a "$LOG"

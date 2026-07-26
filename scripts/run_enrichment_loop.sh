@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # scripts/run_enrichment_loop.sh
 #
-# Runs the SCOPED enrichment sweep (scored_player_uuids.txt — the real
-# ~13,900-row population, not the unscoped 401k API-Football directory) on
-# a retry loop, because API-Football's daily request quota will very likely
-# get hit again partway through. Each attempt's output is checked for the
-# quota message; if found, it sleeps and retries (quota resets ~daily) rather
-# than giving up. If a whole attempt completes with no quota hit, the sweep
-# is done (or as done as it's going to get) and the loop stops.
+# Runs the SCOPED enrichment sweep -- targeting ONLY players within the real
+# scored population (~15,177 rows) who are still missing real data
+# (unenriched_player_uuids.txt, regenerated fresh before every attempt) --
+# on a retry loop, because API-Football's daily request quota will very
+# likely get hit again partway through. Each attempt's output is checked for
+# the quota message; if found, it sleeps until the next 00:00 UTC reset and
+# retries. If a whole attempt completes with no quota hit and nothing left
+# to enrich, the sweep is done and the loop stops.
 #
 # Wrap this in `caffeinate` so the Mac doesn't sleep mid-run (see the actual
 # invocation at the bottom of the chat message this came with).
@@ -16,8 +17,19 @@
 set -uo pipefail
 cd "$(dirname "$0")/.."
 
-UUID_FILE="scored_player_uuids.txt"
+UUID_FILE="unenriched_player_uuids.txt"
 LOG="enrichPlayerStats_scored_$(date +%Y%m%d).log"
+
+# v4 — was targeting the FULL scored population (scored_player_uuids.txt,
+# ~15,177 rows) with FORCE=1 on every single attempt, which reprocesses
+# EVERY row every time -- including ones already fully enriched days ago.
+# Confirmed 2026-07-26: R. Calafiori succeeded with the IDENTICAL result on
+# 2026-07-21, 23, 24, and 26 -- four real API calls spent re-confirming data
+# we already had, while the still-unenriched rows waited their turn. Now
+# regenerates a list of ONLY players still missing real data (stats_season
+# IS NULL) fresh before EVERY attempt, so quota only ever goes toward rows
+# that actually still need it, and the target list shrinks as real progress
+# lands instead of dragging the full population along for the whole sweep.
 MAX_ATTEMPTS=4        # 4 attempts x ~1 quota-day sleep = ~4-day ceiling
 
 # v3 — API-Football's dashboard (checked 2026-07-25) confirms the Pro plan
@@ -52,24 +64,38 @@ RETRY_SHORT_SECS=900   # 15 minutes -- network blips are usually far shorter-liv
 # whole sweep in about an hour, long before a real quota reset ever happened.
 NETWORK_MAX_RETRIES=20 # 20 x 15min = 5h of network-blip tolerance per attempt, doesn't touch MAX_ATTEMPTS
 
-if [ ! -s "$UUID_FILE" ]; then
-  echo "$(date) :: $UUID_FILE missing/empty — generating it now." | tee -a "$LOG"
-  # Capture stderr into the log too this time — a silent failure here
-  # previously left an empty file with zero explanation (the outer launch
-  # command's own stderr was going to /dev/null, so the real error from a
-  # transient Supabase hiccup never got recorded anywhere).
-  node scripts/exportScoredPlayerUuids.mjs > "$UUID_FILE" 2>> "$LOG"
-fi
+# Regenerate the still-unenriched list right now, before the loop even
+# starts, so the very first attempt already targets only what's left.
+regenerate_uuid_file() {
+  echo "$(date) :: regenerating $UUID_FILE (players still missing real stats_season)..." | tee -a "$LOG"
+  # Capture stderr into the log too — a silent failure here previously left
+  # an empty file with zero explanation (the outer launch command's own
+  # stderr was going to /dev/null, so a transient Supabase hiccup never got
+  # recorded anywhere).
+  node scripts/exportUnenrichedPlayerUuids.mjs > "$UUID_FILE" 2>> "$LOG"
+}
 
+regenerate_uuid_file
 UUID_COUNT=$(wc -l < "$UUID_FILE" | tr -d ' ')
-echo "$(date) :: target list has $UUID_COUNT players." | tee -a "$LOG"
-if [ "$UUID_COUNT" -lt 1000 ]; then
-  echo "$(date) :: ABORTING — expected ~13,000-15,000+ players, got $UUID_COUNT. Check the log above for the real error before rerunning." | tee -a "$LOG"
-  exit 1
+echo "$(date) :: target list has $UUID_COUNT still-unenriched players." | tee -a "$LOG"
+if [ "$UUID_COUNT" -eq 0 ]; then
+  echo "$(date) :: nothing left to enrich — every scored player already has real data. ALL DONE." | tee -a "$LOG"
+  exit 0
 fi
 
 for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
-  echo "=== attempt $attempt/$MAX_ATTEMPTS · $(date) ===" | tee -a "$LOG"
+  # Regenerate on every attempt (not just once) -- shrinks as real progress
+  # lands from the previous attempt, so a retry never re-targets rows that
+  # just succeeded.
+  if [ "$attempt" -gt 1 ]; then
+    regenerate_uuid_file
+    UUID_COUNT=$(wc -l < "$UUID_FILE" | tr -d ' ')
+    if [ "$UUID_COUNT" -eq 0 ]; then
+      echo "$(date) :: nothing left to enrich — every scored player already has real data. ALL DONE." | tee -a "$LOG"
+      exit 0
+    fi
+  fi
+  echo "=== attempt $attempt/$MAX_ATTEMPTS · $(date) :: $UUID_COUNT still-unenriched players ===" | tee -a "$LOG"
 
   network_retry=0
   while true; do

@@ -15,3 +15,15 @@ package-lock.json
 
 # Local patch backups
 *.before-*
+
+# Enrichment sweep operational output -- logs and generated target lists,
+# not source. enrichPlayerStats_scored_20260721.log got committed by
+# accident early in this effort and kept growing into a 26k-line diff every
+# time it's touched; these patterns keep it and its siblings out going
+# forward (the already-tracked one still needs `git rm --cached` once, see
+# the commit that adds this).
+enrichPlayerStats_*.log
+enrichStatsAPI_*.log
+reconcileNames_remediation_*.log
+scored_player_uuids.txt
+unenriched_player_uuids.txt

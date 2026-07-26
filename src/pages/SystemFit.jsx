@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Activity, ArrowRight, BarChart3, CheckCircle2, CircleDot, Compass, Crown, Database,
-  Download, FileText, GitCompare, Layers3, Search, Share2, ShieldCheck, Sparkles, Star, Target, Users, X,
+  Download, FileText, GitCompare, Layers3, Plus, Search, Share2, ShieldCheck, Sparkles, Star, Target, Users, X,
 } from 'lucide-react';
 import { navigateTo } from '../components/NavLink.jsx';
 import { getPlayerProfile, searchPlayerProfiles as searchApiPlayers, searchTeams as searchApiTeams } from '../services/apiFootball.js';
@@ -735,24 +735,49 @@ function FitOverview({ report }) {
   );
 }
 
-function ComparePlayers({ comparison, challenger, setChallenger }) {
+// Compare-4: up to 4 players total (primary + up to 3 challengers). The
+// original 2-player "VS" layout (sf-compare-head / sf-versus-bars) is kept
+// byte-for-byte for the default 1-challenger case \u2014 zero visual change for
+// the common path. Adding a 2nd or 3rd challenger switches to a chip row +
+// per-dimension grid that scales to N columns instead of a fixed left/right
+// split, which the opposing-bars layout can't represent past 2 players.
+function CompareChip({ player, score, onRemove }) {
+  return (
+    <div className="sf-compare4-chip">
+      <ApiPlayerImage playerId={player.apiPlayerId ?? playerIdFor(player.name)} name={player.name} fallbackSrc={player.image || '/assets/players/neutral-player.svg'} alt={player.name} />
+      <span><b>{player.name}</b><small>{player.archetype}</small></span>
+      <strong>{score}%</strong>
+      {onRemove && <button type="button" className="sf-compare4-chip-x" aria-label={`Remove ${player.name} from comparison`} onClick={onRemove}><X size={12} /></button>}
+    </div>
+  );
+}
+
+function ComparePlayers({ comparison, challengers, addChallenger, replaceChallenger, removeChallenger }) {
   const [query, setQuery] = useState('');
   const { remote, loading } = useDatabaseSearch('player', query);
   const local = searchLocalPlayers(query);
   const localIds = new Set(local.map(item => String(item.id)));
   const merged = [...local, ...remote.filter(item => !localIds.has(String(item.id)))].slice(0, 6);
+  const canAddMore = challengers.length < 3;
   const choose = (item) => {
     const src = String(item.source || '');
-    setChallenger(src === 'db' ? normalizeDbPlayer(item) : src.startsWith('api') ? normalizeApiPlayer(item) : item);
+    const player = src === 'db' ? normalizeDbPlayer(item) : src.startsWith('api') ? normalizeApiPlayer(item) : item;
+    // First search box adds/replaces the single default challenger (unchanged
+    // behavior); once a 2nd+ has been added via "+ Add player", further
+    // searches from the top box append a new slot up to the 4-player cap.
+    if (challengers.length === 1) replaceChallenger(0, player);
+    else if (canAddMore) addChallenger(player);
     setQuery('');
   };
+  const multi = challengers.length > 1;
+  const players = comparison.players || [comparison.primary, comparison.challenger];
   return (
     <div className="sf-content-grid">
       <section className="sf-panel sf-panel--wide">
-        <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div></div>
+        <div className="sf-panel-head"><div><GitCompare size={17} /><span>COMPARE PLAYER PROFILES</span></div>{multi && <b>{players.length} PLAYERS</b>}</div>
         <label className="sf-search-box" style={{ marginBottom: 6 }}>
           <Search size={14} />
-          <input value={query} onChange={event => setQuery(event.target.value)} placeholder={`Search any registry player to compare with ${comparison.primary.name}\u2026`} />
+          <input value={query} onChange={event => setQuery(event.target.value)} placeholder={challengers.length === 1 ? `Search any registry player to compare with ${comparison.primary.name}\u2026` : canAddMore ? 'Search to add another player to the comparison\u2026' : 'Comparison full \u2014 remove a player to add another'} disabled={challengers.length > 1 && !canAddMore} />
           {loading && <span style={{ fontSize: 10, color: 'var(--sf-muted)' }}>SEARCHING\u2026</span>}
         </label>
         {query.trim().length >= 2 && (
@@ -766,14 +791,45 @@ function ComparePlayers({ comparison, challenger, setChallenger }) {
             {!merged.length && !loading && <div className="sf-database-note" style={{ padding: 8 }}>No registry match yet \u2014 keep typing.</div>}
           </div>
         )}
-        <div className="sf-compare-head">
-          <div><ApiPlayerImage playerId={comparison.primary.apiPlayerId ?? playerIdFor(comparison.primary.name)} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
-          <em>VS</em>
-          <div><ApiPlayerImage playerId={comparison.challenger.apiPlayerId ?? playerIdFor(comparison.challenger.name)} name={comparison.challenger.name} fallbackSrc={comparison.challenger.image || '/assets/players/neutral-player.svg'} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
-        </div>
-        <div className="sf-versus-bars">{comparison.dimensions.map(item => (
-          <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>
-        ))}</div>
+
+        {!multi ? (<>
+          <div className="sf-compare-head">
+            <div><ApiPlayerImage playerId={comparison.primary.apiPlayerId ?? playerIdFor(comparison.primary.name)} name={comparison.primary.name} fallbackSrc={comparison.primary.image || '/assets/players/neutral-player.svg'} alt={comparison.primary.name}/><span><b>{comparison.primary.name}</b><small>{comparison.primary.archetype}</small></span><strong>{comparison.primaryScore}%</strong></div>
+            <em>VS</em>
+            <div><ApiPlayerImage playerId={comparison.challenger.apiPlayerId ?? playerIdFor(comparison.challenger.name)} name={comparison.challenger.name} fallbackSrc={comparison.challenger.image || '/assets/players/neutral-player.svg'} alt={comparison.challenger.name}/><span><b>{comparison.challenger.name}</b><small>{comparison.challenger.archetype}</small></span><strong>{comparison.challengerScore}%</strong></div>
+          </div>
+          <div className="sf-versus-bars">{comparison.dimensions.map(item => (
+            <div key={item.label}><span>{item.primary}</span><div><i style={{ width: `${item.primary}%` }} /><b>{item.label}</b><i className="right" style={{ width: `${item.challenger}%` }} /></div><span>{item.challenger}</span></div>
+          ))}</div>
+          {canAddMore && <button type="button" className="sf-compare4-add" onClick={() => document.querySelector('.sf-search-box input')?.focus()}><Plus size={13} /> Add a 3rd player</button>}
+        </>) : (<>
+          <div className="sf-compare4-chips">
+            {players.map((p, i) => (
+              <CompareChip key={`${p.name}-${i}`} player={p} score={p.score} onRemove={i === 0 ? null : () => removeChallenger(i - 1)} />
+            ))}
+            {canAddMore && <button type="button" className="sf-compare4-addchip" onClick={() => document.querySelector('.sf-search-box input')?.focus()}><Plus size={16} /><span>Add player</span></button>}
+          </div>
+          <div className="sf-compare4-grid">
+            <div className="sf-compare4-grid-row sf-compare4-grid-head" style={{ gridTemplateColumns: `110px repeat(${players.length}, minmax(0,1fr))` }}>
+              <span />
+              {players.map((p, i) => <span key={`${p.name}-${i}`}>{p.name.split(' ').slice(-1)[0]}</span>)}
+            </div>
+            {comparison.dimensions.map(item => {
+              const max = Math.max(...item.values, 1);
+              return (
+                <div className="sf-compare4-grid-row" style={{ gridTemplateColumns: `110px repeat(${players.length}, minmax(0,1fr))` }} key={item.label}>
+                  <b>{item.label}</b>
+                  {item.values.map((v, i) => (
+                    <div className="sf-compare4-cell" key={i}>
+                      <i style={{ width: `${(v / max) * 100}%` }} />
+                      <span>{v}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })}
+          </div>
+        </>)}
       </section>
       <section className="sf-panel">
         <div className="sf-panel-head"><div><FileText size={17} /><span>COMPARISON VERDICT</span></div></div>
@@ -1260,8 +1316,14 @@ export default function SystemFit() {
   const canCompare = can(tier, 'fit.compare');
   const [selectedTeam, setSelectedTeam] = useState(SYSTEM_TEAMS[0]);
   const [selectedPlayer, setSelectedPlayer] = useState(SYSTEM_PLAYERS[0]);
-  const [challenger, setChallenger] = useState(SYSTEM_PLAYERS[1]);
+  // Compare-4: up to 3 challengers alongside the primary player (4 total).
+  // Starts with the same single default challenger as before, so the
+  // 2-player comparison experience is unchanged until someone adds a 3rd.
+  const [challengers, setChallengers] = useState([SYSTEM_PLAYERS[1]]);
   const [mode, setMode] = useState('fit');
+  const addChallenger = (player) => setChallengers(list => list.length >= 3 ? [...list.slice(0, 2), player] : [...list, player]);
+  const replaceChallenger = (index, player) => setChallengers(list => list.map((p, i) => i === index ? player : p));
+  const removeChallenger = (index) => setChallengers(list => list.length > 1 ? list.filter((_, i) => i !== index) : list);
 
   useEffect(() => {
     // Warm the derived-team cache and register the MERGED team universe so
@@ -1327,7 +1389,7 @@ export default function SystemFit() {
   }, [selectedPlayer.apiPlayerId, selectedPlayer.id, selectedPlayer.name]);
 
   const report = useMemo(() => buildSystemFitReport(selectedPlayer, selectedTeam), [selectedPlayer, selectedTeam]);
-  const comparison = useMemo(() => buildPlayerComparison(selectedPlayer, challenger, selectedTeam), [selectedPlayer, challenger, selectedTeam]);
+  const comparison = useMemo(() => buildPlayerComparison(selectedPlayer, challengers, selectedTeam), [selectedPlayer, challengers, selectedTeam]);
 
   return (
     <div className="page sf-page">
@@ -1363,7 +1425,7 @@ export default function SystemFit() {
               <BestRoleFits report={report} />
               <ClubRanking report={report} onPick={setSelectedTeam} />
             </>)}
-            {mode === 'compare' && (canCompare ? <ComparePlayers comparison={comparison} challenger={challenger} setChallenger={setChallenger} /> : <SystemFitLock mode="compare" />)}
+            {mode === 'compare' && (canCompare ? <ComparePlayers comparison={comparison} challengers={challengers} addChallenger={addChallenger} replaceChallenger={replaceChallenger} removeChallenger={removeChallenger} /> : <SystemFitLock mode="compare" />)}
             {mode === 'analysis' && (canFitFull ? <DetailedAnalysis report={report} /> : <SystemFitLock />)}
           </div>
           {mode === 'fit'

@@ -700,24 +700,56 @@ function comparisonVerdict(primary, challenger, team, first, second) {
   return s;
 }
 
-export function buildPlayerComparison(primary, challenger, team) {
-  const first = buildSystemFitReport(primary, team);
-  const second = buildSystemFitReport(challenger, team);
+// Ranking + gap summary for a 3-4 player comparison. The rich pairwise
+// narrative in comparisonVerdict() (trait-delta callouts, "costs you X"
+// framing) only makes sense head-to-head, so it stays reserved for the
+// 2-player case; adding a 3rd/4th player switches to this simpler
+// rank-and-gap read instead of trying to force N-way prose.
+function multiComparisonVerdict(players, team) {
+  const teamName = team.short || team.name;
+  const ranked = [...players].sort((a, b) => b.score - a.score);
+  const leader = ranked[0];
+  const rest = ranked.slice(1).map(p => `${p.name} (${p.score}%, ${leader.score - p.score} back)`);
+  return `${leader.name} (${leader.archetype}) grades highest for ${teamName} at ${leader.score}% among the ${players.length} compared. ${rest.length ? `Next: ${rest.join(', ')}.` : ''} A lower overall score doesn't rule a player out — check the trait rows below for who wins on the specific need driving this search.`;
+}
+
+// primary: a single player object. challengers: one player object OR an
+// array of 1-3 player objects (up to 4 total including primary) — Compare-4.
+// Existing single-object callers keep working unchanged.
+export function buildPlayerComparison(primary, challengers, team) {
+  const challengerList = (Array.isArray(challengers) ? challengers : [challengers]).filter(Boolean).slice(0, 3);
+  const allPlayers = [primary, ...challengerList];
+  const reports = allPlayers.map(player => buildSystemFitReport(player, team));
+
+  const players = allPlayers.map((player, i) => ({
+    ...player,
+    score: reports[i].score,
+  }));
+
   const labels = ['control', 'transition', 'pressing', 'width', 'tempo', 'defensiveLoad'];
   const dimensions = labels.map(label => ({
     label: label === 'defensiveLoad' ? 'defensive load' : label,
+    // Back-compat fields for the original 2-player consumers (primary vs the
+    // first challenger); `values` is the full per-player array Compare-4 uses.
     primary: primary.traits[label],
-    challenger: challenger.traits[label],
+    challenger: challengerList[0]?.traits[label],
+    values: allPlayers.map(p => p.traits[label]),
   }));
+
+  const verdict = challengerList.length <= 1
+    ? comparisonVerdict(primary, challengerList[0], team, reports[0], reports[1])
+    : multiComparisonVerdict(players, team);
+
   return {
     generatedAt: new Date().toISOString(),
     team,
+    players,
     primary,
-    challenger,
-    primaryScore: first.score,
-    challengerScore: second.score,
+    challenger: challengerList[0],
+    primaryScore: players[0].score,
+    challengerScore: players[1]?.score,
     dimensions,
-    verdict: comparisonVerdict(primary, challenger, team, first, second),
+    verdict,
   };
 }
 

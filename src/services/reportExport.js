@@ -73,20 +73,25 @@ export function exportFitCsv(report) {
   downloadBlob(new Blob([rowsToCsv(rows)], { type: 'text/csv;charset=utf-8;' }), file);
 }
 
+// Compare-4: report.players (2-4 entries, each with a real .score) is the
+// generalized field; report.primary/challenger/primaryScore/challengerScore
+// stay populated too (first two players) for anything still reading the old
+// 2-player fields. Building the CSV off `players` means a 2-player report
+// renders identically to before, and 3-4 player reports just add columns.
 export function exportComparisonCsv(report) {
+  const players = report.players || [report.primary, report.challenger];
   const rows = [
     ['CALIBRE PLAYER COMPARISON REPORT'],
     ['Generated', report.generatedAt],
     ['Team', report.team.name],
-    ['Player A', report.primary.name, `${report.primaryScore}%`],
-    ['Player B', report.challenger.name, `${report.challengerScore}%`],
+    ...players.map((p, i) => [`Player ${String.fromCharCode(65 + i)}`, p.name, `${p.score}%`]),
     [],
-    ['Dimension', report.primary.name, report.challenger.name],
-    ...report.dimensions.map(item => [item.label, item.primary, item.challenger]),
+    ['Dimension', ...players.map(p => p.name)],
+    ...report.dimensions.map(item => [item.label, ...(item.values || [item.primary, item.challenger])]),
     [],
     ['Verdict', report.verdict],
   ];
-  const file = `${safeFileName(report.primary.name)}-vs-${safeFileName(report.challenger.name)}-${safeFileName(report.team.short)}.csv`;
+  const file = `${players.map(p => safeFileName(p.name)).join('-vs-')}-${safeFileName(report.team.short)}.csv`;
   downloadBlob(new Blob([rowsToCsv(rows)], { type: 'text/csv;charset=utf-8;' }), file);
 }
 
@@ -240,32 +245,47 @@ export async function exportFitPdf(report) {
 }
 
 export async function exportComparisonPdf(report) {
+  const players = report.players || [report.primary, report.challenger];
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
-  addHeader(doc, 'PLAYER COMPARISON REPORT', `${report.primary.name} vs ${report.challenger.name} | ${report.team.name}`);
+  addHeader(doc, 'PLAYER COMPARISON REPORT', `${players.map(p => p.name).join(' vs ')} | ${report.team.name}`);
   let y = 49;
   doc.setTextColor(20, 22, 24);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text(`${report.primary.name}: ${report.primaryScore}%`, 14, y);
-  doc.text(`${report.challenger.name}: ${report.challengerScore}%`, 14, y + 10);
-  y += 25;
+  doc.setFontSize(players.length > 2 ? 14 : 18);
+  players.forEach(p => {
+    doc.text(`${p.name}: ${p.score}%`, 14, y);
+    y += players.length > 2 ? 7 : 10;
+  });
+  y += 15;
+  y = ensureSpace(doc, y, 14);
   doc.setFontSize(11);
+  doc.setTextColor(20, 22, 24);
   doc.text('PROFILE COMPARISON', 14, y);
   y += 8;
-  doc.setFontSize(9);
+  doc.setFontSize(players.length > 2 ? 8 : 9);
+  // Value columns spread evenly across the printable width (14mm-196mm) —
+  // right-aligned under each player's initials so this scales cleanly from
+  // 2 to 4 players instead of the old fixed 146mm/180mm pair.
+  const colX = players.map((_, i) => 196 - (players.length - 1 - i) * ((196 - 100) / Math.max(1, players.length - 1)));
   report.dimensions.forEach(item => {
+    y = ensureSpace(doc, y, 9);
     doc.setFont('helvetica', 'normal');
+    doc.setTextColor(20, 22, 24);
     doc.text(item.label.toUpperCase(), 14, y);
-    doc.setFont('helvetica', 'bold');
-    doc.text(String(item.primary), 146, y, { align: 'right' });
-    doc.text(String(item.challenger), 180, y, { align: 'right' });
+    const values = item.values || [item.primary, item.challenger];
+    values.forEach((v, i) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(v), colX[i], y, { align: 'right' });
+    });
     doc.setDrawColor(224, 228, 231);
-    doc.line(14, y + 2, 180, y + 2);
+    doc.line(14, y + 2, 196, y + 2);
     y += 9;
   });
   y += 5;
+  y = ensureSpace(doc, y, 20);
   doc.setFontSize(11);
+  doc.setTextColor(20, 22, 24);
   doc.text('VERDICT', 14, y);
   y += 7;
   doc.setFont('helvetica', 'normal');
@@ -275,5 +295,5 @@ export async function exportComparisonPdf(report) {
   doc.setFontSize(8);
   doc.setTextColor(130, 135, 142);
   doc.text(`Generated ${new Date(report.generatedAt).toLocaleString()} | Calibre Pro report`, 14, 287);
-  doc.save(`${safeFileName(report.primary.name)}-vs-${safeFileName(report.challenger.name)}-${safeFileName(report.team.short)}.pdf`);
+  doc.save(`${players.map(p => safeFileName(p.name)).join('-vs-')}-${safeFileName(report.team.short)}.pdf`);
 }

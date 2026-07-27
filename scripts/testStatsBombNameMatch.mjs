@@ -94,26 +94,59 @@ async function run() {
   let matched = 0, ambiguous = 0, noMatch = 0;
 
   for (const [sbName, sbTeam] of TEST_PLAYERS) {
-    const surname = normName(sbName).split(' ').pop();
-    const { data, error } = await sb
-      .from('players')
+    // v2 — two bugs in the original version, both making real matches look
+    // like failures:
+    // (1) Our DB stores names abbreviated ("F. Wirtz", not "Florian Wirtz"),
+    //     so requiring the FULL normalized name to match threw genuine hits
+    //     (Trimmel, Xhaka, Wirtz, Andrich, Schick, Tapsoba, Boniface,
+    //     Aaronson, Hollerbach, Khedira, Rønnow, Doekhi...) into "ambiguous."
+    //     Now matches on first-initial + surname instead, which is what our
+    //     own registry format actually supports.
+    // (2) The SQL search term was accent-STRIPPED ("Hložek" -> "hlozek"),
+    //     but Postgres ILIKE isn't accent-insensitive -- searching for the
+    //     stripped form can't find a row that still has the accented
+    //     character, producing false "no match" results (Hložek, Hrádecký,
+    //     Juranović, Hincapié all have this exact problem). Now tries the
+    //     RAW surname first, falling back to the stripped version only if
+    //     that finds nothing.
+    const rawSurname = sbName.trim().split(/\s+/).pop();
+    const strippedSurname = normName(sbName).split(' ').pop();
+
+    let { data, error } = await sb.from('players')
       .select('name, team, league_id, api_player_id')
-      .ilike('name', `%${surname}%`)
-      .limit(8);
+      .ilike('name', `%${rawSurname}%`).limit(8);
     if (error) { console.error(`  ${sbName}: query failed (${error.message})`); continue; }
+    if ((!data || data.length === 0) && strippedSurname !== normName(rawSurname)) {
+      ({ data, error } = await sb.from('players')
+        .select('name, team, league_id, api_player_id')
+        .ilike('name', `%${strippedSurname}%`).limit(8));
+      if (error) { console.error(`  ${sbName}: query failed (${error.message})`); continue; }
+    }
 
     if (!data || data.length === 0) {
       console.log(`✗ NO MATCH   "${sbName}" (${sbTeam})`);
       noMatch++;
       continue;
     }
-    // Prefer an exact normalized full-name match if present among candidates.
-    const exact = data.find(r => normName(r.name) === normName(sbName));
-    if (exact) {
-      console.log(`✓ MATCH      "${sbName}" -> "${exact.name}" (${exact.team ?? '—'}, league_id=${exact.league_id ?? '—'}, api_player_id=${exact.api_player_id ?? '—'})`);
+
+    const wantTok = normName(sbName).split(' ');
+    const wantSurname = wantTok[wantTok.length - 1];
+    const wantInit = (wantTok[0] || '')[0] || '';
+    const scored = data.map(r => {
+      const ct = normName(r.name).split(' ');
+      const surOk = ct[ct.length - 1] === wantSurname;
+      const initOk = !wantInit || (ct[0] || '')[0] === wantInit;
+      const teamOk = sbTeam && r.team && normName(r.team) === normName(sbTeam);
+      return { ...r, surOk, initOk, teamOk };
+    });
+    const best = scored.find(r => r.surOk && r.initOk && r.teamOk)
+      || scored.find(r => r.surOk && r.initOk);
+
+    if (best) {
+      console.log(`✓ MATCH      "${sbName}" -> "${best.name}" (${best.team ?? '—'}, league_id=${best.league_id ?? '—'}, api_player_id=${best.api_player_id ?? '—'})${best.teamOk ? ' [team-confirmed]' : ''}`);
       matched++;
     } else {
-      console.log(`? AMBIGUOUS  "${sbName}" (${sbTeam}) -- ${data.length} surname-only candidate(s): ${data.map(r => `"${r.name}" (${r.team ?? '—'})`).join(', ')}`);
+      console.log(`? AMBIGUOUS  "${sbName}" (${sbTeam}) -- ${data.length} surname-only candidate(s), none with a matching initial: ${data.map(r => `"${r.name}" (${r.team ?? '—'})`).join(', ')}`);
       ambiguous++;
     }
   }

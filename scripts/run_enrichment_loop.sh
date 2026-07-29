@@ -56,7 +56,16 @@ seconds_until_utc_midnight() {
 # catches those transient-network signatures (same ones apiGet/updateWithRetry
 # already treat as retryable internally) so the OUTER loop retries too,
 # instead of falsely declaring victory.
-NETWORK_ERR_RE='fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|Supabase read failed|socket hang up|network'
+#
+# v3 — 2026-07-29: added "HTTP 429" as a defensive backstop. enrichPlayerStats.mjs
+# was fixed the same day to always read the response body on a 429/5xx before
+# throwing, so a genuine daily-quota 429 should now carry the real "request
+# limit for the day" text this loop's quota-detection greps for above. But if
+# API-Football ever sends a 429 with an empty/non-JSON body, that text
+# wouldn't be there -- this backstop means a sustained run of bare 429s still
+# gets retried (short sleep, own budget) instead of the outer loop falsely
+# declaring the sweep done.
+NETWORK_ERR_RE='fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|Supabase read failed|socket hang up|network|HTTP 429'
 RETRY_SHORT_SECS=900   # 15 minutes -- network blips are usually far shorter-lived than a daily quota reset
 # Network retries get their OWN budget, separate from MAX_ATTEMPTS (the
 # quota-day budget) -- they used to share one counter, so a handful of wifi

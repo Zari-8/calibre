@@ -159,7 +159,17 @@ async function apiGet(path, attempt = 1) {
   const MAX = 4;
   try {
     const res = await fetch(`${API_HOST}/${path}`, { headers: { 'x-apisports-key': API_KEY } });
-    if (res.status === 429 || (res.status >= 500 && res.status < 600)) throw new Error(`API HTTP ${res.status}`);
+    // v2 — 2026-07-29: this used to throw immediately on 429/5xx with just
+    // the bare status ("API HTTP 429"), discarding whatever JSON body the
+    // API actually sent -- including the "You have reached the request
+    // limit for the day" text run_enrichment_loop.sh's quota-detection
+    // (`grep -qi "request limit for the day"`) depends on. If API-Football
+    // ever signals quota exhaustion via a 429 status instead of the older
+    // 200-with-error-JSON shape, that message was silently thrown away and
+    // the outer loop had nothing to match on -- risking the same "false
+    // ALL DONE" failure already fixed twice this session, just via a
+    // different HTTP status. Always read the body first now, so real
+    // informative text is preserved no matter which status carries it.
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(`API HTTP ${res.status}: ${JSON.stringify(json)}`);
     if (json?.errors && Object.keys(json.errors).length) throw new Error('API: ' + JSON.stringify(json.errors));

@@ -684,9 +684,26 @@ async function main() {
           await sleep(DELAY_MS);
           continue;
         }
+        // v3 — write -1, not null, for a GENUINELY confirmed-empty result.
+        // Found 2026-07-29: writing null here made "confirmed empty" and
+        // "never actually checked" indistinguishable in the DB (both are
+        // stats_season IS NULL). exportUnenrichedPlayerUuids.mjs's cooldown
+        // only delayed re-targeting by RECHECK_COOLDOWN_HOURS (20h) -- once
+        // that window passed, the SAME already-confirmed-empty players
+        // became "eligible" again and got re-checked forever in a rotating
+        // cycle, burning quota with zero net progress (confirmed on
+        // 2026-07-29: two checkFullEnrichmentCount.mjs runs minutes apart,
+        // dozens of genuinely different players processed in between, both
+        // showed the identical 668/15177 -- the pool was just rotating).
+        // -1 can never collide with a real season year, so it now permanently
+        // falls out of the `.is('stats_season', null)` export filter the
+        // moment a row is genuinely confirmed empty -- no cooldown needed for
+        // this case anymore. NULL now means, unambiguously, "never yet
+        // resolved" (including old quota-bug leftovers from before
+        // 2026-07-22 that still need their one clean re-check).
         if (!DRY_RUN) {
           const { error: e } = await updateWithRetry(() => supabase.from('players')
-            .update({ stats_season: null, stats_updated_at: new Date().toISOString() })
+            .update({ stats_season: -1, stats_updated_at: new Date().toISOString() })
             .eq('id', row.id));
           if (e) throw new Error(e.message);
         }

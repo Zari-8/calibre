@@ -2,16 +2,21 @@
 //
 // Answers "how many players actually have a full enriched profile right
 // now" against the real scored population (same ~15,177-row definition
-// exportScoredPlayerUuids.mjs / computeRatings.mjs use), broken out by what
-// their current row actually contains rather than trusting stats_updated_at
-// alone -- because of the enrichPlayerStats.mjs quota-failure bug (fixed
-// 2026-07-22), a row with stats_season:null right now could mean EITHER a
-// confirmed real "no minutes" result OR a quota failure that got silently
-// written as empty before the fix. Those two cases are NOT distinguishable
-// from the DB alone (both look identical: stats_season null, stats_updated_at
-// recent) -- only cross-referencing the day's log file could split them
-// further, which this script does not attempt. Treat "recorded empty" below
-// as "needs the next clean re-run to confirm," not as settled fact.
+// exportScoredPlayerUuids.mjs / computeRatings.mjs use).
+//
+// v2 — 2026-07-29: enrichPlayerStats.mjs now writes stats_season:-1 (a
+// sentinel that can never collide with a real season year) for a GENUINELY
+// confirmed-empty result, instead of null. Before this, "confirmed empty"
+// and "never actually checked" were both stats_season IS NULL and
+// indistinguishable from the DB alone -- which meant the export/cooldown
+// logic could only ever DELAY re-targeting an already-settled empty row, not
+// stop it permanently, and the sweep re-checked the same already-known-empty
+// players forever in a rotating cycle once the cooldown window passed.
+// Three buckets now: real season (>0) = fully enriched, -1 = permanently
+// confirmed empty (never re-targeted again), NULL = still genuinely pending
+// (includes old quota-bug leftovers from before 2026-07-22 that still need
+// their one clean re-check -- those will resolve to either a real season or
+// the -1 sentinel the next time the loop touches them).
 //
 // Run: node scripts/checkFullEnrichmentCount.mjs
 import { createClient } from '@supabase/supabase-js';
@@ -51,32 +56,39 @@ async function run() {
     .not('api_player_id', 'is', null).gt('api_player_id', 0)
     .or(SCORED_FILTER));
 
-  // "Real, usable profile" = has a stats_season on record (i.e. the row
-  // actually resolved to a real API-Football season, not a null placeholder).
+  // "Real, usable profile" = resolved to a real API-Football season (>0).
+  // Excludes both the -1 confirmed-empty sentinel and NULL never-checked.
   const fullyEnriched = await count(sb.from('players').select('id', { count: 'exact', head: true })
     .not('api_player_id', 'is', null).gt('api_player_id', 0)
     .or(SCORED_FILTER)
-    .not('stats_season', 'is', null));
+    .gt('stats_season', 0));
 
-  const recordedEmpty = await count(sb.from('players').select('id', { count: 'exact', head: true })
+  // Permanently settled -- genuinely 0 minutes across the season ladder.
+  // Never re-targeted by exportUnenrichedPlayerUuids.mjs again.
+  const confirmedEmpty = await count(sb.from('players').select('id', { count: 'exact', head: true })
     .not('api_player_id', 'is', null).gt('api_player_id', 0)
     .or(SCORED_FILTER)
-    .is('stats_season', null)
-    .not('stats_updated_at', 'is', null));
+    .eq('stats_season', -1));
+
+  // Still genuinely pending -- either never touched at all, or every attempt
+  // so far failed (quota exhaustion) without a confirmed result. Includes
+  // old pre-2026-07-22 quota-bug leftovers that were never properly
+  // reclassified under the old null-only scheme.
+  const stillPending = await count(sb.from('players').select('id', { count: 'exact', head: true })
+    .not('api_player_id', 'is', null).gt('api_player_id', 0)
+    .or(SCORED_FILTER)
+    .is('stats_season', null));
 
   const neverTouched = await count(sb.from('players').select('id', { count: 'exact', head: true })
     .not('api_player_id', 'is', null).gt('api_player_id', 0)
     .or(SCORED_FILTER)
     .is('stats_updated_at', null));
 
-  console.log(`Scored population (target):              ${scoped}`);
+  console.log(`Scored population (target):                ${scoped}`);
   console.log(`Fully enriched (real stats_season):        ${fullyEnriched}  (${((fullyEnriched/scoped)*100).toFixed(1)}%)`);
-  console.log(`Recorded empty (stats_season NULL, touched): ${recordedEmpty}  (${((recordedEmpty/scoped)*100).toFixed(1)}%)`);
-  console.log(`  ⚠ some fraction of "recorded empty" may still be quota-bug`);
-  console.log(`    leftovers from before the 2026-07-22 fix, not genuine`);
-  console.log(`    empty results -- the next clean FORCE=1 rerun will fix`);
-  console.log(`    any real ones and leave true empties as they are.`);
-  console.log(`Never touched (stats_updated_at NULL):     ${neverTouched}  (${((neverTouched/scoped)*100).toFixed(1)}%)`);
+  console.log(`Confirmed empty (stats_season = -1, permanent): ${confirmedEmpty}  (${((confirmedEmpty/scoped)*100).toFixed(1)}%)`);
+  console.log(`Still pending (stats_season NULL):         ${stillPending}  (${((stillPending/scoped)*100).toFixed(1)}%)`);
+  console.log(`  of which never touched at all:           ${neverTouched}  (${((neverTouched/scoped)*100).toFixed(1)}%)`);
 }
 
 run().catch(e => { console.error('\nFatal:', e?.message ?? e); process.exit(1); });

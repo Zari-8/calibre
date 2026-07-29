@@ -16,19 +16,25 @@
 // the full 15,177 along for the entire multi-day sweep.
 //
 // v2 — 2026-07-27: found the SAME redundancy bug on the empty side. A row
-// with a GENUINE "checked 3 seasons, no minutes" result also has
-// stats_season IS NULL forever (there's no separate "confirmed empty,
-// leave it alone" marker) -- so this export couldn't tell "genuinely
-// settled, don't recheck" apart from "never actually verified yet." On the
-// very first minutes of the 2026-07-27 run, 197 real (non-quota-failure)
-// empty confirmations landed, and would have been immediately eligible to
-// be re-targeted again on the NEXT attempt, wasting quota re-confirming an
-// answer we'd just gotten -- same pattern as Calafiori, just on the empty
-// side. Fix: exclude rows touched within the last RECHECK_COOLDOWN_HOURS,
-// even if stats_season is null. Genuinely stale/never-checked rows (the
-// pre-2026-07-22 quota-bug leftovers) still get swept up since their
-// stats_updated_at is old; only rows just confirmed in a recent pass get a
-// grace period before being reconsidered.
+// with a GENUINE "checked 3 seasons, no minutes" result also had
+// stats_season IS NULL forever (no separate "confirmed empty, leave it
+// alone" marker) -- so this export couldn't tell "genuinely settled, don't
+// recheck" apart from "never actually verified yet." Patched with a
+// RECHECK_COOLDOWN_HOURS grace period, but that only ever DELAYED the
+// problem: confirmed on 2026-07-29 that once 20h passed, the exact same
+// already-confirmed-empty players became "eligible" again and got
+// re-checked forever in a rotating cycle -- two checkFullEnrichmentCount.mjs
+// runs minutes apart, dozens of different names actively processed in
+// between, both showed the identical 668/15177 total unchanged.
+//
+// v3 — 2026-07-29: the real fix. enrichPlayerStats.mjs now writes
+// stats_season:-1 (never collides with a real season year) for a genuinely
+// confirmed-empty result instead of null. NULL now means, unambiguously,
+// "never yet resolved" -- so the `.is('stats_season', null)` filter below is
+// now PERMANENTLY correct on its own for the empty case, no cooldown needed.
+// RECHECK_COOLDOWN_HOURS is kept only as a general safety net (e.g. against
+// firing the export twice in quick succession mid-attempt); it no longer
+// carries the actual correctness burden it used to.
 //
 // Run: node scripts/exportUnenrichedPlayerUuids.mjs > unenriched_player_uuids.txt
 import { createClient } from '@supabase/supabase-js';

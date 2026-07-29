@@ -44,7 +44,7 @@ async function run() {
   if (error) { console.error('Query failed:', error.message); process.exit(1); }
   if (!data || data.length === 0) { console.log('No match.'); return; }
   for (const r of data) {
-    console.log(`${r.name} (${r.team ?? '—'}, league_id=${r.league_id ?? '—'})`);
+    console.log(`${r.name} (${r.team ?? '—'}, league_id=${r.league_id ?? '—'}, api_player_id=${r.api_player_id ?? 'NULL'})`);
     console.log(`  minutes=${r.minutes} appearances=${r.appearances} api_average_rating=${r.api_average_rating}`);
     console.log(`  stats_season=${r.stats_season === null ? 'NULL' : r.stats_season}  stats_updated_at=${r.stats_updated_at ?? 'NULL'}`);
     console.log('');

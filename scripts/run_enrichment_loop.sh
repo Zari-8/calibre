@@ -102,7 +102,19 @@ regenerate_uuid_file_or_die() {
 }
 
 regenerate_uuid_file_or_die
-UUID_COUNT=$(wc -l < "$UUID_FILE" | tr -d ' ')
+# v6 — 2026-07-29: `wc -l` counts NEWLINES, not real UUIDs. When
+# exportUnenrichedPlayerUuids.mjs finds zero eligible candidates, the file
+# used to still contain one blank line (from console.log('') on an empty
+# array), which wc -l read as "1 still-unenriched player" -- a false
+# positive that let the loop proceed into a live attempt with nothing real
+# to target, causing enrichPlayerStats.mjs to silently fall back to its own
+# unrestricted default query and burn quota on ~250 unrelated players for
+# zero real progress. grep -c '\S' counts only lines with a real
+# (non-whitespace) UUID on them, so a blank-line-only file correctly counts
+# as 0. (The exporter is now also fixed to never emit that blank line, but
+# this check no longer depends on that alone.)
+UUID_COUNT=$(grep -c '\S' "$UUID_FILE" 2>/dev/null | tr -d ' ')
+UUID_COUNT=${UUID_COUNT:-0}
 echo "$(date) :: target list has $UUID_COUNT still-unenriched players." | tee -a "$LOG"
 if [ "$UUID_COUNT" -eq 0 ]; then
   echo "$(date) :: nothing left to enrich — every scored player already has real data. ALL DONE." | tee -a "$LOG"
@@ -115,7 +127,8 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
   # just succeeded.
   if [ "$attempt" -gt 1 ]; then
     regenerate_uuid_file_or_die
-    UUID_COUNT=$(wc -l < "$UUID_FILE" | tr -d ' ')
+    UUID_COUNT=$(grep -c '\S' "$UUID_FILE" 2>/dev/null | tr -d ' ')
+    UUID_COUNT=${UUID_COUNT:-0}
     if [ "$UUID_COUNT" -eq 0 ]; then
       echo "$(date) :: nothing left to enrich — every scored player already has real data. ALL DONE." | tee -a "$LOG"
       exit 0

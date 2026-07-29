@@ -93,7 +93,18 @@ async function run() {
     if (data.length < PAGE) break;
   }
   process.stderr.write(`\ndone — ${ids.length} still-unenriched UUIDs eligible now (${skippedRecent} excluded, confirmed empty within the last ${RECHECK_COOLDOWN_HOURS}h).\n`);
-  console.log(ids.join('\n'));
+  // Found 2026-07-29: ids.join('\n') on an EMPTY array is '', and
+  // console.log('') still writes one blank line -- which `wc -l` in
+  // run_enrichment_loop.sh's zero-check then miscounts as "1 still-unenriched
+  // player" instead of recognizing the list was actually empty. That false
+  // "1" let the loop proceed into an attempt with a target file containing
+  // no real UUIDs, which made enrichPlayerStats.mjs silently fall back to
+  // its own unrestricted default population query instead of correctly
+  // doing nothing -- 250 unrelated players (way outside the real scored
+  // population, e.g. rows with null minutes/appearances/api_average_rating)
+  // got processed for zero real progress. Only print when there's at least
+  // one real id, so an empty result produces a genuinely empty (0-line) file.
+  if (ids.length) console.log(ids.join('\n'));
 }
 
 run().catch(e => { console.error('\nFatal:', e?.message ?? e); process.exit(1); });

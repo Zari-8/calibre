@@ -573,7 +573,22 @@ async function main() {
   else if (PLAYER_IDS.length) console.log(`Targeting ${PLAYER_IDS.length} player(s) by api_player_id: ${PLAYER_IDS.join(', ')}`);
 
   let rows = null, readErr = null;
-  if (TARGET_UUIDS.length) {
+  // v2 — 2026-07-29: TARGET_UUIDS_FILE existing but resolving to zero real
+  // ids (e.g. exportUnenrichedPlayerUuids.mjs genuinely found nothing
+  // eligible right now) used to fall straight into the `else` branch below,
+  // silently swapping "scoped to this specific file" for "the unrestricted
+  // default population query" (MAX_PLAYERS defaults to 250 whenever
+  // TARGET_UUIDS is empty). That's how a run meant to touch 0 players ended
+  // up processing 250 unrelated ones (including rows outside the real
+  // scored population entirely) for zero real progress. When the caller
+  // explicitly asked for file-scoped targeting, an empty result means
+  // "nothing to do right now," not "fall back to everything."
+  if (TARGET_UUIDS_FILE_PATH) {
+    rows = TARGET_UUIDS.length ? await fetchByIdsChunked(TARGET_UUIDS) : [];
+    if (!TARGET_UUIDS.length) {
+      console.log(`TARGET_UUIDS_FILE (${TARGET_UUIDS_FILE_PATH}) resolved to 0 real ids — nothing scoped to do this run, not falling back to the default population query.`);
+    }
+  } else if (TARGET_UUIDS.length) {
     rows = await fetchByIdsChunked(TARGET_UUIDS);
   } else {
     // Retry the read on transient connection drops (fetch failed) before giving up.

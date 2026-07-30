@@ -62,28 +62,36 @@
 // `breakdown` for continuity, same as Form), it just stops a component that
 // structurally can't exceed ~58 for 24+ players from capping the ceiling for
 // the entire established-star population.
-// v8.9c — 2026-07-30, tuned against three real reference cases (Zari asked
-// for Kane=90, Mbappé=89/90, Haaland=89). Verified with live DB pulls via
-// inspectEliteRatingBreakdown.mjs (with temporary DEBUG_CALIBRE instrumentation
-// to get exact pre-anchor/pre-blend numbers instead of hand-estimating) that
-// the engine does a 70/30 base+overlay blend BEFORE the final anchor remap,
-// and that RATING_CALIBRATION_ANCHORS jumps straight from computed=89->88 to
-// computed=90->90 with no anchor in between -- so a final rating of exactly
-// 89 is structurally UNREACHABLE for any player, regardless of weights. Given
-// that, this shifts weight from Consistency into Impact (Performance held
-// roughly flat) -- solved numerically against Kane/Mbappé/Haaland's real
-// unrounded component values to land Kane and Mbappé at computed 90 (Kane was
-// blending to 89.2, now 90.2; Mbappé was 89.6, now 90.2) while Haaland lands
-// at 88 (was already 88 pre-tune; his base-branch Performance is actually
-// slightly BELOW his own Consistency/Impact average, so raising Performance's
-// weight further doesn't help him, and pushing Impact's weight down toward 0
-// far enough to drag his overlay branch above the 90 threshold as well would
-// require ~0.8 Performance / ~0.02 Impact -- effectively deleting Impact as a
-// signal, which wasn't validated against the wider population and felt like
-// too large/risky a change for a single named player's exact number). Kane=90
-// and Mbappé=90 confirmed against real (non-estimated) numbers; Haaland=89
-// is not reachable without also editing RATING_CALIBRATION_ANCHORS itself.
-const WEIGHTS = { Performance: 0.50, Consistency: 0.11, Impact: 0.39, Trajectory: 0 };
+// v8.9c (tried, then REVERTED same day) — attempted to also hit Kane=90/
+// Mbappé=89-90/Haaland=89 exactly (Zari's ask) by shifting weight from
+// Consistency into Impact (Performance held ~flat: 0.50/0.11/0.39). Verified
+// live via inspectEliteRatingBreakdown.mjs (temporary DEBUG_CALIBRE
+// instrumentation, since removed) that the engine does a 70/30 base+overlay
+// blend BEFORE the final RATING_CALIBRATION_ANCHORS remap, and that the
+// anchor table jumps straight from computed=89->88 to 90->90 with nothing in
+// between -- a final rating of exactly 89 is structurally unreachable for
+// ANY player regardless of weights, which already ruled out Haaland's exact
+// target. The 0.50/0.11/0.39 split did land Kane and Mbappé at a real,
+// verified 90 -- but ratingBandDistribution.mjs run immediately after showed
+// it badly damaged the rest of the population: 87-89 band 13->2, 85-86 band
+// 22->1, 80-84 band 152->34, 75-79 band 495->203, 70-74 band 1196->794, and
+// the bottom (<=69) bucket grew from 87.2% to 93.0% of the whole 15.2k-row
+// database. Cutting Consistency that hard (0.2472->0.11) while loading up
+// Impact (->0.39) concentrates almost all weight on raw production, and
+// Consistency was the one signal keeping solid-but-not-superstar regulars
+// (exactly the Salah/Bellingham/Vinicius profile Zari flagged as
+// under-rated on the live site) from compressing toward the bottom. A
+// smaller/gentler weight shift (~0.534/0.198/0.268) was also tried and
+// technically hits the same 90/90 target, but its Kane branch value landed
+// at 88.50038 -- 0.0004 off the exact rounding boundary, i.e. one floating-
+// point rounding difference in real (vs hand-verified) data from flipping
+// back to 88. No weight combination found robust to that boundary AND gentle
+// on the population, so Kane=90 exactly is being given up in favor of DB
+// health: reverted to the v8.9b values below (Trajectory=0 only, no
+// Consistency/Impact rebalance). Under v8.9b: Kane=88, Mbappé=90 (already
+// on target), Haaland=88. Revisit via a formula-level fix (not a weight
+// reshuffle) if Kane=90 specifically still matters.
+const WEIGHTS = { Performance: 0.5056179775280899, Consistency: 0.24719101123595505, Impact: 0.24719101123595505, Trajectory: 0 };
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 function per(value, mins) { return mins > 0 ? num(value) / (mins / 90) : 0; }

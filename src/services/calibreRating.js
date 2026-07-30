@@ -46,7 +46,44 @@
 // Trajectory ~52-55 for this whole reference group) — 43% of the weight
 // going to two components that don't differentiate "generational" from
 // "very good" among regulars was diluting the one component that does.
-const WEIGHTS = { Performance: 0.45, Consistency: 0.22, Impact: 0.22, Trajectory: 0.11 };
+// v8.9b — Trajectory's weight cut to 0 (was 0.11), freed weight redistributed
+// proportionally to Performance/Consistency/Impact, same pattern as the v8.6
+// Form redistribution above. Found 2026-07-30: ratingBandDistribution.mjs
+// showed the v8.9 league-strength rebuild produces ZERO players rated >=90
+// db-wide (down from 2). Traced to Trajectory = 50 + youth*30 + (core-60)*0.10
+// -- the youth term is exactly 0 for any player 24 or older, leaving only a
+// weak 0.10 quality multiplier, so Trajectory sits at ~50-58 for essentially
+// EVERY established player regardless of how good they are. Confirmed
+// directly on Kane (core=105) and Mbappé (core=98), both genuine 90+-caliber
+// players: Trajectory scored 55 and 54 respectively, while a fringe academy
+// player (core=25, age~20) scored 64 on the same component -- backwards for
+// what a current-form rating should reward. Cutting the weight to 0 doesn't
+// touch the Trajectory calculation itself (still computed/shown in
+// `breakdown` for continuity, same as Form), it just stops a component that
+// structurally can't exceed ~58 for 24+ players from capping the ceiling for
+// the entire established-star population.
+// v8.9c — 2026-07-30, tuned against three real reference cases (Zari asked
+// for Kane=90, Mbappé=89/90, Haaland=89). Verified with live DB pulls via
+// inspectEliteRatingBreakdown.mjs (with temporary DEBUG_CALIBRE instrumentation
+// to get exact pre-anchor/pre-blend numbers instead of hand-estimating) that
+// the engine does a 70/30 base+overlay blend BEFORE the final anchor remap,
+// and that RATING_CALIBRATION_ANCHORS jumps straight from computed=89->88 to
+// computed=90->90 with no anchor in between -- so a final rating of exactly
+// 89 is structurally UNREACHABLE for any player, regardless of weights. Given
+// that, this shifts weight from Consistency into Impact (Performance held
+// roughly flat) -- solved numerically against Kane/Mbappé/Haaland's real
+// unrounded component values to land Kane and Mbappé at computed 90 (Kane was
+// blending to 89.2, now 90.2; Mbappé was 89.6, now 90.2) while Haaland lands
+// at 88 (was already 88 pre-tune; his base-branch Performance is actually
+// slightly BELOW his own Consistency/Impact average, so raising Performance's
+// weight further doesn't help him, and pushing Impact's weight down toward 0
+// far enough to drag his overlay branch above the 90 threshold as well would
+// require ~0.8 Performance / ~0.02 Impact -- effectively deleting Impact as a
+// signal, which wasn't validated against the wider population and felt like
+// too large/risky a change for a single named player's exact number). Kane=90
+// and Mbappé=90 confirmed against real (non-estimated) numbers; Haaland=89
+// is not reachable without also editing RATING_CALIBRATION_ANCHORS itself.
+const WEIGHTS = { Performance: 0.50, Consistency: 0.11, Impact: 0.39, Trajectory: 0 };
 function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
 function num(v, d = 0) { const n = Number(v); return Number.isFinite(n) ? n : d; }
 function per(value, mins) { return mins > 0 ? num(value) / (mins / 90) : 0; }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Share2, MessageCircle, Link2, Check, Image as ImageIcon } from 'lucide-react';
+import { playerPhotoUrl } from '../services/apiFootball.js';
 
 // X (Twitter) glyph isn't in lucide; use a tiny inline mark so the brand reads right.
 function XMark({ size = 11 }) {
@@ -52,7 +53,12 @@ export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fi
   const pos = player?.pos || player?.position;
   if (pos) p.set('pos', pos);
   if (player?.age != null) p.set('age', String(player.age));
-  const img = player?.image || player?.img;
+  // Mirrors ApiPlayerImage.jsx's tier-2 resolution (direct API-Football URL
+  // from a trusted apiPlayerId) — that component's tier-4 fuzzy name search
+  // is async and can't run inside this synchronous URL builder, so it's
+  // skipped here; a card with no id and no preferred photo just falls back
+  // to the initial-letter placeholder rather than guessing a face.
+  const img = player?.image || player?.img || playerPhotoUrl(player?.apiPlayerId);
   if (img) p.set('img', img);
 
   const displayValue = buyingTeam && fit?.fitAdjustedValue != null ? fit.fitAdjustedValue : valuation?.estimatedValue;

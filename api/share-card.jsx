@@ -1,24 +1,34 @@
-// Vercel Edge Function — deploy at: api/share-card.js
+// Vercel Edge Function — deploy at: api/share-card.jsx
 //
-// Renders a shareable 1200x630 PNG "valuation card" for a player: photo,
-// name, club, Calibre's independent estimated value, and the verdict badge
-// (DEAL / NEGOTIATE HARD / WALK AWAY / etc). This is the missing piece
-// flagged in the TransferRoom competitive read (2026-07-26 session): Share.jsx
-// already handles TEXT distribution (native share sheet, X/WhatsApp intent
-// links, copy-link) but there was no actual IMAGE to go with it — and an
-// image is what actually gets reposted/embedded by a creator, not a bare
-// link. No new API key or third-party service needed: @vercel/og renders
-// the JSX below server-side via Satori, entirely within Vercel's free tier.
+// Renders a shareable 1200x630 PNG "valuation card" for a player. Redesigned
+// 2026-08-01 after a design pass with Zari: the first version (name/value/
+// verdict badge) was too flat to actually pull a Twitter influencer off the
+// timeline. This version leads with the provocative number (premium over
+// fair value), backs it with a row of bare, undefined stats (risk /
+// trajectory / system fit — deliberately not explained on the card itself;
+// the ambiguity is the hook, the definition lives on calibrefootball.com),
+// stamps the verdict like a rubber stamp instead of a quiet badge, and shows
+// the from-club → to-club crests so it reads as a specific transfer story,
+// not a generic player card.
 //
-// Usage:  /api/share-card?name=Junior%20Kroupi&club=LOSC%20Lille&pos=ST&age=19
-//           &value=59.1&verdict=NEGOTIATE%20HARD&tone=warn&img=<player photo url>
+// Card degrades gracefully field-by-field — nothing here is fabricated.
+// Fields with no real computed source yet (risk, trajectory) simply don't
+// render until the engine exposes them; system fit only renders when a real
+// buying club was selected (computeSystemFit is club-specific, see
+// Transfers.jsx). No new API key or third-party service needed: @vercel/og
+// renders the JSX below server-side via Satori, entirely within Vercel's
+// free tier.
 //
-// Required Vercel env: none. Uses only the query params below — every field
-// is optional except `name`, so a card degrades gracefully if data is thin
-// (matches calibreValue.js's own "lower confidence, don't fabricate" ethos).
+// Usage:
+//   /api/share-card?name=Junior%20Kroupi&club=LOSC%20Lille&pos=ST&age=19
+//     &value=59.1&fair=52-64&asking=84&premium=42&fit=68
+//     &fromClub=LOSC%20Lille&toClub=Chelsea&toCrest=CHE&toColor=%23034694
+//     &verdict=NEGOTIATE%20HARD&tone=warn&img=<player photo url>
+//
+// Required Vercel env: none. Every field is optional except `name`.
 //
 // Wire-up: build the URL with buildShareCardUrl() (src/components/Share.jsx)
-// from a live `valuation`/`dealVerdict` object rather than hand-assembling
+// from a live valuation/fit/dealVerdict object rather than hand-assembling
 // query strings at each call site.
 
 import { ImageResponse } from '@vercel/og';
@@ -37,6 +47,39 @@ function clampText(s, max) {
   return str.length > max ? str.slice(0, max - 1) + '…' : str;
 }
 
+// Turns "LOSC Lille" -> "LOS", "Chelsea" -> "CHE" as a fallback crest label
+// when no explicit crest code was passed (systemFitData.js's team records
+// carry a real `crest` field for the "to" club; the "from" club — the
+// player's current employer — usually doesn't have one, since that list is
+// only the candidate buying clubs).
+function fallbackCrest(clubName) {
+  const str = String(clubName || '').trim();
+  if (!str) return null;
+  return str.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || null;
+}
+
+function Crest({ label, color }) {
+  return (
+    <div
+      style={{
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        background: color ? `${color}33` : '#141414',
+        border: `2px solid ${color || '#2c2c2c'}`,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontSize: 18,
+        fontWeight: 800,
+        color: color || '#888',
+      }}
+    >
+      {label}
+    </div>
+  );
+}
+
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
 
@@ -44,14 +87,32 @@ export default async function handler(req) {
   const club = clampText(searchParams.get('club') || '', 24);
   const pos = clampText(searchParams.get('pos') || '', 12);
   const age = searchParams.get('age');
-  const value = searchParams.get('value'); // €m, numeric string
+  const value = searchParams.get('value'); // €m, Calibre fair value
   const fair = searchParams.get('fair'); // optional "low-high" string, already formatted
+  const asking = searchParams.get('asking'); // €m, optional
+  const premium = searchParams.get('premium'); // %, optional — pass pre-computed, never recomputed here
+  const risk = searchParams.get('risk'); // 0-100, optional, bare number, undefined on purpose
+  const traj = searchParams.get('traj'); // signed number, optional, bare
+  const fit = searchParams.get('fit'); // 0-100, optional — only real when a buying club was selected
   const verdict = clampText(searchParams.get('verdict') || '', 20);
   const tone = TONE_COLOR[searchParams.get('tone')] ? searchParams.get('tone') : 'neutral';
   const img = searchParams.get('img'); // player photo URL, optional
   const accent = TONE_COLOR[tone];
 
+  const fromClub = clampText(searchParams.get('fromClub') || club || '', 20);
+  const toClub = clampText(searchParams.get('toClub') || '', 20);
+  const toCrest = searchParams.get('toCrest') || fallbackCrest(toClub);
+  const toColor = searchParams.get('toColor') || null;
+  const fromCrest = fallbackCrest(fromClub);
+  const showCrestRow = !!(fromClub && toClub);
+
   const meta = [pos, age ? `${age} yrs` : null, club].filter(Boolean).join('   ·   ');
+  const showPremiumHero = asking && value && premium;
+  const stats = [
+    risk ? { label: 'RISK', v: risk } : null,
+    traj ? { label: 'TRAJECTORY', v: traj } : null,
+    fit ? { label: 'SYSTEM FIT', v: fit } : null,
+  ].filter(Boolean);
 
   return new ImageResponse(
     (
@@ -61,33 +122,35 @@ export default async function handler(req) {
           height: '630px',
           display: 'flex',
           flexDirection: 'column',
-          background: '#0a0a0a',
-          backgroundImage: 'radial-gradient(circle at 85% 10%, rgba(200,255,0,0.08), transparent 45%)',
+          background: '#030405',
+          backgroundImage:
+            'radial-gradient(circle at 8% 0%, rgba(166,255,0,0.16), transparent 55%), radial-gradient(circle at 92% 0%, rgba(166,255,0,0.11), transparent 50%)',
           fontFamily: 'sans-serif',
           padding: '56px 64px',
           color: '#fff',
           position: 'relative',
         }}
       >
-        {/* Header / wordmark */}
+        {/* Header / wordmark + from-to crests */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div
-              style={{
-                width: 14, height: 14, borderRadius: 4, background: '#c8ff00',
-              }}
-            />
+            <div style={{ width: 14, height: 14, borderRadius: 4, background: '#c8ff00' }} />
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex' }}>
               Calibre
             </div>
           </div>
-          <div style={{ fontSize: 15, color: '#666', letterSpacing: '0.04em', display: 'flex' }}>
-            Independent valuation — not a market quote
-          </div>
+
+          {showCrestRow && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+              <Crest label={fromCrest || '?'} color={null} />
+              <div style={{ fontSize: 26, color: '#555', display: 'flex' }}>→</div>
+              <Crest label={toCrest || '?'} color={toColor} />
+            </div>
+          )}
         </div>
 
         {/* Body */}
-        <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 48, marginTop: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', flex: 1, gap: 48, marginTop: 16 }}>
           {img ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -114,40 +177,55 @@ export default async function handler(req) {
               <div style={{ fontSize: 22, color: '#999', marginTop: 10, display: 'flex' }}>{meta}</div>
             )}
 
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28, marginTop: 34 }}>
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <div style={{ fontSize: 15, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex' }}>
-                  Calibre Estimated Value
-                </div>
-                <div style={{ fontSize: 76, fontWeight: 800, color: '#c8ff00', lineHeight: 1.05, display: 'flex' }}>
-                  {value ? `€${value}M` : '—'}
-                </div>
-                {fair && (
-                  <div style={{ fontSize: 18, color: '#777', marginTop: 4, display: 'flex' }}>
-                    Fair range €{fair}M
-                  </div>
-                )}
-              </div>
-
-              {verdict && (
+            {showPremiumHero ? (
+              <div style={{ display: 'flex', flexDirection: 'column', marginTop: 24 }}>
                 <div
                   style={{
                     display: 'flex',
-                    padding: '10px 20px',
-                    borderRadius: 10,
+                    alignSelf: 'flex-start',
+                    padding: '12px 22px',
+                    borderRadius: 12,
                     border: `1px solid ${accent}55`,
-                    background: `${accent}18`,
+                    background: `${accent}22`,
                     color: accent,
-                    fontSize: 22,
+                    fontSize: 40,
                     fontWeight: 800,
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
                   }}
                 >
-                  {verdict}
+                  {Number(premium) >= 0 ? '+' : ''}{premium}% over fair value
                 </div>
-              )}
-            </div>
+                <div style={{ fontSize: 20, color: '#999', marginTop: 10, display: 'flex' }}>
+                  Asking €{asking}M · Calibre fair value €{value}M
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 28, marginTop: 34 }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div style={{ fontSize: 15, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex' }}>
+                    Calibre Estimated Value
+                  </div>
+                  <div style={{ fontSize: 76, fontWeight: 800, color: '#c8ff00', lineHeight: 1.05, display: 'flex' }}>
+                    {value ? `€${value}M` : '—'}
+                  </div>
+                  {fair && (
+                    <div style={{ fontSize: 18, color: '#777', marginTop: 4, display: 'flex' }}>
+                      Fair range €{fair}M
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {stats.length > 0 && (
+              <div style={{ display: 'flex', gap: 40, marginTop: 26, paddingTop: 20, borderTop: '1px solid #1c1c1c' }}>
+                {stats.map((s) => (
+                  <div key={s.label} style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ fontSize: 14, color: '#666', letterSpacing: '0.08em', display: 'flex' }}>{s.label}</div>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: accent, display: 'flex' }}>{s.v}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -161,6 +239,30 @@ export default async function handler(req) {
           <div style={{ display: 'flex' }}>calibrefootball.com/transfers</div>
           <div style={{ display: 'flex' }}>Ability-based · position, league &amp; age adjusted</div>
         </div>
+
+        {/* Verdict stamp */}
+        {verdict && (
+          <div
+            style={{
+              position: 'absolute',
+              right: 64,
+              bottom: 128,
+              display: 'flex',
+              transform: 'rotate(-9deg)',
+              border: `4px solid ${accent}`,
+              borderRadius: 14,
+              padding: '14px 28px',
+              color: accent,
+              fontSize: 38,
+              fontWeight: 800,
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              background: `${accent}11`,
+            }}
+          >
+            {verdict}
+          </div>
+        )}
       </div>
     ),
     { width: 1200, height: 630 }

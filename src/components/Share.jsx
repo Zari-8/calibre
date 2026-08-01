@@ -68,6 +68,12 @@ export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fi
   if (askingPrice != null) p.set('asking', String(askingPrice));
   if (verdict?.premium != null) p.set('premium', String(verdict.premium));
   if (buyingTeam && fit?.fitScore != null) p.set('fit', String(fit.fitScore));
+  // Position scarcity (valuation.scarcity) — real, club-agnostic, so unlike
+  // fit it's always available. Swapped in for the "Trajectory" stat an
+  // earlier revision shipped, which was a real number in calibreRating.js
+  // but had its weight zeroed out for being non-discriminating — not
+  // something to surface as a public "mystery stat" on a shared card.
+  if (valuation?.scarcity != null) p.set('scarcity', String(valuation.scarcity));
 
   const label = verdictLabel || verdict?.label;
   if (label) p.set('verdict', label);

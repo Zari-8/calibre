@@ -1,27 +1,33 @@
 // Vercel Function — deploy at: api/share-card.js
 //
-// Renders a shareable 1200x630 PNG "valuation card" for a player. Redesigned
+// Renders a shareable "valuation card" PNG for a player. Redesigned
 // 2026-08-01 after a design pass with Zari: the first version (name/value/
 // verdict badge) was too flat to actually pull a Twitter influencer off the
 // timeline. This version leads with the provocative number (premium over
-// fair value), backs it with a row of bare, undefined stats (risk /
-// trajectory / system fit — deliberately not explained on the card itself;
+// fair value), backs it with a row of bare, undefined real stats (position
+// scarcity / system fit — deliberately not explained on the card itself;
 // the ambiguity is the hook, the definition lives on calibrefootball.com),
 // stamps the verdict like a rubber stamp instead of a quiet badge, shows the
 // from-club → to-club crests so it reads as a specific transfer story, and
-// (this revision) actually uses the site's real typography and real crest
-// images instead of a generic font and text-abbreviation badges — a first
-// pass shipped with those as placeholders and it showed: the card read as a
-// generic template next to the site's actual Barlow Condensed / Barlow
-// typography and its real club logos.
+// uses the site's real typography (Barlow Condensed / Barlow) and real
+// club-logo images instead of a generic font and text-abbreviation badges —
+// an earlier pass shipped with those as placeholders and it read as a
+// generic template next to the actual site.
+//
+// Sizing: the whole card is drawn at a base 1200x630 (the actual OG-image
+// standard) and then uniformly scaled down by CARD_SCALE — every dimension,
+// font size, padding and gap goes through px() below, so shrinking the card
+// doesn't just make it smaller, it keeps every proportion identical rather
+// than needing a second set of hand-tuned sizes.
 //
 // Card degrades gracefully field-by-field — nothing here is fabricated.
-// Fields with no real computed source yet (risk, trajectory) simply don't
-// render until the engine exposes them; system fit only renders when a real
-// buying club was selected (computeSystemFit is club-specific, see
-// Transfers.jsx). No new API key or third-party service needed: @vercel/og
-// renders the tree below server-side via Satori, entirely within Vercel's
-// free tier.
+// Trajectory was dropped as a stat (was here in an earlier revision): it
+// exists as a number in calibreRating.js's breakdown, but this exact
+// project zeroed its weight after finding it barely varies between players
+// — shipping it as a public "mystery stat" would mean surfacing a number
+// the team already flagged as unreliable. Position scarcity replaced it:
+// real, club-agnostic (valuation.scarcity — always available, unlike system
+// fit which needs a buying club selected).
 //
 // IMPORTANT — no JSX in this file, on purpose. An earlier version was named
 // share-card.jsx to make sure JSX got transformed, which quietly broke
@@ -33,9 +39,9 @@
 //
 // Usage:
 //   /api/share-card?name=Junior%20Kroupi&club=LOSC%20Lille&pos=ST&age=19
-//     &value=59.1&fair=52-64&asking=84&premium=42&fit=68
+//     &value=59.1&fair=52-64&asking=84&premium=42&fit=68&scarcity=40
 //     &fromClub=LOSC%20Lille&fromCrestUrl=<url>
-//     &toClub=Chelsea&toCrestUrl=<url>&toColor=%23034694
+//     &toClub=Chelsea&toCrestUrl=<url>&toColor=%23034684
 //     &verdict=NEGOTIATE%20HARD&tone=warn&img=<player photo url>
 //
 // Required Vercel env: none. Every field is optional except `name`.
@@ -48,6 +54,21 @@ import { ImageResponse } from '@vercel/og';
 import { createElement as e } from 'react';
 
 export const config = { runtime: 'edge' };
+
+const BASE_WIDTH = 1200;
+const BASE_HEIGHT = 630;
+const CARD_SCALE = 0.7; // "the card is too big" — 30% smaller, same proportions throughout
+const CARD_WIDTH = Math.round(BASE_WIDTH * CARD_SCALE);
+const CARD_HEIGHT = Math.round(BASE_HEIGHT * CARD_SCALE);
+
+// Scales a single px number, rounding but never collapsing a real border/gap to 0.
+function px(n) {
+  return Math.max(1, Math.round(n * CARD_SCALE));
+}
+// Scales every number inside a "12px 22px"-style CSS shorthand string.
+function pxShorthand(str) {
+  return str.replace(/(\d+(?:\.\d+)?)px/g, (_, n) => `${px(Number(n))}px`);
+}
 
 const TONE_COLOR = {
   good: '#c8ff00',
@@ -90,23 +111,23 @@ function fallbackCrest(clubName) {
 // when no real logo could be resolved, rather than ever inventing one.
 function crest(url, label, color) {
   const ring = {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: px(64),
+    height: px(64),
+    borderRadius: px(32),
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     background: color ? `${color}22` : '#141414',
-    border: `2px solid ${color || '#2c2c2c'}`,
+    border: `${px(2)}px solid ${color || '#2c2c2c'}`,
   };
   if (url) {
     return e(
       'div',
       { style: ring },
-      e('img', { src: url, width: 38, height: 38, style: { objectFit: 'contain' } })
+      e('img', { src: url, width: px(44), height: px(44), style: { objectFit: 'contain' } })
     );
   }
-  return e('div', { style: { ...ring, fontSize: 16, fontWeight: 700, color: color || '#888' } }, label);
+  return e('div', { style: { ...ring, fontSize: px(18), fontWeight: 700, color: color || '#888' } }, label);
 }
 
 export default async function handler(req) {
@@ -120,8 +141,7 @@ export default async function handler(req) {
   const fair = searchParams.get('fair'); // optional "low-high" string, already formatted
   const asking = searchParams.get('asking'); // €m, optional
   const premium = searchParams.get('premium'); // %, optional — pass pre-computed, never recomputed here
-  const risk = searchParams.get('risk'); // 0-100, optional, bare number, undefined on purpose
-  const traj = searchParams.get('traj'); // signed number, optional, bare
+  const scarcity = searchParams.get('scarcity'); // 0-100, position scarcity — club-agnostic, always available
   const fit = searchParams.get('fit'); // 0-100, optional — only real when a buying club was selected
   const verdict = clampText(searchParams.get('verdict') || '', 20);
   const tone = TONE_COLOR[searchParams.get('tone')] ? searchParams.get('tone') : 'neutral';
@@ -138,8 +158,7 @@ export default async function handler(req) {
   const meta = [pos, age ? `${age} yrs` : null, club].filter(Boolean).join('   ·   ');
   const showPremiumHero = asking && value && premium;
   const stats = [
-    risk ? { label: 'RISK', v: risk } : null,
-    traj ? { label: 'TRAJECTORY', v: traj } : null,
+    scarcity ? { label: 'POSITION SCARCITY', v: scarcity } : null,
     fit ? { label: 'SYSTEM FIT', v: fit } : null,
   ].filter(Boolean);
 
@@ -160,16 +179,16 @@ export default async function handler(req) {
     { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
     e('img', {
       src: 'https://www.calibrefootball.com/assets/calibre-wordmark.png',
-      width: 121,
-      height: 36,
+      width: px(121),
+      height: px(36),
       style: { objectFit: 'contain' },
     }),
     showCrestRow
       ? e(
           'div',
-          { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+          { style: { display: 'flex', alignItems: 'center', gap: px(12) } },
           crest(fromCrestUrl, fallbackCrest(fromClub) || '?', null),
-          e('div', { style: { fontSize: 22, color: '#555', display: 'flex' } }, '→'),
+          e('div', { style: { fontSize: px(22), color: '#555', display: 'flex' } }, '→'),
           crest(toCrestUrl, fallbackCrest(toClub) || '?', toColor)
         )
       : null
@@ -178,17 +197,17 @@ export default async function handler(req) {
   const photo = img
     ? e('img', {
         src: img,
-        width: 220,
-        height: 220,
-        style: { borderRadius: 24, objectFit: 'cover', border: '2px solid #1c1c1c' },
+        width: px(220),
+        height: px(220),
+        style: { borderRadius: px(24), objectFit: 'cover', border: `${px(2)}px solid #1c1c1c` },
       })
     : e(
         'div',
         {
           style: {
-            width: 220, height: 220, borderRadius: 24, background: '#141414',
-            border: '2px solid #1c1c1c', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: 84, fontWeight: 700, color: '#333',
+            width: px(220), height: px(220), borderRadius: px(24), background: '#141414',
+            border: `${px(2)}px solid #1c1c1c`, display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontSize: px(84), fontWeight: 700, color: '#333',
             fontFamily: DISPLAY,
           },
         },
@@ -197,19 +216,19 @@ export default async function handler(req) {
 
   const premiumHero = e(
     'div',
-    { style: { display: 'flex', flexDirection: 'column', marginTop: 24 } },
+    { style: { display: 'flex', flexDirection: 'column', marginTop: px(24) } },
     e(
       'div',
       {
         style: {
           display: 'flex',
           alignSelf: 'flex-start',
-          padding: '10px 22px',
-          borderRadius: 12,
-          border: `1px solid ${accent}55`,
+          padding: pxShorthand('10px 22px'),
+          borderRadius: px(12),
+          border: `${px(1)}px solid ${accent}55`,
           background: `${accent}22`,
           color: accent,
-          fontSize: 42,
+          fontSize: px(42),
           fontWeight: 700,
           fontFamily: DISPLAY,
         },
@@ -218,29 +237,29 @@ export default async function handler(req) {
     ),
     e(
       'div',
-      { style: { fontSize: 19, color: '#999', marginTop: 10, display: 'flex', fontFamily: BODY } },
+      { style: { fontSize: px(19), color: '#999', marginTop: px(10), display: 'flex', fontFamily: BODY } },
       `Asking €${asking}M · Calibre fair value €${value}M`
     )
   );
 
   const plainValue = e(
     'div',
-    { style: { display: 'flex', alignItems: 'flex-end', gap: 28, marginTop: 34 } },
+    { style: { display: 'flex', alignItems: 'flex-end', gap: px(28), marginTop: px(34) } },
     e(
       'div',
       { style: { display: 'flex', flexDirection: 'column' } },
       e(
         'div',
-        { style: { fontSize: 14, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', fontFamily: BODY, fontWeight: 700 } },
+        { style: { fontSize: px(14), color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', fontFamily: BODY, fontWeight: 700 } },
         'Calibre Estimated Value'
       ),
       e(
         'div',
-        { style: { fontSize: 78, fontWeight: 700, color: '#c8ff00', lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } },
+        { style: { fontSize: px(78), fontWeight: 700, color: '#c8ff00', lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } },
         value ? `€${value}M` : '—'
       ),
       fair
-        ? e('div', { style: { fontSize: 18, color: '#777', marginTop: 4, display: 'flex', fontFamily: BODY } }, `Fair range €${fair}M`)
+        ? e('div', { style: { fontSize: px(18), color: '#777', marginTop: px(4), display: 'flex', fontFamily: BODY } }, `Fair range €${fair}M`)
         : null
     )
   );
@@ -249,13 +268,13 @@ export default async function handler(req) {
     stats.length > 0
       ? e(
           'div',
-          { style: { display: 'flex', gap: 40, marginTop: 26, paddingTop: 20, borderTop: '1px solid #1c1c1c' } },
+          { style: { display: 'flex', gap: px(40), marginTop: px(26), paddingTop: px(20), borderTop: '1px solid #1c1c1c' } },
           ...stats.map((s) =>
             e(
               'div',
               { key: s.label, style: { display: 'flex', flexDirection: 'column' } },
-              e('div', { style: { fontSize: 13, color: '#666', letterSpacing: '0.08em', display: 'flex', fontFamily: BODY, fontWeight: 700 } }, s.label),
-              e('div', { style: { fontSize: 32, fontWeight: 700, color: accent, display: 'flex', fontFamily: DISPLAY } }, s.v)
+              e('div', { style: { fontSize: px(13), color: '#666', letterSpacing: '0.08em', display: 'flex', fontFamily: BODY, fontWeight: 700 } }, s.label),
+              e('div', { style: { fontSize: px(32), fontWeight: 700, color: accent, display: 'flex', fontFamily: DISPLAY } }, s.v)
             )
           )
         )
@@ -263,13 +282,13 @@ export default async function handler(req) {
 
   const body = e(
     'div',
-    { style: { display: 'flex', alignItems: 'center', flex: 1, gap: 48, marginTop: 16 } },
+    { style: { display: 'flex', alignItems: 'center', flex: 1, gap: px(48), marginTop: px(16) } },
     photo,
     e(
       'div',
       { style: { display: 'flex', flexDirection: 'column', flex: 1 } },
-      e('div', { style: { fontSize: 56, fontWeight: 700, lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } }, name),
-      meta ? e('div', { style: { fontSize: 21, color: '#999', marginTop: 8, display: 'flex', fontFamily: BODY } }, meta) : null,
+      e('div', { style: { fontSize: px(56), fontWeight: 700, lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } }, name),
+      meta ? e('div', { style: { fontSize: px(21), color: '#999', marginTop: px(8), display: 'flex', fontFamily: BODY } }, meta) : null,
       showPremiumHero ? premiumHero : plainValue,
       statsRow
     )
@@ -280,7 +299,7 @@ export default async function handler(req) {
     {
       style: {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        borderTop: '1px solid #1c1c1c', paddingTop: 18, fontSize: 15, color: '#555', fontFamily: BODY,
+        borderTop: '1px solid #1c1c1c', paddingTop: px(18), fontSize: px(15), color: '#555', fontFamily: BODY,
       },
     },
     e('div', { style: { display: 'flex' } }, 'calibrefootball.com/transfers'),
@@ -293,15 +312,15 @@ export default async function handler(req) {
         {
           style: {
             position: 'absolute',
-            right: 64,
-            bottom: 128,
+            right: px(64),
+            bottom: px(128),
             display: 'flex',
             transform: 'rotate(-9deg)',
-            border: `4px solid ${accent}`,
-            borderRadius: 14,
-            padding: '12px 26px',
+            border: `${px(4)}px solid ${accent}`,
+            borderRadius: px(14),
+            padding: pxShorthand('12px 26px'),
             color: accent,
-            fontSize: 36,
+            fontSize: px(36),
             fontWeight: 700,
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
@@ -317,15 +336,15 @@ export default async function handler(req) {
     'div',
     {
       style: {
-        width: '1200px',
-        height: '630px',
+        width: `${CARD_WIDTH}px`,
+        height: `${CARD_HEIGHT}px`,
         display: 'flex',
         flexDirection: 'column',
         background: '#030405',
         backgroundImage:
           'radial-gradient(circle at 8% 0%, rgba(166,255,0,0.16), transparent 55%), radial-gradient(circle at 92% 0%, rgba(166,255,0,0.11), transparent 50%)',
         fontFamily: BODY,
-        padding: '56px 64px',
+        padding: pxShorthand('56px 64px'),
         color: '#fff',
         position: 'relative',
       },
@@ -359,7 +378,7 @@ export default async function handler(req) {
   // No custom Cache-Control here — @vercel/og already sets a sensible
   // default, and adding our own appended rather than replaced it in
   // testing, producing a malformed duplicate header.
-  const imageOptions = { width: 1200, height: 630 };
+  const imageOptions = { width: CARD_WIDTH, height: CARD_HEIGHT };
   if (fonts.length > 0) imageOptions.fonts = fonts;
 
   return new ImageResponse(root, imageOptions);

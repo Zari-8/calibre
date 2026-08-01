@@ -33,7 +33,18 @@ export function shareUrl(path) {
 //   valuation: the object returned by calibreValue(player) — reads
 //              estimatedValue and fairRange
 //   verdict : { label, tone } — e.g. what dealVerdict/verdictDisplay produce
-export function buildShareCardUrl({ player, valuation, verdict } = {}) {
+// verdictLabel is a REQUIRED separate param, deliberately not read off
+// verdict.label — calibreFitValue.js's raw labels (BACK IT / FAIR DEAL /
+// NEGOTIATE HARD / CONDITIONAL DEAL / SYSTEM RISK / PUNT / WALK AWAY) are
+// internal taxonomy, not user-facing copy. Callers must pass the same
+// friendly text they render on-page (Transfers.jsx's `verdictDisplay`) so
+// the card never shows a label a viewer wasn't already shown on the site.
+//
+// fit/askingPrice/premium/buyingTeam are all optional and only render on
+// the card when actually present — see api/share-card.js's own comments
+// on why (nothing here should ever be fabricated for the sake of a fuller-
+// looking card).
+export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fit, askingPrice, buyingTeam } = {}) {
   const p = new URLSearchParams();
   const name = player?.full_name || player?.name;
   if (name) p.set('name', name);
@@ -43,10 +54,26 @@ export function buildShareCardUrl({ player, valuation, verdict } = {}) {
   if (player?.age != null) p.set('age', String(player.age));
   const img = player?.image || player?.img;
   if (img) p.set('img', img);
-  if (valuation?.estimatedValue != null) p.set('value', String(valuation.estimatedValue));
+
+  const displayValue = buyingTeam && fit?.fitAdjustedValue != null ? fit.fitAdjustedValue : valuation?.estimatedValue;
+  if (displayValue != null) p.set('value', String(displayValue));
   if (valuation?.fairRange) p.set('fair', `${valuation.fairRange.low}-${valuation.fairRange.high}`);
-  if (verdict?.label) p.set('verdict', verdict.label);
+
+  if (askingPrice != null) p.set('asking', String(askingPrice));
+  if (verdict?.premium != null) p.set('premium', String(verdict.premium));
+  if (buyingTeam && fit?.fitScore != null) p.set('fit', String(fit.fitScore));
+
+  const label = verdictLabel || verdict?.label;
+  if (label) p.set('verdict', label);
   if (verdict?.tone) p.set('tone', verdict.tone);
+
+  if (player?.club) p.set('fromClub', player.club);
+  if (buyingTeam) {
+    p.set('toClub', buyingTeam.short || buyingTeam.name || '');
+    if (buyingTeam.crest) p.set('toCrest', buyingTeam.crest);
+    if (buyingTeam.accent) p.set('toColor', buyingTeam.accent);
+  }
+
   return `/api/share-card?${p.toString()}`;
 }
 

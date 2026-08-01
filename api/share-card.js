@@ -126,16 +126,12 @@ export default async function handler(req) {
   const headerRow = e(
     'div',
     { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
-    e(
-      'div',
-      { style: { display: 'flex', alignItems: 'center', gap: 10 } },
-      e('div', { style: { width: 14, height: 14, borderRadius: 4, background: '#c8ff00' } }),
-      e(
-        'div',
-        { style: { fontSize: 22, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex' } },
-        'Calibre'
-      )
-    ),
+    e('img', {
+      src: 'https://www.calibrefootball.com/assets/calibre-wordmark.png',
+      width: 101,
+      height: 30,
+      style: { objectFit: 'contain' },
+    }),
     showCrestRow
       ? e(
           'div',

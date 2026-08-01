@@ -767,7 +767,10 @@ export default function Transfers() {
 
   const premiumColor = dealVerdict.premium > 100 ? '#ef4444' : dealVerdict.premium > 50 ? '#f59e0b' : '#c8ff00';
   const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdictDisplay}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
-  const cardUrl = buildShareCardUrl({ player: selectedPlayer, valuation, verdict: dealVerdict });
+  const cardUrl = buildShareCardUrl({
+    player: selectedPlayer, valuation, verdict: dealVerdict, verdictLabel: verdictDisplay,
+    fit, askingPrice, buyingTeam: selectedTeam,
+  });
 
   // Comparables react to whoever is being analysed (position group + fee proximity)
   const rankedComparables = useMemo(

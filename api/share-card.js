@@ -1,33 +1,33 @@
 // Vercel Function — deploy at: api/share-card.js
 //
-// Renders a shareable "valuation card" PNG for a player. Redesigned
-// 2026-08-01 after a design pass with Zari: the first version (name/value/
-// verdict badge) was too flat to actually pull a Twitter influencer off the
-// timeline. This version leads with the provocative number (premium over
-// fair value), backs it with a row of bare, undefined real stats (position
-// scarcity / system fit — deliberately not explained on the card itself;
-// the ambiguity is the hook, the definition lives on calibrefootball.com),
-// stamps the verdict like a rubber stamp instead of a quiet badge, shows the
-// from-club → to-club crests so it reads as a specific transfer story, and
-// uses the site's real typography (Barlow Condensed / Barlow) and real
-// club-logo images instead of a generic font and text-abbreviation badges —
-// an earlier pass shipped with those as placeholders and it read as a
-// generic template next to the actual site.
+// Renders a shareable "valuation card" PNG for a player. Deliberately built
+// to mirror the layout of the Transfers page's own player panel — photo +
+// name + meta, then a bordered VALUE / ASKING / PREMIUM box row (same shape
+// as the page's own KPI strip), then a bare undefined stat row (risk /
+// system fit / position scarcity — deliberately not explained on the card
+// itself; the ambiguity is the hook, the definition lives on
+// calibrefootball.com), then a stamped verdict. Real club-logo crests and
+// the site's real typography (Barlow Condensed / Barlow), not a generic
+// font and text-abbreviation badges — an earlier pass shipped with those as
+// placeholders and it read as a generic template next to the actual site.
 //
 // Sizing: the whole card is drawn at a base 1200x630 (the actual OG-image
-// standard) and then uniformly scaled down by CARD_SCALE — every dimension,
-// font size, padding and gap goes through px() below, so shrinking the card
-// doesn't just make it smaller, it keeps every proportion identical rather
-// than needing a second set of hand-tuned sizes.
+// standard) and then uniformly scaled by CARD_SCALE — every dimension,
+// font size, padding and gap goes through px() below, so resizing the card
+// doesn't need a second set of hand-tuned numbers. Logo and verdict stamp
+// use their own larger base sizes (LOGO_BASE_*, STAMP_BASE_*) precisely so
+// they DON'T shrink in lockstep with everything else — both were getting
+// visually lost at the uniform scale.
 //
 // Card degrades gracefully field-by-field — nothing here is fabricated.
-// Trajectory was dropped as a stat (was here in an earlier revision): it
-// exists as a number in calibreRating.js's breakdown, but this exact
-// project zeroed its weight after finding it barely varies between players
-// — shipping it as a public "mystery stat" would mean surfacing a number
-// the team already flagged as unreliable. Position scarcity replaced it:
-// real, club-agnostic (valuation.scarcity — always available, unlike system
-// fit which needs a buying club selected).
+// risk/fit/scarcity are the same numbers already live on the Transfers page
+// (Transfers.jsx's riskPct for the SYSTEM RISK slider, systemFitScore,
+// valuation.scarcity) — never invented for the card alone. Trajectory was
+// dropped as a stat in an earlier revision: it exists as a number in
+// calibreRating.js's breakdown, but this exact project zeroed its weight
+// after finding it barely varies between players — shipping it as a public
+// "mystery stat" would mean surfacing a number the team already flagged as
+// unreliable.
 //
 // IMPORTANT — no JSX in this file, on purpose. An earlier version was named
 // share-card.jsx to make sure JSX got transformed, which quietly broke
@@ -39,7 +39,7 @@
 //
 // Usage:
 //   /api/share-card?name=Junior%20Kroupi&club=LOSC%20Lille&pos=ST&age=19
-//     &value=59.1&fair=52-64&asking=84&premium=42&fit=68&scarcity=40
+//     &value=59.1&fair=52-64&asking=84&premium=42&fit=68&scarcity=40&risk=61
 //     &fromClub=LOSC%20Lille&fromCrestUrl=<url>
 //     &toClub=Chelsea&toCrestUrl=<url>&toColor=%23034684
 //     &verdict=NEGOTIATE%20HARD&tone=warn&img=<player photo url>
@@ -57,7 +57,7 @@ export const config = { runtime: 'edge' };
 
 const BASE_WIDTH = 1200;
 const BASE_HEIGHT = 630;
-const CARD_SCALE = 0.7; // "the card is too big" — 30% smaller, same proportions throughout
+const CARD_SCALE = 0.8; // "reduce by 20%" — was 0.7 (30% down); every proportion still scales together
 const CARD_WIDTH = Math.round(BASE_WIDTH * CARD_SCALE);
 const CARD_HEIGHT = Math.round(BASE_HEIGHT * CARD_SCALE);
 
@@ -130,6 +130,25 @@ function crest(url, label, color) {
   return e('div', { style: { ...ring, fontSize: px(18), fontWeight: 700, color: color || '#888' } }, label);
 }
 
+// One cell of the VALUE / ASKING / PREMIUM box row — mirrors the Transfers
+// page's own KPI strip shape (bordered box, small caps label, big value).
+function kpiCell(label, value, color, isFirst) {
+  return e(
+    'div',
+    {
+      style: {
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        padding: pxShorthand('9px 20px'),
+        borderLeft: isFirst ? 'none' : `${px(1)}px solid #1c1c1c`,
+      },
+    },
+    e('div', { style: { fontSize: px(13), color: '#777', letterSpacing: '0.08em', textTransform: 'uppercase', display: 'flex', fontFamily: 'Barlow', fontWeight: 700 } }, label),
+    e('div', { style: { fontSize: px(30), fontWeight: 700, color: color || '#fff', marginTop: px(4), display: 'flex', fontFamily: 'Barlow Condensed' } }, value)
+  );
+}
+
 export default async function handler(req) {
   const { searchParams } = new URL(req.url);
 
@@ -138,9 +157,9 @@ export default async function handler(req) {
   const pos = clampText(searchParams.get('pos') || '', 12);
   const age = searchParams.get('age');
   const value = searchParams.get('value'); // €m, Calibre fair value
-  const fair = searchParams.get('fair'); // optional "low-high" string, already formatted
   const asking = searchParams.get('asking'); // €m, optional
   const premium = searchParams.get('premium'); // %, optional — pass pre-computed, never recomputed here
+  const risk = searchParams.get('risk'); // 0-100 — Transfers.jsx's own riskPct (SYSTEM RISK slider), not invented here
   const scarcity = searchParams.get('scarcity'); // 0-100, position scarcity — club-agnostic, always available
   const fit = searchParams.get('fit'); // 0-100, optional — only real when a buying club was selected
   const verdict = clampText(searchParams.get('verdict') || '', 20);
@@ -153,43 +172,53 @@ export default async function handler(req) {
   const fromCrestUrl = searchParams.get('fromCrestUrl') || null;
   const toCrestUrl = searchParams.get('toCrestUrl') || null;
   const toColor = searchParams.get('toColor') || null;
-  const showCrestRow = !!(fromClub && toClub);
 
   const meta = [pos, age ? `${age} yrs` : null, club].filter(Boolean).join('   ·   ');
-  const showPremiumHero = asking && value && premium;
+  const showKpiRow = !!(asking && value && premium);
   const stats = [
-    scarcity ? { label: 'POSITION SCARCITY', v: scarcity } : null,
+    risk ? { label: 'RISK', v: risk } : null,
     fit ? { label: 'SYSTEM FIT', v: fit } : null,
+    scarcity ? { label: 'POSITION SCARCITY', v: scarcity } : null,
   ].filter(Boolean);
 
   // Only the glyphs this specific card needs — keeps the Google Fonts
   // response small and fast rather than pulling the whole family.
   const glyphText = Array.from(
     new Set(
-      `${name}${club}${meta}${verdict}${asking}${value}${fair}${premium}${stats.map((s) => s.label + s.v).join('')}` +
-        'CALIBREabcdefghijklmnopqrstuvwxyz0123456789€%+-·→ Over fair value Asking Calibre Estimated'
+      `${name}${club}${meta}${verdict}${asking}${value}${premium}${stats.map((s) => s.label + s.v).join('')}` +
+        'CALIBREabcdefghijklmnopqrstuvwxyz0123456789€%+-·→ Value Asking Price Premium Estimated Fair'
     )
   ).join('');
 
   const DISPLAY = 'Barlow Condensed';
   const BODY = 'Barlow';
 
+  // Logo and stamp deliberately do NOT shrink with the rest of the card —
+  // both got visually lost at the uniform CARD_SCALE, so they scale off
+  // their own larger base sizes instead.
+  const LOGO_W = px(170);
+  const LOGO_H = px(50);
+  const STAMP_FONT = px(36);
+  const STAMP_BORDER = px(4);
+
   const headerRow = e(
     'div',
     { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
     e('img', {
       src: 'https://www.calibrefootball.com/assets/calibre-wordmark.png',
-      width: px(121),
-      height: px(36),
+      width: LOGO_W,
+      height: LOGO_H,
       style: { objectFit: 'contain' },
     }),
-    showCrestRow
+    // Shows a from-crest alone if that's all we have; adds the arrow + to-crest
+    // once a buying club is actually picked. Never gated all-or-nothing.
+    fromClub || toClub
       ? e(
           'div',
           { style: { display: 'flex', alignItems: 'center', gap: px(12) } },
-          crest(fromCrestUrl, fallbackCrest(fromClub) || '?', null),
-          e('div', { style: { fontSize: px(22), color: '#555', display: 'flex' } }, '→'),
-          crest(toCrestUrl, fallbackCrest(toClub) || '?', toColor)
+          fromClub ? crest(fromCrestUrl, fallbackCrest(fromClub) || '?', null) : null,
+          toClub ? e('div', { style: { fontSize: px(22), color: '#555', display: 'flex' } }, '→') : null,
+          toClub ? crest(toCrestUrl, fallbackCrest(toClub) || '?', toColor) : null
         )
       : null
   );
@@ -214,37 +243,27 @@ export default async function handler(req) {
         name.trim().charAt(0).toUpperCase()
       );
 
-  const premiumHero = e(
+  const premiumColor = Number(premium) > 100 ? '#ef4444' : Number(premium) > 50 ? '#e8b13a' : '#c8ff00';
+
+  const kpiRow = e(
     'div',
-    { style: { display: 'flex', flexDirection: 'column', marginTop: px(24) } },
-    e(
-      'div',
-      {
-        style: {
-          display: 'flex',
-          alignSelf: 'flex-start',
-          padding: pxShorthand('10px 22px'),
-          borderRadius: px(12),
-          border: `${px(1)}px solid ${accent}55`,
-          background: `${accent}22`,
-          color: accent,
-          fontSize: px(42),
-          fontWeight: 700,
-          fontFamily: DISPLAY,
-        },
+    {
+      style: {
+        display: 'flex',
+        marginTop: px(14),
+        border: `${px(1)}px solid #1c1c1c`,
+        borderRadius: px(12),
+        background: '#0d0f0c',
       },
-      `${Number(premium) >= 0 ? '+' : ''}${premium}% over fair value`
-    ),
-    e(
-      'div',
-      { style: { fontSize: px(19), color: '#999', marginTop: px(10), display: 'flex', fontFamily: BODY } },
-      `Asking €${asking}M · Calibre fair value €${value}M`
-    )
+    },
+    kpiCell('Calibre Value', `€${value}M`, '#c8ff00', true),
+    kpiCell('Asking Price', `€${asking}M`, '#fff', false),
+    kpiCell('Premium', `${Number(premium) >= 0 ? '+' : ''}${premium}%`, premiumColor, false)
   );
 
   const plainValue = e(
     'div',
-    { style: { display: 'flex', alignItems: 'flex-end', gap: px(28), marginTop: px(34) } },
+    { style: { display: 'flex', alignItems: 'flex-end', gap: px(28), marginTop: px(16) } },
     e(
       'div',
       { style: { display: 'flex', flexDirection: 'column' } },
@@ -255,12 +274,9 @@ export default async function handler(req) {
       ),
       e(
         'div',
-        { style: { fontSize: px(78), fontWeight: 700, color: '#c8ff00', lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } },
+        { style: { fontSize: px(70), fontWeight: 700, color: '#c8ff00', lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } },
         value ? `€${value}M` : '—'
-      ),
-      fair
-        ? e('div', { style: { fontSize: px(18), color: '#777', marginTop: px(4), display: 'flex', fontFamily: BODY } }, `Fair range €${fair}M`)
-        : null
+      )
     )
   );
 
@@ -268,13 +284,13 @@ export default async function handler(req) {
     stats.length > 0
       ? e(
           'div',
-          { style: { display: 'flex', gap: px(40), marginTop: px(26), paddingTop: px(20), borderTop: '1px solid #1c1c1c' } },
+          { style: { display: 'flex', gap: px(36), marginTop: px(12) } },
           ...stats.map((s) =>
             e(
               'div',
               { key: s.label, style: { display: 'flex', flexDirection: 'column' } },
               e('div', { style: { fontSize: px(13), color: '#666', letterSpacing: '0.08em', display: 'flex', fontFamily: BODY, fontWeight: 700 } }, s.label),
-              e('div', { style: { fontSize: px(32), fontWeight: 700, color: accent, display: 'flex', fontFamily: DISPLAY } }, s.v)
+              e('div', { style: { fontSize: px(28), fontWeight: 700, color: accent, display: 'flex', fontFamily: DISPLAY } }, s.v)
             )
           )
         )
@@ -282,15 +298,13 @@ export default async function handler(req) {
 
   const body = e(
     'div',
-    { style: { display: 'flex', alignItems: 'center', flex: 1, gap: px(48), marginTop: px(16) } },
+    { style: { display: 'flex', alignItems: 'center', gap: px(40), marginTop: px(18) } },
     photo,
     e(
       'div',
       { style: { display: 'flex', flexDirection: 'column', flex: 1 } },
-      e('div', { style: { fontSize: px(56), fontWeight: 700, lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } }, name),
-      meta ? e('div', { style: { fontSize: px(21), color: '#999', marginTop: px(8), display: 'flex', fontFamily: BODY } }, meta) : null,
-      showPremiumHero ? premiumHero : plainValue,
-      statsRow
+      e('div', { style: { fontSize: px(50), fontWeight: 700, lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } }, name),
+      meta ? e('div', { style: { fontSize: px(20), color: '#999', marginTop: px(8), display: 'flex', fontFamily: BODY } }, meta) : null
     )
   );
 
@@ -299,7 +313,7 @@ export default async function handler(req) {
     {
       style: {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        borderTop: '1px solid #1c1c1c', paddingTop: px(18), fontSize: px(15), color: '#555', fontFamily: BODY,
+        borderTop: `${px(1)}px solid #1c1c1c`, paddingTop: px(10), marginTop: px(14), fontSize: px(14), color: '#555', fontFamily: BODY,
       },
     },
     e('div', { style: { display: 'flex' } }, 'calibrefootball.com/transfers'),
@@ -312,15 +326,15 @@ export default async function handler(req) {
         {
           style: {
             position: 'absolute',
-            right: px(64),
-            bottom: px(128),
+            right: px(56),
+            bottom: px(112),
             display: 'flex',
             transform: 'rotate(-9deg)',
-            border: `${px(4)}px solid ${accent}`,
+            border: `${STAMP_BORDER}px solid ${accent}`,
             borderRadius: px(14),
-            padding: pxShorthand('12px 26px'),
+            padding: pxShorthand('10px 24px'),
             color: accent,
-            fontSize: px(36),
+            fontSize: STAMP_FONT,
             fontWeight: 700,
             letterSpacing: '0.04em',
             textTransform: 'uppercase',
@@ -344,13 +358,15 @@ export default async function handler(req) {
         backgroundImage:
           'radial-gradient(circle at 8% 0%, rgba(166,255,0,0.16), transparent 55%), radial-gradient(circle at 92% 0%, rgba(166,255,0,0.11), transparent 50%)',
         fontFamily: BODY,
-        padding: pxShorthand('56px 64px'),
+        padding: pxShorthand('38px 56px'),
         color: '#fff',
         position: 'relative',
       },
     },
     headerRow,
     body,
+    showKpiRow ? kpiRow : plainValue,
+    statsRow,
     footer,
     stamp
   );
@@ -371,13 +387,7 @@ export default async function handler(req) {
   // IMPORTANT: only pass `fonts` when at least one actually loaded. Satori
   // throws outright on an empty fonts array ("No fonts are loaded") rather
   // than falling back — but it DOES fall back to its own bundled default
-  // font when the `fonts` key is omitted entirely. So if Google Fonts is
-  // ever unreachable, this must omit the key, not pass `[]`, or a transient
-  // font-CDN hiccup would take the whole card down instead of just losing
-  // the custom typeface for that one render.
-  // No custom Cache-Control here — @vercel/og already sets a sensible
-  // default, and adding our own appended rather than replaced it in
-  // testing, producing a malformed duplicate header.
+  // font when the `fonts` key is omitted entirely.
   const imageOptions = { width: CARD_WIDTH, height: CARD_HEIGHT };
   if (fonts.length > 0) imageOptions.fonts = fonts;
 

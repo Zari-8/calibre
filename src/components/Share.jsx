@@ -45,7 +45,7 @@ export function shareUrl(path) {
 // the card when actually present — see api/share-card.js's own comments
 // on why (nothing here should ever be fabricated for the sake of a fuller-
 // looking card).
-export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fit, askingPrice, buyingTeam } = {}) {
+export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fit, askingPrice, buyingTeam, riskPct } = {}) {
   const p = new URLSearchParams();
   const name = player?.full_name || player?.name;
   if (name) p.set('name', name);
@@ -68,6 +68,9 @@ export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fi
   if (askingPrice != null) p.set('asking', String(askingPrice));
   if (verdict?.premium != null) p.set('premium', String(verdict.premium));
   if (buyingTeam && fit?.fitScore != null) p.set('fit', String(fit.fitScore));
+  // Same 0-100 figure driving the page's own SYSTEM RISK slider
+  // (Transfers.jsx's riskPct) — not a separate invented card-only number.
+  if (riskPct != null) p.set('risk', String(riskPct));
   // Position scarcity (valuation.scarcity) — real, club-agnostic, so unlike
   // fit it's always available. Swapped in for the "Trajectory" stat an
   // earlier revision shipped, which was a real number in calibreRating.js

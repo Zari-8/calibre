@@ -767,10 +767,8 @@ export default function Transfers() {
 
   const premiumColor = dealVerdict.premium > 100 ? '#ef4444' : dealVerdict.premium > 50 ? '#f59e0b' : '#c8ff00';
   const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdictDisplay}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
-  const cardUrl = buildShareCardUrl({
-    player: selectedPlayer, valuation, verdict: dealVerdict, verdictLabel: verdictDisplay,
-    fit, askingPrice, buyingTeam: selectedTeam,
-  });
+  // cardUrl itself is built further down, after riskPct exists — it needs
+  // that same 0-100 risk figure the page's own SYSTEM RISK slider uses.
 
   // Comparables react to whoever is being analysed (position group + fee proximity)
   const rankedComparables = useMemo(
@@ -886,6 +884,13 @@ export default function Transfers() {
   )));
   const riskLabel = riskPct >= 70 ? 'High risk' : riskPct >= 45 ? 'Medium risk' : 'Low risk';
   const riskWhy = `Fit score is ${systemFitScore != null ? (systemFitScore >= 75 ? 'strong' : systemFitScore >= 60 ? 'workable' : 'low') : 'unknown'} for this system and the asking price is ${dealVerdict.premium > 40 ? 'high' : dealVerdict.premium > 0 ? 'above estimate' : 'reasonable'}. ${riskPct >= 70 ? 'High risk of overpaying for limited impact.' : riskPct >= 45 ? 'Manageable risk if the fit case is right.' : 'Low risk at this price and fit level.'}`;
+  // Built here (not up near shareText) so it can carry the same riskPct
+  // the page's own SYSTEM RISK slider uses — one real number, not a second
+  // invented one for the card alone.
+  const cardUrl = buildShareCardUrl({
+    player: selectedPlayer, valuation, verdict: dealVerdict, verdictLabel: verdictDisplay,
+    fit, askingPrice, buyingTeam: selectedTeam, riskPct,
+  });
 
   return (
     <div className="tr2">

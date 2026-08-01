@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Share2, MessageCircle, Link2, Check } from 'lucide-react';
+import { Share2, MessageCircle, Link2, Check, Image as ImageIcon } from 'lucide-react';
 
 // X (Twitter) glyph isn't in lucide; use a tiny inline mark so the brand reads right.
 function XMark({ size = 11 }) {
@@ -21,6 +21,33 @@ export function shareUrl(path) {
   if (typeof window === 'undefined') return path || '';
   if (!path) return window.location.href;
   return path.startsWith('http') ? path : window.location.origin + path;
+}
+
+// Builds the URL for the shareable valuation-card image (api/share-card.js,
+// a Vercel Edge Function rendering a 1200x630 PNG). Kept as one helper so
+// every call site (Transfers, Dossier, DealReport) builds the same shape of
+// URL from a live valuation/verdict object instead of hand-assembling query
+// strings — same "one seam" pattern calibreFitValue.js uses for consuming
+// calibreValue.js's output.
+//   player  : { name/full_name, club, pos/position, age, image/img }
+//   valuation: the object returned by calibreValue(player) — reads
+//              estimatedValue and fairRange
+//   verdict : { label, tone } — e.g. what dealVerdict/verdictDisplay produce
+export function buildShareCardUrl({ player, valuation, verdict } = {}) {
+  const p = new URLSearchParams();
+  const name = player?.full_name || player?.name;
+  if (name) p.set('name', name);
+  if (player?.club) p.set('club', player.club);
+  const pos = player?.pos || player?.position;
+  if (pos) p.set('pos', pos);
+  if (player?.age != null) p.set('age', String(player.age));
+  const img = player?.image || player?.img;
+  if (img) p.set('img', img);
+  if (valuation?.estimatedValue != null) p.set('value', String(valuation.estimatedValue));
+  if (valuation?.fairRange) p.set('fair', `${valuation.fairRange.low}-${valuation.fairRange.high}`);
+  if (verdict?.label) p.set('verdict', verdict.label);
+  if (verdict?.tone) p.set('tone', verdict.tone);
+  return `/api/share-card?${p.toString()}`;
 }
 
 const wrap = { display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' };
@@ -55,5 +82,28 @@ export default function ShareBar({ text = '', url, title = 'Calibre', label = tr
         {copied ? <Check size={11} /> : <Link2 size={11} />}
       </button>
     </div>
+  );
+}
+
+// Companion to ShareBar — opens the rendered valuation-card PNG (api/share-card.js)
+// in a new tab so it can be saved/dropped straight into a post, rather than
+// just sharing a bare link. Deliberately a separate small control (not folded
+// into ShareBar) since it needs the player/valuation/verdict shape, not just
+// text+url, and not every ShareBar call site has that data on hand yet.
+export function ShareCardLink({ cardUrl, label = true }) {
+  if (!cardUrl) return null;
+  return (
+    <a
+      className="share-btn share-btn--card"
+      style={{ ...btn, width: label ? 'auto' : 20, gap: 5, padding: label ? '0 8px' : 0 }}
+      href={cardUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Open shareable card image"
+      title="Open shareable card image"
+    >
+      <ImageIcon size={11} />
+      {label && <span style={{ fontSize: 10, letterSpacing: '.04em', textTransform: 'uppercase' }}>Card</span>}
+    </a>
   );
 }

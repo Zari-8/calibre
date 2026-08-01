@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
-import ShareBar, { shareUrl } from '../components/Share.jsx';
+import ShareBar, { shareUrl, buildShareCardUrl, ShareCardLink } from '../components/Share.jsx';
 import DealReport from '../components/DealReport.jsx';
 import Dossier from '../components/Dossier.jsx';
 import CommissionForm from '../components/CommissionForm.jsx';
@@ -767,6 +767,7 @@ export default function Transfers() {
 
   const premiumColor = dealVerdict.premium > 100 ? '#ef4444' : dealVerdict.premium > 50 ? '#f59e0b' : '#c8ff00';
   const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdictDisplay}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
+  const cardUrl = buildShareCardUrl({ player: selectedPlayer, valuation, verdict: dealVerdict });
 
   // Comparables react to whoever is being analysed (position group + fee proximity)
   const rankedComparables = useMemo(
@@ -1112,6 +1113,7 @@ export default function Transfers() {
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <DealReport player={selectedPlayer} team={selectedTeam} verdict={verdict} sysFit={sysFit} marketValue={valuation.estimatedValue} askingPrice={askingPrice} />
                 <ShareBar text={shareText} url={shareUrl('/transfers')} />
+                <ShareCardLink cardUrl={cardUrl} />
                 {canDossier && <button className="tr2-cta" style={{ background: 'transparent', border: '1px solid var(--line)', color: '#c9ced4' }} onClick={() => setShowDossier(true)}>Generate dossier →</button>}
               </div>
             </div>

@@ -15,7 +15,7 @@
 // depth, medical history) or the human analyst layer are surfaced honestly
 // rather than faked.
 // ─────────────────────────────────────────────────────────────────────────────
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 const LIME = '#c8ff00';
@@ -74,6 +74,37 @@ export default function Dossier({ player, team, valuation, fit, dealVerdict, ver
     window.addEventListener('keydown', onKey);
     return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
   }, [onClose]);
+
+  // ── AI Analyst Narrative (api/generate-summary.js) — 2026-07-26 addition ──
+  // Deliberately NOT auto-fired on open: it's a real API call (Anthropic),
+  // so it's opt-in via the button below rather than costing money every
+  // time someone previews a dossier. Sends only the already-computed
+  // engine output (valuation, fit, verdict, comparables) — the endpoint is
+  // instructed to never state a number that isn't in that payload, so this
+  // can't drift from what the rest of the document already shows.
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState(null);
+
+  async function generateNarrative() {
+    if (!player) return;
+    setAiLoading(true);
+    setAiError(null);
+    try {
+      const resp = await fetch('/api/generate-summary', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ player, valuation, fit, dealVerdict, verdict, askingPrice, comparables }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data?.error || `Request failed (${resp.status})`);
+      setAiSummary(data.summary || null);
+    } catch (e) {
+      setAiError(String(e?.message || e));
+    } finally {
+      setAiLoading(false);
+    }
+  }
 
   if (!player) return null;
 
@@ -231,6 +262,32 @@ export default function Dossier({ player, team, valuation, fit, dealVerdict, ver
                 ? `The fee sits €${verdict.overpayBy}M above Calibre's defensible ceiling — pursue only with the price walked down or the premium offset by structure.`
                 : `The fee is at or under Calibre's defensible ceiling — the numbers support proceeding.`}
             </span>
+          </div>
+
+          {/* Analyst Narrative — opt-in AI summary layered over the numbers above, never a new source of numbers.
+              The Generate/Regenerate button hides on print (dossier-toolbar-like control, not document content);
+              the generated text itself prints normally once it exists, same as everything else in this section. */}
+          <div style={{ marginTop: 16, padding: '14px 16px', border: '1px solid #1c1c1c', background: '#0a0a0a' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: aiSummary ? 10 : 0 }}>
+              <span style={{ fontFamily: BC, fontSize: 10, letterSpacing: '0.15em', color: '#888', textTransform: 'uppercase' }}>Analyst Narrative</span>
+              <button
+                className="dossier-toolbar"
+                onClick={generateNarrative}
+                disabled={aiLoading}
+                style={{ fontFamily: BC, fontSize: 10, fontWeight: 800, letterSpacing: '0.1em', textTransform: 'uppercase', color: aiLoading ? '#555' : LIME, background: 'transparent', border: `1px solid ${aiLoading ? '#333' : LIME}`, padding: '6px 12px', cursor: aiLoading ? 'default' : 'pointer' }}
+              >
+                {aiLoading ? 'Generating…' : aiSummary ? 'Regenerate' : 'Generate'}
+              </button>
+            </div>
+            {aiError && (
+              <div style={{ fontSize: 12, color: '#ef4444' }}>{aiError}{aiError.includes('ANTHROPIC_API_KEY') ? '' : ' — try again.'}</div>
+            )}
+            {aiSummary && !aiError && (
+              <p style={{ fontSize: 13, lineHeight: 1.7, color: '#cfcfcf', margin: 0, whiteSpace: 'pre-wrap' }}>{aiSummary}</p>
+            )}
+            {!aiSummary && !aiError && !aiLoading && (
+              <p style={{ fontSize: 12, color: '#666', margin: 0 }}>Generate a short written case for this valuation from the numbers above — optional, not required for the dossier.</p>
+            )}
           </div>
         </div>
 

@@ -1,15 +1,20 @@
 // Vercel Function — deploy at: api/share-card.js
 //
 // Renders a shareable "valuation card" PNG for a player. Deliberately built
-// to mirror the layout of the Transfers page's own player panel — photo +
-// name + meta, then a bordered VALUE / ASKING / PREMIUM box row (same shape
-// as the page's own KPI strip), then a bare undefined stat row (risk /
-// system fit / position scarcity — deliberately not explained on the card
-// itself; the ambiguity is the hook, the definition lives on
-// calibrefootball.com), then a stamped verdict. Real club-logo crests and
-// the site's real typography (Barlow Condensed / Barlow), not a generic
-// font and text-abbreviation badges — an earlier pass shipped with those as
-// placeholders and it read as a generic template next to the actual site.
+// to mirror the layout of the Transfers page's own player panel: photo +
+// name + meta, a bordered VALUE / ASKING / PREMIUM box row (same shape as
+// the page's own KPI strip), then a bordered CALIBRE VERDICT box sitting
+// next to a row of bare, undefined stats (risk / system fit / position
+// scarcity — deliberately not explained on the card itself; the ambiguity
+// is the hook, the definition lives on calibrefootball.com) — the exact
+// same pairing the page itself uses (verdict box beside the SYSTEM RISK
+// slider). An earlier revision put the verdict in a rotated rubber-stamp
+// graphic instead; that was this card's own invention, didn't match
+// anything on the actual site, and kept colliding with other elements.
+// Real club-logo crests and the site's real typography (Barlow Condensed /
+// Barlow), not a generic font and text-abbreviation badges — an earlier
+// pass shipped with those as placeholders and it read as a generic
+// template next to the actual site.
 //
 // Sizing: the whole card is drawn at a base 1200x630 (the actual OG-image
 // standard) and then uniformly scaled by CARD_SCALE — every dimension,
@@ -193,13 +198,11 @@ export default async function handler(req) {
   const DISPLAY = 'Barlow Condensed';
   const BODY = 'Barlow';
 
-  // Logo and stamp deliberately do NOT shrink with the rest of the card —
-  // both got visually lost at the uniform CARD_SCALE, so they scale off
-  // their own larger base sizes instead.
+  // Logo scales off its own larger base size rather than shrinking in
+  // lockstep with the rest of the card — it was getting visually lost at
+  // the uniform CARD_SCALE.
   const LOGO_W = px(170);
   const LOGO_H = px(50);
-  const STAMP_FONT = px(36);
-  const STAMP_BORDER = px(4);
 
   const headerRow = e(
     'div',
@@ -261,6 +264,31 @@ export default async function handler(req) {
     kpiCell('Premium', `${Number(premium) >= 0 ? '+' : ''}${premium}%`, premiumColor, false)
   );
 
+  // The page's own verdict treatment is a bordered "CALIBRE VERDICT / DEAL"
+  // box sitting next to the SYSTEM RISK slider — not a rotated stamp (that
+  // was this card's own invention, and it kept colliding with other
+  // elements). This ports the real layout: a same-shaped box holding the
+  // verdict, sized to fit its normal flow instead of floating over anything.
+  const verdictBox = verdict
+    ? e(
+        'div',
+        {
+          style: {
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            minWidth: px(200),
+            padding: pxShorthand('12px 22px'),
+            border: `${px(2)}px solid ${accent}`,
+            borderRadius: px(12),
+            background: `${accent}14`,
+          },
+        },
+        e('div', { style: { fontSize: px(12), color: accent, letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', fontFamily: BODY, fontWeight: 700, opacity: 0.85 } }, 'Calibre Verdict'),
+        e('div', { style: { fontSize: px(34), fontWeight: 700, color: accent, marginTop: px(2), display: 'flex', fontFamily: DISPLAY, textTransform: 'uppercase' } }, verdict)
+      )
+    : null;
+
   const plainValue = e(
     'div',
     { style: { display: 'flex', alignItems: 'flex-end', gap: px(28), marginTop: px(16) } },
@@ -280,21 +308,32 @@ export default async function handler(req) {
     )
   );
 
-  const statsRow =
+  const bareStats =
     stats.length > 0
       ? e(
           'div',
-          { style: { display: 'flex', gap: px(36), marginTop: px(12) } },
+          { style: { display: 'flex', gap: px(32) } },
           ...stats.map((s) =>
             e(
               'div',
               { key: s.label, style: { display: 'flex', flexDirection: 'column' } },
-              e('div', { style: { fontSize: px(13), color: '#666', letterSpacing: '0.08em', display: 'flex', fontFamily: BODY, fontWeight: 700 } }, s.label),
-              e('div', { style: { fontSize: px(28), fontWeight: 700, color: accent, display: 'flex', fontFamily: DISPLAY } }, s.v)
+              e('div', { style: { fontSize: px(12), color: '#666', letterSpacing: '0.08em', display: 'flex', fontFamily: BODY, fontWeight: 700 } }, s.label),
+              e('div', { style: { fontSize: px(26), fontWeight: 700, color: accent, display: 'flex', fontFamily: DISPLAY } }, s.v)
             )
           )
         )
       : null;
+
+  // Verdict box + bare stats share one row, same pairing the page itself
+  // uses (CALIBRE VERDICT box beside the SYSTEM RISK slider).
+  const verdictRow = verdictBox || bareStats
+    ? e(
+        'div',
+        { style: { display: 'flex', alignItems: 'center', gap: px(28), marginTop: px(16) } },
+        verdictBox,
+        bareStats
+      )
+    : null;
 
   const body = e(
     'div',
@@ -320,32 +359,6 @@ export default async function handler(req) {
     e('div', { style: { display: 'flex' } }, 'Ability-based · position, league & age adjusted')
   );
 
-  const stamp = verdict
-    ? e(
-        'div',
-        {
-          style: {
-            position: 'absolute',
-            right: px(56),
-            bottom: px(112),
-            display: 'flex',
-            transform: 'rotate(-9deg)',
-            border: `${STAMP_BORDER}px solid ${accent}`,
-            borderRadius: px(14),
-            padding: pxShorthand('10px 24px'),
-            color: accent,
-            fontSize: STAMP_FONT,
-            fontWeight: 700,
-            letterSpacing: '0.04em',
-            textTransform: 'uppercase',
-            background: `${accent}11`,
-            fontFamily: DISPLAY,
-          },
-        },
-        verdict
-      )
-    : null;
-
   const root = e(
     'div',
     {
@@ -366,9 +379,8 @@ export default async function handler(req) {
     headerRow,
     body,
     showKpiRow ? kpiRow : plainValue,
-    statsRow,
-    footer,
-    stamp
+    verdictRow,
+    footer
   );
 
   const fonts = (

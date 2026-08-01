@@ -170,6 +170,7 @@ export default async function handler(req) {
   const verdict = clampText(searchParams.get('verdict') || '', 20);
   const tone = TONE_COLOR[searchParams.get('tone')] ? searchParams.get('tone') : 'neutral';
   const img = searchParams.get('img'); // player photo URL, optional
+  const rating = searchParams.get('rating'); // 0-100 Calibre rating, same number shown in the page's own player panel
   const accent = TONE_COLOR[tone];
 
   const fromClub = clampText(searchParams.get('fromClub') || club || '', 20);
@@ -190,8 +191,8 @@ export default async function handler(req) {
   // response small and fast rather than pulling the whole family.
   const glyphText = Array.from(
     new Set(
-      `${name}${club}${meta}${verdict}${asking}${value}${premium}${stats.map((s) => s.label + s.v).join('')}` +
-        'CALIBREabcdefghijklmnopqrstuvwxyz0123456789€%+-·→ Value Asking Price Premium Estimated Fair'
+      `${name}${club}${meta}${verdict}${asking}${value}${premium}${rating || ''}${stats.map((s) => s.label + s.v).join('')}` +
+        'CALIBREabcdefghijklmnopqrstuvwxyz0123456789€%+-·→ Value Asking Price Premium Estimated Fair RATING'
     )
   ).join('');
 
@@ -335,6 +336,24 @@ export default async function handler(req) {
       )
     : null;
 
+  // Same big-number-plus-label treatment the Players page's own popup
+  // (R. Cherki modal) gives its "81 / CALIBRE" rating — ported here rather
+  // than invented fresh, same reasoning as verdictBox above.
+  const ratingBadge = rating
+    ? e(
+        'div',
+        {
+          style: {
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            width: px(96), height: px(96), borderRadius: px(16),
+            border: `${px(2)}px solid #c8ff00`, background: 'rgba(200,255,0,0.08)',
+          },
+        },
+        e('div', { style: { fontSize: px(40), fontWeight: 700, color: '#c8ff00', lineHeight: 1, display: 'flex', fontFamily: DISPLAY } }, rating),
+        e('div', { style: { fontSize: px(11), color: '#c8ff00', letterSpacing: '0.1em', textTransform: 'uppercase', marginTop: px(4), display: 'flex', fontFamily: BODY, fontWeight: 700, opacity: 0.85 } }, 'Calibre')
+      )
+    : null;
+
   const body = e(
     'div',
     { style: { display: 'flex', alignItems: 'center', gap: px(40), marginTop: px(18) } },
@@ -344,7 +363,8 @@ export default async function handler(req) {
       { style: { display: 'flex', flexDirection: 'column', flex: 1 } },
       e('div', { style: { fontSize: px(50), fontWeight: 700, lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } }, name),
       meta ? e('div', { style: { fontSize: px(20), color: '#999', marginTop: px(8), display: 'flex', fontFamily: BODY } }, meta) : null
-    )
+    ),
+    ratingBadge
   );
 
   const footer = e(

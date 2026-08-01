@@ -53,6 +53,10 @@ export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fi
   const pos = player?.pos || player?.position;
   if (pos) p.set('pos', pos);
   if (player?.age != null) p.set('age', String(player.age));
+  // Same rating shown in the page's own player panel (Transfers.jsx reads
+  // ability_rating first, falling back to rating).
+  const rating = player?.ability_rating ?? player?.rating;
+  if (rating != null) p.set('rating', String(Math.round(rating)));
   // Mirrors ApiPlayerImage.jsx's tier-2 resolution (direct API-Football URL
   // from a trusted apiPlayerId) — that component's tier-4 fuzzy name search
   // is async and can't run inside this synchronous URL builder, so it's

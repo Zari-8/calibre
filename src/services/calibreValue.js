@@ -113,6 +113,22 @@ function positionGroup(posRaw = '') {
   if (/(\bst\b|\bcf\b|striker|forward|\bfw\b|\bfwd\b|attacker|poacher|number 9|no\.?9)/.test(t)) return 'ST';
   if (/(\bam\b|attacking mid|playmaker|creator|number 10|no\.?10|second striker)/.test(t)) return 'AM';
   if (/(\bcm\b|midfield|box.?to.?box|number 8|no\.?8)/.test(t)) return 'CM';
+  // v1.3 — bug fix, not a calibration call. Live DB check (2026-07-21,
+  // 401,009 rows) found the ONLY non-null pos/position values that exist in
+  // production are the coarse API-Football buckets GK/DEF/MID/FWD — no row
+  // anywhere carries a fine tag like CB/DM/W/AM. GK and FWD already resolve
+  // correctly above (via the bare "gk" and "\bfwd\b" matches). MID falls
+  // through to the CM default below, which is defensible — CM IS this
+  // model's neutral reference point, and there's no way to tell a DM from
+  // an AM off "MID" alone. But DEF was ALSO silently falling through to that
+  // same CM (1.00) default — pricing every one of the 3,750 real DEF-tagged
+  // players in the live table (checkable: SELECT pos, count(*) FROM players
+  // GROUP BY pos) as a neutral central midfielder instead of a defender.
+  // That's a flat +17.6% overvaluation (1.00 vs CB/FB's 0.85) on every real
+  // defender the engine touches — not a judgment call, a wrong bucket. CB
+  // and FB share the identical 0.85 multiplier, so a bare "DEF" tag doesn't
+  // need to disambiguate which kind of defender before resolving correctly.
+  if (/(\bdef\b|defender|defence|defense)/.test(t)) return 'CB';
   return 'CM';
 }
 function positionMultiplier(pos) { return POSITION_MULT[positionGroup(pos)] ?? 1.0; }

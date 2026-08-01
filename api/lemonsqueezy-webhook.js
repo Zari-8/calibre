@@ -59,9 +59,9 @@ async function upsertEntitlement(row) {
   }
 }
 
-function addTwoMonths(date = new Date()) {
+function addOneYear(date = new Date()) {
   const result = new Date(date);
-  result.setMonth(result.getMonth() + 2);
+  result.setFullYear(result.getFullYear() + 1);
   return result.toISOString();
 }
 
@@ -86,19 +86,22 @@ export default async function handler(req, res) {
     const customData = payload?.meta?.custom_data || {};
     const userId = String(customData.user_id || '').trim();
     const variantId = String(attributes.variant_id || '');
-    const founderVariantId = String(process.env.LEMON_FOUNDER_VARIANT_ID || '');
+    const proAnnualVariantId = String(process.env.LEMON_PRO_ANNUAL_VARIANT_ID || '');
     const proVariantId = String(process.env.LEMON_PRO_VARIANT_ID || '');
 
     if (!userId) {
       return res.status(200).json({ received: true, ignored: 'Missing user_id' });
     }
 
-    if (eventName === 'order_created' && variantId === founderVariantId) {
+    // One-time annual Pro purchase (replaces the old time-limited "World Cup
+    // Founder Pass" one-time offer) — same one-time-order mechanic, just a
+    // full year of access instead of a 2-month promo window.
+    if (eventName === 'order_created' && variantId === proAnnualVariantId) {
       await upsertEntitlement({
         user_id: userId,
-        plan: 'founder_pass',
+        plan: 'pro_annual',
         access_status: 'active',
-        access_until: addTwoMonths(),
+        access_until: addOneYear(),
         lemon_order_id: String(payload.data.id || ''),
         lemon_variant_id: variantId,
         updated_at: new Date().toISOString(),

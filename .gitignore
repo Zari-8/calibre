@@ -24,6 +24,7 @@ package-lock.json
 # the commit that adds this).
 enrichPlayerStats_*.log
 enrichStatsAPI_*.log
+enrichStatsAPI_progress.json
 reconcileNames_remediation_*.log
 scored_player_uuids.txt
 unenriched_player_uuids.txt

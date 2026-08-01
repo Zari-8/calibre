@@ -655,6 +655,26 @@ export function productionComponents(player, bucket) {
     // truncating existing dribble/shot-volume carry scores.
     const duelNudge = duelScore != null ? (duelScore - 50) * 0.10 : 0;
     const carry = clamp(dr90 / 2.1 * 40 + dribBonus + sh90 / 4.0 * 28 + duelNudge, 0, 100);
+    // v8.10 attempt (tried, then PAUSED same day, not shipped) — investigating
+    // why Salah/Vinícius Júnior (undisputed top-tier attackers) were landing
+    // at production=47-62 while Kane/Mbappé/Haaland sit at 95-116
+    // (inspectAttProductionComponents.mjs) found goalScore alone carries 76%
+    // of an attacker's production, benchmarked to 0.92 goals/90 + 34 total
+    // goals for full credit (~35-goal season) — calibrated to true
+    // one-in-a-generation poachers. Salah's create=96.1 and Vinícius's
+    // create=93.6 are actually HIGHER than Kane's (75.6) and Mbappé's (77.9)
+    // — genuinely elite creative attackers flattened by a formula that only
+    // credits raw goal volume. A straight global reweight (tried 0.68/0.22/
+    // 0.10 up to 0.52/0.34/0.14) was tested but paused: EVERY strikers and
+    // wingers currently share ONE weight profile via positionBucket()'s ATT
+    // bucket (Kane/ST, Mbappé, Haaland/ST, Salah/RW, Vinícius/LW all get the
+    // identical vals/w here), so any reweight that helps wingers necessarily
+    // costs strikers and vice versa — there's no split large enough to lift
+    // one group without meaningfully taxing the other. Real per-role
+    // sub-weighting (keep strikers goalScore-heavy, make wingers
+    // create-heavy) is the properly-scoped fix instead of a shared-bucket
+    // compromise; see inspectAttRoleFields.mjs for the follow-up. Weights
+    // below are unchanged from pre-investigation.
     return { vals: [goalScore, clamp(create + foulsBoost, 0, 134), carry], w: [0.76, 0.16, 0.08], ev };
   }
 

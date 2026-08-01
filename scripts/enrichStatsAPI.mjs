@@ -47,6 +47,25 @@ const WRITE_RAW = process.env.WRITE_RAW === '1';
 const OUT_DIR = join(ROOT, 'tmp-statsapi');
 const BASE = 'https://api.thestatsapi.com/api/football';
 
+// v3 — auto-resume. A full-season sweep is meant to run in chunks across
+// several nights (see main() comment below for why), so re-invoking with
+// the same or an overlapping DATE_FROM/DATE_TO shouldn't burn API calls and
+// Supabase writes re-doing weeks already saved. Gated to LIVE runs only —
+// a DRY_RUN never writes anything real, so it must never advance or even
+// look at this file, or a later live run would wrongly believe a
+// dry-run-only preview had actually been persisted.
+const PROGRESS_FILE = join(ROOT, 'enrichStatsAPI_progress.json');
+const RESET_PROGRESS = process.env.RESET_PROGRESS === '1';
+const PROGRESS_SCOPE = ONLY_COMP || 'ALL';
+
+function loadProgress() {
+  if (!existsSync(PROGRESS_FILE)) return null;
+  try { return JSON.parse(readFileSync(PROGRESS_FILE, 'utf8')); } catch { return null; }
+}
+function saveProgress(lastCompletedDate) {
+  writeFileSync(PROGRESS_FILE, JSON.stringify({ scope: PROGRESS_SCOPE, lastCompletedDate, updated_at: new Date().toISOString() }, null, 2));
+}
+
 if (!API_KEY || !SUPABASE_URL || !SUPABASE_KEY) {
   console.error('Missing env vars. Need STATSAPI_KEY, SUPABASE_URL/VITE_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.');
   process.exit(1);
@@ -120,15 +139,36 @@ function norm(s) {
     .trim();
 }
 
+// Matches the same TRANSIENT_WRITE pattern already used below for Supabase
+// write retries — extended here to the read side. Found 2026-07-30: a plain
+// DRY_RUN (just listing matches, the cheapest phase of this script) crashed
+// the whole process on a bare ECONNRESET with no HTTP response at all, so
+// the 429 handling a few lines down never got a chance to run — fetch()
+// itself threw before res existed. A live full-season sweep (thousands of
+// matches, hours of runtime) will hit these routinely, not rarely.
+const NETWORK_ERR_RE = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated/i;
+
 async function api(path, attempt = 0) {
   await sleep(DELAY_MS);
 
-  const res = await fetch(`${BASE}${path}`, {
-    headers: {
-      Authorization: `Bearer ${API_KEY}`,
-      Accept: 'application/json',
-    },
-  });
+  let res;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: {
+        Authorization: `Bearer ${API_KEY}`,
+        Accept: 'application/json',
+      },
+    });
+  } catch (e) {
+    const msg = e?.message || String(e);
+    if (NETWORK_ERR_RE.test(msg) && attempt < 5) {
+      const wait = [5000, 10000, 20000, 40000, 60000][Math.min(attempt, 4)];
+      console.log(`  [network error: ${msg}] retry ${attempt + 1}/5 in ${wait / 1000}s...`);
+      await sleep(wait);
+      return api(path, attempt + 1);
+    }
+    throw e;
+  }
 
   const text = await res.text();
   let json;
@@ -150,37 +190,34 @@ async function api(path, attempt = 0) {
   return json;
 }
 
-async function fetchMatches(from, to) {
+// v2 — split out of the old fetchMatches(from, to), which used to fetch
+// EVERY week in the whole requested range before returning anything. That
+// meant main() only ever saw one giant match list at the very end, with no
+// natural checkpoint in between — see the main() comment below for why that
+// made a multi-hour full-season sweep lose 100% of its work on any crash.
+// This fetches ONE week at a time so main() can aggregate+write after each
+// window instead of only once at the end.
+async function fetchMatchesWindow(cursor, windowEnd) {
   const all = [];
-  let cursor = from;
+  let page = 1;
+  let windowTotal = 0;
 
-  while (cursor <= to) {
-    const end = addDays(cursor, 6);
-    const windowEnd = end > to ? to : end;
+  while (true) {
+    const compParam = ONLY_COMP ? `&competition_id=${ONLY_COMP}` : '';
+    const json = await api(`/matches?date_from=${cursor}&date_to=${windowEnd}${compParam}&page=${page}`);
 
-    console.log(`Fetching matches ${cursor} → ${windowEnd}`);
+    const batch = rows(json)
+      .filter(m => TARGET_COMP_IDS.has(m.competition_id));
 
-    let page = 1;
-    let windowTotal = 0;
+    windowTotal += batch.length;
+    all.push(...batch);
 
-    while (true) {
-      const compParam = ONLY_COMP ? `&competition_id=${ONLY_COMP}` : '';
-      const json = await api(`/matches?date_from=${cursor}&date_to=${windowEnd}${compParam}&page=${page}`);
-
-      const batch = rows(json)
-        .filter(m => TARGET_COMP_IDS.has(m.competition_id));
-
-      windowTotal += batch.length;
-      all.push(...batch);
-
-      const totalPages = json.meta?.total_pages || 1;
-      if (page >= totalPages) break;
-      page++;
-    }
-
-    console.log(`  ${windowTotal} target matches`);
-    cursor = addDays(windowEnd, 1);
+    const totalPages = json.meta?.total_pages || 1;
+    if (page >= totalPages) break;
+    page++;
   }
+
+  console.log(`  ${windowTotal} target matches`);
 
   const unique = new Map();
   for (const m of all) {
@@ -191,8 +228,13 @@ async function fetchMatches(from, to) {
   return [...unique.values()];
 }
 
-function ensurePlayer(map, playerId, base) {
+// touched (optional Set) — v2: records which map keys were created/updated
+// during THIS call so main() can write only the players/teams actually
+// affected by the current week's matches after each checkpoint, instead of
+// re-writing every player accumulated since the start of the whole run.
+function ensurePlayer(map, playerId, base, touched) {
   const key = `${playerId}|${base.competition_id || ''}|${base.season_id || ''}`;
+  if (touched) touched.add(key);
 
   if (!map.has(key)) {
     map.set(key, {
@@ -260,8 +302,9 @@ function ensurePlayer(map, playerId, base) {
   return map.get(key);
 }
 
-function ensureTeam(map, teamId, base) {
+function ensureTeam(map, teamId, base, touched) {
   const key = `${teamId}|${base.competition_id || ''}|${base.season_id || ''}`;
+  if (touched) touched.add(key);
 
   if (!map.has(key)) {
     map.set(key, {
@@ -282,7 +325,7 @@ function ensureTeam(map, teamId, base) {
   return map.get(key);
 }
 
-function aggregatePlayerStats(playerAgg, match, json) {
+function aggregatePlayerStats(playerAgg, match, json, touched) {
   for (const row of rows(json)) {
     const playerId = row.player_id;
     if (!playerId) continue;
@@ -293,7 +336,7 @@ function aggregatePlayerStats(playerAgg, match, json) {
       team_name: row.team_name,
       competition_id: match.competition_id,
       season_id: match.season_id,
-    });
+    }, touched);
 
     const passing = row.passing || {};
     const shooting = row.shooting || {};
@@ -364,7 +407,7 @@ function shotRows(json) {
   return [];
 }
 
-function aggregateShotmap(playerAgg, teamAgg, match, json) {
+function aggregateShotmap(playerAgg, teamAgg, match, json, touchedPlayers, touchedTeams) {
   for (const shot of shotRows(json)) {
     const playerId = shot.player_id;
     const teamId = shot.team_id;
@@ -378,7 +421,7 @@ function aggregateShotmap(playerAgg, teamAgg, match, json) {
         team_name: shot.team_name,
         competition_id: match.competition_id,
         season_id: match.season_id,
-      });
+      }, touchedPlayers);
 
       player.shotmap_xg += xg;
 
@@ -398,7 +441,7 @@ function aggregateShotmap(playerAgg, teamAgg, match, json) {
         team_name: shot.team_name,
         competition_id: match.competition_id,
         season_id: match.season_id,
-      });
+      }, touchedTeams);
 
       team.shots_for += 1;
       team.xg_for += xg;
@@ -647,17 +690,41 @@ async function findPlayer({ statsapiPlayerId, playerName }) {
   // Lindermane" rows with no shared first name). Replaced with the same
   // surname-pool + strict first/last token matching used in
   // reconcileNames.mjs's Strategy 0.
+  //
+  // v4 — accent/hyphen-preserving pool search. `last` above comes from
+  // norm(playerName), which strips accents AND hyphens before this ilike
+  // ever runs — but Postgres ilike is a literal substring match, not
+  // accent-insensitive. A stored row like "Predrag Rajković" or "S.
+  // Milinković-Savić" never turns up when searching '%rajkovic%' or
+  // '%milinkovicsavic%', because the accent/hyphen characters break the
+  // literal substring. Confirmed live 2026-08-01 via
+  // scripts/diagnoseNameMatchGap.mjs: adding the RAW (unstripped) last
+  // token as a second candidate-pool query dropped a 462-player sample's
+  // miss rate from 23.4% to 14.7% (Kanté, Rajković, Milinković-Savić, and
+  // other diacritic/hyphenated surnames all recovered) with zero change to
+  // the strict first/last-name verification below — this only widens the
+  // candidate POOL, the same accept/reject logic still gates the result.
   if (!data?.length) {
     const parts = key.split(' ').filter(Boolean);
     const last = parts[parts.length - 1];
     const first = parts[0];
-    if (last && last.length > 2) {
-      const { data: pool } = await sb.from('players')
-        .select('id, name, statsapi_player_id, minutes, api_player_id')
-        .ilike('name', `%${last}%`)
-        .order('minutes', { ascending: false, nullsFirst: false })
-        .limit(25);
-      const narrowed = (pool || []).filter(p => {
+    const rawParts = String(playerName || '').trim().split(/\s+/).filter(Boolean);
+    const rawLast = rawParts[rawParts.length - 1] || '';
+    const searchTerms = [...new Set([last, rawLast].filter(s => s && s.length > 2))];
+
+    if (searchTerms.length) {
+      let pool = [];
+      for (const term of searchTerms) {
+        const { data: batch } = await sb.from('players')
+          .select('id, name, statsapi_player_id, minutes, api_player_id')
+          .ilike('name', `%${term}%`)
+          .order('minutes', { ascending: false, nullsFirst: false })
+          .limit(25);
+        if (batch?.length) pool.push(...batch);
+      }
+      pool = [...new Map(pool.map(p => [p.id, p])).values()];
+
+      const narrowed = pool.filter(p => {
         const tokens = norm(p.name).split(' ').filter(Boolean);
         const pFirst = tokens[0] || '';
         const pLast = tokens[tokens.length - 1] || '';
@@ -675,73 +742,16 @@ async function findPlayer({ statsapiPlayerId, playerName }) {
   return row;
 }
 
-async function main() {
-  console.log(DRY_RUN ? 'DRY RUN\n' : 'LIVE RUN\n');
-  console.log('Date range:', DATE_FROM, '→', DATE_TO);
-  if (ONLY_COMP) console.log('Competition:', ONLY_COMP);
-  console.log('');
-
-  const matches = await fetchMatches(DATE_FROM, DATE_TO);
-
-  console.log(`\nUnique target matches: ${matches.length}`);
-  console.log(`xG available matches : ${matches.filter(m => m.xg_available).length}\n`);
-
-  const playerAgg = new Map();
-  const teamAgg = new Map();
-
-  let playerStatsOk = 0;
-  let shotmapOk = 0;
-  let matchErrors = 0;
-
-  for (const match of matches) {
-    const matchId = match.id || match.match_id;
-    if (!matchId) continue;
-
-    console.log(`Fetching enrichment for ${matchId}`);
-
-    try {
-      const ps = await api(`/matches/${matchId}/player-stats`);
-      if (WRITE_RAW) writeFileSync(join(OUT_DIR, 'raw', `${matchId}-player-stats.json`), JSON.stringify(ps, null, 2));
-      aggregatePlayerStats(playerAgg, match, ps);
-      playerStatsOk++;
-    } catch (e) {
-      matchErrors++;
-      console.error(`  player-stats: ${e.message}`);
-    }
-
-    if (match.xg_available) {
-      try {
-        const sm = await api(`/matches/${matchId}/shotmap`);
-        if (WRITE_RAW) writeFileSync(join(OUT_DIR, 'raw', `${matchId}-shotmap.json`), JSON.stringify(sm, null, 2));
-        aggregateShotmap(playerAgg, teamAgg, match, sm);
-        shotmapOk++;
-      } catch (e) {
-        matchErrors++;
-        console.error(`  shotmap: ${e.message}`);
-      }
-    }
-  }
-
-  const players = [...playerAgg.values()];
-  const teams = [...teamAgg.values()];
-
-  console.log(`\nAggregated players: ${players.length}`);
-  console.log(`Aggregated teams  : ${teams.length}`);
-  console.log(`player-stats OK   : ${playerStatsOk}`);
-  console.log(`shotmap OK        : ${shotmapOk}`);
-  console.log(`Match errors      : ${matchErrors}`);
-
-  let enriched = 0;
-  let noMatch = 0;
-  let errors = 0;
-  const droppedColumns = new Map();
-
-  let updateIndex = 0;
-
-  for (const player of players) {
-    updateIndex++;
-    if (updateIndex % 25 === 0 || updateIndex === 1) {
-      console.log(`Updating player ${updateIndex}/${players.length}: ${player.player_name}`);
+// v2 — write helpers extracted so main() can call them once per week
+// (only for that week's touched keys) instead of once for the whole run.
+async function writePlayerBatch(playerAgg, keys, counters, droppedColumns) {
+  let idx = 0;
+  for (const key of keys) {
+    const player = playerAgg.get(key);
+    if (!player) continue;
+    idx++;
+    if (idx % 25 === 0 || idx === 1) {
+      console.log(`  writing player ${idx}/${keys.size}: ${player.player_name}`);
     }
 
     const row = await findPlayer({
@@ -750,7 +760,7 @@ async function main() {
     });
 
     if (!row) {
-      noMatch++;
+      counters.noMatch++;
       continue;
     }
 
@@ -758,7 +768,7 @@ async function main() {
     const result = await updatePlayer(row.id, fields);
 
     if (!result.ok) {
-      errors++;
+      counters.errors++;
       console.error(`  update error ${player.player_name}: ${result.error?.message || result.error}`);
       continue;
     }
@@ -767,17 +777,21 @@ async function main() {
       droppedColumns.set(col, (droppedColumns.get(col) || 0) + 1);
     }
 
-    enriched++;
+    counters.enriched++;
   }
+}
 
-  // Persist the team-season shotmap aggregate to team_shot_profiles — this
-  // used to be computed and immediately discarded. aggregateTeamStats.mjs
-  // reads it (joined by normalized team name, same pattern as its existing
-  // team_indices/PPDA join) to blend an open-play xG-share signal into the
-  // transition axis of derived_team_profiles.
-  let teamRowsWritten = 0, teamWriteErrors = 0;
-  if (!DRY_RUN && teams.length) {
-    const teamRows = teams.map(t => ({
+// Persist the team-season shotmap aggregate to team_shot_profiles — this
+// used to be computed and immediately discarded. aggregateTeamStats.mjs
+// reads it (joined by normalized team name, same pattern as its existing
+// team_indices/PPDA join) to blend an open-play xG-share signal into the
+// transition axis of derived_team_profiles.
+async function writeTeamBatch(teamAgg, keys, counters) {
+  if (DRY_RUN || !keys.size) return;
+  const teamRows = [...keys]
+    .map(k => teamAgg.get(k))
+    .filter(Boolean)
+    .map(t => ({
       statsapi_team_id: t.statsapi_team_id,
       statsapi_competition_id: t.statsapi_competition_id || '',
       statsapi_season_id: t.statsapi_season_id || '',
@@ -791,21 +805,133 @@ async function main() {
       penalty_xg_for: round(t.penalty_xg_for),
       updated_at: new Date().toISOString(),
     }));
-    for (let i = 0; i < teamRows.length; i += 100) {
-      const chunk = teamRows.slice(i, i + 100);
-      const { error } = await sb.from('team_shot_profiles')
-        .upsert(chunk, { onConflict: 'statsapi_team_id,statsapi_competition_id,statsapi_season_id' });
-      if (error) { teamWriteErrors++; console.error('  team_shot_profiles upsert error:', error.message); continue; }
-      teamRowsWritten += chunk.length;
+  for (let i = 0; i < teamRows.length; i += 100) {
+    const chunk = teamRows.slice(i, i + 100);
+    const { error } = await sb.from('team_shot_profiles')
+      .upsert(chunk, { onConflict: 'statsapi_team_id,statsapi_competition_id,statsapi_season_id' });
+    if (error) { counters.teamWriteErrors++; console.error('  team_shot_profiles upsert error:', error.message); continue; }
+    counters.teamRowsWritten += chunk.length;
+  }
+}
+
+async function main() {
+  console.log(DRY_RUN ? 'DRY RUN\n' : 'LIVE RUN\n');
+  console.log('Date range:', DATE_FROM, '→', DATE_TO);
+  if (ONLY_COMP) console.log('Competition:', ONLY_COMP);
+  console.log('');
+
+  // v2 — checkpointed per week instead of accumulating the ENTIRE requested
+  // date range in memory before writing anything. Found 2026-07-30: a plain
+  // DRY_RUN crashed on a bare ECONNRESET partway through just LISTING
+  // matches — the cheapest phase of this script (1 call per week). A live
+  // full-season run doing 1-2 more API calls per match for HOURS will hit
+  // this routinely, and the old structure meant any crash, even 99% of the
+  // way through, wrote ZERO rows and burned all the API quota spent getting
+  // there. Now: fetch one week, aggregate it into the persistent
+  // playerAgg/teamAgg maps (which span the whole run, so cumulative totals
+  // stay correct season-to-date), write ONLY the players/teams touched
+  // during that week, then move on. A crash after week N only costs
+  // whatever wasn't fetched yet — everything through week N is already saved.
+  const playerAgg = new Map();
+  const teamAgg = new Map();
+  const droppedColumns = new Map();
+  const counters = {
+    playerStatsOk: 0, shotmapOk: 0, matchErrors: 0,
+    enriched: 0, noMatch: 0, errors: 0,
+    teamRowsWritten: 0, teamWriteErrors: 0,
+    totalMatches: 0, totalXgMatches: 0,
+  };
+
+  // v3 — auto-resume: skip weeks already completed by a prior LIVE run with
+  // the same competition scope. Lets the same DATE_FROM/DATE_TO be reused
+  // night after night (or a smaller month-sized range be re-passed if a run
+  // gets interrupted) without re-fetching or re-writing anything already
+  // saved. Never consulted or advanced during DRY_RUN — see the const
+  // comment above for why.
+  let cursor = DATE_FROM;
+  if (!DRY_RUN && !RESET_PROGRESS) {
+    const progress = loadProgress();
+    if (progress && progress.scope === PROGRESS_SCOPE && progress.lastCompletedDate >= DATE_FROM) {
+      if (progress.lastCompletedDate >= DATE_TO) {
+        console.log(`Nothing to do — already completed through ${progress.lastCompletedDate}, which covers the requested range up to ${DATE_TO}.`);
+        console.log(`Set RESET_PROGRESS=1 to force a full re-run anyway.`);
+        return;
+      }
+      const resumeCursor = addDays(progress.lastCompletedDate, 1);
+      console.log(`Resuming from ${resumeCursor} — already completed through ${progress.lastCompletedDate} per ${PROGRESS_FILE}.`);
+      cursor = resumeCursor;
     }
+  } else if (RESET_PROGRESS) {
+    console.log('RESET_PROGRESS=1 set — ignoring any saved progress, running the full requested range.');
+  }
+
+  while (cursor <= DATE_TO) {
+    const end = addDays(cursor, 6);
+    const windowEnd = end > DATE_TO ? DATE_TO : end;
+
+    console.log(`\nFetching matches ${cursor} → ${windowEnd}`);
+    const matches = await fetchMatchesWindow(cursor, windowEnd);
+    counters.totalMatches += matches.length;
+    counters.totalXgMatches += matches.filter(m => m.xg_available).length;
+
+    const touchedPlayers = new Set();
+    const touchedTeams = new Set();
+
+    for (const match of matches) {
+      const matchId = match.id || match.match_id;
+      if (!matchId) continue;
+
+      console.log(`  fetching enrichment for ${matchId}`);
+
+      try {
+        const ps = await api(`/matches/${matchId}/player-stats`);
+        if (WRITE_RAW) writeFileSync(join(OUT_DIR, 'raw', `${matchId}-player-stats.json`), JSON.stringify(ps, null, 2));
+        aggregatePlayerStats(playerAgg, match, ps, touchedPlayers);
+        counters.playerStatsOk++;
+      } catch (e) {
+        counters.matchErrors++;
+        console.error(`    player-stats: ${e.message}`);
+      }
+
+      if (match.xg_available) {
+        try {
+          const sm = await api(`/matches/${matchId}/shotmap`);
+          if (WRITE_RAW) writeFileSync(join(OUT_DIR, 'raw', `${matchId}-shotmap.json`), JSON.stringify(sm, null, 2));
+          aggregateShotmap(playerAgg, teamAgg, match, sm, touchedPlayers, touchedTeams);
+          counters.shotmapOk++;
+        } catch (e) {
+          counters.matchErrors++;
+          console.error(`    shotmap: ${e.message}`);
+        }
+      }
+    }
+
+    if (touchedPlayers.size || touchedTeams.size) {
+      console.log(`  checkpoint: writing ${touchedPlayers.size} players, ${touchedTeams.size} teams touched this window...`);
+      await writePlayerBatch(playerAgg, touchedPlayers, counters, droppedColumns);
+      await writeTeamBatch(teamAgg, touchedTeams, counters);
+    }
+
+    // Mark this week done AFTER its writes complete (not before), so a crash
+    // mid-write on this window still resumes from the correct place next
+    // time rather than skipping a partially-written week. Never touched
+    // during DRY_RUN — no real data was saved, so nothing should be marked
+    // as done.
+    if (!DRY_RUN) saveProgress(windowEnd);
+
+    cursor = addDays(windowEnd, 1);
   }
 
   console.log(`\n── Summary ──────────────────`);
-  console.log(`Enriched players : ${enriched}`);
-  console.log(`No Supabase match: ${noMatch}`);
-  console.log(`Update errors    : ${errors}`);
-  console.log(`Team aggregates  : ${teams.length} computed, ${teamRowsWritten} written${teamWriteErrors ? `, ${teamWriteErrors} errors` : ''}${DRY_RUN ? ' (dry run — none written)' : ''}`);
-  console.log(`Dry run          : ${DRY_RUN ? 'yes' : 'no'}`);
+  console.log(`Total matches seen : ${counters.totalMatches} (xG available: ${counters.totalXgMatches})`);
+  console.log(`player-stats OK    : ${counters.playerStatsOk}`);
+  console.log(`shotmap OK         : ${counters.shotmapOk}`);
+  console.log(`Match errors       : ${counters.matchErrors}`);
+  console.log(`Enriched players   : ${counters.enriched}`);
+  console.log(`No Supabase match  : ${counters.noMatch}`);
+  console.log(`Update errors      : ${counters.errors}`);
+  console.log(`Team rows written  : ${counters.teamRowsWritten}${counters.teamWriteErrors ? `, ${counters.teamWriteErrors} errors` : ''}`);
+  console.log(`Dry run            : ${DRY_RUN ? 'yes' : 'no'}`);
 
   if (droppedColumns.size) {
     console.log('\nMissing columns dropped during update:');

@@ -15,10 +15,10 @@ const wrap = { position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,
 const card = { width: '100%', maxWidth: 560, background: '#0c0c0e', border: '1px solid #1c1c1c', borderTop: `3px solid ${LIME}`, borderRadius: 12, boxShadow: '0 30px 90px rgba(0,0,0,.6)' };
 
 const actionBtn = {
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-  padding: '11px 14px', borderRadius: 8, border: '1px solid #242424', background: '#141414',
-  color: '#eee', fontFamily: BC, fontSize: 13, fontWeight: 700, letterSpacing: '0.04em',
-  textTransform: 'uppercase', cursor: 'pointer', textDecoration: 'none', flex: '1 1 160px',
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+  padding: '7px 10px', borderRadius: 6, border: '1px solid #242424', background: '#141414',
+  color: '#eee', fontFamily: BC, fontSize: 11, fontWeight: 700, letterSpacing: '0.03em',
+  textTransform: 'uppercase', cursor: 'pointer', textDecoration: 'none', flex: '1 1 110px',
 };
 
 function XMark({ size = 14 }) {
@@ -85,20 +85,19 @@ export default function ShareModal({ player, cardUrl, text = '', url, onClose })
             )}
           </div>
 
-          {canNativeShareFiles && (
-            <button type="button" onClick={nativeShareImage} style={{ ...actionBtn, width: '100%', marginTop: 14, background: LIME, color: '#0a0a0a', border: 'none' }}>
-              Share image
-            </button>
-          )}
-
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
-            <a href={cardUrl} download={`calibre-${name}.png`} style={actionBtn}><Download size={14} /> Download</a>
-            <button type="button" onClick={copyImageLink} style={actionBtn}>{copied ? <Check size={14} /> : <Link2 size={14} />} {copied ? 'Copied' : 'Copy image link'}</button>
-            <a href={xHref} target="_blank" rel="noopener noreferrer" style={actionBtn}><XMark /> X</a>
-            <a href={waHref} target="_blank" rel="noopener noreferrer" style={actionBtn}><MessageCircle size={14} /> WhatsApp</a>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+            {canNativeShareFiles && (
+              <button type="button" onClick={nativeShareImage} style={{ ...actionBtn, background: LIME, color: '#0a0a0a', border: 'none' }}>
+                Share image
+              </button>
+            )}
+            <a href={cardUrl} download={`calibre-${name}.png`} style={actionBtn}><Download size={12} /> Download</a>
+            <button type="button" onClick={copyImageLink} style={actionBtn}>{copied ? <Check size={12} /> : <Link2 size={12} />} {copied ? 'Copied' : 'Copy link'}</button>
+            <a href={xHref} target="_blank" rel="noopener noreferrer" style={actionBtn}><XMark size={12} /> X</a>
+            <a href={waHref} target="_blank" rel="noopener noreferrer" style={actionBtn}><MessageCircle size={12} /> WhatsApp</a>
           </div>
 
-          <p style={{ fontSize: 12, color: '#666', marginTop: 12, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11, color: '#666', marginTop: 10, lineHeight: 1.5 }}>
             X and WhatsApp open with the caption pre-filled — download or share the image first so you can attach it, since neither platform accepts an image straight from a link.
           </p>
         </div>

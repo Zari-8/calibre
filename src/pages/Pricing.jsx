@@ -200,10 +200,10 @@ export default function Pricing() {
     <div className="page pricing-page">
       <div className="pricing-header">
         <Crown size={32} className="pricing-crown" />
-        <h1>Get World Cup Founder Pass</h1>
+        <h1>Save with Calibre Pro Annual</h1>
         <p>
-          Lock in Pro access for the full World Cup period — one payment, no
-          subscription. Launches with the World Cup. Limited availability.
+          Get a full year of Pro access for the price of 10 months — one
+          payment, billed once a year, no monthly admin.
         </p>
       </div>
 
@@ -212,25 +212,27 @@ export default function Pricing() {
           <div className="founder-pass-left">
             <Crown size={40} />
             <div>
-              <strong>World Cup Founder Pass</strong>
+              <strong>Calibre Pro — Annual</strong>
               <span>
-                2 months of Pro access · One-time payment · Never charged again
+                12 months of Pro access · Billed once per year · Cancel anytime
               </span>
             </div>
           </div>
 
           <div className="founder-pass-right">
-            <div className="founder-price">$8.99</div>
+            <div className="founder-price">
+              $49.90<span style={{ fontSize: 14, color: '#888', fontWeight: 600 }}>/yr</span>
+            </div>
 
             <button
               type="button"
               className="founder-pass-cta"
-              onClick={() => startCheckout('founder-pass', setLoading)}
-              disabled={loading === 'founder-pass'}
+              onClick={() => startCheckout('pro-annual', setLoading)}
+              disabled={loading === 'pro-annual'}
             >
-              {loading === 'founder-pass'
+              {loading === 'pro-annual'
                 ? 'Opening checkout...'
-                : 'Get World Cup Founder Pass'}
+                : 'Get Pro Annual'}
 
               <ArrowRight size={16} />
             </button>
@@ -238,8 +240,8 @@ export default function Pricing() {
         </div>
 
         <p className="founder-pass-note">
-          Includes all Pro features · Supporter pricing · Helps us build Calibre
-          · No auto-renewal
+          Includes all Pro features · Equivalent to $4.16/mo · 2 months free
+          vs paying monthly
         </p>
       </div>
 

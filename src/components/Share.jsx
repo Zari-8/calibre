@@ -137,25 +137,25 @@ export default function ShareBar({ text = '', url, title = 'Calibre', label = tr
   );
 }
 
-// Companion to ShareBar — opens the rendered valuation-card PNG (api/share-card.js)
-// in a new tab so it can be saved/dropped straight into a post, rather than
-// just sharing a bare link. Deliberately a separate small control (not folded
-// into ShareBar) since it needs the player/valuation/verdict shape, not just
+// Companion to ShareBar — opens the ShareModal (preview + Download/Copy/X/
+// WhatsApp actions) instead of dumping the person straight onto a bare
+// browser image tab, which is what this used to do (a raw <a target="_blank">
+// to the PNG). Deliberately a separate small control (not folded into
+// ShareBar) since it needs the player/valuation/verdict shape, not just
 // text+url, and not every ShareBar call site has that data on hand yet.
-export function ShareCardLink({ cardUrl, label = true }) {
+export function ShareCardLink({ cardUrl, onOpen, label = true }) {
   if (!cardUrl) return null;
   return (
-    <a
+    <button
+      type="button"
       className="share-btn share-btn--card"
       style={{ ...btn, width: label ? 'auto' : 20, gap: 5, padding: label ? '0 8px' : 0 }}
-      href={cardUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="Open shareable card image"
-      title="Open shareable card image"
+      onClick={onOpen}
+      aria-label="Open shareable card"
+      title="Open shareable card"
     >
       <ImageIcon size={11} />
       {label && <span style={{ fontSize: 10, letterSpacing: '.04em', textTransform: 'uppercase' }}>Card</span>}
-    </a>
+    </button>
   );
 }

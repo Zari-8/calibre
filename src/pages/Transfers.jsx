@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ShareBar, { shareUrl, buildShareCardUrl, ShareCardLink } from '../components/Share.jsx';
+import ShareModal from '../components/ShareModal.jsx';
 import DealReport from '../components/DealReport.jsx';
 import Dossier from '../components/Dossier.jsx';
 import CommissionForm from '../components/CommissionForm.jsx';
@@ -572,6 +573,7 @@ export default function Transfers() {
   const [moreDealsPage, setMoreDealsPage] = useState(0);
   const [showDossier, setShowDossier] = useState(false);
   const [showCommission, setShowCommission] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const { user } = useAuth();
   const tier = resolveTier(user?.email);
   const canDossier = can(tier, 'valuation.dossier');
@@ -1121,7 +1123,7 @@ export default function Transfers() {
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <DealReport player={selectedPlayer} team={selectedTeam} verdict={verdict} sysFit={sysFit} marketValue={valuation.estimatedValue} askingPrice={askingPrice} />
                 <ShareBar text={shareText} url={shareUrl('/transfers')} />
-                <ShareCardLink cardUrl={cardUrl} />
+                <ShareCardLink cardUrl={cardUrl} onOpen={() => setShowShareModal(true)} />
                 {canDossier && <button className="tr2-cta" style={{ background: 'transparent', border: '1px solid var(--line)', color: '#c9ced4' }} onClick={() => setShowDossier(true)}>Generate dossier →</button>}
               </div>
             </div>
@@ -1431,6 +1433,9 @@ export default function Transfers() {
       )}
       {showCommission && (
         <CommissionForm player={selectedPlayer} club={selectedTeam} onClose={() => setShowCommission(false)} />
+      )}
+      {showShareModal && (
+        <ShareModal player={selectedPlayer} cardUrl={cardUrl} text={shareText} url={shareUrl('/transfers')} onClose={() => setShowShareModal(false)} />
       )}
     </div>
   );

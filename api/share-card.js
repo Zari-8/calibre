@@ -359,6 +359,31 @@ export default async function handler(req) {
     e('div', { style: { display: 'flex' } }, 'Ability-based · position, league & age adjusted')
   );
 
+  // Matches global.css's real body::before/::after treatment: three lime
+  // radial glows (top-left, top-right, bottom-center) over the same base
+  // #030405, plus a faint pixel grid. Glow opacities are boosted from the
+  // site's own .07/.05/.025 — those are tuned for a full page background,
+  // and read as almost invisible at card size, so they're louder here on
+  // purpose while keeping the same colors/positions.
+  const bgGlow = e('div', {
+    style: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex',
+      backgroundImage:
+        'radial-gradient(ellipse 55% 40% at 8% 0%, rgba(166,255,0,0.16) 0%, transparent 60%), ' +
+        'radial-gradient(ellipse 45% 35% at 92% 0%, rgba(166,255,0,0.12) 0%, transparent 55%), ' +
+        'radial-gradient(ellipse 70% 50% at 50% 100%, rgba(166,255,0,0.07) 0%, transparent 65%)',
+    },
+  });
+  const bgGrid = e('div', {
+    style: {
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, display: 'flex',
+      backgroundImage:
+        `linear-gradient(rgba(255,255,255,0.05) ${px(1)}px, transparent ${px(1)}px), ` +
+        `linear-gradient(90deg, rgba(255,255,255,0.04) ${px(1)}px, transparent ${px(1)}px)`,
+      backgroundSize: `${px(48)}px ${px(48)}px`,
+    },
+  });
+
   const root = e(
     'div',
     {
@@ -368,14 +393,14 @@ export default async function handler(req) {
         display: 'flex',
         flexDirection: 'column',
         background: '#030405',
-        backgroundImage:
-          'radial-gradient(circle at 8% 0%, rgba(166,255,0,0.16), transparent 55%), radial-gradient(circle at 92% 0%, rgba(166,255,0,0.11), transparent 50%)',
         fontFamily: BODY,
         padding: pxShorthand('38px 56px'),
         color: '#fff',
         position: 'relative',
       },
     },
+    bgGlow,
+    bgGrid,
     headerRow,
     body,
     showKpiRow ? kpiRow : plainValue,

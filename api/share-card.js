@@ -7,9 +7,13 @@
 // fair value), backs it with a row of bare, undefined stats (risk /
 // trajectory / system fit — deliberately not explained on the card itself;
 // the ambiguity is the hook, the definition lives on calibrefootball.com),
-// stamps the verdict like a rubber stamp instead of a quiet badge, and shows
-// the from-club → to-club crests so it reads as a specific transfer story,
-// not a generic player card.
+// stamps the verdict like a rubber stamp instead of a quiet badge, shows the
+// from-club → to-club crests so it reads as a specific transfer story, and
+// (this revision) actually uses the site's real typography and real crest
+// images instead of a generic font and text-abbreviation badges — a first
+// pass shipped with those as placeholders and it showed: the card read as a
+// generic template next to the site's actual Barlow Condensed / Barlow
+// typography and its real club logos.
 //
 // Card degrades gracefully field-by-field — nothing here is fabricated.
 // Fields with no real computed source yet (risk, trajectory) simply don't
@@ -30,7 +34,8 @@
 // Usage:
 //   /api/share-card?name=Junior%20Kroupi&club=LOSC%20Lille&pos=ST&age=19
 //     &value=59.1&fair=52-64&asking=84&premium=42&fit=68
-//     &fromClub=LOSC%20Lille&toClub=Chelsea&toCrest=CHE&toColor=%23034694
+//     &fromClub=LOSC%20Lille&fromCrestUrl=<url>
+//     &toClub=Chelsea&toCrestUrl=<url>&toColor=%23034694
 //     &verdict=NEGOTIATE%20HARD&tone=warn&img=<player photo url>
 //
 // Required Vercel env: none. Every field is optional except `name`.
@@ -51,42 +56,57 @@ const TONE_COLOR = {
   neutral: '#8a8a8a',
 };
 
+// The site's real typography (index.html preconnects/loads these; global.css
+// defines --cal-display: "Barlow Condensed" and --cal-body: "Barlow"). Satori
+// can't reach a browser's installed/linked fonts, so the same families are
+// fetched from Google Fonts at render time instead — the standard @vercel/og
+// pattern. `text` is passed to only fetch the glyphs this card actually uses.
+async function loadGoogleFont(family, weight, text) {
+  const params = new URLSearchParams({ family: `${family}:wght@${weight}`, text });
+  const css = await (await fetch(`https://fonts.googleapis.com/css2?${params}`)).text();
+  const match = css.match(/src: url\(([^)]+)\) format\('(opentype|truetype)'\)/);
+  if (!match) throw new Error(`no font resource resolved for ${family} ${weight}`);
+  const res = await fetch(match[1]);
+  if (res.status !== 200) throw new Error(`font fetch failed for ${family} ${weight}: ${res.status}`);
+  return res.arrayBuffer();
+}
+
 function clampText(s, max) {
   const str = String(s || '');
   return str.length > max ? str.slice(0, max - 1) + '…' : str;
 }
 
-// Turns "LOSC Lille" -> "LOS", "Chelsea" -> "CHE" as a fallback crest label
-// when no explicit crest code was passed (systemFitData.js's team records
-// carry a real `crest` field for the "to" club; the "from" club — the
-// player's current employer — usually doesn't have one, since that list is
-// only the candidate buying clubs).
+// Turns "LOSC Lille" -> "LOS", "Chelsea" -> "CHE" — last-resort label when
+// there's no real crest image URL to render (see crest() below).
 function fallbackCrest(clubName) {
   const str = String(clubName || '').trim();
   if (!str) return null;
   return str.replace(/[^A-Za-z]/g, '').slice(0, 3).toUpperCase() || null;
 }
 
-function crest(label, color) {
-  return e(
-    'div',
-    {
-      style: {
-        width: 64,
-        height: 64,
-        borderRadius: 32,
-        background: color ? `${color}33` : '#141414',
-        border: `2px solid ${color || '#2c2c2c'}`,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: 18,
-        fontWeight: 800,
-        color: color || '#888',
-      },
-    },
-    label
-  );
+// Real crest image when a URL is available (teamLogoUrl() from
+// apiFootball.js — actual API-Football team logos, same CDN the player
+// photos already come from). Falls back to a text-abbreviation badge only
+// when no real logo could be resolved, rather than ever inventing one.
+function crest(url, label, color) {
+  const ring = {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: color ? `${color}22` : '#141414',
+    border: `2px solid ${color || '#2c2c2c'}`,
+  };
+  if (url) {
+    return e(
+      'div',
+      { style: ring },
+      e('img', { src: url, width: 38, height: 38, style: { objectFit: 'contain' } })
+    );
+  }
+  return e('div', { style: { ...ring, fontSize: 16, fontWeight: 700, color: color || '#888' } }, label);
 }
 
 export default async function handler(req) {
@@ -110,9 +130,9 @@ export default async function handler(req) {
 
   const fromClub = clampText(searchParams.get('fromClub') || club || '', 20);
   const toClub = clampText(searchParams.get('toClub') || '', 20);
-  const toCrest = searchParams.get('toCrest') || fallbackCrest(toClub);
+  const fromCrestUrl = searchParams.get('fromCrestUrl') || null;
+  const toCrestUrl = searchParams.get('toCrestUrl') || null;
   const toColor = searchParams.get('toColor') || null;
-  const fromCrest = fallbackCrest(fromClub);
   const showCrestRow = !!(fromClub && toClub);
 
   const meta = [pos, age ? `${age} yrs` : null, club].filter(Boolean).join('   ·   ');
@@ -123,22 +143,34 @@ export default async function handler(req) {
     fit ? { label: 'SYSTEM FIT', v: fit } : null,
   ].filter(Boolean);
 
+  // Only the glyphs this specific card needs — keeps the Google Fonts
+  // response small and fast rather than pulling the whole family.
+  const glyphText = Array.from(
+    new Set(
+      `${name}${club}${meta}${verdict}${asking}${value}${fair}${premium}${stats.map((s) => s.label + s.v).join('')}` +
+        'CALIBREabcdefghijklmnopqrstuvwxyz0123456789€%+-·→ Over fair value Asking Calibre Estimated'
+    )
+  ).join('');
+
+  const DISPLAY = 'Barlow Condensed';
+  const BODY = 'Barlow';
+
   const headerRow = e(
     'div',
     { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' } },
     e('img', {
       src: 'https://www.calibrefootball.com/assets/calibre-wordmark.png',
-      width: 101,
-      height: 30,
+      width: 121,
+      height: 36,
       style: { objectFit: 'contain' },
     }),
     showCrestRow
       ? e(
           'div',
-          { style: { display: 'flex', alignItems: 'center', gap: 14 } },
-          crest(fromCrest || '?', null),
-          e('div', { style: { fontSize: 26, color: '#555', display: 'flex' } }, '→'),
-          crest(toCrest || '?', toColor)
+          { style: { display: 'flex', alignItems: 'center', gap: 12 } },
+          crest(fromCrestUrl, fallbackCrest(fromClub) || '?', null),
+          e('div', { style: { fontSize: 22, color: '#555', display: 'flex' } }, '→'),
+          crest(toCrestUrl, fallbackCrest(toClub) || '?', toColor)
         )
       : null
   );
@@ -156,7 +188,8 @@ export default async function handler(req) {
           style: {
             width: 220, height: 220, borderRadius: 24, background: '#141414',
             border: '2px solid #1c1c1c', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontSize: 84, fontWeight: 800, color: '#333',
+            justifyContent: 'center', fontSize: 84, fontWeight: 700, color: '#333',
+            fontFamily: DISPLAY,
           },
         },
         name.trim().charAt(0).toUpperCase()
@@ -171,20 +204,21 @@ export default async function handler(req) {
         style: {
           display: 'flex',
           alignSelf: 'flex-start',
-          padding: '12px 22px',
+          padding: '10px 22px',
           borderRadius: 12,
           border: `1px solid ${accent}55`,
           background: `${accent}22`,
           color: accent,
-          fontSize: 40,
-          fontWeight: 800,
+          fontSize: 42,
+          fontWeight: 700,
+          fontFamily: DISPLAY,
         },
       },
       `${Number(premium) >= 0 ? '+' : ''}${premium}% over fair value`
     ),
     e(
       'div',
-      { style: { fontSize: 20, color: '#999', marginTop: 10, display: 'flex' } },
+      { style: { fontSize: 19, color: '#999', marginTop: 10, display: 'flex', fontFamily: BODY } },
       `Asking €${asking}M · Calibre fair value €${value}M`
     )
   );
@@ -197,16 +231,16 @@ export default async function handler(req) {
       { style: { display: 'flex', flexDirection: 'column' } },
       e(
         'div',
-        { style: { fontSize: 15, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex' } },
+        { style: { fontSize: 14, color: '#666', letterSpacing: '0.1em', textTransform: 'uppercase', display: 'flex', fontFamily: BODY, fontWeight: 700 } },
         'Calibre Estimated Value'
       ),
       e(
         'div',
-        { style: { fontSize: 76, fontWeight: 800, color: '#c8ff00', lineHeight: 1.05, display: 'flex' } },
+        { style: { fontSize: 78, fontWeight: 700, color: '#c8ff00', lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } },
         value ? `€${value}M` : '—'
       ),
       fair
-        ? e('div', { style: { fontSize: 18, color: '#777', marginTop: 4, display: 'flex' } }, `Fair range €${fair}M`)
+        ? e('div', { style: { fontSize: 18, color: '#777', marginTop: 4, display: 'flex', fontFamily: BODY } }, `Fair range €${fair}M`)
         : null
     )
   );
@@ -220,8 +254,8 @@ export default async function handler(req) {
             e(
               'div',
               { key: s.label, style: { display: 'flex', flexDirection: 'column' } },
-              e('div', { style: { fontSize: 14, color: '#666', letterSpacing: '0.08em', display: 'flex' } }, s.label),
-              e('div', { style: { fontSize: 30, fontWeight: 800, color: accent, display: 'flex' } }, s.v)
+              e('div', { style: { fontSize: 13, color: '#666', letterSpacing: '0.08em', display: 'flex', fontFamily: BODY, fontWeight: 700 } }, s.label),
+              e('div', { style: { fontSize: 32, fontWeight: 700, color: accent, display: 'flex', fontFamily: DISPLAY } }, s.v)
             )
           )
         )
@@ -234,8 +268,8 @@ export default async function handler(req) {
     e(
       'div',
       { style: { display: 'flex', flexDirection: 'column', flex: 1 } },
-      e('div', { style: { fontSize: 54, fontWeight: 800, lineHeight: 1.05, display: 'flex' } }, name),
-      meta ? e('div', { style: { fontSize: 22, color: '#999', marginTop: 10, display: 'flex' } }, meta) : null,
+      e('div', { style: { fontSize: 56, fontWeight: 700, lineHeight: 1.02, display: 'flex', fontFamily: DISPLAY } }, name),
+      meta ? e('div', { style: { fontSize: 21, color: '#999', marginTop: 8, display: 'flex', fontFamily: BODY } }, meta) : null,
       showPremiumHero ? premiumHero : plainValue,
       statsRow
     )
@@ -246,7 +280,7 @@ export default async function handler(req) {
     {
       style: {
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        borderTop: '1px solid #1c1c1c', paddingTop: 20, fontSize: 17, color: '#555',
+        borderTop: '1px solid #1c1c1c', paddingTop: 18, fontSize: 15, color: '#555', fontFamily: BODY,
       },
     },
     e('div', { style: { display: 'flex' } }, 'calibrefootball.com/transfers'),
@@ -265,13 +299,14 @@ export default async function handler(req) {
             transform: 'rotate(-9deg)',
             border: `4px solid ${accent}`,
             borderRadius: 14,
-            padding: '14px 28px',
+            padding: '12px 26px',
             color: accent,
-            fontSize: 38,
-            fontWeight: 800,
-            letterSpacing: '0.05em',
+            fontSize: 36,
+            fontWeight: 700,
+            letterSpacing: '0.04em',
             textTransform: 'uppercase',
             background: `${accent}11`,
+            fontFamily: DISPLAY,
           },
         },
         verdict
@@ -289,7 +324,7 @@ export default async function handler(req) {
         background: '#030405',
         backgroundImage:
           'radial-gradient(circle at 8% 0%, rgba(166,255,0,0.16), transparent 55%), radial-gradient(circle at 92% 0%, rgba(166,255,0,0.11), transparent 50%)',
-        fontFamily: 'sans-serif',
+        fontFamily: BODY,
         padding: '56px 64px',
         color: '#fff',
         position: 'relative',
@@ -301,5 +336,31 @@ export default async function handler(req) {
     stamp
   );
 
-  return new ImageResponse(root, { width: 1200, height: 630 });
+  const fonts = (
+    await Promise.allSettled([
+      loadGoogleFont(DISPLAY, 700, glyphText).then((data) => ({ name: DISPLAY, data, weight: 700, style: 'normal' })),
+      loadGoogleFont(BODY, 400, glyphText).then((data) => ({ name: BODY, data, weight: 400, style: 'normal' })),
+      loadGoogleFont(BODY, 700, glyphText).then((data) => ({ name: BODY, data, weight: 700, style: 'normal' })),
+    ])
+  )
+    .filter((r) => r.status === 'fulfilled')
+    .map((r) => r.value);
+  // If Google Fonts is unreachable (or every fetch fails), `fonts` is just
+  // empty and Satori falls back to its default font rather than erroring —
+  // same degrade-gracefully rule as every other field on this card.
+
+  // IMPORTANT: only pass `fonts` when at least one actually loaded. Satori
+  // throws outright on an empty fonts array ("No fonts are loaded") rather
+  // than falling back — but it DOES fall back to its own bundled default
+  // font when the `fonts` key is omitted entirely. So if Google Fonts is
+  // ever unreachable, this must omit the key, not pass `[]`, or a transient
+  // font-CDN hiccup would take the whole card down instead of just losing
+  // the custom typeface for that one render.
+  // No custom Cache-Control here — @vercel/og already sets a sensible
+  // default, and adding our own appended rather than replaced it in
+  // testing, producing a malformed duplicate header.
+  const imageOptions = { width: 1200, height: 630 };
+  if (fonts.length > 0) imageOptions.fonts = fonts;
+
+  return new ImageResponse(root, imageOptions);
 }

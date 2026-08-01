@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Share2, MessageCircle, Link2, Check, Image as ImageIcon } from 'lucide-react';
-import { playerPhotoUrl } from '../services/apiFootball.js';
+import { playerPhotoUrl, teamLogoUrl } from '../services/apiFootball.js';
 
 // X (Twitter) glyph isn't in lucide; use a tiny inline mark so the brand reads right.
 function XMark({ size = 11 }) {
@@ -73,10 +73,20 @@ export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fi
   if (label) p.set('verdict', label);
   if (verdict?.tone) p.set('tone', verdict.tone);
 
-  if (player?.club) p.set('fromClub', player.club);
+  // Real crest images (teamLogoUrl -> API-Football's actual logo CDN, same
+  // one player photos already come from), not the text-abbreviation badges
+  // the card used at first. player.apiTeamId is the DB's real API-Football
+  // id for the player's current club; buyingTeam.id is systemFitData.js's
+  // real id for the candidate club (e.g. Chelsea=49, Real Madrid=541).
+  if (player?.club) {
+    p.set('fromClub', player.club);
+    const fromLogo = teamLogoUrl(player?.apiTeamId);
+    if (fromLogo) p.set('fromCrestUrl', fromLogo);
+  }
   if (buyingTeam) {
     p.set('toClub', buyingTeam.short || buyingTeam.name || '');
-    if (buyingTeam.crest) p.set('toCrest', buyingTeam.crest);
+    const toLogo = teamLogoUrl(buyingTeam.id);
+    if (toLogo) p.set('toCrestUrl', toLogo);
     if (buyingTeam.accent) p.set('toColor', buyingTeam.accent);
   }
 

@@ -7,7 +7,8 @@ import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
-import ShareBar, { shareUrl } from '../components/Share.jsx';
+import ShareBar, { shareUrl, buildTalentCardUrl, ShareCardLink } from '../components/Share.jsx';
+import ShareModal from '../components/ShareModal.jsx';
 import CommissionForm from '../components/CommissionForm.jsx';
 import DiscoveryDossier from '../components/DiscoveryDossier.jsx';
 import useAuth from '../hooks/useAuth.js';
@@ -388,9 +389,11 @@ function TalentDetailModal({ player, pool = [], onClose }) {
   }, [onClose]);
   const [showCommission, setShowCommission] = useState(false);
   const [showDossier, setShowDossier] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
   const { user: dossierUser } = useAuth();
   const canGenerateDossier = can(resolveTier(dossierUser?.email), 'valuation.dossier');
   if (!player) return null;
+  const talentCardUrl = buildTalentCardUrl(player);
   // Real DB comparables from the loaded talent pool: closest-rated same-position
   // talents, excluding the player himself (falls back to the whole pool if the
   // position is sparse).
@@ -474,16 +477,26 @@ function TalentDetailModal({ player, pool = [], onClose }) {
         </div>
 
         {/* ── Share bar ── */}
-        <div style={{padding:'0 26px 22px'}}>
+        <div style={{padding:'0 26px 22px', display:'flex', gap:8, alignItems:'center'}}>
           <ShareBar
             text={`${player.name} — ${Math.round(player.rating || 0)} Calibre rating, ${player.role || 'rising talent'}. Scouted on Calibre.`}
             url={shareUrl('/talents')}
             label={false}
           />
+          <ShareCardLink cardUrl={talentCardUrl} onOpen={() => setShowShareModal(true)} />
         </div>
 
         {showCommission && <CommissionForm player={{ name: player.name, apiPlayerId: playerApiId(player), pos: player.position }} club={{ name: player.club }} dossierType="discovery" onClose={() => setShowCommission(false)} />}
         {showDossier && <DiscoveryDossier player={player} buyerKind="club" recipient={dossierUser?.email} comparables={dossierComparables} onClose={() => setShowDossier(false)} />}
+        {showShareModal && (
+          <ShareModal
+            player={player}
+            cardUrl={talentCardUrl}
+            text={`${player.name} — ${Math.round(player.rating || 0)} Calibre rating, ${player.role || 'rising talent'}. Scouted on Calibre.`}
+            url={shareUrl('/talents')}
+            onClose={() => setShowShareModal(false)}
+          />
+        )}
       </div>
     </div>
   );

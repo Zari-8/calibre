@@ -106,6 +106,53 @@ export function buildShareCardUrl({ player, valuation, verdict, verdictLabel, fi
   return `/api/share-card?${p.toString()}`;
 }
 
+// Builds the URL for the shareable talent card image (api/talent-card.js —
+// sibling to buildShareCardUrl()/api/share-card.js above, but for the
+// Talents page: no asking price or verdict, just potential and a
+// development pathway. Kept as its own helper, not a mode on
+// buildShareCardUrl(), for the same reason api/talent-card.js is its own
+// file — a talent isn't a deal, and the two shapes shouldn't be forced to
+// share one builder just because they both end in a PNG.
+//
+//   player: the talent-pool player object (src/pages/Talents.jsx) — name,
+//           nation, position/role, club, age, rating, potential, trend,
+//           pathway (array), provisional
+//
+// Provisional (API-only, not yet scored) talents omit rating/potential/
+// trend/pathway entirely rather than sending a placeholder string like
+// "Model pending" onto the card — same "never fabricate" rule as
+// buildShareCardUrl() above.
+export function buildTalentCardUrl(player = {}) {
+  const p = new URLSearchParams();
+  const name = player.full_name || player.name;
+  if (name) p.set('name', name);
+  if (player.nation) p.set('nation', player.nation);
+  const pos = player.pos || player.position;
+  if (pos) p.set('pos', pos);
+  if (player.club) p.set('club', player.club);
+  if (player.age != null) p.set('age', String(player.age));
+  if (player.role) p.set('role', player.role);
+
+  const apiPlayerId = player.apiPlayerId ?? (player.source === 'api-profile' || player.source === 'supabase-registry' ? player.id : null);
+  const img = player.verifiedImage || player.apiImage || player.image || player.img || player.localImage || playerPhotoUrl(apiPlayerId);
+  if (img) p.set('img', img);
+
+  if (!player.provisional) {
+    if (player.rating != null) p.set('rating', String(Math.round(player.rating)));
+    if (player.potential) p.set('potential', String(player.potential));
+    if (player.trend) p.set('trend', String(player.trend));
+    // Same fallback Pathway (src/pages/Talents.jsx) uses when no explicit
+    // pathway array is set on the player.
+    const stages = player.pathway || [player.league, player.nextStep, 'Senior-minutes consolidation'];
+    const realStages = (stages || []).filter(Boolean);
+    if (realStages[0]) p.set('stage1', String(realStages[0]));
+    if (realStages[1]) p.set('stage2', String(realStages[1]));
+    if (realStages[2]) p.set('stage3', String(realStages[2]));
+  }
+
+  return `/api/talent-card?${p.toString()}`;
+}
+
 const wrap = { display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' };
 const labelStyle = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, letterSpacing: '.04em', textTransform: 'uppercase', opacity: 0.7 };
 const btn = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 6, border: '1px solid rgba(255,255,255,.16)', background: 'rgba(255,255,255,.04)', color: 'inherit', cursor: 'pointer', textDecoration: 'none' };

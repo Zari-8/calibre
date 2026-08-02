@@ -388,6 +388,48 @@ export async function searchSupabasePlayers(search,{limit=DEFAULT_LIMIT}={}){
   return (namePartial||[]).map(normalizePlayer);
 }
 
+// Batched name resolution for surfaces that need to resolve MANY names in one
+// pass — e.g. the Transfers page's Comparable Deals + Recent Transfers panels,
+// which used to call searchSupabasePlayers() once per row (up to ~16
+// individual Postgres round-trips on a single render). This collapses that
+// into a single query: one combined ilike OR across every requested name,
+// bucketed back out client-side so each caller can pick its own best match
+// with the same namesMatch() trust check it already runs.
+//
+// Trade-off, deliberate: this skips searchSupabasePlayers()'s unaccent-RPC
+// and trigram-fuzzy layers (search_players_unaccent), so it won't tolerate
+// typos or find "Bernado" -> "Bernardo" the way the real search box does.
+// Fine here — these calls only resolve a photo/id for supplementary UI, not
+// a number the valuation engine depends on, and every name going in came
+// from the DB or the transfers table already, not free-text user input.
+// Don't reuse this for the player search box — use searchSupabasePlayers().
+export async function searchSupabasePlayersBatch(names, { limitPerName = 3 } = {}) {
+  const client = requireSupabase();
+  const queries = [...new Set((names || []).map(n => String(n || '').trim()).filter(n => n.length >= 2))];
+  if (!queries.length) return new Map();
+
+  const orClause = queries.map(q => `name.ilike.%${q}%,full_name.ilike.%${q}%`).join(',');
+
+  const { data, error } = await client
+    .from('players')
+    .select(PLAYER_SELECT)
+    .or(orClause)
+    .or('hidden.is.null,hidden.eq.false')
+    .order('appearances', { ascending: false, nullsFirst: false })
+    .limit(queries.length * limitPerName);
+  if (error) throw error;
+
+  const rows = (data || []).map(normalizePlayer);
+  const byQuery = new Map(queries.map(q => [q.toLowerCase(), []]));
+  for (const row of rows) {
+    const hay = `${row.name || ''} ${row.full_name || ''}`.toLowerCase();
+    for (const q of queries) {
+      if (hay.includes(q.toLowerCase())) byQuery.get(q.toLowerCase()).push(row);
+    }
+  }
+  return byQuery;
+}
+
 // Club search — lets a user find a club by name and then browse its roster,
 // same pattern as searchSupabasePlayers (ilike on team/club, both columns
 // checked since different enrichment passes have populated one or the other

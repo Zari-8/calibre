@@ -8,7 +8,7 @@ import Dossier from '../components/Dossier.jsx';
 import CommissionForm from '../components/CommissionForm.jsx';
 import useAuth from '../hooks/useAuth.js';
 import { resolveTier, can } from '../services/access.js';
-import { searchSupabasePlayers, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
+import { searchSupabasePlayers, searchSupabasePlayersBatch, getSupabasePlayersByApiIds } from '../services/supabasePlayers.js';
 import { calibreRating, resolveRating } from '../services/calibreRating.js';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 import { computeSystemFit, scoreRoleFit, scoreFormationFit, searchLocalTeams, getTeamUniverse } from '../data/systemFitData.js';
@@ -96,8 +96,8 @@ async function fetchMarketPulse() {
   return [
     { label: 'Most inflated position', value: row.most_inflated_position || 'ST', highlight: true },
     { label: 'Average quoted premium', value: `+${row.avg_premium_pct ?? 0}%`, highlight: true },
-    { label: 'Best value lane',        value: row.best_value_lane || 'U23 CB',  highlight: false },
-    { label: 'Highest risk lane',      value: row.highest_risk_lane || 'Teen ST', highlight: false },
+    { label: 'Best value lane',        value: row.best_value_lane || 'CB',  highlight: false },
+    { label: 'Highest risk lane',      value: row.highest_risk_lane || 'ST', highlight: false },
     { label: 'Transfers done (2026)',  value: String(row.transfers_done ?? 0),  highlight: false },
     { label: 'Avg fee vs TM value',    value: `+${row.avg_fee_vs_tm_pct ?? 0}%`, highlight: true },
   ];
@@ -267,11 +267,15 @@ const FALLBACK_TRANSFERS = [
   { id: '5', name: 'Lamine Yamal',    pos: 'RW / Creator', from: 'Barcelona',    to: '—',            fee: null,status: 'watch',  apiPlayerId: 386828, marketValue: 180 },
 ];
 
+// Best/highest-risk lane fallbacks show a bare position, not an age cohort —
+// `transfers` has no age column, so a "U23"/"Teen" prefix here would be the
+// same fabricated claim the live market_pulse view was fixed to stop making
+// (see supabase/migrations/20260802_market_pulse_view.sql).
 const FALLBACK_PULSE = [
   { label: 'Most inflated position', value: 'Striker', highlight: true },
   { label: 'Average quoted premium', value: '+48%',    highlight: true },
-  { label: 'Best value lane',        value: 'U23 CB',  highlight: false },
-  { label: 'Highest risk lane',      value: 'Teen ST', highlight: false },
+  { label: 'Best value lane',        value: 'CB',       highlight: false },
+  { label: 'Highest risk lane',      value: 'ST',        highlight: false },
   { label: 'Transfers done (2026)',  value: '—',       highlight: false },
   { label: 'Avg fee vs Calibre value', value: '—',    highlight: true },
 ];
@@ -294,85 +298,56 @@ function getSpotlightFallback() {
   return SPOTLIGHT_POOL_FALLBACK[slot % SPOTLIGHT_POOL_FALLBACK.length];
 }
 
-// ── Verdict engine (legacy) ──────────────────────────────────────────────────
-// v1.3 correction: this was FIRST flagged as fully dead and slated for
-// removal, but a downstream check caught that DealReport.jsx (the Scout-tier
-// PDF export) and Dossier.jsx (the $499 commissioned dossier) both still
-// consume this object's shape directly — fairCeiling, premiumJustified,
-// dealRisk/dealRiskClass, overpayBy, ageCurve, ratingMult, scarcity — none of
-// which `dealVerdict` (calibreFitValue.js's fitVerdict, the real on-page
-// engine) produces. Only the on-page label was dead (VerdictStamp below is
-// removed — genuinely unused, no JSX referenced it anywhere). This function
-// stays until DealReport/Dossier are migrated onto calibreFitValue's output,
-// which is a separate piece of work, not a same-session rename. NOTE its
-// `marketValue` param is now always called with `valuation.estimatedValue`
-// (Calibre's own independent estimate), not real Transfermarkt data — so
-// despite reading like a Transfermarkt-anchored model, it no longer touches
-// real market quotes at the call site; it's just an older, differently-shaped
-// scoring pass over the same Calibre estimate `dealVerdict` also uses.
-function computeVerdict({ marketValue, askingPrice, calibreRat, age, leagueStrength = 0.78, position = 'MID' }) {
-  if (!marketValue || !askingPrice) return null;
+// ── Verdict engine (adapter) ─────────────────────────────────────────────────
+// v1.4 — this used to be a second, independently-tuned valuation formula
+// (hardcoded age curve, position scarcity map, rating multiplier) running
+// alongside calibreValue.js/calibreFitValue.js, the REAL engine driving the
+// on-page number and verdict badge. DealReport.jsx (the PDF export) and
+// Dossier.jsx (the $499 commissioned dossier) only ever read THIS function's
+// shape (fairCeiling, premiumJustified, dealRisk/dealRiskClass, overpayBy,
+// ageCurve, ratingMult, scarcity) — so a customer could see one verdict/number
+// on-screen and pay for a document carrying a different, contradicting one;
+// the two formulas were never reconciled. Fixed by making this an ADAPTER: it
+// derives the exact same field shape entirely from the real engine's own
+// output (`valuation` from calibreValue.js, `fit`/`dealVerdict` from
+// calibreFitValue.js) instead of recomputing anything independently. Nothing
+// downstream (DealReport.jsx, Dossier.jsx) needed to change — same field
+// names — but every number in them now traces back to the one engine.
+function computeVerdict({ valuation, fit, dealVerdict, askingPrice }) {
+  const ask = Number(askingPrice);
+  if (!valuation || !Number.isFinite(ask)) return null;
 
-  const premium = ((askingPrice - marketValue) / marketValue) * 100;
+  // Club-aware ceiling when a buying club is selected, else the club-agnostic
+  // one — same "sensible ceiling" concept the old fairCeiling stood in for.
+  const fairCeiling = Math.round(fit?.clubMaxSensibleBid ?? valuation.maxSensibleBid);
+  const premium = Number.isFinite(dealVerdict?.premium)
+    ? dealVerdict.premium
+    : Math.round((ask / valuation.estimatedValue - 1) * 100);
+  const premiumJustified = Math.min(100, Math.round((fairCeiling / ask) * 100));
+  const overpayBy = Math.max(0, ask - fairCeiling);
 
-  // Age curve score (younger = more justification for premium)
-  const ageCurve = age <= 19 ? 88 : age <= 21 ? 78 : age <= 24 ? 65 : age <= 27 ? 50 : 30;
-
-  // Rating multiplier — high rating directly lifts the ceiling
-  // 75 baseline = 1.0x, every 5 rating points = +20% ceiling room
-  const ratingMult = Math.max(0.6, Math.min(1.8, 1 + (calibreRat - 75) * 0.04));
-
-  // Rating-to-fee score
-  const ratingBaseline = marketValue * (calibreRat / 80);
-  const ratingScore = Math.max(10, Math.min(100, Math.round(100 - ((askingPrice - ratingBaseline) / ratingBaseline) * 60)));
-
-  // League discount factor
-  const leagueScore = Math.round(leagueStrength * 100);
-
-  // Position scarcity — CB and DM are most scarce, FB and WIDE less so
-  const scarcityMap = { ST: 75, CB: 82, DM: 80, AM: 70, CM: 65, LW: 55, RW: 55, FB: 45, LB: 45, RB: 45, GK: 70 };
-  const scarcity = scarcityMap[position] || 60;
-
-  // Fair price ceiling — now factors rating, age curve, AND position scarcity
-  const fairCeiling = Math.round(
-    marketValue * ratingMult * (1 + (ageCurve / 100) * 0.7 + (scarcity / 100) * 0.25)
-  );
-
-  // Value score (composite)
-  const valueScore = Math.round((ratingScore * 0.4) + (ageCurve * 0.35) + (leagueScore * 0.15) + (scarcity * 0.1));
-
-  // Premium justified %
-  const premiumJustified = Math.min(100, Math.round((fairCeiling / askingPrice) * 100));
-
-  // Verdict
-  let verdict, verdictClass;
-  if (askingPrice <= fairCeiling * 0.9) {
-    verdict = 'DEAL'; verdictClass = 'lime';
-  } else if (askingPrice <= fairCeiling * 1.1) {
-    verdict = 'CONDITIONAL DEAL'; verdictClass = 'amber';
-  } else if (askingPrice <= fairCeiling * 1.35) {
-    verdict = 'NEGOTIATE HARD'; verdictClass = 'amber';
-  } else {
-    verdict = 'NO DEAL'; verdictClass = 'red';
-  }
-
-  const dealRisk = askingPrice > fairCeiling * 1.2 ? 'HIGH' : askingPrice > fairCeiling * 0.95 ? 'MEDIUM' : 'LOW';
+  // Verdict label/tone read straight from the real engine — this is what
+  // makes the PDF's headline match the on-page badge every time.
+  const tone = dealVerdict?.tone;
+  const verdict = dealVerdict?.label || '—';
+  const verdictClass = tone === 'good' ? 'lime' : tone === 'bad' ? 'red' : 'amber';
+  const dealRisk = tone === 'bad' ? 'HIGH' : tone === 'warn' ? 'MEDIUM' : 'LOW';
   const dealRiskClass = dealRisk === 'HIGH' ? 'red' : dealRisk === 'MEDIUM' ? 'amber' : 'lime';
 
+  // Age Curve / scarcity read directly off the real engine's own breakdown
+  // and scarcity score, instead of a second hardcoded curve/map.
+  const ageCurve = valuation.breakdown?.find(f => f.name === 'Age Curve')?.score ?? 50;
+  const scarcity = valuation.scarcity ?? 50;
+  // "Rating multiplier" — how much everything the engine applies on top of
+  // the raw ability-based base value (position, league, age, risk, injury)
+  // scaled the final number, so the PDF's narrative line still means
+  // something real instead of a standalone "every 5 points = +20%" guess.
+  const baseValue = valuation.breakdown?.find(f => f.name === 'Ability (base curve input)')?.impact || valuation.estimatedValue;
+  const ratingMult = Math.round((valuation.estimatedValue / baseValue) * 100) / 100;
+
   return {
-    premium: Math.round(premium),
-    fairCeiling,
-    valueScore,
-    premiumJustified,
-    verdict,
-    verdictClass,
-    dealRisk,
-    dealRiskClass,
-    ageCurve,
-    ratingScore,
-    ratingMult: Math.round(ratingMult * 100) / 100,
-    scarcity,
-    overpayBy: Math.max(0, askingPrice - fairCeiling),
+    premium, fairCeiling, premiumJustified, verdict, verdictClass,
+    dealRisk, dealRiskClass, ageCurve, ratingMult, scarcity, overpayBy,
   };
 }
 
@@ -698,16 +673,11 @@ export default function Transfers() {
   // WALK AWAY vocabulary using the same real tone the engine already computed.
   // The full reasoning (dealVerdict.why) still reflects the real verdict.
   const verdictDisplay = dealVerdict.tone === 'good' ? 'DEAL' : dealVerdict.tone === 'warn' ? 'NEGOTIATE' : dealVerdict.tone === 'bad' ? 'WALK AWAY' : dealVerdict.label;
-  // Legacy verdict object — still the shape DealReport.jsx (PDF export) and
-  // Dossier.jsx read for fields dealVerdict doesn't carry (fairCeiling,
-  // dealRisk, overpayBy, etc). See computeVerdict()'s comment above.
-  const verdict = computeVerdict({
-    marketValue: valuation.estimatedValue,
-    askingPrice,
-    calibreRat: selectedPlayer?.rating || 75,
-    age: selectedPlayer?.age || 23,
-    position: (selectedPlayer?.pos || selectedPlayer?.position || 'MID').toUpperCase().slice(0, 3),
-  });
+  // Adapter object — same shape DealReport.jsx (PDF export) and Dossier.jsx
+  // read (fairCeiling, dealRisk, overpayBy, etc), now derived from the real
+  // engine's own output instead of a second independent formula. See
+  // computeVerdict()'s comment above.
+  const verdict = computeVerdict({ valuation, fit, dealVerdict, askingPrice });
 
   // ── Player loader: fetches full DB data and sets all related state ──
   async function loadPlayerIntoEngine(apiPlayerId, name, fallbackMarketValue) {
@@ -800,14 +770,20 @@ export default function Transfers() {
       if (!supabaseConfigured || !supabase || !rankedComparables.length) return;
       const cache = comparableIntelRef.current;
       const need = rankedComparables.filter(c => c.name && c.resolved !== true && !((c.name).toLowerCase() in cache));
-      await Promise.all(need.map(async c => {
-        const key = c.name.toLowerCase();
+      if (need.length) {
+        // One batched round-trip instead of one searchSupabasePlayers() call
+        // per comparable (was up to 6 individual Postgres queries here).
         try {
-          const rows = await searchSupabasePlayers(c.name, { limit: 1 });
-          const row = rows && rows[0];
-          cache[key] = (row && namesMatch(c.name, row)) ? row : null;
-        } catch { cache[key] = null; }
-      }));
+          const byQuery = await searchSupabasePlayersBatch(need.map(c => c.name));
+          for (const c of need) {
+            const key = c.name.toLowerCase();
+            const candidates = byQuery.get(key) || [];
+            cache[key] = candidates.find(row => namesMatch(c.name, row)) || null;
+          }
+        } catch {
+          for (const c of need) cache[c.name.toLowerCase()] = null;
+        }
+      }
       if (cancelled) return;
       const intel = {};
       for (const c of rankedComparables) {
@@ -847,13 +823,19 @@ export default function Transfers() {
       if (!supabaseConfigured || !supabase || !recentTransfers.length) return;
       const cache = transferIntelRef.current;
       const need = recentTransfers.filter(t => t.name && !(t.id in cache));
-      await Promise.all(need.map(async t => {
+      if (need.length) {
+        // One batched round-trip instead of one searchSupabasePlayers() call
+        // per row (was up to 10 individual Postgres queries here).
         try {
-          const rows = await searchSupabasePlayers(t.name, { limit: 1 });
-          const row = rows && rows[0];
-          cache[t.id] = (row && namesMatch(t.name, row)) ? row : null;
-        } catch { cache[t.id] = null; }
-      }));
+          const byQuery = await searchSupabasePlayersBatch(need.map(t => t.name));
+          for (const t of need) {
+            const candidates = byQuery.get(t.name.toLowerCase()) || [];
+            cache[t.id] = candidates.find(row => namesMatch(t.name, row)) || null;
+          }
+        } catch {
+          for (const t of need) cache[t.id] = null;
+        }
+      }
       if (cancelled) return;
       const intel = {};
       for (const t of recentTransfers) {

@@ -11,6 +11,19 @@ function XMark({ size = 11 }) {
   );
 }
 
+// The real public domain — deliberately NOT window.location.origin for
+// anything that gets shared externally. Vercel gives every preview/branch
+// deployment its own throwaway host (calibre-xxxxxxx-calibre-project.
+// vercel.app), and those are gated behind Vercel's deployment-protection
+// login wall by default — a link built from window.location.origin while
+// testing on a preview looks fine in-app but is unreachable to anyone else,
+// including WhatsApp/X's own preview crawlers (confirmed: this is exactly
+// why a real WhatsApp share showed nothing — the shared link pointed at a
+// preview host, not calibrefootball.com). Every outward-facing share link
+// must resolve to the same real domain no matter which deployment it was
+// generated from.
+export const SITE_ORIGIN = 'https://www.calibrefootball.com';
+
 /**
  * Drop-in share control. Pass the text and a URL; everything else is handled.
  *   <ShareBar text="Mbappé → Real Madrid: 91% system fit on Calibre" url={shareUrl('/system-fit')} />
@@ -19,9 +32,8 @@ function XMark({ size = 11 }) {
  * plus explicit X, WhatsApp and copy-link buttons for desktop.
  */
 export function shareUrl(path) {
-  if (typeof window === 'undefined') return path || '';
-  if (!path) return window.location.href;
-  return path.startsWith('http') ? path : window.location.origin + path;
+  if (!path) return SITE_ORIGIN;
+  return path.startsWith('http') ? path : SITE_ORIGIN + path;
 }
 
 // Builds the URL for the shareable valuation-card image (api/share-card.js,

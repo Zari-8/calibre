@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, Download, Link2, Check, MessageCircle } from 'lucide-react';
-import { buildShareLinkUrl } from './Share.jsx';
+import { buildShareLinkUrl, SITE_ORIGIN } from './Share.jsx';
 
 // Same modal shell every other popup on the site uses (CommissionForm.jsx's
 // dark card, lime top accent, fixed dim overlay) — this was previously just
@@ -48,7 +48,11 @@ export default function ShareModal({ player, cardUrl, text = '', url, onClose })
   const [imgError, setImgError] = useState(false);
   const displayName = player?.full_name || player?.name || 'Calibre';
   const name = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-  const absoluteCardUrl = typeof window !== 'undefined' && cardUrl?.startsWith('/') ? window.location.origin + cardUrl : cardUrl;
+  // SITE_ORIGIN, not window.location.origin — a share built while previewing
+  // on a Vercel preview deployment must still point at the real public
+  // domain, never the throwaway preview host (see Share.jsx's SITE_ORIGIN
+  // comment for the concrete WhatsApp failure this caused).
+  const absoluteCardUrl = cardUrl?.startsWith('/') ? SITE_ORIGIN + cardUrl : cardUrl;
 
   // The link every sharing action below actually carries — NOT the raw PNG
   // and NOT the bare page URL. It's the api/share-unfurl.js bridge page, so
@@ -57,7 +61,7 @@ export default function ShareModal({ player, cardUrl, text = '', url, onClose })
   // clickable straight through to the site. See buildShareLinkUrl's own
   // comment for the full reasoning.
   const shareLinkPath = buildShareLinkUrl({ cardUrl, title: `${displayName} — Calibre`, text, redirectPath: url });
-  const absoluteShareLink = typeof window !== 'undefined' ? window.location.origin + shareLinkPath : shareLinkPath;
+  const absoluteShareLink = shareLinkPath.startsWith('/') ? SITE_ORIGIN + shareLinkPath : shareLinkPath;
 
   const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(absoluteShareLink)}`;
   const waHref = `https://wa.me/?text=${encodeURIComponent(`${text} ${absoluteShareLink}`.trim())}`;

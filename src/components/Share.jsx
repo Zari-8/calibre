@@ -153,6 +153,29 @@ export function buildTalentCardUrl(player = {}) {
   return `/api/talent-card?${p.toString()}`;
 }
 
+// Builds the link used for every *sharing* action (X, WhatsApp, copy-link)
+// as opposed to the raw PNG (buildShareCardUrl/buildTalentCardUrl) used for
+// downloading or attaching the actual file. Points at api/share-unfurl.js —
+// a bridge page carrying og:image/og:title meta tags so WhatsApp/X/iMessage/
+// Slack render the card itself as a big clickable preview instead of a bare
+// text link (see api/share-unfurl.js's own comments for why that page has
+// to exist at all: platforms fetch the shared URL server-side and read its
+// meta tags, they never receive a file from a wa.me/twitter intent link).
+//   cardUrl      : buildShareCardUrl()/buildTalentCardUrl() output
+//   title        : short line for og:title/twitter:title (e.g. player name)
+//   text         : the same caption already shown on the ShareBar/X/WhatsApp
+//                  buttons — becomes og:description
+//   redirectPath : where a real visitor lands after the bridge page (e.g.
+//                  shareUrl('/transfers'))
+export function buildShareLinkUrl({ cardUrl, title, text, redirectPath }) {
+  const p = new URLSearchParams();
+  if (cardUrl) p.set('card', cardUrl);
+  if (title) p.set('title', title);
+  if (text) p.set('desc', text);
+  if (redirectPath) p.set('redirect', redirectPath);
+  return `/api/share-unfurl?${p.toString()}`;
+}
+
 const wrap = { display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: 'wrap' };
 const labelStyle = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, letterSpacing: '.04em', textTransform: 'uppercase', opacity: 0.7 };
 const btn = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 6, border: '1px solid rgba(255,255,255,.16)', background: 'rgba(255,255,255,.04)', color: 'inherit', cursor: 'pointer', textDecoration: 'none' };

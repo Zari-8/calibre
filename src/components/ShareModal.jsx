@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { X, Download, Link2, Check, MessageCircle } from 'lucide-react';
+import { buildShareLinkUrl } from './Share.jsx';
 
 // Same modal shell every other popup on the site uses (CommissionForm.jsx's
 // dark card, lime top accent, fixed dim overlay) — this was previously just
@@ -7,6 +8,15 @@ import { X, Download, Link2, Check, MessageCircle } from 'lucide-react';
 // person on an unstyled browser image tab with no context and no obvious
 // next step. Opening this instead: shows the actual card so they can
 // confirm it before sharing, then gives explicit per-platform actions.
+//
+// X / WhatsApp / Copy link all hand out the SAME link — the
+// api/share-unfurl.js bridge page (via buildShareLinkUrl) — not the raw PNG
+// and not the bare page URL. That's what makes the shared link itself show
+// the card as a rich, clickable preview on whichever platform it lands in,
+// instead of a bare text link (confirmed missing entirely in a real WhatsApp
+// share before this existed — see api/share-unfurl.js for the full why).
+// Download and native "Share image" still hand over the actual PNG file,
+// since that's what those two actions are actually for.
 
 const BC = "'Barlow Condensed', sans-serif";
 const LIME = '#c8ff00';
@@ -36,15 +46,25 @@ function XMark({ size = 14 }) {
 export default function ShareModal({ player, cardUrl, text = '', url, onClose }) {
   const [copied, setCopied] = useState(false);
   const [imgError, setImgError] = useState(false);
-  const name = (player?.full_name || player?.name || 'player').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const displayName = player?.full_name || player?.name || 'Calibre';
+  const name = displayName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   const absoluteCardUrl = typeof window !== 'undefined' && cardUrl?.startsWith('/') ? window.location.origin + cardUrl : cardUrl;
 
-  const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url || '')}`;
-  const waHref = `https://wa.me/?text=${encodeURIComponent(`${text} ${url || ''}`.trim())}`;
+  // The link every sharing action below actually carries — NOT the raw PNG
+  // and NOT the bare page URL. It's the api/share-unfurl.js bridge page, so
+  // that whichever platform the person shares to (WhatsApp, X, iMessage,
+  // Slack, a plain paste) shows the card itself as the preview and is
+  // clickable straight through to the site. See buildShareLinkUrl's own
+  // comment for the full reasoning.
+  const shareLinkPath = buildShareLinkUrl({ cardUrl, title: `${displayName} — Calibre`, text, redirectPath: url });
+  const absoluteShareLink = typeof window !== 'undefined' ? window.location.origin + shareLinkPath : shareLinkPath;
+
+  const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(absoluteShareLink)}`;
+  const waHref = `https://wa.me/?text=${encodeURIComponent(`${text} ${absoluteShareLink}`.trim())}`;
   const canNativeShareFiles = typeof navigator !== 'undefined' && typeof navigator.canShare === 'function';
 
-  const copyImageLink = async () => {
-    try { await navigator.clipboard.writeText(absoluteCardUrl); setCopied(true); setTimeout(() => setCopied(false), 1600); }
+  const copyLink = async () => {
+    try { await navigator.clipboard.writeText(absoluteShareLink); setCopied(true); setTimeout(() => setCopied(false), 1600); }
     catch { /* clipboard blocked */ }
   };
 
@@ -92,13 +112,13 @@ export default function ShareModal({ player, cardUrl, text = '', url, onClose })
               </button>
             )}
             <a href={cardUrl} download={`calibre-${name}.png`} style={actionBtn}><Download size={12} /> Download</a>
-            <button type="button" onClick={copyImageLink} style={actionBtn}>{copied ? <Check size={12} /> : <Link2 size={12} />} {copied ? 'Copied' : 'Copy link'}</button>
+            <button type="button" onClick={copyLink} style={actionBtn}>{copied ? <Check size={12} /> : <Link2 size={12} />} {copied ? 'Copied' : 'Copy link'}</button>
             <a href={xHref} target="_blank" rel="noopener noreferrer" style={actionBtn}><XMark size={12} /> X</a>
             <a href={waHref} target="_blank" rel="noopener noreferrer" style={actionBtn}><MessageCircle size={12} /> WhatsApp</a>
           </div>
 
           <p style={{ fontSize: 11, color: '#666', marginTop: 10, lineHeight: 1.5 }}>
-            X and WhatsApp open with the caption pre-filled — download or share the image first so you can attach it, since neither platform accepts an image straight from a link.
+            X, WhatsApp and Copy link all share one link that shows this card as the preview and opens straight through to Calibre — download or use Share image if you want the file itself.
           </p>
         </div>
       </div>

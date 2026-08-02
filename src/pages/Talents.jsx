@@ -482,6 +482,7 @@ function TalentDetailModal({ player, pool = [], onClose }) {
             text={`${player.name} — ${Math.round(player.rating || 0)} Calibre rating, ${player.role || 'rising talent'}. Scouted on Calibre.`}
             url={shareUrl('/talents')}
             label={false}
+            cardUrl={talentCardUrl}
           />
           <ShareCardLink cardUrl={talentCardUrl} onOpen={() => setShowShareModal(true)} />
         </div>

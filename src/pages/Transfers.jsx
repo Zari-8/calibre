@@ -663,7 +663,7 @@ export default function Transfers() {
     minutes: selectedPlayer?.minutes ?? (selectedPlayer?.appearances ? selectedPlayer.appearances * 80 : undefined),
     hasContractData: false,
   }), [selectedPlayer]);
-  const fit = useMemo(() => fitAdjustedValue(valuation, systemFitScore), [valuation, systemFitScore]);
+  const fit = useMemo(() => fitAdjustedValue(valuation, systemFitScore, selectedTeam?.league), [valuation, systemFitScore, selectedTeam?.league]);
   const dealVerdict = useMemo(() => fitVerdict(valuation, fit, askingPrice), [valuation, fit, askingPrice]);
   const verdictClass = dealVerdict.tone === 'good' ? 'lime' : dealVerdict.tone === 'bad' ? 'red' : 'amber';
   // Display-only simplification: the engine can return 7 distinct labels
@@ -1077,7 +1077,11 @@ export default function Transfers() {
                   <div className="tr2-kpi"><span>Premium</span><b style={{ color: premiumColor }}>{dealVerdict.premium >= 0 ? '+' : ''}{dealVerdict.premium}%</b></div>
                 </div>
                 {selectedTeam && fit.fitAdjustedValue !== valuation.estimatedValue && (
-                  <div className="tr2-note" style={{ marginBottom: 10 }}>Base (club-agnostic) value €{valuation.estimatedValue}M, adjusted to €{fit.fitAdjustedValue}M for {selectedTeam.short || selectedTeam.name}'s system fit ({systemFitScore}/100) — the verdict below is based on this adjusted figure.</div>
+                  <div className="tr2-note" style={{ marginBottom: 10 }}>
+                    Base (club-agnostic) value €{valuation.estimatedValue}M, adjusted to €{fit.fitAdjustedValue}M for {selectedTeam.short || selectedTeam.name}'s system fit ({systemFitScore}/100)
+                    {fit.buyerLeagueCostMultiplier !== 1 && ` and a +${fit.buyerLeagueCostPct}% ${selectedTeam.league} buyer-cost premium (real transfers cost more when a richer league is doing the buying)`}
+                    {' '}— the verdict below is based on this adjusted figure.
+                  </div>
                 )}
                 {dealVerdict.premium > 300 && (
                   <div className="tr2-note" style={{ color: '#e8b13a', marginBottom: 8 }}>⚠ A premium this large usually means the resolved Calibre rating ({selectedPlayer?.ability_rating ?? selectedPlayer?.rating ?? '—'}) looks too low for this player, not that the fee is unreasonable — worth checking the player record.</div>
@@ -1104,7 +1108,7 @@ export default function Transfers() {
               <p className="tr2-risk-why">{riskWhy}</p>
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
                 <DealReport player={selectedPlayer} team={selectedTeam} verdict={verdict} sysFit={sysFit} marketValue={valuation.estimatedValue} askingPrice={askingPrice} />
-                <ShareBar text={shareText} url={shareUrl('/transfers')} />
+                <ShareBar text={shareText} url={shareUrl('/transfers')} cardUrl={cardUrl} />
                 <ShareCardLink cardUrl={cardUrl} onOpen={() => setShowShareModal(true)} />
                 {canDossier && <button className="tr2-cta" style={{ background: 'transparent', border: '1px solid var(--line)', color: '#c9ced4' }} onClick={() => setShowDossier(true)}>Generate dossier →</button>}
               </div>

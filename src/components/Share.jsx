@@ -28,6 +28,13 @@ export const SITE_ORIGIN = 'https://www.calibrefootball.com';
  * Drop-in share control. Pass the text and a URL; everything else is handled.
  *   <ShareBar text="Mbappé → Real Madrid: 91% system fit on Calibre" url={shareUrl('/system-fit')} />
  *
+ * Pass cardUrl too on pages that have a shareable card (buildShareCardUrl/
+ * buildTalentCardUrl output) and every button here — native share, X,
+ * WhatsApp, copy — hands out the interactive api/share-unfurl.js link
+ * instead of the bare page URL, same as ShareModal. Without cardUrl this
+ * behaves exactly as before (plain link share) — that's still correct on
+ * pages with no card to unfurl (Players, SystemFit, WorldCup, Debates).
+ *
  * Renders: native share (mobile only, one tap to any app incl. WhatsApp/X),
  * plus explicit X, WhatsApp and copy-link buttons for desktop.
  */
@@ -192,9 +199,15 @@ const wrap = { display: 'inline-flex', alignItems: 'center', gap: 5, flexWrap: '
 const labelStyle = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, letterSpacing: '.04em', textTransform: 'uppercase', opacity: 0.7 };
 const btn = { display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 20, height: 20, borderRadius: 6, border: '1px solid rgba(255,255,255,.16)', background: 'rgba(255,255,255,.04)', color: 'inherit', cursor: 'pointer', textDecoration: 'none' };
 
-export default function ShareBar({ text = '', url, title = 'Calibre', label = true }) {
+export default function ShareBar({ text = '', url, title = 'Calibre', label = true, cardUrl }) {
   const [copied, setCopied] = useState(false);
-  const link = url || (typeof window !== 'undefined' ? window.location.href : '');
+  const bareLink = url || (typeof window !== 'undefined' ? window.location.href : '');
+  // Same bridge-page swap ShareModal does: when this page has a shareable
+  // card, every button below carries that interactive link instead of the
+  // bare page URL, so WhatsApp/X actually unfurl the card.
+  const link = cardUrl
+    ? SITE_ORIGIN + buildShareLinkUrl({ cardUrl, title, text, redirectPath: bareLink })
+    : bareLink;
   const full = `${text} ${link}`.trim();
   const xHref = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(link)}`;
   const waHref = `https://wa.me/?text=${encodeURIComponent(full)}`;

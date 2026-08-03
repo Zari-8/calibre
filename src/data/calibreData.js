@@ -1,11 +1,11 @@
 export const navItems = [
   { label: 'Home',       href: '/'            },
   { label: 'Debates',    href: '/debates'     },
-  { label: 'System Fit', href: '/system-fit'  },
-  { label: 'Competitions', href: '/competitions' },
   { label: 'Talents',    href: '/talents'     },
-  { label: 'Transfers',  href: '/transfers'   },
   { label: 'Players',    href: '/players'     },
+  { label: 'System Fit', href: '/system-fit'  },
+  { label: 'Transfers',  href: '/transfers'   },
+  { label: 'Competitions', href: '/competitions' },
 ];
 
 export const ratingFormula = [

@@ -6,12 +6,10 @@ import { navigateTo } from './NavLink.jsx';
 const TABS = [
   { key: 'overview',         label: 'Overview',         href: '/world-cup' },
   { key: 'teams',            label: 'Teams',             href: '/world-cup/teams' },
-  { key: 'players-to-watch', label: 'Players to Watch',  href: '/world-cup/players-to-watch' },
   { key: 'matches',          label: 'Matches',           href: '/world-cup/matches' },
   { key: 'groups',           label: 'Groups',            href: '/world-cup/groups' },
   { key: 'stats',            label: 'Stats',             href: '/world-cup/stats' },
   { key: 'history',          label: 'History',           href: '/world-cup/history' },
-  { key: 'predictor',        label: 'Predictor',         href: '/world-cup/predictor' },
 ];
 
 export default function WorldCupNav({ active = 'overview' }) {

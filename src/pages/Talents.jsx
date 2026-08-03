@@ -636,13 +636,15 @@ function ScoutPanel({ player, shortlisted, onToggleShortlist }) {
   const axes = radarAxes(player);
   const points = standoutPoints(player);
   const tag = pathwayTag(player);
+  const scoutTeamId = player.apiTeamId ?? player.api_team_id ?? player.teamId ?? null;
+  const scoutCrest = player.logo || player.crestUrl || (scoutTeamId ? teamLogoUrl(scoutTeamId) : undefined);
   return (
     <div className="tde-scout">
       <div className="tde-scout-head">
         <div className="tde-scout-face"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
         <div className="tde-scout-headid">
           <h2>{player.name}</h2>
-          <div className="tde-scout-chips">{player.flag && <span className="fl">{player.flag}</span>}<em>{player.position}</em><em>{player.age}y</em></div>
+          <div className="tde-scout-chips"><span className="tde-scout-crest"><ApiTeamLogo src={scoutCrest} name={player.club || player.name} /></span><em>{player.position}</em><em>{player.age}y</em></div>
           <p>{player.club} · {player.league}</p>
         </div>
         <div className="tde-scout-rt">
@@ -1649,6 +1651,9 @@ export default function Talents() {
         .tde-scout-headid h2 { margin:0; color:#f4f6f8; font:800 20px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
         .tde-scout-chips { display:flex; align-items:center; gap:5px; margin:6px 0 5px; flex-wrap:wrap; }
         .tde-scout-chips .fl { font-size:14px; }
+        .tde-scout-crest { flex:none; width:18px; height:18px; display:grid; place-items:center; }
+        .tde-scout-crest img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+        .tde-scout-crest .api-team-logo-fallback { font:800 8px "Barlow Condensed",sans-serif; color:var(--tde-muted); letter-spacing:.02em; }
         .tde-scout-chips em { font-style:normal; padding:2px 6px; border-radius:5px; background:rgba(151,204,13,.12); color:var(--tde-lime); font:800 8.5px/1.4 "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
         .tde-scout-headid p { margin:0; color:#b6bcc3; font:500 11.5px "Barlow",sans-serif; overflow:hidden; text-overflow:ellipsis; }
         .tde-scout-rt { display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex:none; }

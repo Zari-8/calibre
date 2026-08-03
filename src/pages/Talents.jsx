@@ -670,6 +670,16 @@ function ScoutPanel({ player, shortlisted, onToggleShortlist }) {
 // ── Trajectory Pathway (mockup) ─────────────────────────────────────────────
 function tpSeason(off) { const y = 2024 + off; return `${y}/${String((y + 1) % 100).padStart(2, '0')}`; }
 function tpTier(league = '') { return /Tier 1/.test(league) ? 'Tier 1' : /Tier 2/.test(league) ? 'Tier 2' : /Tier 3/.test(league) ? 'Tier 3' : 'Current level'; }
+// Birthday is real data (Supabase date_of_birth / youth_prospects birth_date /
+// API-Football birth.date), never fabricated — only rendered when a source
+// actually has it.
+function tpBirthday(player) {
+  const raw = player?.date_of_birth || player?.birth_date || player?.birth?.date || null;
+  if (!raw) return null;
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
 function tpStages(player) {
   const age = Number(player.age) || 19;
   const rating = Number(player.rating) || 70;
@@ -746,6 +756,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const peersAvailable = tpPeers(player, pool, 999).length;
   const compare = pool.find(p => p.name === compareName) || null;
   const compareAxes = compare ? radarAxes(compare) : null;
+  const birthday = tpBirthday(player);
 
   // Development curve — an S-curve (smoothstep easing), not a linear ramp:
   // slow early growth, fastest through the breakout window, plateauing near
@@ -838,9 +849,10 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-hero-rating span { font:700 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
         .tp-hero-photo { width:64px; height:64px; border-radius:12px; overflow:hidden; background:#0a0d10; border:1px solid var(--line); flex:none; }
         .tp-hero-photo img { width:100%; height:100%; object-fit:cover; object-position:top center; }
+        .tp-hero-id { min-width:0; }
         .tp-hero-id h3 { margin:0; color:#f4f6f8; font:800 26px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
         .tp-hero-id p { margin:5px 0 0; color:#b6bcc3; font:500 13px "Barlow",sans-serif; }
-        .tp-hero-meta { margin-left:auto; display:flex; gap:22px; flex-wrap:wrap; }
+        .tp-hero-meta { margin-top:10px; display:flex; gap:22px; flex-wrap:wrap; }
         .tp-hero-meta div span { display:block; color:var(--muted); font:600 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; margin-bottom:3px; }
         .tp-hero-meta div b { color:#e9edf1; font:700 13px "Barlow",sans-serif; }
         .tp-rings { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px; flex:0 0 auto; border-left:1px solid var(--line); }
@@ -969,11 +981,14 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
             <div className="tp-hero">
               <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
               <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
-              <div className="tp-hero-id"><h3>{player.name}</h3><p>{player.flag} {player.club} · {player.position} · {player.age} yrs</p></div>
-              <div className="tp-hero-meta">
-                <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
-                <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
-                <div><span>Nation</span><b>{player.nation}</b></div>
+              <div className="tp-hero-id">
+                <h3>{player.flag} {player.name}</h3>
+                <p>{player.club} · {player.position || '—'} · {player.age} yrs{birthday ? ` (${birthday})` : ''}</p>
+                <div className="tp-hero-meta">
+                  <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
+                  <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
+                  <div><span>Nation</span><b>{player.nation}</b></div>
+                </div>
               </div>
             </div>
 

@@ -14,8 +14,15 @@ import { loadForumPosts, submitForumPost } from '../services/community.js';
 // Matching by name instead is robust regardless of the real id — swap this
 // for a confirmed numeric id + LEAGUE_IDS entry once you have it, and every
 // page using isWorldCup() below picks it up with no further changes.
+// Other real competitions also carry "World Cup" in their name — age-group
+// (U-17/U-20/U-23), women's, qualification play-offs, beach and futsal
+// editions among them. Excluded here rather than guessed away with a numeric
+// league id, since a wrong id would silently zero out every real match with
+// no error (see LEAGUE_IDS note above).
+const WC_NAME_EXCLUDE = /\b(u-?1[5-9]|u-?2[0-3]|women|female|girls|beach|futsal|clubs?|qualif|play-?off|friendl)\b/i;
 function isWorldCup(fixture) {
-  return /world cup/i.test(fixture?.league?.name || '');
+  const name = fixture?.league?.name || '';
+  return /world cup/i.test(name) && !WC_NAME_EXCLUDE.test(name);
 }
 const WC_LIVE = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
 const WC_DONE = ['FT', 'AET', 'PEN'];

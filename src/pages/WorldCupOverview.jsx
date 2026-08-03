@@ -18,8 +18,18 @@ import { WC_CONFIG, wcFacts } from '../data/worldCupData.js';
 // Matching by name instead is robust regardless of the real id — swap this
 // for a confirmed numeric id + LEAGUE_IDS entry once you have it, and every
 // page using isWorldCup() below picks it up with no further changes.
+// Other real competitions also carry "World Cup" in their name — age-group
+// (U-17/U-20/U-23), women's, qualification play-offs, beach and futsal
+// editions among them. Each of those has its own separate bracket with its
+// own "Semi-Finals"/"Final" rounds, so a bare name-substring match can pull
+// a completely different tournament's matches (and its own "Final") into
+// this senior men's page. Excluded here rather than guessed away with a
+// numeric league id, since a wrong id would silently zero out every real
+// match with no error (see LEAGUE_IDS note above).
+const WC_NAME_EXCLUDE = /\b(u-?1[5-9]|u-?2[0-3]|women|female|girls|beach|futsal|clubs?|qualif|play-?off|friendl)\b/i;
 function isWorldCup(fixture) {
-  return /world cup/i.test(fixture?.league?.name || '');
+  const name = fixture?.league?.name || '';
+  return /world cup/i.test(name) && !WC_NAME_EXCLUDE.test(name);
 }
 const WC_LIVE = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
 const WC_DONE = ['FT', 'AET', 'PEN'];
@@ -88,7 +98,11 @@ export default function WorldCupOverview() {
         const live = wc.filter(f => WC_LIVE.includes(f.fixture?.status?.short));
         const done = wc.filter(f => WC_DONE.includes(f.fixture?.status?.short));
         const upcoming = wc.filter(f => !WC_LIVE.includes(f.fixture?.status?.short) && !WC_DONE.includes(f.fixture?.status?.short));
-        const finalFx = wc.find(f => /final/i.test(f.league?.round || '') && !/(quarter|semi|3rd|third)/i.test(f.league?.round || ''));
+        // Exact match on the round label, not a substring test — "Final" only,
+        // never "Semi-Finals", "Quarter-Finals" or "3rd Place Final" (all of
+        // which contain the substring "final" too). This is the single last
+        // match of the tournament, nothing else.
+        const finalFx = wc.find(f => (f.league?.round || '').trim().toLowerCase() === 'final');
         const base = [...live, ...upcoming, ...done.reverse()];
         // Live matches always lead. The Final slots in right after them —
         // unless it IS the live match, in which case it's already there.
@@ -154,7 +168,7 @@ export default function WorldCupOverview() {
         .wc2-eyebrow-sm { color:var(--l); font:700 10px "Barlow",sans-serif; letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px; display:block; }
         .wc2-summary-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
         .wc2-summary-cell { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; }
-        .wc2-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(151,204,13,.35); color:var(--l); }
+        .wc2-icon { width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center; background:rgba(151,204,13,.14); border:1.5px solid rgba(151,204,13,.5); color:var(--l); }
         .wc2-summary-cell strong { display:block; font:800 22px "Barlow Condensed",sans-serif; color:#fff; }
         .wc2-summary-cell span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
         .wc2-hosts { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font:600 11px "Barlow",sans-serif; }
@@ -219,10 +233,10 @@ export default function WorldCupOverview() {
         <div className="wc2-card">
           <h3 className="wc2-h3">Tournament Summary</h3>
           <div className="wc2-summary-grid">
-            <div className="wc2-summary-cell"><span className="wc2-icon"><Users size={16} /></span><strong>{TOURNAMENT_FORMAT.teams}</strong><span>Teams</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon"><Goal size={16} /></span><strong>{TOURNAMENT_FORMAT.matches}</strong><span>Matches</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon"><MapPin size={16} /></span><strong>{TOURNAMENT_FORMAT.stadiums}</strong><span>Host Cities</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon"><Flag size={16} /></span><strong>{WC_CONFIG.hosts.length}</strong><span>Host Nations</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Users size={24} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.teams}</strong><span>Teams</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Goal size={24} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.matches}</strong><span>Matches</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><MapPin size={24} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.stadiums}</strong><span>Host Cities</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Flag size={24} strokeWidth={2.25} /></span><strong>{WC_CONFIG.hosts.length}</strong><span>Host Nations</span></div>
           </div>
           <div className="wc2-hosts">{WC_CONFIG.hosts.map((h, i) => <span key={h}>{i > 0 && ' · '}{HOST_FLAGS[h] || ''} {h}</span>)}</div>
         </div>

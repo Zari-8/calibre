@@ -12,8 +12,18 @@ import { WC_CONFIG } from '../data/worldCupData.js';
 // Matching by name instead is robust regardless of the real id — swap this
 // for a confirmed numeric id + LEAGUE_IDS entry once you have it, and every
 // page using isWorldCup() below picks it up with no further changes.
+// Other real competitions also carry "World Cup" in their name — age-group
+// (U-17/U-20/U-23), women's, qualification play-offs, beach and futsal
+// editions among them. Each has its own separate bracket with its own
+// "Semi-Finals"/"Final" rounds, so a bare name-substring match can pull a
+// completely different tournament's matches into this senior men's bracket.
+// Excluded here rather than guessed away with a numeric league id, since a
+// wrong id would silently zero out every real match with no error (see
+// LEAGUE_IDS note above).
+const WC_NAME_EXCLUDE = /\b(u-?1[5-9]|u-?2[0-3]|women|female|girls|beach|futsal|clubs?|qualif|play-?off|friendl)\b/i;
 function isWorldCup(fixture) {
-  return /world cup/i.test(fixture?.league?.name || '');
+  const name = fixture?.league?.name || '';
+  return /world cup/i.test(name) && !WC_NAME_EXCLUDE.test(name);
 }
 const WC_LIVE = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
 const WC_DONE = ['FT', 'AET', 'PEN'];
@@ -39,7 +49,11 @@ function roundKey(round = '') {
   if (r.includes('quarter')) return 'qf';
   if (r.includes('semi')) return 'sf';
   if (r.includes('3rd') || r.includes('third')) return 'third';
-  if (r.includes('final')) return 'final';
+  // Exact match, not substring — "Final" alone, the single last match of
+  // the tournament. Everything else that also contains "final" as a
+  // substring (Quarter-Finals, Semi-Finals, 3rd Place Final) is already
+  // caught and returned above.
+  if (r.trim() === 'final') return 'final';
   return null;
 }
 // Never guesses a winner — only reads it off a completed fixture's actual

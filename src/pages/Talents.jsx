@@ -154,11 +154,15 @@ function roleForPosition(position='') {
 }
 function shortPosition(position='') {
   const value = String(position).toLowerCase();
-  if (/goalkeeper|keeper/.test(value)) return 'GK';
-  if (/defender|back/.test(value)) return 'DF';
-  if (/midfielder/.test(value)) return 'CM';
-  if (/attacker|forward|striker/.test(value)) return 'ST';
-  return 'U22';
+  if (/goalkeeper|keeper|^gk$/.test(value)) return 'GK';
+  if (/defender|(?:^|\s)back$|^df$|^cb$|^rb$|^lb$|^wb$|^wing[\s-]?back$/.test(value)) return 'DF';
+  if (/midfield|^cm$|^dm$|^am$|^mf$/.test(value)) return 'CM';
+  if (/attack|forward|striker|wing(?:er)?|^st$|^rw$|^lw$|^fw$|^cf$/.test(value)) return 'ST';
+  // Position genuinely unclassified — surface the raw source value (if any)
+  // rather than a made-up code. 'U22' was a leftover placeholder default
+  // that got displayed as if it were a real position; never do that again.
+  const raw = String(position || '').trim();
+  return raw || '—';
 }
 function liveTalentFromProfile(profile) {
   const age = Number(profile.age || 0);

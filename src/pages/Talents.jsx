@@ -553,7 +553,7 @@ function standoutPoints(player) {
   return out.slice(0, 4);
 }
 
-function TdeRadar({ axes, size = 176 }) {
+function TdeRadar({ axes, size = 176, compareAxes = null, playerLabel, compareLabel }) {
   const cx = size / 2, cy = size / 2, R = size / 2 - 30, n = axes.length;
   const pt = (i, rad) => {
     const ang = -Math.PI / 2 + i * (2 * Math.PI / n);
@@ -561,17 +561,28 @@ function TdeRadar({ axes, size = 176 }) {
   };
   const ring = f => axes.map((_, i) => pt(i, R * f).join(',')).join(' ');
   const area = axes.map((a, i) => pt(i, R * clamp(a.value, 0, 100) / 100).join(',')).join(' ');
+  const compareArea = compareAxes ? compareAxes.map((a, i) => pt(i, R * clamp(a.value, 0, 100) / 100).join(',')).join(' ') : null;
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="tde-radar-svg" role="img" aria-label="Core attribute radar">
-      {[0.25, 0.5, 0.75, 1].map(f => <polygon key={f} points={ring(f)} className="tde-radar-ring" />)}
-      {axes.map((a, i) => { const [x, y] = pt(i, R); return <line key={a.key} x1={cx} y1={cy} x2={x} y2={y} className="tde-radar-spoke" />; })}
-      <polygon points={area} className="tde-radar-area" />
-      {axes.map((a, i) => { const [x, y] = pt(i, R + 15); return (
-        <text key={a.key} x={x} y={y} className="tde-radar-label" textAnchor="middle">{a.key}
-          <tspan x={x} dy="12" className="tde-radar-val">{a.value}</tspan>
-        </text>
-      ); })}
-    </svg>
+    <div className="tde-radar-wrap">
+      <svg viewBox={`0 0 ${size} ${size}`} className="tde-radar-svg" role="img" aria-label="Core attribute radar">
+        {[0.25, 0.5, 0.75, 1].map(f => <polygon key={f} points={ring(f)} className="tde-radar-ring" />)}
+        {axes.map((a, i) => { const [x, y] = pt(i, R); return <line key={a.key} x1={cx} y1={cy} x2={x} y2={y} className="tde-radar-spoke" />; })}
+        {compareArea && <polygon points={compareArea} className="tde-radar-area-compare" />}
+        <polygon points={area} className="tde-radar-area" />
+        {axes.map((a, i) => { const [x, y] = pt(i, R + 15); const cv = compareAxes ? compareAxes[i]?.value : null; return (
+          <text key={a.key} x={x} y={y} className="tde-radar-label" textAnchor="middle">{a.key}
+            <tspan x={x} dy="12" className="tde-radar-val">{a.value}</tspan>
+            {cv != null && <tspan x={x} dy="11" className="tde-radar-val-compare">{cv}</tspan>}
+          </text>
+        ); })}
+      </svg>
+      {compareAxes && (
+        <div className="tde-radar-legend">
+          <span><i className="sw sw-a" />{playerLabel || 'Player'}</span>
+          <span><i className="sw sw-b" />{compareLabel || 'Compare'}</span>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -734,6 +745,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const peers = tpPeers(player, pool, peerLimit);
   const peersAvailable = tpPeers(player, pool, 999).length;
   const compare = pool.find(p => p.name === compareName) || null;
+  const compareAxes = compare ? radarAxes(compare) : null;
 
   // Development curve — an S-curve (smoothstep easing), not a linear ramp:
   // slow early growth, fastest through the breakout window, plateauing near
@@ -1023,7 +1035,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
 
         <aside className="tp-insights">
           <div className="tp-ins-h">Pathway insights</div>
-          <TdeRadar axes={axes} size={150} />
+          <TdeRadar axes={axes} compareAxes={compareAxes} playerLabel={player.name} compareLabel={compare?.name} size={150} />
           <ul className="tp-ins-list">
             <li><i />Strongest on {sortedAxes[0].key.toLowerCase()} ({sortedAxes[0].value}) for the profile</li>
             <li><i />{player.role} traits suit a {/Tier 1/.test(player.league || '') ? 'Tier 1' : 'step-up'} role</li>
@@ -1566,6 +1578,14 @@ export default function Talents() {
         .tde-radar-area { fill:rgba(200,250,60,.18); stroke:var(--tde-lime); stroke-width:1.5; }
         .tde-radar-label { fill:#b6bcc3; font:700 9px "Barlow Condensed",sans-serif; letter-spacing:.04em; text-transform:uppercase; }
         .tde-radar-val { fill:#fff; font:800 10px "Barlow Condensed",sans-serif; }
+        .tde-radar-wrap { display:grid; gap:8px; }
+        .tde-radar-area-compare { fill:rgba(255,138,61,.14); stroke:#ff8a3d; stroke-width:1.5; stroke-dasharray:4 3; }
+        .tde-radar-val-compare { fill:#ff8a3d; font:800 9px "Barlow Condensed",sans-serif; }
+        .tde-radar-legend { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; }
+        .tde-radar-legend span { display:inline-flex; align-items:center; gap:6px; color:#cfd4da; font:600 10.5px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; }
+        .tde-radar-legend .sw { width:9px; height:9px; border-radius:2px; flex:none; }
+        .tde-radar-legend .sw-a { background:var(--tde-lime); }
+        .tde-radar-legend .sw-b { background:#ff8a3d; }
         ul.tde-scout-why { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:7px; }
         ul.tde-scout-why li { display:flex; align-items:flex-start; gap:8px; color:#cfd4da; font:500 12px/1.4 "Barlow",sans-serif; }
         .tde-tick { width:13px; height:13px; border-radius:50%; flex:none; margin-top:2px; background:rgba(200,250,60,.18); position:relative; }

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowRight, Bookmark, BookmarkCheck, ChevronRight, Crown, Filter,
-  FileText, Globe, GraduationCap, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingUp, X, Zap
+  AlertTriangle, ArrowRight, Bookmark, BookmarkCheck, ChevronDown, ChevronRight, Clock, Crown, Filter,
+  FileText, Globe, GraduationCap, Info, Plus, Route, Search, SlidersHorizontal, Sparkles, Star, TrendingDown, TrendingUp, X, Zap
 } from 'lucide-react';
 import { asianTalents, TALENT_REGIONS } from '../data/calibreData.js';
 import { navigateTo } from '../components/NavLink.jsx';
@@ -690,7 +690,7 @@ function tpRisks(player) {
   out.push('Adaptation risk on a step-up to a higher tier');
   return out.slice(0, 3);
 }
-function tpPeers(player, pool) {
+function tpPeers(player, pool, limit = 5) {
   const pos = String(player.position || player.role || '').toUpperCase();
   const others = (pool || []).filter(p => p && p.name !== player.name);
   let peers = others.filter(p => String(p.position || p.role || '').toUpperCase() === pos);
@@ -702,7 +702,7 @@ function tpPeers(player, pool) {
       return { ...p, _sim: sim };
     })
     .sort((a, b) => b._sim - a._sim)
-    .slice(0, 5);
+    .slice(0, limit);
 }
 
 function TrajectoryPathway({ player, pool = [], onSelect }) {
@@ -711,6 +711,8 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const [minThresh, setMinThresh] = useState(0);
   const [showComp, setShowComp] = useState(true);
   const [compareName, setCompareName] = useState('');
+  const [showHow, setShowHow] = useState(false);
+  const [peerLimit, setPeerLimit] = useState(5);
 
   const options = (pool || [])
     .filter(p => posFocus === 'all' || String(p.position || '').toUpperCase() === posFocus)
@@ -729,7 +731,8 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const sortedAxes = [...axes].sort((a, b) => b.value - a.value);
   const milestones = tpMilestones();
   const risks = tpRisks(player);
-  const peers = tpPeers(player, pool);
+  const peers = tpPeers(player, pool, peerLimit);
+  const peersAvailable = tpPeers(player, pool, 999).length;
   const compare = pool.find(p => p.name === compareName) || null;
 
   // Development curve — an S-curve (smoothstep easing), not a linear ramp:
@@ -775,10 +778,19 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-top h2 { margin:0; color:#fff; font:800 30px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
         .tp-top h2 em { color:var(--l); font-style:normal; }
         .tp-top p { margin:6px 0 0; color:var(--muted); font:500 13px "Barlow",sans-serif; }
+        .tp-eyebrow { display:inline-flex; align-items:center; gap:6px; color:var(--l); font:700 11px/1 "Barlow",sans-serif; letter-spacing:.16em; text-transform:uppercase; margin-bottom:7px; }
         .tp-selects { display:flex; gap:10px; }
-        .tp-pick { border:1px solid var(--line); border-radius:11px; background:var(--card); padding:9px 12px; min-width:210px; }
-        .tp-pick span { display:block; color:var(--muted); font:700 9px/1 "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:5px; }
-        .tp-pick select { width:100%; background:none; border:none; outline:none; color:#eef1f4; font:700 14px "Barlow",sans-serif; cursor:pointer; }
+        .tp-pickcard { position:relative; border:1px solid var(--line); border-radius:11px; background:var(--card); padding:9px 12px; min-width:212px; }
+        .tp-pickcard > span { display:block; color:var(--muted); font:700 9px/1 "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:7px; }
+        .tp-pickcard-body { display:flex; align-items:center; gap:9px; }
+        .tp-pickcard-avatar { flex:none; width:30px; height:30px; border-radius:50%; overflow:hidden; background:#0a0d10; border:1px solid var(--line); }
+        .tp-pickcard-avatar img { width:100%; height:100%; object-fit:cover; object-position:top center; }
+        .tp-pickcard-avatar.empty { display:grid; place-items:center; border-style:dashed; border-color:rgba(200,250,60,.5); color:var(--l); background:rgba(200,250,60,.06); }
+        .tp-pickcard-id { min-width:0; flex:1; }
+        .tp-pickcard-id b { display:block; color:#eef1f4; font:700 13px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tp-pickcard-id small { display:block; color:var(--muted); font:500 10px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .tp-pickcard-body > svg:last-child { flex:none; color:var(--muted); }
+        .tp-pickcard select { position:absolute; inset:0; width:100%; height:100%; opacity:0; border:none; cursor:pointer; }
         .tp-grid { display:grid; grid-template-columns:236px minmax(0,1fr) 316px; gap:16px; align-items:start; }
         @media (max-width:1200px){ .tp-grid { grid-template-columns:220px minmax(0,1fr); } .tp-insights { grid-column:1/-1; } }
         @media (max-width:820px){ .tp-grid { grid-template-columns:1fr; } .tp-controls { display:none; } }
@@ -802,6 +814,9 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-note { border-top:1px solid var(--line); margin-top:14px; padding-top:12px; }
         .tp-note b { display:block; color:var(--l); font:700 10px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; }
         .tp-note p { margin:0; color:var(--muted); font:500 11.5px/1.5 "Barlow",sans-serif; }
+        .tp-how { display:inline-flex; align-items:center; gap:6px; margin-top:10px; background:none; border:none; color:var(--l); font:700 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; padding:0; }
+        .tp-how-list { list-style:none; margin:10px 0 0; padding:10px 0 0; border-top:1px solid var(--line); display:grid; gap:7px; }
+        .tp-how-list li { color:var(--muted); font:500 11px/1.5 "Barlow",sans-serif; }
         .tp-main { display:grid; gap:14px; min-width:0; }
         .tp-hero { display:flex; align-items:center; gap:16px; padding:16px; }
         .tp-hero-rating { text-align:center; flex:none; }
@@ -837,15 +852,18 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-stage small { display:block; color:var(--muted); font:500 11px "Barlow",sans-serif; margin:2px 0 8px; }
         .tp-stage ul { list-style:none; margin:0 0 10px; padding:0; display:grid; gap:5px; }
         .tp-stage li { display:flex; gap:6px; color:#cfd4da; font:500 11.5px/1.3 "Barlow",sans-serif; }
-        .tp-stage li::before { content:"›"; color:var(--l); }
+        .tp-stage li::before { content:"✓"; color:var(--l); font-weight:800; }
         .tp-stage .prob { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--line); padding-top:8px; }
         .tp-stage .prob span { color:var(--muted); font:600 9px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
         .tp-stage .prob b { color:var(--l); font:800 15px "Barlow Condensed",sans-serif; }
         .tp-comp { padding:16px; }
         .tp-comp-h { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
         .tp-comp-h span { color:#e9edf1; font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+        .tp-comp-more { background:none; border:none; color:var(--l); font:700 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
         .tp-comp-row { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; }
-        .tp-peer { display:flex; align-items:center; gap:9px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.02); padding:9px; cursor:pointer; }
+        .tp-peer { display:flex; flex-direction:column; gap:7px; border:1px solid var(--line); border-radius:10px; background:rgba(255,255,255,.02); padding:9px; }
+        .tp-peer-btn { display:flex; align-items:center; gap:9px; background:none; border:none; padding:0; width:100%; text-align:left; cursor:pointer; }
+        .tp-peer-link { align-self:flex-start; background:none; border:none; padding:0; color:var(--l); font:700 10px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.04em; cursor:pointer; }
         .tp-peer img { width:34px; height:34px; border-radius:50%; object-fit:cover; object-position:top; flex:none; border:1px solid var(--line); }
         .tp-peer .pi { min-width:0; }
         .tp-peer .pi b { display:block; color:#eef1f4; font:700 12px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -864,31 +882,50 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-block.mile h4 { color:#e9edf1; }
         .tp-block.risk h4 { color:#ff8a6b; }
         .tp-mile { display:flex; align-items:flex-start; gap:9px; margin-bottom:10px; }
-        .tp-mile i { width:16px; height:16px; border-radius:50%; border:1px solid var(--l); color:var(--l); font:800 9px/16px "Barlow",sans-serif; text-align:center; flex:none; }
+        .tp-mile i { width:16px; height:16px; border-radius:50%; border:1px solid var(--l); color:var(--l); flex:none; display:grid; place-items:center; margin-top:1px; }
         .tp-mile b { display:block; color:#e9edf1; font:600 12px/1.3 "Barlow",sans-serif; }
         .tp-mile small { color:var(--muted); font:500 10.5px "Barlow",sans-serif; }
         .tp-risk { display:flex; gap:8px; color:#d3c0bb; font:500 12px/1.4 "Barlow",sans-serif; margin-bottom:8px; }
-        .tp-risk::before { content:"⚠"; color:#ff8a6b; }
+        .tp-risk-ic { flex:none; margin-top:1px; color:#ff8a6b; }
         .tp-empty { padding:60px 18px; text-align:center; color:var(--muted); border:1px dashed rgba(255,255,255,.12); border-radius:14px; }
       `}</style>
 
       <div className="tp-top">
         <div>
+          <span className="tp-eyebrow">Talent Discovery</span>
           <h2>Trajectory <em>Pathway</em></h2>
           <p>Map the development pathway and potential arc of any prospect.</p>
         </div>
         <div className="tp-selects">
-          <label className="tp-pick"><span>Select player</span>
-            <select value={player.name} onChange={e => onSelect(e.target.value)}>
+          <div className="tp-pickcard">
+            <span>Select player</span>
+            <div className="tp-pickcard-body">
+              <div className="tp-pickcard-avatar">
+                <ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" />
+              </div>
+              <div className="tp-pickcard-id"><b>{player.name}</b><small>{player.club}</small></div>
+              <ChevronDown size={16} />
+            </div>
+            <select aria-label="Select player" value={player.name} onChange={e => onSelect(e.target.value)}>
               {options.map(p => <option key={playerKey(p)} value={p.name}>{p.name}</option>)}
             </select>
-          </label>
-          <label className="tp-pick"><span>Compare with</span>
-            <select value={compareName} onChange={e => setCompareName(e.target.value)}>
+          </div>
+          <div className="tp-pickcard">
+            <span>Compare with</span>
+            <div className="tp-pickcard-body">
+              <div className={`tp-pickcard-avatar${compare ? '' : ' empty'}`}>
+                {compare
+                  ? <ApiPlayerImage playerId={playerApiId(compare)} name={compare.name} preferredSrc={imageFor(compare)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(compare)} alt={compare.name} loading="lazy" />
+                  : <Plus size={15} />}
+              </div>
+              <div className="tp-pickcard-id"><b>{compare ? compare.name : 'Select player'}</b>{compare && <small>{compare.club}</small>}</div>
+              <ChevronDown size={16} />
+            </div>
+            <select aria-label="Compare with" value={compareName} onChange={e => setCompareName(e.target.value)}>
               <option value="">Select player</option>
               {options.filter(p => p.name !== player.name).map(p => <option key={playerKey(p)} value={p.name}>{p.name}</option>)}
             </select>
-          </label>
+          </div>
         </div>
       </div>
 
@@ -899,7 +936,18 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
           <div className="tp-ctl"><label>Position focus</label><select value={posFocus} onChange={e => setPosFocus(e.target.value)}>{POSITION_OPTIONS.map(o => <option key={o} value={o === 'all' ? 'all' : o.toUpperCase()}>{o === 'all' ? 'All positions' : o}</option>)}</select></div>
           <div className="tp-ctl"><label>Minutes threshold</label><select value={minThresh} onChange={e => setMinThresh(Number(e.target.value))}><option value={0}>Any minutes</option><option value={500}>500+ mins</option><option value={1000}>1000+ mins</option><option value={1800}>1800+ mins</option></select></div>
           <div className="tp-ctl"><div className="tp-toggle" onClick={() => setShowComp(v => !v)} role="switch" aria-checked={showComp}><span>Show comparables</span><div className={`tp-switch${showComp ? ' on' : ''}`}><i /></div></div></div>
-          <div className="tp-note"><b>Understanding pathways</b><p>The pathway model uses age, role, league strength, senior minutes and current trajectory to project a most-likely arc. Not a guarantee — a probability map.</p></div>
+          <div className="tp-note">
+            <b>Understanding pathways</b>
+            <p>The pathway model uses age, role, league strength, senior minutes and current trajectory to project a most-likely arc. Not a guarantee — a probability map.</p>
+            <button type="button" className="tp-how" onClick={() => setShowHow(v => !v)}><Info size={11} /> How it works</button>
+            {showHow && (
+              <ul className="tp-how-list">
+                <li>Readiness blends senior minutes, appearances and role fit at the current club.</li>
+                <li>Potential is the model's projected ceiling rating versus today's Calibre rating.</li>
+                <li>Stage probabilities compound readiness and potential across each step of the horizon.</li>
+              </ul>
+            )}
+          </div>
         </aside>
 
         <div className="tp-main">
@@ -952,14 +1000,21 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
 
           {showComp && (
             <div className="tp-comp">
-              <div className="tp-comp-h"><span>Comparable trajectories</span></div>
+              <div className="tp-comp-h">
+                <span>Comparable trajectories</span>
+                {peersAvailable > peers.length && <button type="button" className="tp-comp-more" onClick={() => setPeerLimit(n => n + 5)}>See all</button>}
+                {peersAvailable <= peers.length && peerLimit > 5 && <button type="button" className="tp-comp-more" onClick={() => setPeerLimit(5)}>Show fewer</button>}
+              </div>
               <div className="tp-comp-row">
                 {peers.map(p => (
-                  <button type="button" className="tp-peer" key={playerKey(p)} onClick={() => onSelect(p.name)}>
-                    <ApiPlayerImage playerId={playerApiId(p)} name={p.name} preferredSrc={imageFor(p)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(p)} alt={p.name} loading="lazy" />
-                    <div className="pi"><b>{p.name}</b><small>{p.club}</small></div>
-                    <div className="sim"><b>{p._sim}%</b><small>Path sim</small></div>
-                  </button>
+                  <div className="tp-peer" key={playerKey(p)}>
+                    <button type="button" className="tp-peer-btn" onClick={() => onSelect(p.name)}>
+                      <ApiPlayerImage playerId={playerApiId(p)} name={p.name} preferredSrc={imageFor(p)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(p)} alt={p.name} loading="lazy" />
+                      <div className="pi"><b>{p.name}</b><small>{p.flag ? `${p.flag} ` : ''}{p.club}</small></div>
+                      <div className="sim"><b>{p._sim}%</b><small>Path sim</small></div>
+                    </button>
+                    <button type="button" className="tp-peer-link" onClick={(e) => { e.stopPropagation(); const id = playerApiId(p); navigateTo(id ? `/players?playerId=${id}&player=${encodeURIComponent(p.name)}` : `/players?player=${encodeURIComponent(p.name)}`); }}>View profile</button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -978,11 +1033,14 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
           {compare && <div className="tp-block"><h4>Vs {compare.name}</h4><p style={{ margin: 0, color: '#cfd4da', font: '500 12px/1.5 "Barlow",sans-serif' }}>{compare.name}: {compare.rating} rating → {typeof compare.potential === 'number' ? compare.potential : '—'} ceiling. {clamp(Math.round(92 - Math.abs((Number(compare.rating) || 0) - rating) * 4), 40, 96)}% path similarity.</p></div>}
           <div className="tp-block mile">
             <h4>Key milestones to watch</h4>
-            {milestones.map((m, i) => <div className="tp-mile" key={m.t}><i>{i + 1}</i><div><b>{m.t}</b><small>{m.when}</small></div></div>)}
+            {milestones.map(m => <div className="tp-mile" key={m.t}><i><Clock size={9} /></i><div><b>{m.t}</b><small>{m.when}</small></div></div>)}
           </div>
           <div className="tp-block risk">
             <h4>Risk factors</h4>
-            {risks.map(r => <div className="tp-risk" key={r}>{r}</div>)}
+            {risks.map(r => {
+              const RiskIcon = /stagnate|below|drop/i.test(r) ? TrendingDown : /injur|increase/i.test(r) ? TrendingUp : AlertTriangle;
+              return <div className="tp-risk" key={r}><RiskIcon size={13} className="tp-risk-ic" />{r}</div>;
+            })}
           </div>
         </aside>
       </div>

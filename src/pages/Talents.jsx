@@ -898,7 +898,8 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-main { display:grid; gap:14px; min-width:0; }
         .tp-hero-card { display:flex; align-items:stretch; flex-wrap:wrap; }
         @media (max-width:760px){ .tp-hero-card { flex-direction:column; } .tp-hero-card .tp-rings { border-left:none; border-top:1px solid var(--line); grid-template-columns:repeat(2,1fr); } }
-        .tp-hero { display:flex; align-items:center; gap:16px; padding:16px; flex:1 1 auto; min-width:0; }
+        .tp-hero { display:flex; flex-direction:column; gap:12px; padding:16px; flex:1 1 auto; min-width:0; }
+        .tp-hero-top { display:flex; align-items:center; gap:16px; }
         .tp-hero-lead { display:flex; flex-direction:column; gap:10px; flex:none; }
         .tp-hero-lead-top { display:flex; align-items:center; gap:12px; }
         .tp-hero-rating { text-align:center; flex:none; }
@@ -912,7 +913,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-hero-crest img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
         .tp-hero-crest .api-team-logo-fallback { font:800 9px "Barlow Condensed",sans-serif; color:var(--muted); letter-spacing:.02em; }
         .tp-hero-id p { margin:3px 0 0; color:#b6bcc3; font:500 13px "Barlow",sans-serif; }
-        .tp-hero-meta { display:flex; flex-direction:column; gap:4px; }
+        .tp-hero-meta { display:flex; align-items:center; gap:20px; border-top:1px solid var(--line); padding-top:10px; }
         .tp-hero-meta div { display:flex; align-items:baseline; gap:5px; }
         .tp-hero-meta div span { color:var(--muted); font:600 8.5px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
         .tp-hero-meta div b { color:#e9edf1; font:700 11.5px "Barlow",sans-serif; }
@@ -1045,22 +1046,24 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         <div className="tp-main">
           <div className="tp-hero-card">
             <div className="tp-hero">
-              <div className="tp-hero-lead">
-                <div className="tp-hero-lead-top">
-                  <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
-                  <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
+              <div className="tp-hero-top">
+                <div className="tp-hero-lead">
+                  <div className="tp-hero-lead-top">
+                    <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
+                    <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
+                  </div>
                 </div>
-                <div className="tp-hero-meta">
-                  <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
-                  <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
-                  <div><span>Nation</span><b>{player.nation}</b></div>
+                <div className="tp-hero-id">
+                  <h3><span className="tp-hero-crest"><ApiTeamLogo src={heroCrest} name={player.club || player.name} /></span>{player.name}</h3>
+                  <p>{player.club}</p>
+                  <p>{player.position || '—'}</p>
+                  <p>{displayAge} yrs{birthday ? ` (${birthday})` : ''}</p>
                 </div>
               </div>
-              <div className="tp-hero-id">
-                <h3><span className="tp-hero-crest"><ApiTeamLogo src={heroCrest} name={player.club || player.name} /></span>{player.name}</h3>
-                <p>{player.club}</p>
-                <p>{player.position || '—'}</p>
-                <p>{displayAge} yrs{birthday ? ` (${birthday})` : ''}</p>
+              <div className="tp-hero-meta">
+                <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
+                <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
+                <div><span>Nation</span><b>{player.nation}</b></div>
               </div>
             </div>
 

@@ -16,7 +16,7 @@ import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 // dossier_type and buyer_kind columns.
 
 const BC = "'Barlow Condensed', sans-serif";
-const LIME = '#c8ff00';
+const LIME = '#97cc0d';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const wrap = { position: 'fixed', inset: 0, zIndex: 9000, background: 'rgba(0,0,0,0.82)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '24px 16px', overflowY: 'auto' };

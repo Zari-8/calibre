@@ -329,7 +329,7 @@ function TalentCard({ player, selected, shortlisted, onSelect, onToggleShortlist
           <div style={{display:'flex',gap:6,alignItems:'center'}}>
             <button
               type="button"
-              style={{background:'none',border:'none',color:'rgba(166,255,0,0.7)',cursor:'pointer',fontSize:10,letterSpacing:'.06em',padding:0,display:'flex',alignItems:'center',gap:3}}
+              style={{background:'none',border:'none',color:'rgba(151,204,13,0.7)',cursor:'pointer',fontSize:10,letterSpacing:'.06em',padding:0,display:'flex',alignItems:'center',gap:3}}
               onClick={(event) => {
                 event.stopPropagation();
                 const apiId = playerApiId(player);
@@ -406,7 +406,7 @@ function TalentDetailModal({ player, pool = [], onClose }) {
     .map(p => ({ ...p, _d: Math.abs((Number(p.rating) || 0) - (Number(player.rating) || 0)) }))
     .sort((a, b) => a._d - b._d)
     .slice(0, 4);
-  const lime = '#c6ff3a';
+  const lime = '#97cc0d';
   const muted = '#9aa4b2';
   const isReg = player.source === 'supabase-registry';
   return (
@@ -473,7 +473,7 @@ function TalentDetailModal({ player, pool = [], onClose }) {
         <div style={{padding:'0 26px 18px'}}>
           <button type="button" onClick={() => setShowCommission(true)} style={{width:'100%',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,background:'transparent',color:'#9aa4b2',border:'1px solid #232b34',borderRadius:10,padding:'10px 14px',fontFamily:"'Barlow Condensed', sans-serif",fontSize:12,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer'}}><FileText size={13}/> Commission a Discovery Dossier · $499</button>
           <div style={{textAlign:'center',fontSize:11,color:'#5f6976',marginTop:8,lineHeight:1.5}}>Should your club bet on him? A commissioned brief on the ceiling, the pathway and the risk.</div>
-          {canGenerateDossier && <button type="button" onClick={() => setShowDossier(true)} style={{width:'100%',marginTop:10,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,background:'#c8ff00',color:'#0a0a0a',border:'none',borderRadius:10,padding:'9px 14px',fontFamily:"'Barlow Condensed', sans-serif",fontSize:11,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer'}}>Generate Discovery dossier \u2192</button>}
+          {canGenerateDossier && <button type="button" onClick={() => setShowDossier(true)} style={{width:'100%',marginTop:10,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,background:'#97cc0d',color:'#0a0a0a',border:'none',borderRadius:10,padding:'9px 14px',fontFamily:"'Barlow Condensed', sans-serif",fontSize:11,fontWeight:800,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer'}}>Generate Discovery dossier \u2192</button>}
         </div>
 
         {/* ── Share bar ── */}
@@ -795,7 +795,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   return (
     <div className="tp">
       <style>{`
-        .tp { --l:#c8fa3c; --line:rgba(255,255,255,.09); --card:rgba(9,13,16,.5); --muted:#8b9299; }
+        .tp { --l:#97cc0d; --line:rgba(255,255,255,.09); --card:rgba(9,13,16,.5); --muted:#8b9299; }
         .tp * { box-sizing:border-box; }
         .tp-top { display:flex; gap:16px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; margin-bottom:16px; }
         .tp-top h2 { margin:0; color:#fff; font:800 30px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
@@ -808,7 +808,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-pickcard-body { display:flex; align-items:center; gap:9px; }
         .tp-pickcard-avatar { flex:none; width:30px; height:30px; border-radius:50%; overflow:hidden; background:#0a0d10; border:1px solid var(--line); }
         .tp-pickcard-avatar img { width:100%; height:100%; object-fit:cover; object-position:top center; }
-        .tp-pickcard-avatar.empty { display:grid; place-items:center; border-style:dashed; border-color:rgba(200,250,60,.5); color:var(--l); background:rgba(200,250,60,.06); }
+        .tp-pickcard-avatar.empty { display:grid; place-items:center; border-style:dashed; border-color:rgba(151,204,13,.5); color:var(--l); background:rgba(151,204,13,.06); }
         .tp-pickcard-id { min-width:0; flex:1; }
         .tp-pickcard-id b { display:block; color:#eef1f4; font:700 13px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .tp-pickcard-id small { display:block; color:var(--muted); font:500 10px "Barlow",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -861,7 +861,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-ringcard .lab span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
         .tp-ringcard .lab b { display:block; color:#fff; font:800 22px/1.1 "Barlow Condensed",sans-serif; }
         .tp-ringcard .lab small { color:var(--muted); font:500 10px "Barlow",sans-serif; }
-        .tp-bignum { flex:none; width:56px; height:56px; border-radius:12px; display:grid; place-items:center; background:rgba(200,250,60,.1); border:1px solid rgba(200,250,60,.24); }
+        .tp-bignum { flex:none; width:56px; height:56px; border-radius:12px; display:grid; place-items:center; background:rgba(151,204,13,.1); border:1px solid rgba(151,204,13,.24); }
         .tp-bignum b { color:var(--l); font:800 22px/1 "Barlow Condensed",sans-serif; }
         .tp-dev { padding:18px; }
         .tp-dev-h { color:#e9edf1; font:800 13px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; margin-bottom:14px; }
@@ -873,7 +873,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-stage-heads div small { color:var(--muted); font:500 10px "Barlow",sans-serif; }
         .tp-stages { display:grid; grid-auto-flow:column; grid-auto-columns:1fr; gap:10px; margin-top:12px; }
         .tp-stage { border:1px solid var(--line); border-radius:11px; background:rgba(255,255,255,.02); padding:12px; }
-        .tp-stage.next { border-color:rgba(200,250,60,.4); background:rgba(200,250,60,.05); }
+        .tp-stage.next { border-color:rgba(151,204,13,.4); background:rgba(151,204,13,.05); }
         .tp-stage b { color:#eef1f4; font:700 13px "Barlow",sans-serif; }
         .tp-stage small { display:block; color:var(--muted); font:500 11px "Barlow",sans-serif; margin:2px 0 8px; }
         .tp-stage ul { list-style:none; margin:0 0 10px; padding:0; display:grid; gap:5px; }
@@ -901,7 +901,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-ins-h { color:#e9edf1; font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:8px; }
         .tp-ins-list { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:8px; }
         .tp-ins-list li { display:flex; gap:8px; color:#cfd4da; font:500 12px/1.4 "Barlow",sans-serif; }
-        .tp-ins-list li i { width:12px; height:12px; border-radius:50%; background:rgba(200,250,60,.18); position:relative; flex:none; margin-top:2px; }
+        .tp-ins-list li i { width:12px; height:12px; border-radius:50%; background:rgba(151,204,13,.18); position:relative; flex:none; margin-top:2px; }
         .tp-ins-list li i::after { content:""; position:absolute; left:4px; top:2px; width:2.5px; height:5px; border:solid var(--l); border-width:0 1.5px 1.5px 0; transform:rotate(45deg); }
         .tp-block { margin-top:16px; border-top:1px solid var(--line); padding-top:14px; }
         .tp-block h4 { margin:0 0 10px; font:800 11px "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
@@ -1133,7 +1133,7 @@ function TalentScout({ pool = [] }) {
   return (
     <section className="tsc">
       <style>{`
-        .tsc { --l:#c8fa3c; --line:rgba(255,255,255,.09); --card:rgba(9,13,16,.5); --muted:#8b9299; }
+        .tsc { --l:#97cc0d; --line:rgba(255,255,255,.09); --card:rgba(9,13,16,.5); --muted:#8b9299; }
         .tsc * { box-sizing:border-box; }
         .tsc-top { display:flex; gap:16px; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; margin-bottom:16px; }
         .tsc-top h2 { margin:0; color:#fff; font:800 30px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
@@ -1460,11 +1460,11 @@ export default function Talents() {
   return (
     <div className="page talents-page tde">
       <style>{`
-        .tde { --tde-lime:#c8fa3c; --tde-line:rgba(255,255,255,.09); --tde-card:rgba(255,255,255,.03); --tde-muted:#8b9299; --glass:rgba(9,13,16,.52); }
+        .tde { --tde-lime:#97cc0d; --tde-line:rgba(255,255,255,.09); --tde-card:rgba(255,255,255,.03); --tde-muted:#8b9299; --glass:rgba(9,13,16,.52); }
         .tde * { box-sizing:border-box; }
         .talents-page.tde { max-width:1600px; position:relative; isolation:isolate; }
         .talents-page.tde::before { content:""; position:fixed; inset:0; z-index:-2; background:url("/assets/debates-bg.png") center/cover no-repeat; pointer-events:none; }
-        .talents-page.tde::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.40),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.30) 0%,rgba(5,8,11,.55) 45%,rgba(5,8,11,.66) 100%); }
+        .talents-page.tde::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(151,204,13,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.40),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.30) 0%,rgba(5,8,11,.55) 45%,rgba(5,8,11,.66) 100%); }
         .tde-ticker { display:flex; align-items:center; gap:16px; border:1px solid var(--tde-line); border-radius:10px; background:rgba(255,255,255,.02); padding:0 14px; height:40px; margin-bottom:16px; overflow:hidden; }
         .tde-ticker-label { display:inline-flex; align-items:center; gap:6px; color:var(--tde-lime); font:700 10px/1 "Barlow Condensed",sans-serif; letter-spacing:.14em; text-transform:uppercase; flex:none; }
         .tde-ticker-track { display:flex; align-items:center; gap:22px; flex:1; overflow:hidden; white-space:nowrap; }
@@ -1514,11 +1514,11 @@ export default function Talents() {
         .tde-region-chips { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:14px; }
         .tde-chip { display:inline-flex; align-items:center; gap:7px; padding:7px 12px; border:1px solid var(--tde-line); border-radius:8px; background:rgba(255,255,255,.02); color:#b6bcc3; font:700 11px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; cursor:pointer; }
         .tde-chip b { color:var(--tde-muted); font-weight:800; }
-        .tde-chip.on { border-color:var(--tde-lime); background:rgba(200,250,60,.12); color:#eaffb0; }
+        .tde-chip.on { border-color:var(--tde-lime); background:rgba(151,204,13,.12); color:#dbf891; }
         .tde-chip.on b { color:var(--tde-lime); }
          .tde-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:11px; }
         .tde-yc { display:flex; gap:11px; background:rgba(9,13,16,.46); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid var(--tde-line); border-radius:11px; padding:12px; cursor:pointer; transition:border-color .12s,transform .12s; }
-        .tde-yc:hover { border-color:rgba(200,250,60,.35); transform:translateY(-1px); }
+        .tde-yc:hover { border-color:rgba(151,204,13,.35); transform:translateY(-1px); }
         .tde-yc.is-sel { border-color:var(--tde-lime); box-shadow:0 0 0 1px var(--tde-lime) inset; }
         .tde-yc-media { display:flex; flex-direction:column; gap:7px; flex:none; align-items:center; }
         .tde-yc-img { width:46px; height:46px; border-radius:8px; overflow:hidden; flex:none; background:rgba(255,255,255,.04); }
@@ -1539,7 +1539,7 @@ export default function Talents() {
         .tde-yc-rating b { display:block; font:800 22px/1 "Barlow Condensed",sans-serif; color:var(--tde-lime); }
         .tde-yc-rating span { display:block; font-size:8.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--tde-muted); }
         .tde-card { position:relative; border:1px solid var(--tde-line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); overflow:hidden; cursor:pointer; transition:border-color .15s,transform .15s; }
-        .tde-card:hover { border-color:rgba(200,250,60,.4); transform:translateY(-2px); }
+        .tde-card:hover { border-color:rgba(151,204,13,.4); transform:translateY(-2px); }
         .tde-card.is-sel { border-color:var(--tde-lime); box-shadow:0 0 0 1px var(--tde-lime) inset; }
         .tde-card-photo { position:relative; margin:10px 10px 0; height:152px; border-radius:11px; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); }
         .tde-card-photo img { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; }
@@ -1550,7 +1550,7 @@ export default function Talents() {
         .tde-card-rating b { font:800 26px/1 "Barlow Condensed",sans-serif; color:var(--tde-lime); }
         .tde-card-rating span { display:block; color:var(--tde-muted); font:700 8px/1 "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-top:3px; }
         .tde-card-chips { display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end; max-width:58%; }
-        .tde-card-chips em { font-style:normal; padding:3px 7px; border:1px solid rgba(200,250,60,.4); border-radius:6px; color:var(--tde-lime); font:800 9px/1 "Barlow Condensed",sans-serif; letter-spacing:.04em; }
+        .tde-card-chips em { font-style:normal; padding:3px 7px; border:1px solid rgba(151,204,13,.4); border-radius:6px; color:var(--tde-lime); font:800 9px/1 "Barlow Condensed",sans-serif; letter-spacing:.04em; }
         .tde-card-body h3 { margin:9px 0 0; color:#f2f5f7; font:700 15px/1.15 "Barlow",sans-serif; }
         .tde-card-arch { margin:3px 0 0; color:var(--tde-lime); font:700 11px "Barlow",sans-serif; }
         .tde-card-club { margin:2px 0 10px; color:#8b9299; font:500 11px "Barlow",sans-serif; }
@@ -1558,7 +1558,7 @@ export default function Talents() {
         .tde-card-ready-row span { color:var(--tde-muted); font:600 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
         .tde-card-ready-row b { color:#e9edf1; font:800 12px "Barlow Condensed",sans-serif; }
         .tde-card-bar { height:5px; border-radius:5px; background:rgba(255,255,255,.08); overflow:hidden; }
-        .tde-card-bar i { display:block; height:100%; background:linear-gradient(90deg,rgba(200,250,60,.5),var(--tde-lime)); border-radius:5px; }
+        .tde-card-bar i { display:block; height:100%; background:linear-gradient(90deg,rgba(151,204,13,.5),var(--tde-lime)); border-radius:5px; }
         .tde-more { display:flex; justify-content:center; margin-top:18px; }
         .tde-detail { position:sticky; top:14px; }
         .tde-scout { border:1px solid var(--tde-line); border-radius:16px; background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); padding:16px; }
@@ -1570,11 +1570,11 @@ export default function Talents() {
         .tde-scout-headid h2 { margin:0; color:#f4f6f8; font:800 20px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
         .tde-scout-chips { display:flex; align-items:center; gap:5px; margin:6px 0 5px; flex-wrap:wrap; }
         .tde-scout-chips .fl { font-size:14px; }
-        .tde-scout-chips em { font-style:normal; padding:2px 6px; border-radius:5px; background:rgba(200,250,60,.12); color:var(--tde-lime); font:800 8.5px/1.4 "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+        .tde-scout-chips em { font-style:normal; padding:2px 6px; border-radius:5px; background:rgba(151,204,13,.12); color:var(--tde-lime); font:800 8.5px/1.4 "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
         .tde-scout-headid p { margin:0; color:#b6bcc3; font:500 11.5px "Barlow",sans-serif; overflow:hidden; text-overflow:ellipsis; }
         .tde-scout-rt { display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex:none; }
         .tde-scout-star { width:30px; height:30px; display:grid; place-items:center; border-radius:9px; border:1px solid var(--tde-line); background:rgba(255,255,255,.03); color:#cdd3d9; cursor:pointer; }
-        .tde-scout-star.on { color:var(--tde-lime); border-color:rgba(200,250,60,.4); }
+        .tde-scout-star.on { color:var(--tde-lime); border-color:rgba(151,204,13,.4); }
         .tde-scout-rating { text-align:right; }
         .tde-scout-rating b { display:block; font:800 30px/1 "Barlow Condensed",sans-serif; color:var(--tde-lime); }
         .tde-scout-rating span { font:700 8px/1 "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--tde-muted); }
@@ -1594,7 +1594,7 @@ export default function Talents() {
         .tde-radar-svg { width:100%; height:auto; display:block; }
         .tde-radar-ring { fill:none; stroke:rgba(255,255,255,.08); stroke-width:1; }
         .tde-radar-spoke { stroke:rgba(255,255,255,.07); stroke-width:1; }
-        .tde-radar-area { fill:rgba(200,250,60,.18); stroke:var(--tde-lime); stroke-width:1.5; }
+        .tde-radar-area { fill:rgba(151,204,13,.18); stroke:var(--tde-lime); stroke-width:1.5; }
         .tde-radar-label { fill:#b6bcc3; font:700 9px "Barlow Condensed",sans-serif; letter-spacing:.04em; text-transform:uppercase; }
         .tde-radar-val { fill:#fff; font:800 10px "Barlow Condensed",sans-serif; }
         .tde-radar-wrap { display:grid; gap:8px; }
@@ -1607,7 +1607,7 @@ export default function Talents() {
         .tde-radar-legend .sw-b { background:#ff8a3d; }
         ul.tde-scout-why { list-style:none; margin:12px 0 0; padding:0; display:grid; gap:7px; }
         ul.tde-scout-why li { display:flex; align-items:flex-start; gap:8px; color:#cfd4da; font:500 12px/1.4 "Barlow",sans-serif; }
-        .tde-tick { width:13px; height:13px; border-radius:50%; flex:none; margin-top:2px; background:rgba(200,250,60,.18); position:relative; }
+        .tde-tick { width:13px; height:13px; border-radius:50%; flex:none; margin-top:2px; background:rgba(151,204,13,.18); position:relative; }
         .tde-tick::after { content:""; position:absolute; left:4px; top:2px; width:3px; height:6px; border:solid var(--tde-lime); border-width:0 1.6px 1.6px 0; transform:rotate(45deg); }
         .tde-scout-cta { display:grid; gap:8px; margin-top:16px; }
         .tde-empty-pool { grid-column:1/-1; text-align:center; padding:44px 18px; color:var(--tde-muted); border:1px dashed var(--tde-line); border-radius:14px; }
@@ -1697,21 +1697,21 @@ export default function Talents() {
 
       {view === 'rankings' && <section className="rr">
         <style>{`
-          .rr { --l:#c8fa3c; --line:rgba(255,255,255,.09); }
+          .rr { --l:#97cc0d; --line:rgba(255,255,255,.09); }
           .rr-head { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-bottom:16px; flex-wrap:wrap; }
           .rr-eyebrow { color:var(--l); font:700 10px/1 "Barlow",sans-serif; letter-spacing:.14em; text-transform:uppercase; }
           .rr-head h2 { margin:7px 0 0; color:#fff; font:800 32px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
           .rr-head p { margin:0; max-width:320px; color:#8b9299; font:500 12px/1.5 "Barlow",sans-serif; text-align:right; }
           .rr-list { display:grid; gap:8px; }
           .rr-row { display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:12px 16px; border:1px solid var(--line); border-radius:12px; background:rgba(9,13,16,.5); backdrop-filter:blur(11px); -webkit-backdrop-filter:blur(11px); cursor:pointer; transition:border-color .15s,transform .15s; }
-          .rr-row:hover { border-color:rgba(200,250,60,.4); transform:translateY(-1px); }
+          .rr-row:hover { border-color:rgba(151,204,13,.4); transform:translateY(-1px); }
           .rr-rank { flex:none; width:26px; color:#6b7480; font:800 17px/1 "Barlow Condensed",sans-serif; font-style:normal; }
           .rr-photo { flex:none; width:42px; height:42px; border-radius:50%; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); border:1px solid var(--line); }
           .rr-photo img { width:100%; height:100%; object-fit:cover; object-position:top center; display:block; }
           .rr-id { flex:1; min-width:0; }
           .rr-id strong { display:block; color:#f2f5f7; font:700 15px "Barlow",sans-serif; }
           .rr-id small { color:#8b9299; font:500 11.5px "Barlow",sans-serif; }
-          .rr-trend { flex:none; padding:5px 9px; border-radius:6px; background:rgba(200,250,60,.14); color:var(--l); font:800 9px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
+          .rr-trend { flex:none; padding:5px 9px; border-radius:6px; background:rgba(151,204,13,.14); color:var(--l); font:800 9px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
           .rr-ready { flex:none; color:#8b9299; font:600 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap; }
           .rr-ready b { color:#e9edf1; font:800 13px "Barlow Condensed",sans-serif; margin-left:6px; }
           .rr-rating { flex:none; width:46px; text-align:center; color:var(--l); font:800 27px/1 "Barlow Condensed",sans-serif; }
@@ -1737,23 +1737,23 @@ export default function Talents() {
 
       {view === 'youth' && <section className="yr">
         <style>{`
-          .yr { margin-top: 16px; --yr-line: rgba(255,255,255,0.09); --yr-card: rgba(255,255,255,0.025); --yr-muted: #8b9096; --yr-lime: #c8fa3c; }
+          .yr { margin-top: 16px; --yr-line: rgba(255,255,255,0.09); --yr-card: rgba(255,255,255,0.025); --yr-muted: #8b9096; --yr-lime: #97cc0d; }
           .yr * { box-sizing: border-box; }
           .yr-head { display: grid; grid-template-columns: minmax(220px, 1.1fr) 2fr; gap: 22px; align-items: start; margin-bottom: 18px; }
           .yr-eyebrow { color: var(--yr-lime); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 600; }
           .yr-title { font-family: 'Barlow Condensed', sans-serif; font-size: 38px; line-height: .98; letter-spacing: .01em; margin: 6px 0 10px; color: #fff; text-transform: uppercase; }
           .yr-lede { color: var(--yr-muted); font-size: 13px; line-height: 1.5; max-width: 340px; }
-          .yr-lede a { color: var(--yr-lime); text-decoration: none; border-bottom: 1px solid rgba(200,250,60,0.3); }
+          .yr-lede a { color: var(--yr-lime); text-decoration: none; border-bottom: 1px solid rgba(151,204,13,0.3); }
           .yr-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
           .yr-stat { background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 12px; padding: 14px 14px 12px; }
           .yr-stat b { display: block; font-family: 'Barlow Condensed', sans-serif; font-size: 30px; line-height: 1; color: #fff; }
           .yr-stat span { display: block; font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--yr-muted); margin-top: 6px; }
           .yr-stat small { display: block; font-size: 10.5px; color: var(--yr-lime); margin-top: 3px; }
           .yr-stat-btn { text-align: left; cursor: pointer; font: inherit; transition: border-color .12s, background .12s; }
-          .yr-stat-btn:hover { border-color: rgba(200,250,60,0.4); }
-          .yr-stat-btn.on { border-color: var(--yr-lime); background: rgba(200,250,60,0.08); }
+          .yr-stat-btn:hover { border-color: rgba(151,204,13,0.4); }
+          .yr-stat-btn.on { border-color: var(--yr-lime); background: rgba(151,204,13,0.08); }
           .yr-stat-btn.on small { text-decoration: underline; }
-          .yr-note { display: flex; gap: 10px; align-items: flex-start; background: rgba(200,250,60,0.05); border: 1px solid rgba(200,250,60,0.18); border-radius: 10px; padding: 11px 14px; margin-bottom: 18px; color: #c4c9ce; font-size: 12.5px; line-height: 1.45; }
+          .yr-note { display: flex; gap: 10px; align-items: flex-start; background: rgba(151,204,13,0.05); border: 1px solid rgba(151,204,13,0.18); border-radius: 10px; padding: 11px 14px; margin-bottom: 18px; color: #c4c9ce; font-size: 12.5px; line-height: 1.45; }
           .yr-note svg { color: var(--yr-lime); flex: none; margin-top: 1px; }
           .yr-body { display: grid; grid-template-columns: 220px 1fr; gap: 20px; }
           .yr-rail { border-right: 1px solid var(--yr-line); padding-right: 18px; }
@@ -1780,7 +1780,7 @@ export default function Talents() {
           .yr-league-head em { margin-left: auto; font-style: normal; font-size: 11.5px; color: var(--yr-muted); }
           .yr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(228px, 1fr)); gap: 11px; }
           .yr-card { display: flex; gap: 11px; background: var(--yr-card); border: 1px solid var(--yr-line); border-radius: 11px; padding: 12px; transition: border-color .12s, transform .12s; }
-          .yr-card:hover { border-color: rgba(200,250,60,0.35); transform: translateY(-1px); }
+          .yr-card:hover { border-color: rgba(151,204,13,0.35); transform: translateY(-1px); }
           .yr-card-media { display: flex; flex-direction: column; gap: 7px; flex: none; align-items: center; }
           .yr-card-img { width: 46px; height: 46px; border-radius: 8px; overflow: hidden; flex: none; background: rgba(255,255,255,0.04); }
           .yr-card-img img { width: 100%; height: 100%; object-fit: cover; }

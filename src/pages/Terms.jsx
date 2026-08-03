@@ -229,7 +229,7 @@ export default function Terms() {
               id={s.id}
               style={{
                 ...section,
-                borderLeft: active === s.id ? '3px solid #c8ff00' : '3px solid transparent',
+                borderLeft: active === s.id ? '3px solid #97cc0d' : '3px solid transparent',
               }}
               onClick={() => setActive(s.id)}
             >
@@ -272,8 +272,8 @@ export default function Terms() {
                 key={s.id}
                 style={{
                   ...sideLink,
-                  color: active === s.id ? '#c8ff00' : '#555',
-                  borderLeft: active === s.id ? '2px solid #c8ff00' : '2px solid transparent',
+                  color: active === s.id ? '#97cc0d' : '#555',
+                  borderLeft: active === s.id ? '2px solid #97cc0d' : '2px solid transparent',
                 }}
                 onClick={() => {
                   setActive(s.id);
@@ -297,7 +297,7 @@ export default function Terms() {
 }
 
 // ── Styles ────────────────────────────────────────────────────────────────────
-const C = { black: '#0a0a0a', surface: '#0f0f0f', border: '#1c1c1c', lime: '#c8ff00', white: '#fff', muted: '#666', mutedLight: '#999' };
+const C = { black: '#0a0a0a', surface: '#0f0f0f', border: '#1c1c1c', lime: '#97cc0d', white: '#fff', muted: '#666', mutedLight: '#999' };
 const F = { condensed: "'Barlow Condensed', sans-serif", body: "'Barlow', sans-serif" };
 
 const page = { background: C.black, color: C.white, fontFamily: F.body, paddingBottom: 80 };

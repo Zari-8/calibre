@@ -24,7 +24,7 @@ const btnStyle = {
   textTransform: 'uppercase', cursor: 'pointer',
   transition: 'all 0.15s',
 };
-const btnHover = { background: '#c8ff00', color: '#0a0a0a' };
+const btnHover = { background: '#97cc0d', color: '#0a0a0a' };
 
 const modalBackdrop = {
   position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)',
@@ -34,7 +34,7 @@ const modalBackdrop = {
 const modalBox = {
   background: '#0f0f0f', border: '1px solid #2a2a2a',
   padding: 32, maxWidth: 480, width: '100%',
-  borderTop: '3px solid #c8ff00',
+  borderTop: '3px solid #97cc0d',
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ export default function DealReport({ player, team, verdict, sysFit, marketValue,
         >
           {generating ? 'Generating…' : '↓ Download PDF Report'}
         </button>
-        <span style={{ fontSize: 10, color: hasAccess ? '#c8ff00' : '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>
+        <span style={{ fontSize: 10, color: hasAccess ? '#97cc0d' : '#666', letterSpacing: '0.12em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif" }}>
           {hasAccess ? `${(tier || '').toUpperCase()} access` : 'Scout & Club tiers'}
         </span>
       </div>
@@ -89,7 +89,7 @@ export default function DealReport({ player, team, verdict, sysFit, marketValue,
       {showUpgrade && (
         <div style={modalBackdrop} onClick={() => setShowUpgrade(false)}>
           <div style={modalBox} onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: 10, color: '#c8ff00', letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 10 }}>
+            <div style={{ fontSize: 10, color: '#97cc0d', letterSpacing: '0.18em', textTransform: 'uppercase', fontFamily: "'Barlow Condensed', sans-serif", marginBottom: 10 }}>
               Calibre Premium
             </div>
             <h3 style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, textTransform: 'uppercase', margin: '0 0 14px', lineHeight: 1.1 }}>
@@ -101,7 +101,7 @@ export default function DealReport({ player, team, verdict, sysFit, marketValue,
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
               <button
                 onClick={() => { setShowUpgrade(false); navigateTo('/pricing'); }}
-                style={{ ...btnStyle, background: '#c8ff00', color: '#0a0a0a' }}
+                style={{ ...btnStyle, background: '#97cc0d', color: '#0a0a0a' }}
               >
                 View Packages →
               </button>

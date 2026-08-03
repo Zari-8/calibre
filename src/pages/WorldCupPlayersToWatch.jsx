@@ -17,7 +17,7 @@ function BreakoutCard({ star, live, wc, eliminated, tournamentLive }) {
   const wcBadge = eliminated
     ? { label: 'Eliminated', bg: '#241414', color: '#ef4444', border: '#3a1d1d' }
     : wc
-      ? { label: 'In form at the WC', bg: '#16240a', color: '#c8ff00', border: '#2a3d12' }
+      ? { label: 'In form at the WC', bg: '#16240a', color: '#97cc0d', border: '#2a3d12' }
       : tournamentLive
         ? { label: 'No returns yet', bg: '#161616', color: '#888', border: '#262626' }
         : null;
@@ -143,7 +143,7 @@ export default function WorldCupPlayersToWatch() {
   return (
     <div className="page wc2">
       <style>{`
-        .wc2 { --l:#c8ff00; --line:#1c1c1c; --muted:#888; color:#fff; }
+        .wc2 { --l:#97cc0d; --line:#1c1c1c; --muted:#888; color:#fff; }
         .wc2 * { box-sizing:border-box; }
         .wc2-title { margin:4px 0 18px; }
         .wc2-title h1 { margin:0 0 6px; font:800 34px "Barlow Condensed",sans-serif; text-transform:uppercase; }
@@ -154,7 +154,7 @@ export default function WorldCupPlayersToWatch() {
         .ptw-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px; }
         .ptw-card { position:relative; background:#0f0f0f; border:1px solid var(--line); border-radius:12px; padding:16px; cursor:pointer; transition:border-color .15s; }
         .ptw-card:hover { border-color:#333; }
-        .ptw-card--featured { border-color:rgba(200,255,0,.4); }
+        .ptw-card--featured { border-color:rgba(151,204,13,.4); }
         .ptw-featured-tag { position:absolute; top:-9px; left:14px; display:flex; align-items:center; gap:4px; background:var(--l); color:#0a0a0a; font:800 9px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:5px; }
         .ptw-top { display:flex; gap:12px; }
         .ptw-img { width:64px; height:64px; border-radius:10px; object-fit:cover; object-position:top; flex:none; background:#1a1a1a; }

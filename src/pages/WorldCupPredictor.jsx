@@ -64,9 +64,9 @@ export default function WorldCupPredictor() {
   return (
     <div className="page wc2">
       <style>{`
-        .wc2 { --l:#a6ff00; --line:rgba(255,255,255,.09); --muted:#888; --glass:rgba(9,13,16,.5); color:#fff; position:relative; isolation:isolate; background:#050708; }
+        .wc2 { --l:#97cc0d; --line:rgba(255,255,255,.09); --muted:#888; --glass:rgba(9,13,16,.5); color:#fff; position:relative; isolation:isolate; background:#050708; }
         .wc2::before { content:""; position:fixed; inset:0; z-index:-2; background:url("/assets/debates-bg.png") center/cover no-repeat; pointer-events:none; }
-        .wc2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.30),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.24) 0%,rgba(5,8,11,.45) 45%,rgba(5,8,11,.58) 100%); }
+        .wc2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(151,204,13,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.30),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.24) 0%,rgba(5,8,11,.45) 45%,rgba(5,8,11,.58) 100%); }
         .wc2 * { box-sizing:border-box; }
         .wc2-title { margin:4px 0 18px; }
         .wc2-title h1 { margin:0 0 6px; font:800 34px "Barlow Condensed",sans-serif; text-transform:uppercase; }
@@ -84,7 +84,7 @@ export default function WorldCupPredictor() {
         .wcp-bar .d { background:rgba(255,255,255,.18); color:#fff; display:flex; align-items:center; justify-content:center; }
         .wcp-bar .a { background:rgba(255,255,255,.42); color:#0a0a0a; display:flex; align-items:center; justify-content:center; }
         .wcp-labels { display:flex; justify-content:space-between; color:var(--muted); font:700 10px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; margin-bottom:14px; }
-        .wcp-advice { color:#ddd; font:500 13px/1.6 "Barlow",sans-serif; padding:12px 14px; background:rgba(200,255,0,.06); border-left:3px solid var(--l); border-radius:0 8px 8px 0; }
+        .wcp-advice { color:#ddd; font:500 13px/1.6 "Barlow",sans-serif; padding:12px 14px; background:rgba(151,204,13,.06); border-left:3px solid var(--l); border-radius:0 8px 8px 0; }
         .wcp-empty { color:var(--muted); font:500 13px/1.6 "Barlow",sans-serif; text-align:center; padding:30px 0; }
         .wcp-note { color:#5b6168; font:500 11px/1.6 "Barlow",sans-serif; }
         .wcp-locked { display:flex; align-items:center; gap:14px; }

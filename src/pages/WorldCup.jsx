@@ -72,7 +72,7 @@ function BreakoutCard({ star, live, wc, eliminated, tournamentLive }) {
   const wcBadge = eliminated
     ? { label: 'Eliminated', bg: '#241414', color: '#ef4444', border: '#3a1d1d' }
     : wc
-      ? { label: 'In form at the WC', bg: '#16240a', color: '#c8ff00', border: '#2a3d12' }
+      ? { label: 'In form at the WC', bg: '#16240a', color: '#97cc0d', border: '#2a3d12' }
       : tournamentLive
         ? { label: 'No returns yet', bg: '#161616', color: '#888', border: '#262626' }
         : null;
@@ -707,10 +707,10 @@ export default function WorldCup() {
           <SectionHead eyebrow="Live · Tournament Form" title="Lighting Up The World Cup" />
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 12 }}>
             {wcLeaders.map((l, i) => (
-              <div key={l.api_player_id} style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', borderLeft: '3px solid #c8ff00', padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div key={l.api_player_id} style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', borderLeft: '3px solid #97cc0d', padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   <ApiPlayerImage playerId={l.api_player_id} name={l.name} fallbackSrc="/assets/players/neutral-player.svg" alt={l.name} style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover', objectPosition: 'top center' }} />
-                  <span style={{ position: 'absolute', top: -6, left: -6, background: '#c8ff00', color: '#0a0a0a', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 11, width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                  <span style={{ position: 'absolute', top: -6, left: -6, background: '#97cc0d', color: '#0a0a0a', fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 800, fontSize: 11, width: 20, height: 20, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 16, fontWeight: 800, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{l.name}</div>

@@ -77,8 +77,8 @@ function TournamentCard({ entry }) {
             {entry.competition}
           </span>
           {entry.has360 && (
-            <span style={{ marginLeft: 8, fontSize: 9, background: 'rgba(166,255,0,0.12)',
-                           color: '#A6FF00', padding: '2px 6px', borderRadius: 3, letterSpacing: '0.06em' }}>
+            <span style={{ marginLeft: 8, fontSize: 9, background: 'rgba(151,204,13,0.12)',
+                           color: '#97cc0d', padding: '2px 6px', borderRadius: 3, letterSpacing: '0.06em' }}>
               360°
             </span>
           )}
@@ -92,7 +92,7 @@ function TournamentCard({ entry }) {
         {metrics.map(m => (
           <div key={m.label} style={{ textAlign: 'center' }}>
             <div style={{ fontFamily: 'Barlow Condensed,sans-serif', fontSize: 20, fontWeight: 700,
-                          color: m.highlight ? '#A6FF00' : '#F4F6F8' }}>
+                          color: m.highlight ? '#97cc0d' : '#F4F6F8' }}>
               {m.value}
             </div>
             <div style={{ fontSize: 9, color: '#9BA2AA', textTransform: 'uppercase', letterSpacing: '0.06em' }}>

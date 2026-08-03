@@ -50,7 +50,7 @@ const wrap = {
   right: 0,
   zIndex: 9999,
   background: '#111',
-  borderTop: '1px solid #c8ff00',
+  borderTop: '1px solid #97cc0d',
   padding: '14px 24px',
 };
 
@@ -79,7 +79,7 @@ const bold = {
 const link = {
   background: 'none',
   border: 'none',
-  color: '#c8ff00',
+  color: '#97cc0d',
   fontSize: 12,
   cursor: 'pointer',
   padding: 0,
@@ -106,7 +106,7 @@ const viewBtn = {
 };
 
 const continueBtn = {
-  background: '#c8ff00',
+  background: '#97cc0d',
   border: 'none',
   color: '#0a0a0a',
   fontFamily: "'Barlow Condensed', sans-serif",

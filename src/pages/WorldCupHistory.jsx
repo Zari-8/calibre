@@ -30,7 +30,7 @@ export default function WorldCupHistory() {
   return (
     <div className="page wc2">
       <style>{`
-        .wc2 { --l:#c8ff00; --line:#1c1c1c; --muted:#888; color:#fff; }
+        .wc2 { --l:#97cc0d; --line:#1c1c1c; --muted:#888; color:#fff; }
         .wc2 * { box-sizing:border-box; }
         .wc2-title { margin:4px 0 18px; }
         .wc2-title h1 { margin:0 0 6px; font:800 34px "Barlow Condensed",sans-serif; text-transform:uppercase; }
@@ -40,7 +40,7 @@ export default function WorldCupHistory() {
         @media(max-width:760px){ .wch-editions { grid-template-columns:1fr; } }
         .wch-ed-list { display:flex; flex-direction:column; gap:6px; }
         .wch-ed-btn { display:flex; align-items:center; gap:8px; background:#0f0f0f; border:1px solid var(--line); border-radius:8px; padding:9px 12px; cursor:pointer; text-align:left; }
-        .wch-ed-btn.active { border-color:var(--l); background:rgba(200,255,0,.06); }
+        .wch-ed-btn.active { border-color:var(--l); background:rgba(151,204,13,.06); }
         .wch-ed-btn .yr { font:800 14px "Barlow Condensed",sans-serif; color:#fff; }
         .wch-ed-btn .host { color:var(--muted); font:500 10.5px "Barlow",sans-serif; }
         .wch-detail { border-radius:12px; padding:24px; }
@@ -63,7 +63,7 @@ export default function WorldCupHistory() {
         .wch-goal-top .flag { font-size:20px; }
         .wch-goal-top strong { display:block; font:700 14px "Barlow",sans-serif; }
         .wch-goal-top span { color:var(--muted); font:500 10.5px "Barlow",sans-serif; }
-        .wch-goal-year { margin-left:auto; background:rgba(200,255,0,.12); color:var(--l); font:800 10px "Barlow Condensed",sans-serif; padding:3px 7px; border-radius:5px; }
+        .wch-goal-year { margin-left:auto; background:rgba(151,204,13,.12); color:var(--l); font:800 10px "Barlow Condensed",sans-serif; padding:3px 7px; border-radius:5px; }
         .wch-goal-label { color:var(--l); font:800 12px "Barlow Condensed",sans-serif; text-transform:uppercase; margin-bottom:6px; }
         .wch-goal-card p { margin:0; color:#bbb; font:500 12px/1.5 "Barlow",sans-serif; }
         .wch-award-grid { display:flex; flex-direction:column; }
@@ -107,7 +107,7 @@ export default function WorldCupHistory() {
           </div>
           <p className="wch-theme">"{activeEdition.theme}"</p>
           <p className="wch-summary">{activeEdition.summary}</p>
-          <div className="wch-moment"><Zap size={13} style={{ color: '#c8ff00', flexShrink: 0, marginTop: 2 }} /><span>{activeEdition.moment}</span></div>
+          <div className="wch-moment"><Zap size={13} style={{ color: '#97cc0d', flexShrink: 0, marginTop: 2 }} /><span>{activeEdition.moment}</span></div>
           <div className="wch-players">{activeEdition.players.map(p => <span key={p} className="wch-chip">{p}</span>)}</div>
         </div>
       </div>

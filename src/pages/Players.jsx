@@ -950,7 +950,7 @@ function PlayerProfileModal({ player, stats, loading, onClose, onCompare, onComp
 const PPM3_CSS = `
   .ppm3 { position:fixed; inset:0; z-index:1000; background:rgba(3,5,7,.72); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); display:flex; align-items:flex-start; justify-content:center; padding:40px 20px; overflow:auto; }
   .ppm3 * { box-sizing:border-box; }
-  .ppm3-card { --l:#a6ff00; --muted:#8d929b; position:relative; width:min(920px,100%); background:rgba(11,15,18,.97); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.65); padding:20px 22px 22px; }
+  .ppm3-card { --l:#97cc0d; --muted:#8d929b; position:relative; width:min(920px,100%); background:rgba(11,15,18,.97); border:1px solid rgba(255,255,255,.10); border-radius:16px; box-shadow:0 30px 80px rgba(0,0,0,.65); padding:20px 22px 22px; }
   .ppm3-topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
   .ppm3-brand { display:flex; align-items:center; gap:7px; color:#c4c9ce; font:800 11px/1 "IBM Plex Mono",monospace; letter-spacing:.14em; text-transform:uppercase; }
   .ppm3-brand img { width:18px; height:18px; object-fit:contain; }
@@ -965,11 +965,11 @@ const PPM3_CSS = `
   .ppm3-id h3 { margin:6px 0 0; color:#fff; font:900 26px/1 "Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.01em; }
   .ppm3-tags { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
   .ppm3-tags span { padding:3px 8px; border:1px solid rgba(255,255,255,.14); border-radius:4px; color:#c4c9ce; font:700 9px/1 "IBM Plex Mono",monospace; }
-  .ppm3-tags em { padding:3px 8px; border:1px solid rgba(166,255,0,.3); border-radius:4px; color:var(--l); font:800 9px/1 "IBM Plex Mono",monospace; font-style:normal; }
+  .ppm3-tags em { padding:3px 8px; border:1px solid rgba(151,204,13,.3); border-radius:4px; color:var(--l); font:800 9px/1 "IBM Plex Mono",monospace; font-style:normal; }
   .ppm3-bioline { display:flex; gap:10px; margin-top:8px; flex-wrap:wrap; }
   .ppm3-bioline span { color:var(--muted); font:600 10.5px "Barlow",sans-serif; }
   .ppm3-rating { text-align:center; flex:none; padding:0 18px; border-left:1px solid rgba(255,255,255,.08); }
-  .ppm3-rating strong { display:block; color:var(--l); font:900 38px/.85 "Barlow Condensed",sans-serif; text-shadow:0 0 22px rgba(166,255,0,.25); }
+  .ppm3-rating strong { display:block; color:var(--l); font:900 38px/.85 "Barlow Condensed",sans-serif; text-shadow:0 0 22px rgba(151,204,13,.25); }
   .ppm3-rating span { display:block; margin-top:4px; color:var(--muted); font:800 8px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; }
   .ppm3-rating-sub { display:block; margin-top:6px; color:var(--muted); font:600 8.5px/1.3 "Barlow",sans-serif; font-style:normal; white-space:nowrap; }
   .ppm3-value { text-align:center; flex:none; width:132px; padding-left:18px; border-left:1px solid rgba(255,255,255,.08); }
@@ -979,12 +979,12 @@ const PPM3_CSS = `
   .ppm3-tabs { display:flex; gap:2px; flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,.08); margin-bottom:14px; }
   .ppm3-tabs button { background:none; border:none; border-radius:6px 6px 0 0; border-bottom:2px solid transparent; color:var(--muted); font:700 11.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:9px 10px; cursor:pointer; transition:background .12s,color .12s; }
   .ppm3-tabs button:hover { color:#eef1f4; background:rgba(255,255,255,.03); }
-  .ppm3-tabs button.on { color:var(--l); border-bottom-color:var(--l); background:rgba(166,255,0,.05); }
+  .ppm3-tabs button.on { color:var(--l); border-bottom-color:var(--l); background:rgba(151,204,13,.05); }
   .ppm3-body { max-height:56vh; overflow:auto; padding-right:4px; }
   .ppm3-body::-webkit-scrollbar { width:7px; }
   .ppm3-body::-webkit-scrollbar-track { background:transparent; }
-  .ppm3-body::-webkit-scrollbar-thumb { background:rgba(166,255,0,.22); border-radius:8px; }
-  .ppm3-body::-webkit-scrollbar-thumb:hover { background:rgba(166,255,0,.4); }
+  .ppm3-body::-webkit-scrollbar-thumb { background:rgba(151,204,13,.22); border-radius:8px; }
+  .ppm3-body::-webkit-scrollbar-thumb:hover { background:rgba(151,204,13,.4); }
   .ppm3-sec { margin-bottom:14px; border:1px solid rgba(255,255,255,.07); background:linear-gradient(180deg,rgba(255,255,255,.025),rgba(255,255,255,.01)); border-radius:12px; padding:14px 16px 16px; }
   .ppm3-sec > small { display:flex; align-items:center; gap:6px; color:var(--muted); font:800 9px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; margin:-2px 0 12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.06); }
   .ppm3-sec-head { display:flex; align-items:center; justify-content:space-between; gap:10px; margin:-2px 0 12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,.06); }
@@ -1009,12 +1009,12 @@ const PPM3_CSS = `
   .ppm3-table th.num, .ppm3-table td.num { text-align:center; }
   .ppm3-table td { padding:7px 8px; border-bottom:1px solid rgba(255,255,255,.05); color:#cfd4da; font:500 11.5px "Barlow",sans-serif; white-space:nowrap; }
   .ppm3-table tbody tr:not(.ppm3-total):hover { background:rgba(255,255,255,.025); }
-  .ppm3-table tr.ppm3-total td { font-weight:800; color:#fff; border-top:1px solid rgba(166,255,0,.25); background:rgba(166,255,0,.05); }
-  .ppm3-pill { display:inline-block; padding:1px 6px; border-radius:4px; background:rgba(166,255,0,.12); color:var(--l); font-weight:800; }
+  .ppm3-table tr.ppm3-total td { font-weight:800; color:#fff; border-top:1px solid rgba(151,204,13,.25); background:rgba(151,204,13,.05); }
+  .ppm3-pill { display:inline-block; padding:1px 6px; border-radius:4px; background:rgba(151,204,13,.12); color:var(--l); font-weight:800; }
   .ppm3-comp { display:flex; align-items:center; gap:8px; }
   .ppm3-comp-logo { width:16px; height:16px; object-fit:contain; flex:none; }
   .ppm3-status { display:inline-block; padding:2px 8px; border-radius:20px; font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.02em; font-style:normal; }
-  .ppm3-status--good { background:rgba(166,255,0,.14); color:var(--l); }
+  .ppm3-status--good { background:rgba(151,204,13,.14); color:var(--l); }
   .ppm3-status--bad { background:rgba(255,138,107,.14); color:#ff8a6b; }
   .ppm3-status--warn { background:rgba(255,190,90,.14); color:#ffbe5a; }
   .ppm3-status--dim { background:rgba(255,255,255,.06); color:var(--muted); }
@@ -1198,7 +1198,7 @@ function CompareModal({players,onClose}){
           .pcmp-row--head span { font:800 11px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; color:#eef1f4; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
           .pcmp-row span { font:700 13px "IBM Plex Mono",monospace; color:#c4c9ce; text-align:center; }
           .pcmp-row small { font:700 9px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; color:#8d929b; text-align:center; }
-          .pcmp-win { color:var(--lime,#a6ff00); font-weight:800; }
+          .pcmp-win { color:var(--lime,#97cc0d); font-weight:800; }
         `}</style>
       </section>
     </div>
@@ -1210,7 +1210,7 @@ function WatchlistModal({ items, onOpen, onRemove, onClose }) {
     <div role="presentation" onMouseDown={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.72)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:16 }}>
       <section onMouseDown={e=>e.stopPropagation()} style={{ position:'relative', width:'100%', maxWidth:520, maxHeight:'82vh', overflowY:'auto', background:'#0a0a0c', border:'1px solid #1c1c1c', borderRadius:14, padding:'24px 22px' }}>
         <button type="button" onClick={onClose} aria-label="Close watchlist" style={{ position:'absolute', top:14, right:14, background:'none', border:'none', color:'#888', cursor:'pointer' }}><X size={18} /></button>
-        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, color:'#a6ff00', fontSize:12, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase' }}><Star size={14} /> Your watchlist</div>
+        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, color:'#97cc0d', fontSize:12, fontWeight:800, letterSpacing:'0.12em', textTransform:'uppercase' }}><Star size={14} /> Your watchlist</div>
         <h3 style={{ fontFamily:"'Barlow Condensed', sans-serif", fontSize:26, fontWeight:800, margin:'0 0 14px', textTransform:'uppercase', color:'#fff' }}>{items.length} player{items.length === 1 ? '' : 's'} saved</h3>
         {items.length ? (
           <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
@@ -1219,14 +1219,14 @@ function WatchlistModal({ items, onOpen, onRemove, onClose }) {
                 <button type="button" onClick={()=>onOpen({ id: pl.apiPlayerId, apiPlayerId: pl.apiPlayerId, name: pl.name })} style={{ flex:1, display:'flex', alignItems:'center', gap:12, background:'none', border:'none', color:'#eee', cursor:'pointer', textAlign:'left', minWidth:0 }}>
                   <ApiPlayerImage playerId={pl.apiPlayerId} name={pl.name} preferredSrc={pl.img} fallbackSrc="/assets/players/neutral-player.svg" alt="" />
                   <span style={{ display:'flex', flexDirection:'column', minWidth:0 }}><strong style={{ fontSize:15, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{pl.name}</strong><small style={{ color:'#888' }}>{[pl.position, pl.team].filter(Boolean).join(' \u00b7 ') || '\u2014'}</small></span>
-                  {pl.rating != null && <span style={{ marginLeft:'auto', fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, color:'#a6ff00' }}>{Math.round(pl.rating)}</span>}
+                  {pl.rating != null && <span style={{ marginLeft:'auto', fontFamily:"'Barlow Condensed', sans-serif", fontWeight:800, color:'#97cc0d' }}>{Math.round(pl.rating)}</span>}
                 </button>
                 <button type="button" onClick={()=>onRemove(pl.apiPlayerId)} aria-label={`Remove ${pl.name}`} style={{ background:'none', border:'none', color:'#666', cursor:'pointer', padding:4, flexShrink:0 }}><X size={15} /></button>
               </div>
             ))}
           </div>
         ) : (
-          <p style={{ color:'#888', lineHeight:1.6 }}>No players saved yet. Open any player profile and tap <b style={{ color:'#a6ff00' }}>Watch</b> to add them here.</p>
+          <p style={{ color:'#888', lineHeight:1.6 }}>No players saved yet. Open any player profile and tap <b style={{ color:'#97cc0d' }}>Watch</b> to add them here.</p>
         )}
       </section>
     </div>
@@ -1440,7 +1440,7 @@ function ScatterExplorer() {
                 <circle
                   cx={cx} cy={cy}
                   r={isHover ? 6 : 4}
-                  fill={isHover ? '#e9ff8a' : '#a6ff00'}
+                  fill={isHover ? '#d0f66d' : '#97cc0d'}
                   fillOpacity={isHover ? 1 : 0.75}
                   stroke="rgba(5,8,11,.55)" strokeWidth="0.6"
                 >
@@ -1896,10 +1896,10 @@ export default function Players(){
   return (
     <div className="page players-page plp2">
       <style>{`
-        .plp2 { --l:#a6ff00; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.52); --muted:#8b9299; max-width:1500px; position:relative; isolation:isolate; }
+        .plp2 { --l:#97cc0d; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.52); --muted:#8b9299; max-width:1500px; position:relative; isolation:isolate; }
         .plp2 * { box-sizing:border-box; }
         .plp2::before { content:""; position:fixed; inset:0; z-index:-2; background:url("/assets/debates-bg.png") center/cover no-repeat; pointer-events:none; }
-        .plp2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.20),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.14) 0%,rgba(5,8,11,.26) 45%,rgba(5,8,11,.34) 100%); }
+        .plp2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(151,204,13,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.20),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.14) 0%,rgba(5,8,11,.26) 45%,rgba(5,8,11,.34) 100%); }
         .plp2-hero { border:1px solid var(--line); border-radius:16px; background:var(--glass); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); padding:26px 30px; margin-bottom:14px; }
         .plp2-hero .eyebrow { color:var(--l); font:600 11px/1 "Barlow",sans-serif; letter-spacing:.16em; text-transform:uppercase; }
         .plp2-hero h1 { margin:12px 0 8px; color:#fff; font:800 46px/.95 "Barlow Condensed",sans-serif; text-transform:uppercase; letter-spacing:.01em; }
@@ -1921,7 +1921,7 @@ export default function Players(){
         .plp2-sec-head h3 { margin:0; color:#fff; font:800 18px/1 "Barlow Condensed",sans-serif; letter-spacing:.02em; text-transform:uppercase; }
         .plp2-fcards { display:grid; grid-template-columns:repeat(auto-fill,minmax(228px,1fr)); gap:11px; }
         .plp2-yc { display:flex; flex-direction:column; gap:0; background:rgba(255,255,255,.02); border:1px solid var(--line); border-radius:11px; padding:12px; cursor:pointer; transition:border-color .12s,transform .12s; }
-        .plp2-yc:hover { border-color:rgba(166,255,0,.35); transform:translateY(-1px); }
+        .plp2-yc:hover { border-color:rgba(151,204,13,.35); transform:translateY(-1px); }
         .plp2-yc-top { display:flex; gap:11px; }
         .plp2-yc-media { display:flex; flex-direction:column; gap:7px; flex:none; align-items:center; }
         .plp2-yc-img { width:46px; height:46px; border-radius:8px; overflow:hidden; flex:none; background:rgba(255,255,255,.04); }
@@ -1933,7 +1933,7 @@ export default function Players(){
         .plp2-yc-body strong { display:block; color:#fff; font:700 13.5px/1.2 "Barlow",sans-serif; }
         .plp2-yc-meta { font-size:10.5px; color:var(--muted); margin:2px 0 4px; }
         .plp2-yc-role { display:flex; align-items:center; gap:7px; margin:0 0 5px; }
-        .plp2-yc-role em { font-style:normal; font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; color:var(--l); border:1px solid rgba(166,255,0,.35); border-radius:5px; padding:2px 7px; }
+        .plp2-yc-role em { font-style:normal; font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; color:var(--l); border:1px solid rgba(151,204,13,.35); border-radius:5px; padding:2px 7px; }
         .plp2-yc-no { font-size:10px; color:var(--muted); font-weight:700; }
         .plp2-yc-arch { color:var(--l); font:700 11px "Barlow",sans-serif; margin-bottom:5px; }
         .plp2-yc-foot { display:flex; align-items:center; gap:6px; font-size:11px; color:#c4c9ce; }
@@ -1951,7 +1951,7 @@ export default function Players(){
         .plp2-yc-stats b { display:block; font:800 15px/1 "Barlow Condensed",sans-serif; color:#fff; }
         .plp2-yc-stats span { display:block; margin-top:3px; font-size:8px; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .plp2-yc-more { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:11px; background:none; border:1px solid var(--line); color:var(--l); font:700 10.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:8px; border-radius:7px; cursor:pointer; transition:border-color .12s,background .12s; }
-        .plp2-yc-more:hover { border-color:var(--l); background:rgba(166,255,0,.06); }
+        .plp2-yc-more:hover { border-color:var(--l); background:rgba(151,204,13,.06); }
         .plp2-rank-tabs { display:flex; gap:6px; flex-wrap:wrap; }
         .plp2-rank-tabs button { border:1px solid var(--line); background:rgba(255,255,255,.02); color:#aeb4bb; border-radius:8px; padding:7px 12px; font:700 11px "Barlow Condensed",sans-serif; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; }
         .plp2-rank-tabs button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
@@ -1961,7 +1961,7 @@ export default function Players(){
         .plp2-table th.num, .plp2-table td.num { text-align:center; }
         .plp2-table td { padding:9px 10px; border-bottom:1px solid rgba(255,255,255,.05); color:#cfd4da; font:500 12.5px "Barlow",sans-serif; white-space:nowrap; }
         .plp2-table tbody tr { cursor:pointer; transition:background .12s; }
-        .plp2-table tbody tr:hover { background:rgba(200,250,60,.05); }
+        .plp2-table tbody tr:hover { background:rgba(151,204,13,.05); }
         .plp2-tp { display:flex; align-items:center; gap:9px; }
         .plp2-tp-img { width:30px; height:30px; border-radius:50%; overflow:hidden; background:radial-gradient(120% 120% at 50% 0%, #eef2f5, #b3bdc6 92%); border:1px solid var(--line); flex:none; }
         .plp2-tp-img img { width:100%; height:100%; object-fit:cover; object-position:top center; }
@@ -1989,7 +1989,7 @@ export default function Players(){
         .plp2-qa { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:14px; }
         .plp2-qa h4 { margin:0 0 10px; color:#e9edf1; font:800 11px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
         .plp2-qa button { display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; margin-bottom:7px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.02); color:#d8dde2; font:600 12.5px "Barlow",sans-serif; cursor:pointer; transition:border-color .12s,color .12s; }
-        .plp2-qa button:hover { border-color:rgba(200,250,60,.4); color:#fff; }
+        .plp2-qa button:hover { border-color:rgba(151,204,13,.4); color:#fff; }
         .plp2-qa button svg { color:var(--l); flex:none; }
         .plp2-qa button:last-child { margin-bottom:0; }
         .plp2-compare, .plp2-rising { border:1px solid var(--line); border-radius:14px; background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); padding:14px; }
@@ -2010,7 +2010,7 @@ export default function Players(){
         .plp2-rising-row .ri strong { display:block; color:#eef1f4; font:700 12.5px "Barlow",sans-serif; }
         .plp2-rising-row .ri span { color:var(--muted); font:500 10px "Barlow",sans-serif; }
         .plp2-rising-row .rr { color:var(--l); font:800 15px "Barlow Condensed",sans-serif; }
-        .plp2-notice { border:1px solid rgba(200,250,60,.3); background:rgba(200,250,60,.06); border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#dfeeb6; font:500 12.5px "Barlow",sans-serif; }
+        .plp2-notice { border:1px solid rgba(151,204,13,.3); background:rgba(151,204,13,.06); border-radius:10px; padding:10px 14px; margin-bottom:12px; color:#dfeeb6; font:500 12.5px "Barlow",sans-serif; }
       `}</style>
 
       <header className="plp2-hero">
@@ -2053,11 +2053,11 @@ export default function Players(){
           .plp2-dropdown { max-height:280px; overflow:auto; background:rgba(10,14,17,.98); backdrop-filter:blur(18px); border:1px solid rgba(255,255,255,.10); border-radius:10px; box-shadow:0 20px 50px rgba(0,0,0,.6); }
           .plp2-dropdown button { display:flex; align-items:center; gap:9px; width:100%; padding:9px 11px; text-align:left; border-bottom:1px solid rgba(255,255,255,.05); background:none; cursor:pointer; }
           .plp2-dropdown button:last-child { border-bottom:none; }
-          .plp2-dropdown button:hover { background:rgba(166,255,0,.06); }
+          .plp2-dropdown button:hover { background:rgba(151,204,13,.06); }
           .plp2-dropdown img { width:30px; height:30px; border-radius:50%; object-fit:cover; object-position:top; border:1px solid rgba(255,255,255,.12); flex:none; }
           .plp2-dropdown b { display:block; color:#fff; font:700 12px/1.1 "Barlow",sans-serif; }
           .plp2-dropdown small { display:block; margin-top:3px; color:#8d929b; font:600 9.5px/1 "Barlow",sans-serif; }
-          .plp2-dropdown em { margin-left:auto; flex:none; font:800 13px "Barlow Condensed",sans-serif; color:#a6ff00; font-style:normal; }
+          .plp2-dropdown em { margin-left:auto; flex:none; font:800 13px "Barlow Condensed",sans-serif; color:#97cc0d; font-style:normal; }
         `}</style>
       </div>
 

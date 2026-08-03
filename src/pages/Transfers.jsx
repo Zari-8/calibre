@@ -357,7 +357,7 @@ function computeVerdict({ valuation, fit, dealVerdict, askingPrice }) {
 // `verdictDisplay`/`verdictClass`, derived from `dealVerdict`
 // (calibreFitValue.js's fitVerdict()).
 
-function MetricBar({ label, value, max = 100, color = '#c8ff00' }) {
+function MetricBar({ label, value, max = 100, color = '#97cc0d' }) {
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '110px 1fr 36px', gap: 10, alignItems: 'center' }}>
       <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>{label}</span>
@@ -369,7 +369,7 @@ function MetricBar({ label, value, max = 100, color = '#c8ff00' }) {
   );
 }
 
-function ScorePanel({ title, score, scoreColor = '#c8ff00', children, span = 1 }) {
+function ScorePanel({ title, score, scoreColor = '#97cc0d', children, span = 1 }) {
   return (
     <div style={{ background: '#0f0f0f', border: '1px solid #1c1c1c', padding: 20, gridColumn: `span ${span}` }}>
       <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, letterSpacing: '0.15em', color: '#555', textTransform: 'uppercase', marginBottom: 10 }}>{title}</div>
@@ -384,7 +384,7 @@ function StatusBadge({ status }) {
     done:    { label: 'Done',       color: '#4ade80', border: 'rgba(74,222,128,0.3)',  bg: 'rgba(74,222,128,0.08)' },
     rumour:  { label: 'Hot rumour', color: '#f59e0b', border: 'rgba(245,158,11,0.3)', bg: 'rgba(245,158,11,0.08)' },
     premium: { label: 'Premium',    color: '#ef4444', border: 'rgba(239,68,68,0.3)',  bg: 'rgba(239,68,68,0.08)' },
-    watch:   { label: 'Watch',      color: '#c8ff00', border: 'rgba(200,255,0,0.3)',  bg: 'rgba(200,255,0,0.08)' },
+    watch:   { label: 'Watch',      color: '#97cc0d', border: 'rgba(151,204,13,0.3)',  bg: 'rgba(151,204,13,0.08)' },
   };
   const s = map[status] || map.watch;
   return (
@@ -413,7 +413,7 @@ function RecentTransferCard({ transfer, onAnalyse }) {
       <button
         onClick={() => onAnalyse(transfer)}
         style={{ marginTop: 10, width: '100%', background: 'none', border: '1px solid #2a2a2a', color: '#888', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 11, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '8px', cursor: 'pointer', transition: 'all 0.15s' }}
-        onMouseEnter={e => { e.target.style.borderColor = '#c8ff00'; e.target.style.color = '#c8ff00'; }}
+        onMouseEnter={e => { e.target.style.borderColor = '#97cc0d'; e.target.style.color = '#97cc0d'; }}
         onMouseLeave={e => { e.target.style.borderColor = '#2a2a2a'; e.target.style.color = '#888'; }}
       >
         Analyse this deal →
@@ -479,7 +479,7 @@ function PlayerSearch({ value, onChange, onSelect, onEnter }) {
                 <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 14, fontWeight: 700 }}>{p.full_name || p.name}</div>
                 <div style={{ fontSize: 10, color: '#666' }}>{p.pos || p.position} · {p.club || p.team} · {p.nationality}</div>
               </div>
-              <span style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800, color: '#c8ff00' }}>{p.rating ? Math.round(p.rating) : '—'}</span>
+              <span style={{ marginLeft: 'auto', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 18, fontWeight: 800, color: '#97cc0d' }}>{p.rating ? Math.round(p.rating) : '—'}</span>
             </button>
           ))}
         </div>
@@ -737,7 +737,7 @@ export default function Transfers() {
     await loadPlayerIntoEngine(null, playerQuery.trim(), null);
   }
 
-  const premiumColor = dealVerdict.premium > 100 ? '#ef4444' : dealVerdict.premium > 50 ? '#f59e0b' : '#c8ff00';
+  const premiumColor = dealVerdict.premium > 100 ? '#ef4444' : dealVerdict.premium > 50 ? '#f59e0b' : '#97cc0d';
   const shareText = `${selectedPlayer?.full_name || selectedPlayer?.name} — ${verdictDisplay}. Calibre values him at €${valuation.estimatedValue}M${selectedTeam ? ` (€${fit.fitAdjustedValue}M to ${selectedTeam.short || selectedTeam.name})` : ''}. calibrefootball.com/transfers`;
   // cardUrl itself is built further down, after riskPct exists — it needs
   // that same 0-100 risk figure the page's own SYSTEM RISK slider uses.
@@ -879,7 +879,7 @@ export default function Transfers() {
   return (
     <div className="tr2">
       <style>{`
-        .tr2 { --l:#a6ff00; --muted:#8d929b; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.5); position:relative; isolation:isolate; color:#fff; font-family:'Barlow',sans-serif; padding-bottom:40px; background:#050708; }
+        .tr2 { --l:#97cc0d; --muted:#8d929b; --line:rgba(255,255,255,.09); --glass:rgba(9,13,16,.5); position:relative; isolation:isolate; color:#fff; font-family:'Barlow',sans-serif; padding-bottom:40px; background:#050708; }
         .tr2 * { box-sizing:border-box; }
         .tr2-wrap { max-width:1500px; margin:0 auto; padding:22px 24px 0; display:grid; grid-template-columns:1fr 300px; gap:18px; align-items:start; }
         @media(max-width:1080px){ .tr2-wrap { grid-template-columns:1fr; } }
@@ -922,7 +922,7 @@ export default function Transfers() {
         .tr2-crest { width:32px; height:32px; margin-left:auto; }
         .tr2-crest img { max-width:100%; max-height:100%; object-fit:contain; }
         .tr2-verdict { border-radius:12px; padding:16px; text-align:center; border:1px solid; }
-        .tr2-verdict.lime { border-color:rgba(166,255,0,.4); background:rgba(166,255,0,.06); }
+        .tr2-verdict.lime { border-color:rgba(151,204,13,.4); background:rgba(151,204,13,.06); }
         .tr2-verdict.amber { border-color:rgba(232,177,58,.4); background:rgba(232,177,58,.06); }
         .tr2-verdict.red { border-color:rgba(239,68,68,.4); background:rgba(239,68,68,.06); }
         .tr2-verdict-title { font:800 26px/1 "Barlow Condensed",sans-serif; letter-spacing:.02em; }
@@ -930,7 +930,7 @@ export default function Transfers() {
         .tr2-verdict.amber .tr2-verdict-title { color:#e8b13a; }
         .tr2-verdict.red .tr2-verdict-title { color:#ef4444; }
         .tr2-risk-label { color:var(--muted); font:700 10px "Barlow",sans-serif; letter-spacing:.12em; text-transform:uppercase; margin:12px 0 8px; }
-        .tr2-risk-track { position:relative; height:8px; border-radius:6px; background:linear-gradient(90deg,#a6ff00,#e8b13a,#ef4444); margin-bottom:8px; }
+        .tr2-risk-track { position:relative; height:8px; border-radius:6px; background:linear-gradient(90deg,#97cc0d,#e8b13a,#ef4444); margin-bottom:8px; }
         .tr2-risk-dot { position:absolute; top:-4px; width:16px; height:16px; border-radius:50%; background:#fff; border:2px solid #0a0d05; transform:translateX(-50%); }
         .tr2-risk-ends { display:flex; justify-content:space-between; color:#6f757e; font:600 9.5px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
         .tr2-risk-why { margin-top:10px; color:#b6bcc3; font:500 12px/1.6 "Barlow",sans-serif; }
@@ -985,7 +985,7 @@ export default function Transfers() {
         .tr2-rail-photo { margin-top:2px; }
         .tr2-rail-side { flex:none; text-align:right; }
         .tr2-rail-side b { display:block; color:var(--l); font:800 14px "Barlow Condensed",sans-serif; }
-        .tr2-rail-side button { margin-top:4px; background:none; border:1px solid rgba(166,255,0,.4); color:var(--l); font:700 8.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; border-radius:5px; padding:2px 8px; cursor:pointer; }
+        .tr2-rail-side button { margin-top:4px; background:none; border:1px solid rgba(151,204,13,.4); color:var(--l); font:700 8.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; border-radius:5px; padding:2px 8px; cursor:pointer; }
         .tr2-footer { max-width:1500px; margin:8px auto 0; padding:0 24px; }
         .tr2-footer-grid { display:grid; grid-template-columns:repeat(4,1fr) 220px; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
         @media(max-width:980px){ .tr2-footer-grid { grid-template-columns:1fr 1fr; } }
@@ -1431,7 +1431,7 @@ const FORMATION_DOTS = {'4-3-3': [[50, 88], [20, 68], [38, 70], [62, 70], [80, 6
 
 function MiniPitch({ formation, score }) {
   const dots = FORMATION_DOTS[formation] || FORMATION_DOTS['4-3-3'];
-  const tone = score >= 75 ? '#a6ff00' : score >= 60 ? '#e8b13a' : '#ef4444';
+  const tone = score >= 75 ? '#97cc0d' : score >= 60 ? '#e8b13a' : '#ef4444';
   return (
     <div className="tr2-pitch">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none">
@@ -1451,12 +1451,12 @@ function MiniPitch({ formation, score }) {
 function TierLock({ title, blurb, tierLabel }) {
   return (
     <div style={{ padding: '52px 24px', textAlign: 'center' }}>
-      <div style={{ width: 44, height: 44, margin: '0 auto 16px', borderRadius: '50%', border: '1px solid #c8ff00', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8ff00" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+      <div style={{ width: 44, height: 44, margin: '0 auto 16px', borderRadius: '50%', border: '1px solid #97cc0d', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#97cc0d" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
       </div>
       <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.02em' }}>{title}</div>
       <p style={{ color: '#999', fontSize: 14, lineHeight: 1.6, maxWidth: 420, margin: '10px auto 18px' }}>{blurb}</p>
-      <button onClick={() => navigateTo('/pricing')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#c8ff00', color: '#0a0a0a', border: 'none', padding: '11px 22px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer' }}>Unlock with {tierLabel} →</button>
+      <button onClick={() => navigateTo('/pricing')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#97cc0d', color: '#0a0a0a', border: 'none', padding: '11px 22px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.14em', textTransform: 'uppercase', cursor: 'pointer' }}>Unlock with {tierLabel} →</button>
     </div>
   );
 }
@@ -1474,7 +1474,7 @@ function AgeCurveChart({ currentAge }) {
           style={{
             flex: 1,
             height: `${heights[i]}%`,
-            background: age === currentAge ? '#c8ff00' : age < currentAge ? '#333' : '#1c1c1c',
+            background: age === currentAge ? '#97cc0d' : age < currentAge ? '#333' : '#1c1c1c',
             transition: 'height 0.3s ease',
           }}
         />

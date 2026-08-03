@@ -63,7 +63,7 @@ export default function Debates(){
          readability, and a vignette. No hard flip to solid, so contrast eases. */
       .debates-page__shade { position: fixed; inset: 0; z-index: -1; pointer-events: none;
         background:
-          radial-gradient(ellipse 90% 42% at 50% -4%, rgba(166,255,0,0.07), transparent 60%),
+          radial-gradient(ellipse 90% 42% at 50% -4%, rgba(151,204,13,0.07), transparent 60%),
           radial-gradient(ellipse 120% 90% at 50% 130%, rgba(18,42,14,0.42), transparent 62%),
           radial-gradient(ellipse 100% 100% at 50% 45%, transparent 40%, rgba(4,7,10,0.42) 100%),
           linear-gradient(180deg, rgba(5,8,11,0.28) 0%, rgba(5,8,11,0.58) 42%, rgba(5,8,11,0.68) 100%); }
@@ -73,15 +73,15 @@ export default function Debates(){
 
       /* header row: title + stat strip */
       .dbx-top { display: grid; grid-template-columns: minmax(0,1.35fr) minmax(360px,0.9fr); gap: 28px; align-items: center; margin-bottom: 14px; }
-      .dbx-head .section-kicker { color: #A6FF00; }
+      .dbx-head .section-kicker { color: #97cc0d; }
       .dbx-head h1 { margin: 8px 0 0; font: 900 clamp(40px,4.4vw,60px)/0.94 "Barlow Condensed","Space Grotesk",sans-serif; text-transform: uppercase; letter-spacing: -0.02em; color: #fff; }
-      .dbx-head h1 em { display: block; color: #A6FF00; font-style: normal; }
+      .dbx-head h1 em { display: block; color: #97cc0d; font-style: normal; }
       .dbx-head p { margin: 14px 0 0; max-width: 460px; color: rgba(237,238,240,0.82); font: 500 14px/1.5 "Inter",sans-serif; }
 
       .dbx-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; padding: 20px 8px; border-radius: 14px; }
       .dbx-stats > div { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 4px 6px; position: relative; }
       .dbx-stats > div + div::before { content: ""; position: absolute; left: 0; top: 14%; height: 72%; width: 1px; background: rgba(255,255,255,0.10); }
-      .dbx-stats svg { color: #A6FF00; }
+      .dbx-stats svg { color: #97cc0d; }
       .dbx-stats strong { color: #fff; font: 900 26px/1 "Space Grotesk","Inter",sans-serif; }
       .dbx-stats span { color: rgba(237,238,240,0.60); font: 700 10px/1 "Inter",sans-serif; letter-spacing: 0.10em; text-transform: uppercase; }
 
@@ -93,8 +93,8 @@ export default function Debates(){
       .dbx-battle-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 10px 0 2px; }
       .dbx-battle-stats { display: inline-flex; align-items: center; gap: 8px; color: rgba(237,238,240,0.60); font: 600 11.5px/1 "Inter",sans-serif; }
       .dbx-battle-stats svg { opacity: 0.75; vertical-align: -2px; }
-      .dbx-heat { display: inline-flex; align-items: center; gap: 5px; background: rgba(166,255,0,0.13); border: 1px solid rgba(166,255,0,0.24); color: #A6FF00; border-radius: 999px; padding: 5px 10px; font: 800 12px/1 "Space Grotesk","Inter",sans-serif; letter-spacing: 0.02em; }
-      .dbx-heat svg { color: #A6FF00; }
+      .dbx-heat { display: inline-flex; align-items: center; gap: 5px; background: rgba(151,204,13,0.13); border: 1px solid rgba(151,204,13,0.24); color: #97cc0d; border-radius: 999px; padding: 5px 10px; font: 800 12px/1 "Space Grotesk","Inter",sans-serif; letter-spacing: 0.02em; }
+      .dbx-heat svg { color: #97cc0d; }
 
       .dbx-empty { padding: 26px; text-align: center; color: rgba(237,238,240,0.55); font: 500 14px/1.4 "Inter",sans-serif; border: 1px dashed rgba(255,255,255,0.12); border-radius: 12px; }
 
@@ -103,15 +103,15 @@ export default function Debates(){
          wall of big cards, so 20+ battles stay organized. */
       .dbx-more-list { display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.09); border-radius: 12px; overflow: hidden; }
       .dbx-battle-row { display: flex; align-items: center; gap: 14px; padding: 12px 16px; background: rgba(10,13,16,.6); cursor: pointer; transition: background .12s; }
-      .dbx-battle-row:hover { background: rgba(166,255,0,0.05); }
+      .dbx-battle-row:hover { background: rgba(151,204,13,0.05); }
       .dbx-br-players { display: flex; align-items: center; gap: 8px; flex: none; width: 200px; }
       .dbx-br-players img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; object-position: top; }
       .dbx-br-players span { font: 700 11.5px/1.2 "Inter",sans-serif; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 68px; }
       .dbx-br-vs { color: rgba(237,238,240,0.4); font-size: 10px; flex: none; }
       .dbx-br-title { flex: 1; min-width: 0; font: 600 12.5px/1.3 "Inter",sans-serif; color: #d8dde2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
       .dbx-br-bar { flex: none; width: 90px; height: 5px; border-radius: 4px; background: rgba(255,255,255,0.1); overflow: hidden; }
-      .dbx-br-bar span { display: block; height: 100%; background: #A6FF00; }
-      .dbx-br-split { flex: none; width: 64px; text-align: right; font: 800 11px "Space Grotesk","Inter",sans-serif; color: #A6FF00; }
+      .dbx-br-bar span { display: block; height: 100%; background: #97cc0d; }
+      .dbx-br-split { flex: none; width: 64px; text-align: right; font: 800 11px "Space Grotesk","Inter",sans-serif; color: #97cc0d; }
       .dbx-br-votes { flex: none; width: 76px; text-align: right; color: rgba(237,238,240,0.55); font: 600 11px "Inter",sans-serif; }
       @media(max-width:760px){ .dbx-br-players { width: 140px; } .dbx-br-players span { max-width: 46px; } .dbx-br-votes { display:none; } }
 
@@ -122,13 +122,13 @@ export default function Debates(){
       /* top contributors */
       .dbx-contrib-row { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-top: 1px solid rgba(255,255,255,0.06); }
       .dbx-contrib-row:first-of-type { border-top: none; }
-      .dbx-contrib-row i { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: rgba(166,255,0,0.10); color: #A6FF00; font: 800 12px/1 "Space Grotesk",sans-serif; font-style: normal; flex: none; }
+      .dbx-contrib-row i { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: rgba(151,204,13,0.10); color: #97cc0d; font: 800 12px/1 "Space Grotesk",sans-serif; font-style: normal; flex: none; }
       .dbx-contrib-row b { flex: 1; color: #fff; font: 700 13.5px/1.2 "Inter",sans-serif; }
-      .dbx-contrib-row span { color: #A6FF00; font: 800 12px/1 "Space Grotesk",sans-serif; }
+      .dbx-contrib-row span { color: #97cc0d; font: 800 12px/1 "Space Grotesk",sans-serif; }
 
       /* bottom nominate bar */
       .dbx-nominate { display: flex; align-items: center; gap: 18px; padding: 20px 24px; border-radius: 14px; margin-top: 30px; }
-      .dbx-nominate > svg { color: #A6FF00; flex: none; }
+      .dbx-nominate > svg { color: #97cc0d; flex: none; }
       .dbx-nominate div { flex: 1; }
       .dbx-nominate b { display: block; color: #fff; font: 900 17px/1.1 "Barlow Condensed","Space Grotesk",sans-serif; text-transform: uppercase; letter-spacing: 0.02em; }
       .dbx-nominate span { color: rgba(237,238,240,0.66); font: 500 13px/1.3 "Inter",sans-serif; }
@@ -153,27 +153,27 @@ export default function Debates(){
       /* the local dv-* battle internals — smaller avatars = smaller cards */
       .dv-players { display: flex; align-items: center; gap: 10px; }
       .dv-player { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; background: none; border: 1px solid transparent; border-radius: 12px; padding: 6px; cursor: pointer; min-width: 0; }
-      .dv-player:hover { border-color: rgba(200,255,0,0.4); background: rgba(200,255,0,0.05); }
-      .dv-player.is-voted { border-color: #a6ff00; background: rgba(200,255,0,0.08); }
+      .dv-player:hover { border-color: rgba(151,204,13,0.4); background: rgba(151,204,13,0.05); }
+      .dv-player.is-voted { border-color: #97cc0d; background: rgba(151,204,13,0.08); }
       .dv-player img { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; }
       .dv-player strong { color: #fff; font-size: 12.5px; text-align: center; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
       .dv-vs { color: #6b7075; font-size: 11px; font-weight: 700; flex: none; }
       .dv-bar { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.10); overflow: hidden; margin: 10px 0 7px; }
-      .dv-bar span { display: block; height: 100%; background: #a6ff00; transition: width .3s ease; }
+      .dv-bar span { display: block; height: 100%; background: #97cc0d; transition: width .3s ease; }
       .dv-foot { display: flex; align-items: center; justify-content: space-between; font-size: 11px; color: #8b9096; }
-      .dv-foot strong { color: #a6ff00; font-weight: 800; }
+      .dv-foot strong { color: #97cc0d; font-weight: 800; }
       .dv-title { display: block; width: 100%; background: none; border: none; cursor: pointer; color: #c4c9ce; font-size: 12.5px; line-height: 1.35; text-align: left; padding: 8px 0 2px; }
       .dv-title:hover { color: #fff; }
       .dv-hp-vote { display: flex; gap: 8px; margin: 8px 0; }
       .dv-hp-vote button { flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.14); color: #fff; border-radius: 8px; padding: 8px 0; font-size: 12px; font-weight: 700; letter-spacing: .06em; cursor: pointer; }
-      .dv-hp-vote button:hover { border-color: #a6ff00; color: #a6ff00; }
+      .dv-hp-vote button:hover { border-color: #97cc0d; color: #97cc0d; }
       .dv-goat-count { color: #8b9096; font-size: 12px; margin-bottom: 4px; }
 
       /* GOAT — kept as a DISTINCT hero, but compact: lime-tinted marquee, a
          two-column banner layout, and the shared small avatars. */
-      .debates-page .goat-panel { position: relative; padding: 18px 20px; border-radius: 14px; border: 1px solid rgba(166,255,0,0.22); background: linear-gradient(180deg, rgba(166,255,0,0.055), rgba(9,13,16,0.5)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 12px 34px rgba(0,0,0,0.30); }
+      .debates-page .goat-panel { position: relative; padding: 18px 20px; border-radius: 14px; border: 1px solid rgba(151,204,13,0.22); background: linear-gradient(180deg, rgba(151,204,13,0.055), rgba(9,13,16,0.5)); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: 0 12px 34px rgba(0,0,0,0.30); }
       .goat-hero { display: grid; grid-template-columns: minmax(0,0.9fr) minmax(0,1.1fr); gap: 22px; align-items: center; }
-      .goat-hero__lead .section-kicker { color: #A6FF00; }
+      .goat-hero__lead .section-kicker { color: #97cc0d; }
       .goat-hero__lead h2 { margin: 6px 0 0; font: 900 clamp(24px,2.4vw,30px)/0.95 "Barlow Condensed","Space Grotesk",sans-serif; text-transform: uppercase; letter-spacing: -0.01em; color: #fff; }
       .goat-hero__lead .goat-share { margin-top: 12px; }
       .goat-hero__vote { min-width: 0; }
@@ -200,7 +200,7 @@ export default function Debates(){
         position: absolute; top: 50%; transform: translateY(-50%); z-index: 5;
         width: 38px; height: 38px; border-radius: 50%; cursor: pointer;
         display: grid; place-items: center; font: 700 22px/1 "Inter",sans-serif;
-        color: #04120a; background: #A6FF00; border: none;
+        color: #04120a; background: #97cc0d; border: none;
         box-shadow: 0 6px 18px rgba(0,0,0,0.42); transition: transform .12s;
       }
       .dbx-scroller__arrow:hover { transform: translateY(-50%) scale(1.08); }

@@ -21,7 +21,7 @@ function chipsOf(p) {
  * AttributeCard (sf2-attr): 92x112 portrait with the club crest beneath it,
  * big white Calibre rating, position chips, Position + Archetype, the
  * "View full profile" bar (opens the profile pop-up), then the bio grid.
- * Colours/fonts match System Fit exactly (#a6ff00 lime, #8d929b muted, IBM Plex Mono labels).
+ * Colours/fonts match System Fit exactly (#97cc0d lime, #8d929b muted, IBM Plex Mono labels).
  *
  * Props:
  *   player        — { name, rating|calibreRating, position|pos, archetype, age, club|team, apiPlayerId|id, apiTeamId, image }
@@ -53,7 +53,7 @@ export default function PlayerCard({ player, onViewProfile }) {
   return (
     <div className="pcard">
       <style>{`
-        .pcard { --l:#a6ff00; --muted:#8d929b; background:rgba(9,13,16,.46); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px; display:flex; flex-direction:column; height:100%; }
+        .pcard { --l:#97cc0d; --muted:#8d929b; background:rgba(9,13,16,.46); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:16px; display:flex; flex-direction:column; height:100%; }
         .pcard * { box-sizing:border-box; }
         .pcard-top { display:flex; gap:12px; }
         .pcard-left { flex:none; display:flex; flex-direction:column; align-items:center; gap:9px; }
@@ -65,10 +65,10 @@ export default function PlayerCard({ player, onViewProfile }) {
         .pcard-rating strong { display:block; color:#fff; font:900 42px/.85 "Barlow Condensed",sans-serif; }
         .pcard-rating span { display:block; margin-top:4px; color:var(--muted); font:800 8px/1 "IBM Plex Mono",monospace; letter-spacing:.1em; }
         .pcard-chips { display:flex; gap:5px; margin-top:11px; flex-wrap:wrap; }
-        .pcard-chips em { padding:3px 8px; border:1px solid rgba(166,255,0,.28); border-radius:4px; color:var(--l); font:800 9px/1 "IBM Plex Mono",monospace; font-style:normal; }
+        .pcard-chips em { padding:3px 8px; border:1px solid rgba(151,204,13,.28); border-radius:4px; color:var(--l); font:800 9px/1 "IBM Plex Mono",monospace; font-style:normal; }
         .pcard-arch { display:block; margin-top:10px; color:var(--l); font:800 13px/1.15 "Barlow",sans-serif; }
-        .pcard-view { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; margin:14px 0; padding:10px; border:1px solid rgba(166,255,0,.30); border-radius:8px; background:rgba(166,255,0,.05); color:var(--l); font:800 10px/1 "IBM Plex Mono",monospace; letter-spacing:.08em; cursor:pointer; }
-        .pcard-view:hover { background:rgba(166,255,0,.12); }
+        .pcard-view { display:flex; align-items:center; justify-content:center; gap:7px; width:100%; margin:14px 0; padding:10px; border:1px solid rgba(151,204,13,.30); border-radius:8px; background:rgba(151,204,13,.05); color:var(--l); font:800 10px/1 "IBM Plex Mono",monospace; letter-spacing:.08em; cursor:pointer; }
+        .pcard-view:hover { background:rgba(151,204,13,.12); }
         .pcard-grid { display:grid; grid-template-columns:1fr 1fr; gap:11px 10px; border-top:1px solid rgba(255,255,255,.07); padding-top:13px; margin-top:auto; }
         .pcard-grid small { display:block; color:var(--muted); font:700 8px/1 "IBM Plex Mono",monospace; letter-spacing:.07em; }
         .pcard-grid b { display:block; margin-top:5px; color:#fff; font:700 13px/1.15 "Barlow",sans-serif; }

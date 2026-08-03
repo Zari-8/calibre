@@ -114,9 +114,9 @@ export default function WorldCupOverview() {
   return (
     <div className="page wc2">
       <style>{`
-        .wc2 { --l:#a6ff00; --line:rgba(255,255,255,.09); --muted:#888; --glass:rgba(9,13,16,.5); color:#fff; position:relative; isolation:isolate; background:#050708; }
+        .wc2 { --l:#97cc0d; --line:rgba(255,255,255,.09); --muted:#888; --glass:rgba(9,13,16,.5); color:#fff; position:relative; isolation:isolate; background:#050708; }
         .wc2::before { content:""; position:fixed; inset:0; z-index:-2; background:url("/assets/WC-overview-bg.png") center/cover no-repeat; pointer-events:none; }
-        .wc2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(166,255,0,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.30),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.24) 0%,rgba(5,8,11,.45) 45%,rgba(5,8,11,.58) 100%); }
+        .wc2::after { content:""; position:fixed; inset:0; z-index:-1; pointer-events:none; background:radial-gradient(ellipse 90% 42% at 50% -4%,rgba(151,204,13,.07),transparent 60%),radial-gradient(ellipse 120% 90% at 50% 130%,rgba(18,42,14,.30),transparent 62%),linear-gradient(180deg,rgba(5,8,11,.24) 0%,rgba(5,8,11,.45) 45%,rgba(5,8,11,.58) 100%); }
         .wc2 * { box-sizing:border-box; }
         .wc2-hero { position:relative; overflow:hidden; border-radius:14px; padding:34px 30px 0; margin-bottom:20px; }
         .wc2-hero::after { content:""; position:absolute; inset:0; background:linear-gradient(180deg,rgba(5,8,11,.55) 0%,rgba(5,8,11,.85) 100%); z-index:0; }
@@ -137,7 +137,7 @@ export default function WorldCupOverview() {
         .wc2-eyebrow-sm { color:var(--l); font:700 10px "Barlow",sans-serif; letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px; display:block; }
         .wc2-summary-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
         .wc2-summary-cell { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; }
-        .wc2-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(166,255,0,.35); font-size:16px; line-height:1; }
+        .wc2-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(151,204,13,.35); font-size:16px; line-height:1; }
         .wc2-summary-cell strong { display:block; font:800 22px "Barlow Condensed",sans-serif; color:#fff; }
         .wc2-summary-cell span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
         .wc2-hosts { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font:600 11px "Barlow",sans-serif; }
@@ -146,7 +146,7 @@ export default function WorldCupOverview() {
         .wc2-carousel::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:3px; }
         .wc2-fmatch { position:relative; flex:none; width:250px; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:14px; cursor:pointer; scroll-snap-align:start; transition:border-color .12s; }
         .wc2-fmatch-headline { margin:10px 0 0; padding-top:10px; border-top:1px solid var(--line); color:#d8dde2; font:500 11px/1.4 "Barlow",sans-serif; font-style:italic; }
-        .wc2-fmatch:hover { border-color:rgba(166,255,0,.35); }
+        .wc2-fmatch:hover { border-color:rgba(151,204,13,.35); }
         .wc2-fmatch-live { position:absolute; top:10px; right:10px; background:rgba(239,68,68,.15); color:#ef4444; font:800 8.5px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:2px 6px; border-radius:5px; }
         .wc2-fmatch-teams { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .wc2-fmatch-meta { margin-top:10px; text-align:center; color:var(--muted); font:600 10px "Barlow",sans-serif; letter-spacing:.04em; text-transform:uppercase; }

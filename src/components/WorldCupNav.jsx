@@ -21,7 +21,7 @@ export default function WorldCupNav({ active = 'overview' }) {
         .wcnav { display:flex; gap:2px; overflow-x:auto; margin-bottom:18px; border-bottom:1px solid #1c1c1c; }
         .wcnav button { flex:none; background:none; border:none; border-bottom:2px solid transparent; color:#888; font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; padding:12px 16px; cursor:pointer; white-space:nowrap; transition:color .15s,border-color .15s; }
         .wcnav button:hover { color:#ccc; }
-        .wcnav button.active { color:#c8ff00; border-bottom-color:#c8ff00; }
+        .wcnav button.active { color:#97cc0d; border-bottom-color:#97cc0d; }
       `}</style>
       {TABS.map(t => (
         <button key={t.key} type="button" className={active === t.key ? 'active' : ''} onClick={() => navigateTo(t.href)}>

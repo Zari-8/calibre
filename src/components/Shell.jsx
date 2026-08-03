@@ -112,7 +112,7 @@ export default function Shell({ children, currentPath }) {
         .calibre-bell { position: relative; display: inline-flex; }
         .calibre-bell__badge {
           position: absolute; top: -4px; right: -4px; min-width: 16px; height: 16px;
-          padding: 0 4px; border-radius: 999px; background: #A6FF00; color: #04120a;
+          padding: 0 4px; border-radius: 999px; background: #97cc0d; color: #04120a;
           font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
           box-sizing: border-box;
         }
@@ -120,7 +120,7 @@ export default function Shell({ children, currentPath }) {
         .calibre-notif {
           position: absolute; top: calc(100% + 12px); right: 0; z-index: 100;
           width: 340px; max-width: calc(100vw - 24px);
-          background: #0b0d0e; border: 1px solid rgba(166,255,0,0.22); border-radius: 10px;
+          background: #0b0d0e; border: 1px solid rgba(151,204,13,0.22); border-radius: 10px;
           box-shadow: 0 18px 44px rgba(0,0,0,0.55); overflow: hidden;
         }
         .calibre-notif__head {
@@ -129,7 +129,7 @@ export default function Shell({ children, currentPath }) {
         }
         .calibre-notif__title { font-size: 12px; letter-spacing: 1.4px; text-transform: uppercase; color: #fff; }
         .calibre-notif__readall {
-          background: none; border: none; color: #A6FF00; font-size: 11px; letter-spacing: 0.4px;
+          background: none; border: none; color: #97cc0d; font-size: 11px; letter-spacing: 0.4px;
           cursor: pointer; padding: 0;
         }
         .calibre-notif__list { max-height: 380px; overflow-y: auto; }
@@ -137,9 +137,9 @@ export default function Shell({ children, currentPath }) {
           display: flex; gap: 10px; padding: 12px 14px; cursor: pointer;
           border-bottom: 1px solid rgba(255,255,255,0.05);
         }
-        .calibre-notif__item:hover { background: rgba(166,255,0,0.05); }
+        .calibre-notif__item:hover { background: rgba(151,204,13,0.05); }
         .calibre-notif__dot { width: 7px; height: 7px; border-radius: 50%; margin-top: 6px; flex: none; background: transparent; }
-        .calibre-notif__item.is-unread .calibre-notif__dot { background: #A6FF00; }
+        .calibre-notif__item.is-unread .calibre-notif__dot { background: #97cc0d; }
         .calibre-notif__body { flex: 1; min-width: 0; }
         .calibre-notif__itemtitle { font-size: 13px; color: #fff; margin: 0 0 2px; line-height: 1.35; }
         .calibre-notif__itemtext { font-size: 12px; color: rgba(255,255,255,0.6); margin: 0; line-height: 1.4; }

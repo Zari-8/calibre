@@ -18,7 +18,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { calibreValue } from '../services/calibreValue.js';
 
-const LIME = '#c8ff00';
+const LIME = '#97cc0d';
 const INK = '#0a0a0a';
 const BC = "'Barlow Condensed', sans-serif";
 

@@ -55,7 +55,7 @@ export default function WorldCupGroups() {
   return (
     <div className="page wc2">
       <style>{`
-        .wc2 { --l:#c8ff00; --line:#1c1c1c; --muted:#888; color:#fff; }
+        .wc2 { --l:#97cc0d; --line:#1c1c1c; --muted:#888; color:#fff; }
         .wc2 * { box-sizing:border-box; }
         .wc2-title { margin:4px 0 18px; }
         .wc2-title h1 { margin:0 0 6px; font:800 34px "Barlow Condensed",sans-serif; text-transform:uppercase; }

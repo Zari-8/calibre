@@ -93,7 +93,7 @@ const C = {
   black: "#0a0a0a",
   surface: "#111111",
   border: "#1e1e1e",
-  lime: "#c8ff00",
+  lime: "#97cc0d",
   white: "#ffffff",
   muted: "#666666",
   mutedLight: "#999999",

@@ -256,15 +256,15 @@ export default function Pricing() {
         ))}
       </div>
 
-      <section className="dossier-addon" style={{ margin: '8px 0 4px', background: 'linear-gradient(180deg,#0c0d0a,#0a0a0a)', border: '1px solid #1c1c1c', borderLeft: '3px solid #c8ff00', borderRadius: 10, padding: '20px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
+      <section className="dossier-addon" style={{ margin: '8px 0 4px', background: 'linear-gradient(180deg,#0c0d0a,#0a0a0a)', border: '1px solid #1c1c1c', borderLeft: '3px solid #97cc0d', borderRadius: 10, padding: '20px 22px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 18, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
-          <FileText size={26} color="#c8ff00" style={{ flexShrink: 0 }} />
+          <FileText size={26} color="#97cc0d" style={{ flexShrink: 0 }} />
           <div>
             <strong style={{ display: 'block', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 800, textTransform: 'uppercase', color: '#fff' }}>Commission a Dossier — $499</strong>
             <span style={{ color: '#9a9a9a', fontSize: 13, lineHeight: 1.5 }}>A decision-grade scouting brief on any player or talent — the 40-point Director-of-Football framework, or the development-tuned Discovery Dossier for an under-the-radar prospect. One-time, delivered as a watermarked PDF.</span>
           </div>
         </div>
-        <button type="button" onClick={() => navigateTo('/talents')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#c8ff00', border: '1px solid #c8ff00', borderRadius: 6, padding: '10px 18px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>Explore on Talents <ArrowRight size={13} /></button>
+        <button type="button" onClick={() => navigateTo('/talents')} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'transparent', color: '#97cc0d', border: '1px solid #97cc0d', borderRadius: 6, padding: '10px 18px', fontFamily: "'Barlow Condensed', sans-serif", fontSize: 12, fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>Explore on Talents <ArrowRight size={13} /></button>
       </section>
 
       <PremierBetBanner source="pricing" variant="card" />

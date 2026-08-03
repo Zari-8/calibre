@@ -384,10 +384,10 @@ export default function Home() {
         .home-about__grid p { color: #9aa0a6; font-size: 14px; line-height: 1.65; max-width: 520px; margin: 0 0 12px; }
         .home-contact { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 26px 28px; }
         .home-contact h3 { color: #fff; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; text-transform: uppercase; margin: 0 0 12px; }
-        .home-contact a { color: #c8ff00; text-decoration: none; font-weight: 600; }
+        .home-contact a { color: #97cc0d; text-decoration: none; font-weight: 600; }
         .home-contact a:hover { text-decoration: underline; }
         .home-contact__row { display: flex; align-items: center; gap: 10px; color: #c4c9ce; font-size: 13.5px; margin-bottom: 10px; }
-        .home-contact__row svg { color: #c8ff00; flex: none; }
+        .home-contact__row svg { color: #97cc0d; flex: none; }
         @media (max-width: 860px) { .home-about__grid { grid-template-columns: 1fr; } }
       `}</style>
       <section className="home-section home-about">

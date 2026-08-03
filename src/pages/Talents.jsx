@@ -734,10 +734,24 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const [compareName, setCompareName] = useState('');
   const [showHow, setShowHow] = useState(false);
   const [peerLimit, setPeerLimit] = useState(5);
+  const [activeTypes, setActiveTypes] = useState(() => new Set());
+  const [leagueFocus, setLeagueFocus] = useState('all');
+
+  function toggleType(key) {
+    setActiveTypes(prev => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  }
+
+  const leagueOptions = Array.from(new Set((pool || []).map(p => p.league).filter(Boolean))).sort();
 
   const options = (pool || [])
     .filter(p => posFocus === 'all' || String(p.position || '').toUpperCase() === posFocus)
-    .filter(p => numeric(p.minutes) >= minThresh);
+    .filter(p => numeric(p.minutes) >= minThresh)
+    .filter(p => leagueFocus === 'all' || p.league === leagueFocus)
+    .filter(p => activeTypes.size === 0 || activeTypes.has(pathwayTag(p).cls));
 
   if (!player) return <div className="tp-empty">Select a prospect to inspect the pathway model.</div>;
 
@@ -757,6 +771,8 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const compare = pool.find(p => p.name === compareName) || null;
   const compareAxes = compare ? radarAxes(compare) : null;
   const birthday = tpBirthday(player);
+  const heroTeamId = player.apiTeamId ?? player.api_team_id ?? player.teamId ?? null;
+  const heroCrest = player.logo || player.crestUrl || (heroTeamId ? teamLogoUrl(heroTeamId) : undefined);
 
   // Development curve — an S-curve (smoothstep easing), not a linear ramp:
   // slow early growth, fastest through the breakout window, plateauing near
@@ -764,7 +780,15 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   // once drawn; this keeps the same start/end values but real acceleration.
   const W = 920, H = 150, PAD = 46;
   const n = stages.length;
-  const norm = v => clamp((v - 58) / (96 - 58), 0, 1);
+  // Scale the vertical axis to the player's own rating→potential span (with a
+  // little headroom either side) instead of a fixed 58-96 band. A fixed wide
+  // band flattens a modest +3/+6 headroom into a near-straight line; zooming
+  // to the player's real range makes the actual shape of their curve read
+  // clearly regardless of how big the numeric gap is.
+  const curveSpan = Math.max(1, potential - rating);
+  const curveLo = Math.min(rating, potential) - Math.max(1.5, curveSpan * 0.25);
+  const curveHi = Math.max(rating, potential) + Math.max(1.5, curveSpan * 0.15);
+  const norm = v => clamp((v - curveLo) / ((curveHi - curveLo) || 1), 0, 1);
   const ease = t => t * t * (3 - 2 * t);
   const pts = stages.map((_, i) => {
     const t = i / Math.max(1, n - 1);
@@ -774,19 +798,23 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
     return [x, y];
   });
   // Catmull-Rom -> cubic Bezier so the SVG path is an actual curve through
-  // the points, not straight polyline segments between them.
-  const curvePath = pts.length < 2 ? '' : pts.reduce((d, p, i) => {
-    if (i === 0) return `M ${p[0]},${p[1]}`;
-    const p0 = pts[i - 1] || p;
-    const p1 = pts[i];
-    const prev2 = pts[i - 2] || p0;
-    const next = pts[i + 1] || p1;
+  // the points, not straight polyline segments between them. Segments are
+  // kept as an array (rather than one joined string) so the final segment —
+  // the long-term-ceiling projection — can be drawn dashed/lighter while the
+  // confirmed near-term segments stay solid.
+  const segCmds = pts.slice(1).map((p1, i) => {
+    const p0 = pts[i];
+    const prev2 = pts[i - 1] || p0;
+    const next = pts[i + 2] || p1;
     const cp1x = p0[0] + (p1[0] - prev2[0]) / 6;
     const cp1y = p0[1] + (p1[1] - prev2[1]) / 6;
     const cp2x = p1[0] - (next[0] - p0[0]) / 6;
     const cp2y = p1[1] - (next[1] - p0[1]) / 6;
-    return `${d} C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p1[0]},${p1[1]}`;
-  }, '');
+    return `C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p1[0]},${p1[1]}`;
+  });
+  const curvePath = pts.length < 2 ? '' : `M ${pts[0][0]},${pts[0][1]} ${segCmds.join(' ')}`;
+  const solidCurvePath = pts.length < 2 ? '' : `M ${pts[0][0]},${pts[0][1]} ${segCmds.slice(0, -1).join(' ')}`;
+  const dashedCurvePath = segCmds.length ? `M ${pts[pts.length - 2][0]},${pts[pts.length - 2][1]} ${segCmds[segCmds.length - 1]}` : '';
   // Closed area path (curve -> down to baseline -> back to start) so the
   // chart reads as a floor-to-value growth area, not just a bare line.
   const baselineY = H - 24;
@@ -823,11 +851,15 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-controls .h span { color:#e9edf1; font:800 12px/1 "Barlow Condensed",sans-serif; letter-spacing:.12em; text-transform:uppercase; }
         .tp-controls .h button { background:none; border:none; color:var(--l); font:700 10px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.06em; cursor:pointer; }
         .tp-ctl { margin-bottom:14px; }
-        .tp-ctl > label { display:block; color:var(--muted); font:700 9.5px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:7px; }
-        .tp-seg { display:flex; gap:5px; }
-        .tp-seg button { flex:1; padding:7px 0; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.02); color:#b6bcc3; font:700 11px "Barlow Condensed",sans-serif; cursor:pointer; }
+        .tp-ctl > label, .tp-ctl > .tp-ctl-label { display:block; color:var(--muted); font:700 9.5px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:7px; }
+        .tp-seg { display:flex; flex-wrap:wrap; gap:5px; }
+        .tp-seg button { flex:1 1 45%; padding:7px 2px; border:1px solid var(--line); border-radius:8px; background:rgba(255,255,255,.02); color:#b6bcc3; font:700 10px "Barlow Condensed",sans-serif; cursor:pointer; white-space:nowrap; }
         .tp-seg button.on { background:var(--l); color:#0a0d05; border-color:var(--l); }
         .tp-ctl select { width:100%; height:34px; padding:0 10px; border:1px solid var(--line); border-radius:9px; background:rgba(255,255,255,.03); color:#d8dde2; font:600 12px "Barlow",sans-serif; cursor:pointer; }
+        .tp-check { display:flex; align-items:center; gap:9px; padding:5px 0; cursor:pointer; color:#cfd4da; font:600 12px "Barlow",sans-serif; }
+        .tp-check input { appearance:none; width:15px; height:15px; border:1px solid rgba(255,255,255,.22); border-radius:4px; background:rgba(255,255,255,.03); flex:none; cursor:pointer; position:relative; }
+        .tp-check input:checked { background:var(--l); border-color:var(--l); }
+        .tp-check input:checked::after { content:""; position:absolute; left:4.5px; top:1.5px; width:4px; height:7px; border:solid #0a0d05; border-width:0 2px 2px 0; transform:rotate(45deg); }
         .tp-toggle { display:flex; align-items:center; justify-content:space-between; cursor:pointer; }
         .tp-toggle span { color:#cfd4da; font:600 12px "Barlow",sans-serif; }
         .tp-switch { width:38px; height:21px; border-radius:11px; background:rgba(255,255,255,.12); position:relative; transition:background .15s; flex:none; }
@@ -850,17 +882,20 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-hero-photo { width:64px; height:64px; border-radius:12px; overflow:hidden; background:#0a0d10; border:1px solid var(--line); flex:none; }
         .tp-hero-photo img { width:100%; height:100%; object-fit:cover; object-position:top center; }
         .tp-hero-id { min-width:0; }
-        .tp-hero-id h3 { margin:0; color:#f4f6f8; font:800 26px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
-        .tp-hero-id p { margin:5px 0 0; color:#b6bcc3; font:500 13px "Barlow",sans-serif; }
-        .tp-hero-meta { margin-top:10px; display:flex; gap:22px; flex-wrap:wrap; }
+        .tp-hero-id h3 { margin:0; display:flex; align-items:center; gap:8px; color:#f4f6f8; font:800 26px/1 "Barlow Condensed",sans-serif; letter-spacing:.01em; text-transform:uppercase; }
+        .tp-hero-crest { flex:none; width:22px; height:22px; display:grid; place-items:center; }
+        .tp-hero-crest img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
+        .tp-hero-crest .api-team-logo-fallback { font:800 9px "Barlow Condensed",sans-serif; color:var(--muted); letter-spacing:.02em; }
+        .tp-hero-id p { margin:3px 0 0; color:#b6bcc3; font:500 13px "Barlow",sans-serif; }
+        .tp-hero-meta { margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
+        .tp-hero-meta div { padding-right:16px; border-right:1px solid var(--line); }
+        .tp-hero-meta div:last-child { padding-right:0; border-right:none; }
         .tp-hero-meta div span { display:block; color:var(--muted); font:600 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; margin-bottom:3px; }
         .tp-hero-meta div b { color:#e9edf1; font:700 13px "Barlow",sans-serif; }
-        .tp-rings { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px; flex:0 0 auto; border-left:1px solid var(--line); }
-        .tp-ringcard { display:flex; align-items:center; gap:12px; }
-        .tp-ringcard .lab { min-width:0; }
-        .tp-ringcard .lab span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
-        .tp-ringcard .lab b { display:block; color:#fff; font:800 22px/1.1 "Barlow Condensed",sans-serif; }
-        .tp-ringcard .lab small { color:var(--muted); font:500 10px "Barlow",sans-serif; }
+        .tp-rings { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; padding:16px; flex:0 0 auto; border-left:1px solid var(--line); }
+        .tp-ringcard { display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; min-width:70px; }
+        .tp-ringcard-label { color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+        .tp-ringcard-sub { color:var(--muted); font:500 10px "Barlow",sans-serif; }
         .tp-bignum { flex:none; width:56px; height:56px; border-radius:12px; display:grid; place-items:center; background:rgba(151,204,13,.1); border:1px solid rgba(151,204,13,.24); }
         .tp-bignum b { color:var(--l); font:800 22px/1 "Barlow Condensed",sans-serif; }
         .tp-dev { padding:18px; }
@@ -957,9 +992,16 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
 
       <div className="tp-grid">
         <aside className="tp-controls">
-          <div className="h"><span>Pathway controls</span><button type="button" onClick={() => { setHorizon(5); setPosFocus('all'); setMinThresh(0); setShowComp(true); setCompareName(''); }}>Reset</button></div>
-          <div className="tp-ctl"><label>Time horizon</label><div className="tp-seg">{[1, 2, 3, 5].map(y => <button type="button" key={y} className={horizon === y ? 'on' : ''} onClick={() => setHorizon(y)}>{y}Y</button>)}</div></div>
+          <div className="h"><span>Pathway controls</span><button type="button" onClick={() => { setHorizon(5); setPosFocus('all'); setMinThresh(0); setShowComp(true); setCompareName(''); setActiveTypes(new Set()); setLeagueFocus('all'); }}>Reset</button></div>
+          <div className="tp-ctl"><label>Time horizon</label><div className="tp-seg">{[1, 2, 3, 5].map(y => <button type="button" key={y} className={horizon === y ? 'on' : ''} onClick={() => setHorizon(y)}>{y} Year{y > 1 ? 's' : ''}</button>)}</div></div>
           <div className="tp-ctl"><label>Position focus</label><select value={posFocus} onChange={e => setPosFocus(e.target.value)}>{POSITION_OPTIONS.map(o => <option key={o} value={o === 'all' ? 'all' : o.toUpperCase()}>{o === 'all' ? 'All positions' : o}</option>)}</select></div>
+          <div className="tp-ctl">
+            <span className="tp-ctl-label">Pathway type</span>
+            {PATHWAY_FILTERS.filter(f => f.key !== 'all').map(f => (
+              <label className="tp-check" key={f.key}><input type="checkbox" checked={activeTypes.has(f.key)} onChange={() => toggleType(f.key)} /><span>{f.label}</span></label>
+            ))}
+          </div>
+          <div className="tp-ctl"><label>League context</label><select value={leagueFocus} onChange={e => setLeagueFocus(e.target.value)}><option value="all">All leagues</option>{leagueOptions.map(l => <option key={l} value={l}>{l}</option>)}</select></div>
           <div className="tp-ctl"><label>Minutes threshold</label><select value={minThresh} onChange={e => setMinThresh(Number(e.target.value))}><option value={0}>Any minutes</option><option value={500}>500+ mins</option><option value={1000}>1000+ mins</option><option value={1800}>1800+ mins</option></select></div>
           <div className="tp-ctl"><div className="tp-toggle" onClick={() => setShowComp(v => !v)} role="switch" aria-checked={showComp}><span>Show comparables</span><div className={`tp-switch${showComp ? ' on' : ''}`}><i /></div></div></div>
           <div className="tp-note">
@@ -982,8 +1024,10 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
               <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
               <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
               <div className="tp-hero-id">
-                <h3>{player.flag} {player.name}</h3>
-                <p>{player.club} · {player.position || '—'} · {player.age} yrs{birthday ? ` (${birthday})` : ''}</p>
+                <h3><span className="tp-hero-crest"><ApiTeamLogo src={heroCrest} name={player.club || player.name} /></span>{player.name}</h3>
+                <p>{player.club}</p>
+                <p>{player.position || '—'}</p>
+                <p>{player.age} yrs{birthday ? ` (${birthday})` : ''}</p>
                 <div className="tp-hero-meta">
                   <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
                   <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
@@ -993,10 +1037,10 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
             </div>
 
             <div className="tp-rings">
-              <div className="tp-ringcard"><TdeRing value={readiness} size={72} /><div className="lab"><span>Readiness</span><small>{readiness >= 75 ? 'High' : readiness >= 60 ? 'Building' : 'Early'}</small></div></div>
-              <div className="tp-ringcard"><div className="tp-bignum"><b>{potential}</b></div><div className="lab"><span>Potential</span><b> </b><small>{potLabel}</small></div></div>
-              <div className="tp-ringcard"><div className="tp-bignum"><b>+{trendN}</b></div><div className="lab"><span>Trend</span><small>Projected headroom</small></div></div>
-              <div className="tp-ringcard"><TdeRing value={confidence} size={72} /><div className="lab"><span>Confidence</span><small>Model confidence</small></div></div>
+              <div className="tp-ringcard"><span className="tp-ringcard-label">Readiness</span><TdeRing value={readiness} size={64} /><small className="tp-ringcard-sub">{readiness >= 75 ? 'High' : readiness >= 60 ? 'Building' : 'Early'}</small></div>
+              <div className="tp-ringcard"><span className="tp-ringcard-label">Potential</span><div className="tp-bignum"><b>{potential}</b></div><small className="tp-ringcard-sub">{potLabel}</small></div>
+              <div className="tp-ringcard"><span className="tp-ringcard-label">Trend</span><div className="tp-bignum"><b>+{trendN}</b></div><small className="tp-ringcard-sub">Projected headroom</small></div>
+              <div className="tp-ringcard"><span className="tp-ringcard-label">Confidence</span><TdeRing value={confidence} size={64} /><small className="tp-ringcard-sub">Model confidence</small></div>
             </div>
           </div>
 
@@ -1014,8 +1058,12 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
                   </linearGradient>
                 </defs>
                 <path d={areaPath} fill="url(#tp-curve-fill)" stroke="none" />
-                <path d={curvePath} fill="none" stroke="var(--l)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-                {pts.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r={i === 1 ? 6 : 5} fill={i <= 1 ? 'var(--l)' : '#0b0d0f'} stroke="var(--l)" strokeWidth="2" />)}
+                <path d={solidCurvePath} fill="none" stroke="var(--l)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                {dashedCurvePath && <path d={dashedCurvePath} fill="none" stroke="var(--l)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="6 5" opacity="0.7" />}
+                {pts.map((p, i) => {
+                  const isLast = i === pts.length - 1;
+                  return <circle key={i} cx={p[0]} cy={p[1]} r={i === 1 ? 6 : isLast ? 6 : 5} fill={i <= 1 ? 'var(--l)' : isLast ? 'none' : '#0b0d0f'} stroke="var(--l)" strokeWidth="2" strokeDasharray={isLast ? '3 2' : undefined} />;
+                })}
               </svg>
             </div>
             <div className="tp-stages" style={{ gridTemplateColumns: `repeat(${n}, 1fr)` }}>

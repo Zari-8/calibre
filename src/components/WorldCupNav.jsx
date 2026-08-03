@@ -6,8 +6,8 @@ import { navigateTo } from './NavLink.jsx';
 const TABS = [
   { key: 'overview',         label: 'Overview',         href: '/world-cup' },
   { key: 'teams',            label: 'Teams',             href: '/world-cup/teams' },
-  { key: 'matches',          label: 'Matches',           href: '/world-cup/matches' },
   { key: 'groups',           label: 'Groups',            href: '/world-cup/groups' },
+  { key: 'matches',          label: 'Matches',           href: '/world-cup/matches' },
   { key: 'stats',            label: 'Stats',             href: '/world-cup/stats' },
   { key: 'history',          label: 'History',           href: '/world-cup/history' },
 ];

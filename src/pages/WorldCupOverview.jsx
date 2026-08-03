@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Trophy, ArrowRight } from 'lucide-react';
+import { Trophy, ArrowRight, Users, Goal, MapPin, Flag } from 'lucide-react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import PremierBetBanner from '../components/PremierBetBanner.jsx';
@@ -68,20 +68,37 @@ export default function WorldCupOverview() {
   // Featured Matches carousel — a real window of fixtures (yesterday through
   // next week), live ones first, so there's genuinely more than one to scroll
   // through — same date-window technique the Matches page uses, not a mock.
+  // Also anchored to the real kickoff date and swept across the whole
+  // tournament length so the Final is always fetched, even when "today" is
+  // outside the near-term window (before the tournament starts, or after it
+  // ends) — that anchored sweep is how the Final gets pinned to the front.
   const [featuredList, setFeaturedList] = useState([]);
   const [featuredLoading, setFeaturedLoading] = useState(true);
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
-        const days = [-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10));
-        const results = await Promise.all(days.map(d => getFixturesByDate(d).catch(() => [])));
+        const nearDays = [-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10));
+        const kickoff = new Date(WC_CONFIG.kickoff);
+        const tourneyDays = [];
+        for (let i = 0; i <= 45; i++) tourneyDays.push(new Date(kickoff.getTime() + i * 86400000).toISOString().slice(0, 10));
+        const dayKeys = [...new Set([...nearDays, ...tourneyDays])];
+        const results = await Promise.all(dayKeys.map(d => getFixturesByDate(d).catch(() => [])));
         const wc = results.flat().filter(f => isWorldCup(f));
         const live = wc.filter(f => WC_LIVE.includes(f.fixture?.status?.short));
         const done = wc.filter(f => WC_DONE.includes(f.fixture?.status?.short));
         const upcoming = wc.filter(f => !WC_LIVE.includes(f.fixture?.status?.short) && !WC_DONE.includes(f.fixture?.status?.short));
-        const ordered = [...live, ...upcoming, ...done.reverse()].slice(0, 12);
-        if (alive) setFeaturedList(ordered);
+        const finalFx = wc.find(f => /final/i.test(f.league?.round || '') && !/(quarter|semi|3rd|third)/i.test(f.league?.round || ''));
+        const base = [...live, ...upcoming, ...done.reverse()];
+        // Live matches always lead. The Final slots in right after them —
+        // unless it IS the live match, in which case it's already there.
+        let ordered = base;
+        if (finalFx && !live.some(f => f.fixture?.id === finalFx.fixture?.id)) {
+          const withoutFinal = base.filter(f => f.fixture?.id !== finalFx.fixture?.id);
+          ordered = [...withoutFinal.slice(0, live.length), finalFx, ...withoutFinal.slice(live.length)];
+        }
+        const deduped = ordered.filter((f, i) => ordered.findIndex(g => g.fixture?.id === f.fixture?.id) === i);
+        if (alive) setFeaturedList(deduped.slice(0, 12));
       } catch { /* carousel just shows its empty state */ }
       finally { if (alive) setFeaturedLoading(false); }
     })();
@@ -137,7 +154,7 @@ export default function WorldCupOverview() {
         .wc2-eyebrow-sm { color:var(--l); font:700 10px "Barlow",sans-serif; letter-spacing:.14em; text-transform:uppercase; margin-bottom:6px; display:block; }
         .wc2-summary-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
         .wc2-summary-cell { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; }
-        .wc2-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(151,204,13,.35); font-size:16px; line-height:1; }
+        .wc2-icon { width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; border:1px solid rgba(151,204,13,.35); color:var(--l); }
         .wc2-summary-cell strong { display:block; font:800 22px "Barlow Condensed",sans-serif; color:#fff; }
         .wc2-summary-cell span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
         .wc2-hosts { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font:600 11px "Barlow",sans-serif; }
@@ -202,10 +219,10 @@ export default function WorldCupOverview() {
         <div className="wc2-card">
           <h3 className="wc2-h3">Tournament Summary</h3>
           <div className="wc2-summary-grid">
-            <div className="wc2-summary-cell"><span className="wc2-icon">👥</span><strong>{TOURNAMENT_FORMAT.teams}</strong><span>Teams</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon">⚽</span><strong>{TOURNAMENT_FORMAT.matches}</strong><span>Matches</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon">📍</span><strong>{TOURNAMENT_FORMAT.stadiums}</strong><span>Host Cities</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon">🏳️</span><strong>{WC_CONFIG.hosts.length}</strong><span>Host Nations</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Users size={16} /></span><strong>{TOURNAMENT_FORMAT.teams}</strong><span>Teams</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Goal size={16} /></span><strong>{TOURNAMENT_FORMAT.matches}</strong><span>Matches</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><MapPin size={16} /></span><strong>{TOURNAMENT_FORMAT.stadiums}</strong><span>Host Cities</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Flag size={16} /></span><strong>{WC_CONFIG.hosts.length}</strong><span>Host Nations</span></div>
           </div>
           <div className="wc2-hosts">{WC_CONFIG.hosts.map((h, i) => <span key={h}>{i > 0 && ' · '}{HOST_FLAGS[h] || ''} {h}</span>)}</div>
         </div>

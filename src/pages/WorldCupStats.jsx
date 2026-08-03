@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { getFixturesByDate } from '../services/apiFootball.js';
+import { getFixturesByDate, getFixtureStatistics, statValue } from '../services/apiFootball.js';
 
 // getFixturesByDate() returns fixtures across ALL competitions for a date —
 // it doesn't filter by league. The numeric World Cup league id isn't in
@@ -16,17 +17,26 @@ function isWorldCup(fixture) {
 }
 const WC_DONE = ['FT', 'AET', 'PEN'];
 
-// Only categories backed by real columns on wc_leaders. Anything not tracked
-// yet (clean sheets, possession, cards, passes, tackles) shows an honest
-// "not connected" state rather than invented numbers — add the column/API
-// call and the tab lights up with no other code change needed.
-const CATEGORIES = [
-  { key: 'goals', label: 'Top Scorers', field: 'goals' },
-  { key: 'assists', label: 'Top Assists', field: 'assists' },
-  { key: 'rating', label: 'Top Rated', field: 'rating' },
-  { key: 'appearances', label: 'Most Appearances', field: 'appearances' },
+// Player-level categories, backed by real columns on wc_leaders.
+const PLAYER_CATEGORIES = [
+  { key: 'goals', label: 'Top Scorers', field: 'goals', mode: 'player' },
+  { key: 'assists', label: 'Top Assists', field: 'assists', mode: 'player' },
+  { key: 'rating', label: 'Top Rated', field: 'rating', mode: 'player' },
+  { key: 'appearances', label: 'Most Appearances', field: 'appearances', mode: 'player' },
 ];
-const UNTRACKED = ['Clean Sheets', 'Possession', 'Discipline', 'Passing', 'Tackles'];
+// Team-level categories, aggregated live from real API-Football fixture
+// statistics (see the teamStats effect below) — never invented numbers.
+const TEAM_CATEGORIES = [
+  { key: 'cleansheets', label: 'Clean Sheets', field: 'cleanSheets', mode: 'team', fmt: v => String(v) },
+  { key: 'discipline', label: 'Discipline', field: 'cards', mode: 'team', fmt: v => String(v), sub: 'cards' },
+  { key: 'possession', label: 'Possession', field: 'possessionAvg', mode: 'team', fmt: v => `${v.toFixed(1)}%`, sub: 'avg' },
+  { key: 'passing', label: 'Passing', field: 'passAccAvg', mode: 'team', fmt: v => `${v.toFixed(1)}%`, sub: 'accuracy' },
+];
+const CATEGORIES = [...PLAYER_CATEGORIES, ...TEAM_CATEGORIES];
+// Tackles genuinely isn't a standard field in API-Football's fixture
+// statistics response at this tier — kept honestly untracked rather than
+// guessed at or faked.
+const UNTRACKED = ['Tackles'];
 
 export default function WorldCupStats() {
   const [wcLeaders, setWcLeaders] = useState([]);
@@ -62,14 +72,84 @@ export default function WorldCupStats() {
     return () => { alive = false; };
   }, []);
 
+  // Team-level stats (clean sheets, cards, possession, passing accuracy)
+  // aggregated live from real per-fixture statistics — API-Football's
+  // /fixtures/statistics, one call per finished match. Capped at 80 matches
+  // to protect the daily API quota; results cache for a week per fixture
+  // (see TTL['fixtures/statistics']) so repeat visits don't re-spend it.
+  const [teamStats, setTeamStats] = useState({});
+  const [teamStatsLoading, setTeamStatsLoading] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const days = [];
+        for (let i = -30; i <= 7; i++) days.push(new Date(Date.now() + i * 86400000).toISOString().slice(0, 10));
+        const results = await Promise.all(days.map(d => getFixturesByDate(d).catch(() => [])));
+        const wc = results.flat().filter(f => isWorldCup(f));
+        const done = wc.filter(f => WC_DONE.includes(f.fixture?.status?.short));
+        const capped = done.slice(0, 80);
+        const statResults = await Promise.all(capped.map(f => getFixtureStatistics(f.fixture?.id).catch(() => null)));
+
+        const teams = {};
+        const ensure = (id, name, logo) => {
+          if (!teams[id]) teams[id] = { id, name, logo, matches: 0, cleanSheets: 0, yellow: 0, red: 0, possessionSum: 0, possessionN: 0, passAccSum: 0, passAccN: 0 };
+          return teams[id];
+        };
+        capped.forEach((f, i) => {
+          const stat = statResults[i];
+          if (!Array.isArray(stat) || stat.length < 2) return;
+          const homeGoals = f.goals?.home ?? 0;
+          const awayGoals = f.goals?.away ?? 0;
+          stat.forEach(entry => {
+            const id = entry.team?.id;
+            if (!id) return;
+            const t = ensure(id, entry.team.name, entry.team.logo);
+            t.matches += 1;
+            const isHome = f.teams?.home?.id === id;
+            const conceded = isHome ? awayGoals : homeGoals;
+            if (conceded === 0) t.cleanSheets += 1;
+            const yellow = statValue(entry, 'Yellow Cards');
+            const red = statValue(entry, 'Red Cards');
+            if (yellow != null) t.yellow += yellow;
+            if (red != null) t.red += red;
+            const poss = statValue(entry, 'Ball Possession');
+            if (poss != null) { t.possessionSum += poss; t.possessionN += 1; }
+            const passAcc = statValue(entry, 'Passes %');
+            if (passAcc != null) { t.passAccSum += passAcc; t.passAccN += 1; }
+          });
+        });
+        if (alive) setTeamStats(teams);
+      } catch { /* leave teamStats empty — honest empty state below */ }
+      finally { if (alive) setTeamStatsLoading(false); }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const teamStatRows = useMemo(() => Object.values(teamStats).map(t => ({
+    id: t.id, name: t.name, logo: t.logo,
+    cleanSheets: t.cleanSheets,
+    cards: t.yellow + t.red,
+    possessionAvg: t.possessionN ? t.possessionSum / t.possessionN : null,
+    passAccAvg: t.passAccN ? t.passAccSum / t.passAccN : null,
+  })), [teamStats]);
+  const totalCards = useMemo(() => teamStatRows.reduce((sum, t) => sum + (t.cards || 0), 0), [teamStatRows]);
+
   const [activeCat, setActiveCat] = useState('goals');
   const cat = CATEGORIES.find(c => c.key === activeCat);
-  const ranked = useMemo(() => {
+  const rankedPlayers = useMemo(() => {
     return [...wcLeaders]
       .filter(l => l[cat.field] != null)
       .sort((a, b) => Number(b[cat.field]) - Number(a[cat.field]))
       .slice(0, 15);
   }, [wcLeaders, cat]);
+  const rankedTeams = useMemo(() => {
+    if (cat.mode !== 'team') return [];
+    return [...teamStatRows]
+      .filter(t => t[cat.field] != null)
+      .sort((a, b) => Number(b[cat.field]) - Number(a[cat.field]))
+      .slice(0, 15);
+  }, [teamStatRows, cat]);
 
   return (
     <div className="page wc2">
@@ -114,7 +194,7 @@ export default function WorldCupStats() {
         <div className="wcs-total-cell"><strong>{totals.loading ? '…' : totals.goals}</strong><span>Total Goals</span></div>
         <div className="wcs-total-cell"><strong>{totals.loading ? '…' : totals.matches}</strong><span>Matches Played</span></div>
         <div className="wcs-total-cell"><strong>{totals.loading ? '…' : totals.matches ? (totals.goals / totals.matches).toFixed(2) : '—'}</strong><span>Avg Goals / Match</span></div>
-        <div className="wcs-total-cell"><strong>—</strong><span>Cards (not yet tracked)</span></div>
+        <div className="wcs-total-cell"><strong>{teamStatsLoading ? '…' : (totalCards || '—')}</strong><span>Cards</span></div>
       </div>
 
       <div className="wcs-tabs">
@@ -122,26 +202,47 @@ export default function WorldCupStats() {
         {UNTRACKED.map(t => <button key={t} className="untracked" title="Connects once this data is available from API-Football">{t}</button>)}
       </div>
 
-      {leadersLoading ? (
-        <div className="wcs-empty">Loading leaderboard…</div>
-      ) : ranked.length === 0 ? (
-        <div className="wcs-empty">Leaderboard populates once tournament matches kick off.</div>
+      {cat.mode === 'player' ? (
+        leadersLoading ? (
+          <div className="wcs-empty">Loading leaderboard…</div>
+        ) : rankedPlayers.length === 0 ? (
+          <div className="wcs-empty">Leaderboard populates once tournament matches kick off.</div>
+        ) : (
+          <table className="wcs-table">
+            <thead><tr><th></th><th>Player</th><th>Team</th><th style={{ textAlign: 'right' }}>{cat.label}</th></tr></thead>
+            <tbody>
+              {rankedPlayers.map((l, i) => (
+                <tr key={l.api_player_id}>
+                  <td className="wcs-rank">{i + 1}</td>
+                  <td><div className="wcs-player"><ApiPlayerImage playerId={l.api_player_id} name={l.name} fallbackSrc="/assets/players/neutral-player.svg" alt={l.name} /><strong>{l.name}</strong></div></td>
+                  <td style={{ color: '#999' }}>{l.team}</td>
+                  <td className="wcs-val">{l[cat.field]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
       ) : (
-        <table className="wcs-table">
-          <thead><tr><th></th><th>Player</th><th>Team</th><th style={{ textAlign: 'right' }}>{cat.label}</th></tr></thead>
-          <tbody>
-            {ranked.map((l, i) => (
-              <tr key={l.api_player_id}>
-                <td className="wcs-rank">{i + 1}</td>
-                <td><div className="wcs-player"><ApiPlayerImage playerId={l.api_player_id} name={l.name} fallbackSrc="/assets/players/neutral-player.svg" alt={l.name} /><strong>{l.name}</strong></div></td>
-                <td style={{ color: '#999' }}>{l.team}</td>
-                <td className="wcs-val">{l[cat.field]}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        teamStatsLoading ? (
+          <div className="wcs-empty">Aggregating match statistics…</div>
+        ) : rankedTeams.length === 0 ? (
+          <div className="wcs-empty">{cat.label} populates once completed World Cup fixtures carry match statistics.</div>
+        ) : (
+          <table className="wcs-table">
+            <thead><tr><th></th><th>Team</th><th style={{ textAlign: 'right' }}>{cat.label}{cat.sub ? ` (${cat.sub})` : ''}</th></tr></thead>
+            <tbody>
+              {rankedTeams.map((t, i) => (
+                <tr key={t.id}>
+                  <td className="wcs-rank">{i + 1}</td>
+                  <td><div className="wcs-player"><ApiTeamLogo src={t.logo} name={t.name} /><strong>{t.name}</strong></div></td>
+                  <td className="wcs-val">{cat.fmt(t[cat.field])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
       )}
-      <p className="wcs-untracked-note">Clean sheets, possession, discipline, passing and tackles will populate once those endpoints are connected — this page never fills them with placeholder numbers.</p>
+      <p className="wcs-untracked-note">Tackles will populate once that endpoint is available from API-Football — this page never fills it in with a placeholder number. Team stats above (clean sheets, discipline, possession, passing) are aggregated live from real per-match statistics, capped at 80 matches to protect API quota.</p>
     </div>
   );
 }

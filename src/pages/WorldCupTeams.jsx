@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
+import { X } from 'lucide-react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
+import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
-import { getStandings } from '../services/apiFootball.js';
+import { getGroupedStandings, getSquad } from '../services/apiFootball.js';
+
+const POSITION_ORDER = ['Goalkeeper', 'Defender', 'Midfielder', 'Attacker'];
 
 const WC_LEAGUE_ID = 1;
 const WC_SEASON = 2026;
@@ -28,7 +32,7 @@ export default function WorldCupTeams() {
     let alive = true;
     (async () => {
       try {
-        const data = await getStandings(WC_LEAGUE_ID, WC_SEASON);
+        const data = await getGroupedStandings(WC_LEAGUE_ID, WC_SEASON);
         const flat = Array.isArray(data?.[0]) ? data : (Array.isArray(data) ? [data] : null);
         if (alive) setGroups(flat);
       } catch { /* handled by empty state below */ }
@@ -60,6 +64,40 @@ export default function WorldCupTeams() {
   const [groupFilter, setGroupFilter] = useState('All');
   const [confFilter, setConfFilter] = useState('All');
 
+  // Squad viewer — real roster from API-Football's /players/squads, fetched
+  // on demand per team (not eagerly for all 48, to spare the API quota).
+  const [squadFor, setSquadFor] = useState(null);
+  const [squad, setSquad] = useState(null);
+  const [squadLoading, setSquadLoading] = useState(false);
+  const [squadError, setSquadError] = useState(false);
+
+  async function openSquad(team) {
+    setSquadFor(team);
+    setSquad(null);
+    setSquadError(false);
+    setSquadLoading(true);
+    try {
+      const players = await getSquad(team.id);
+      setSquad(players);
+      if (!players) setSquadError(true);
+    } catch { setSquadError(true); }
+    finally { setSquadLoading(false); }
+  }
+  function closeSquad() { setSquadFor(null); setSquad(null); setSquadError(false); }
+
+  const squadByPosition = useMemo(() => {
+    if (!squad) return [];
+    const groupsMap = new Map();
+    squad.forEach(p => {
+      const pos = p.position || 'Unknown';
+      if (!groupsMap.has(pos)) groupsMap.set(pos, []);
+      groupsMap.get(pos).push(p);
+    });
+    const known = POSITION_ORDER.filter(p => groupsMap.has(p)).map(p => [p, groupsMap.get(p)]);
+    const rest = [...groupsMap.entries()].filter(([p]) => !POSITION_ORDER.includes(p));
+    return [...known, ...rest];
+  }, [squad]);
+
   const filtered = teams.filter(t =>
     (groupFilter === 'All' || t.group === groupFilter) &&
     (confFilter === 'All' || t.confederation === confFilter)
@@ -85,9 +123,26 @@ export default function WorldCupTeams() {
         .wct-record div b { display:block; font:800 15px "Barlow Condensed",sans-serif; }
         .wct-record div span { color:var(--muted); font:600 8.5px "Barlow",sans-serif; text-transform:uppercase; }
         .wct-uncomputed { color:#5b6168; font:500 10.5px/1.5 "Barlow",sans-serif; margin-bottom:10px; }
-        .wct-btn { width:100%; background:none; border:1px solid var(--line); color:var(--l); font:700 10.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:8px; border-radius:7px; cursor:pointer; }
+        .wct-btnrow { display:flex; gap:8px; }
+        .wct-btn { flex:1; width:100%; background:none; border:1px solid var(--line); color:var(--l); font:700 10.5px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:8px; border-radius:7px; cursor:pointer; }
         .wct-btn:hover { border-color:var(--l); }
         .wct-empty { color:var(--muted); font:500 13px/1.6 "Barlow",sans-serif; text-align:center; padding:60px 0; }
+        .wct-modal-backdrop { position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.65); display:flex; align-items:flex-start; justify-content:center; padding:5vh 16px; overflow-y:auto; }
+        .wct-modal { width:100%; max-width:560px; background:#0d0d0d; border:1px solid var(--line); border-radius:14px; padding:20px; }
+        .wct-modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+        .wct-modal-id { display:flex; align-items:center; gap:10px; }
+        .wct-modal-id img { width:30px; height:30px; object-fit:contain; }
+        .wct-modal-id strong { font:800 18px "Barlow Condensed",sans-serif; text-transform:uppercase; }
+        .wct-modal-close { background:none; border:1px solid var(--line); color:#ccc; border-radius:8px; width:32px; height:32px; display:grid; place-items:center; cursor:pointer; }
+        .wct-modal-close:hover { border-color:var(--l); color:var(--l); }
+        .wct-squad { display:grid; gap:16px; max-height:65vh; overflow-y:auto; }
+        .wct-squad-group h4 { margin:0 0 8px; color:var(--l); font:800 11px "Barlow Condensed",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
+        .wct-squad-list { display:grid; gap:2px; }
+        .wct-squad-row { display:flex; align-items:center; gap:10px; padding:7px 4px; border-bottom:1px solid #161616; }
+        .wct-squad-row img { width:28px; height:28px; border-radius:50%; object-fit:cover; object-position:top; flex:none; }
+        .wct-squad-name { flex:1; font:600 13px "Barlow",sans-serif; }
+        .wct-squad-num { color:var(--muted); font:700 11px "Barlow Condensed",sans-serif; width:32px; text-align:right; }
+        .wct-squad-age { color:var(--muted); font:600 11px "Barlow",sans-serif; width:32px; text-align:right; }
       `}</style>
 
       <WorldCupNav active="teams" />
@@ -127,10 +182,47 @@ export default function WorldCupTeams() {
                 <div><b>{t.points ?? '—'}</b><span>Points</span></div>
                 <div><b>{t.gd ?? '—'}</b><span>GD</span></div>
               </div>
-              <div className="wct-uncomputed">Calibre rating, strengths/weaknesses and squad depth need a national-squad data source — not shown until that's wired.</div>
-              <button className="wct-btn" onClick={() => navigateTo('/world-cup/groups')}>View Group {t.group} →</button>
+              <div className="wct-uncomputed">Calibre rating and strengths/weaknesses need deeper per-player modeling — not shown yet. Squad list below is real.</div>
+              <div className="wct-btnrow">
+                <button className="wct-btn" onClick={() => openSquad(t)}>View Squad</button>
+                <button className="wct-btn" onClick={() => navigateTo('/world-cup/groups')}>Group {t.group} →</button>
+              </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {squadFor && (
+        <div className="wct-modal-backdrop" onClick={closeSquad}>
+          <div className="wct-modal" onClick={e => e.stopPropagation()}>
+            <div className="wct-modal-head">
+              <div className="wct-modal-id"><ApiTeamLogo src={squadFor.logo} name={squadFor.name} /><strong>{squadFor.name}</strong></div>
+              <button className="wct-modal-close" onClick={closeSquad} aria-label="Close"><X size={18} /></button>
+            </div>
+            {squadLoading ? (
+              <div className="wct-empty">Loading squad…</div>
+            ) : squadError || !squad || squad.length === 0 ? (
+              <div className="wct-empty">Squad list isn't available for {squadFor.name} yet — API-Football hasn't published a registered squad for this team.</div>
+            ) : (
+              <div className="wct-squad">
+                {squadByPosition.map(([pos, players]) => (
+                  <div className="wct-squad-group" key={pos}>
+                    <h4>{pos}</h4>
+                    <div className="wct-squad-list">
+                      {players.map(p => (
+                        <div className="wct-squad-row" key={p.id}>
+                          <ApiPlayerImage playerId={p.id} name={p.name} preferredSrc={p.photo} fallbackSrc="/assets/players/neutral-player.svg" alt={p.name} loading="lazy" />
+                          <span className="wct-squad-name">{p.name}</span>
+                          <span className="wct-squad-num">{p.number != null ? `#${p.number}` : ''}</span>
+                          <span className="wct-squad-age">{p.age != null ? `${p.age}y` : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -48,7 +48,6 @@ function formStats(fixtures, teamId) {
   return { wdl, pts, gf, ga, n: done.length };
 }
 function parsePct(v) { const n = parseFloat(String(v ?? '').replace('%', '')); return Number.isFinite(n) ? n : null; }
-const BETTING_URL = 'https://example.com/odds';
 
 function buildMatchroom(fx, events, forms = {}, predictions = null) {
   if (!fx?.teams || !fx?.fixture) return null;
@@ -303,8 +302,6 @@ export default function WorldCupMatchroom() {
                     {room.signals.lean && (
                       <div className="matchroom-key"><BarChart3 size={14} /><span><b>{room.signals.source === 'model' ? 'MODEL LEAN' : 'FORM READ'}</b>{room.signals.lean}</span></div>
                     )}
-                    <a href={BETTING_URL} target="_blank" rel="noopener noreferrer nofollow sponsored" className="btn btn--lime btn--sm" style={{ textDecoration: 'none', textAlign: 'center', justifyContent: 'center' }}>VIEW LIVE ODDS</a>
-                    <small style={{ opacity: .5, fontSize: 9.5, lineHeight: 1.45 }}>For information only — not betting advice. 18+. Please gamble responsibly.</small>
                   </div>
                 ) : <small>Form and model signals appear here once the fixture feed loads.</small>}
               </div>

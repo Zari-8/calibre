@@ -20,6 +20,9 @@ const ALLOWED = new Set([
   'status',
   'fixtures',
   'fixtures/lineups',
+  'fixtures/statistics',
+  'fixtures/events',
+  'fixtures/players',
   'standings',
   'leagues',
   'teams',
@@ -27,6 +30,9 @@ const ALLOWED = new Set([
   'players/profiles',
   'players/topscorers',
   'players/topassists',
+  'players/squads',
+  'predictions',
+  'odds',
   'transfers',
 ]);
 

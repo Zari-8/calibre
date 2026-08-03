@@ -45,6 +45,11 @@ const TTL = {
   'fixtures/lineups': 5 * 60 * 1000,
   transfers: 60 * 60 * 1000,
   leagues: 24 * 60 * 60 * 1000,
+  'players/squads': 24 * 60 * 60 * 1000,
+  // Statistics for a finished match never change — cache long so repeat
+  // aggregation passes (e.g. Stats page tallying many fixtures) don't keep
+  // re-spending API quota on the same completed games.
+  'fixtures/statistics': 7 * 24 * 60 * 60 * 1000,
 };
 
 function emitFlow(detail) {
@@ -128,6 +133,17 @@ export async function getUpcomingFixtures(leagueId, season = CURRENT_SEASON, nex
 export async function getStandings(leagueId, season = CURRENT_SEASON) {
   const data = await apiFetch('standings', { league: leagueId, season });
   return data?.response?.[0]?.league?.standings?.[0] ?? null;
+}
+
+// Full standings including every group/table, not just the first. getStandings()
+// above intentionally collapses to a single table because it was built for flat
+// single-table leagues (Premier League, La Liga, etc — the only kind in
+// LEAGUE_IDS). A grouped tournament like the World Cup has one array per group
+// (Group A, Group B, ...) under the same `standings` field; this preserves all
+// of them instead of silently returning only the first group.
+export async function getGroupedStandings(leagueId, season = CURRENT_SEASON) {
+  const data = await apiFetch('standings', { league: leagueId, season });
+  return data?.response?.[0]?.league?.standings ?? null;
 }
 
 export async function getTopScorers(leagueId, season = CURRENT_SEASON) {
@@ -532,6 +548,42 @@ export async function getFixtureEvents(fixtureId) {
   if (!fixtureId) return [];
   const data = await apiFetch('fixtures/events', { fixture:fixtureId }, { ttl:TTL.fixtures });
   return data?.response ?? [];
+}
+
+// A team's current registered squad (API-Football /players/squads). Real
+// roster data — names, positions, ages, shirt numbers, photos — no fabricated
+// depth chart or invented Calibre rating for these players.
+export async function getSquad(teamId) {
+  if (!teamId) return null;
+  const data = await apiFetch('players/squads', { team: teamId }, { ttl: TTL['players/squads'] });
+  return data?.response?.[0]?.players ?? null;
+}
+
+// Per-fixture match statistics (API-Football /fixtures/statistics) — an array
+// of two entries, one per team: { team: {id,name,logo}, statistics: [{type,
+// value}, ...] }. Used to aggregate real clean sheets / cards / possession /
+// passing across many fixtures (see WorldCupStats.jsx). Long-cached per
+// fixture since a finished match's statistics never change.
+export async function getFixtureStatistics(fixtureId) {
+  if (!fixtureId) return null;
+  const data = await apiFetch('fixtures/statistics', { fixture: fixtureId }, { ttl: TTL['fixtures/statistics'] });
+  return data?.response ?? null;
+}
+
+// Look up one statistic's value from a team's /fixtures/statistics entry by
+// its API-Football type label (e.g. "Ball Possession", "Yellow Cards").
+// Handles percentage strings ("55%") and null/undefined gracefully. Returns
+// null (never 0) when the type isn't present, so callers can tell "no data"
+// apart from "genuinely zero".
+export function statValue(teamStatEntry, type) {
+  const row = teamStatEntry?.statistics?.find(s => s.type === type);
+  if (!row || row.value == null) return null;
+  if (typeof row.value === 'string' && row.value.trim().endsWith('%')) {
+    const n = Number.parseFloat(row.value);
+    return Number.isFinite(n) ? n : null;
+  }
+  const n = Number(row.value);
+  return Number.isFinite(n) ? n : null;
 }
 
 // Model win/draw/win probabilities, advice and side-by-side comparison metrics

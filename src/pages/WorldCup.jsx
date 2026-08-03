@@ -1,3 +1,9 @@
+// ⚠️ DEAD CODE — NOT ROUTED. Superseded by WorldCupOverview.jsx + the split
+// /world-cup/* subpages (Matches, Matchroom, Teams, Groups, Stats, History).
+// Every piece of matchroom/live-moments/betting-URL logic in this file is
+// duplicated in WorldCupMatchroom.jsx, which IS live — fix bugs there, not
+// here. This file is unreferenced by src/App.jsx and safe to delete; kept
+// only because this environment can't delete files. Delete it directly.
 import { useEffect, useState } from 'react';
 import { Star, Zap, Trophy, ArrowRight, Clock3, Swords, ShieldCheck, BarChart3, MessageSquare, Send, LockKeyhole, X } from 'lucide-react';
 import Panel from '../components/Panel.jsx';

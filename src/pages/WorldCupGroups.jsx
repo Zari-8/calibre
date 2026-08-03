@@ -1,20 +1,18 @@
 import { useEffect, useState } from 'react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
-import { getStandings, getFixturesByDate } from '../services/apiFootball.js';
+import { getGroupedStandings, getFixturesByDate } from '../services/apiFootball.js';
 
 const WC_LEAGUE_ID = 1;
 const WC_SEASON = 2026;
 const GROUP_LETTERS = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
 
 export default function WorldCupGroups() {
-  // getStandings() is confirmed to exist in apiFootball.js from earlier work,
-  // but this session hasn't confirmed its exact return shape for a GROUPED
-  // competition like the World Cup (vs. a flat single-table league). API-
-  // Football's real /standings endpoint returns one array per group for
-  // tournaments like this, so that's what this expects — but if the actual
-  // shape differs, this shows an honest empty state per group rather than
-  // guessing wrong and rendering garbage.
+  // getGroupedStandings() preserves every group from API-Football's real
+  // /standings response (one array per group for a tournament like this),
+  // rather than the single-table getStandings() used by flat leagues. If the
+  // actual shape ever differs, this still shows an honest empty state per
+  // group rather than guessing wrong and rendering garbage.
   const [groups, setGroups] = useState(null);
   const [loadError, setLoadError] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -22,7 +20,7 @@ export default function WorldCupGroups() {
     let alive = true;
     (async () => {
       try {
-        const data = await getStandings(WC_LEAGUE_ID, WC_SEASON);
+        const data = await getGroupedStandings(WC_LEAGUE_ID, WC_SEASON);
         const flat = Array.isArray(data?.[0]) ? data : (Array.isArray(data) ? [data] : null);
         if (alive) setGroups(flat);
       } catch { if (alive) setLoadError(true); }

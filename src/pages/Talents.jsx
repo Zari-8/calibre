@@ -680,6 +680,24 @@ function tpBirthday(player) {
   if (Number.isNaN(d.getTime())) return null;
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+// Age derived live from the birthday whenever one exists, rather than trusting
+// a separately-stored age field that can silently drift out of sync with it
+// (e.g. imported once and never recalculated as birthdays pass). Falls back
+// to the stored age only when no birth date is available anywhere.
+function tpAge(player) {
+  const raw = player?.date_of_birth || player?.birth_date || player?.birth?.date || null;
+  if (raw) {
+    const d = new Date(raw);
+    if (!Number.isNaN(d.getTime())) {
+      const today = new Date();
+      let age = today.getFullYear() - d.getFullYear();
+      const hadBirthdayThisYear = (today.getMonth() > d.getMonth()) || (today.getMonth() === d.getMonth() && today.getDate() >= d.getDate());
+      if (!hadBirthdayThisYear) age -= 1;
+      return age;
+    }
+  }
+  return Number(player?.age) || null;
+}
 function tpStages(player) {
   const age = Number(player.age) || 19;
   const rating = Number(player.rating) || 70;
@@ -761,7 +779,8 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
   const confidence = clamp(Math.round(40 + Math.min(1, numeric(player.minutes) / 3000) * 40 + Math.min(1, numeric(player.appearances) / 25) * 20), 30, 96);
   const trendN = (typeof player.potential === 'number' && typeof player.rating === 'number') ? player.potential - player.rating : trendValue(player.trend);
   const potLabel = potential - rating >= 6 ? 'High ceiling' : potential - rating >= 3 ? 'Rising ceiling' : 'Near ceiling';
-  const stages = tpStages(player).slice(0, horizon <= 1 ? 2 : horizon <= 2 ? 3 : horizon <= 3 ? 4 : 5);
+  const displayAge = tpAge(player) ?? (Number(player.age) || 19);
+  const stages = tpStages(displayAge === player.age ? player : { ...player, age: displayAge }).slice(0, horizon <= 1 ? 2 : horizon <= 2 ? 3 : horizon <= 3 ? 4 : 5);
   const axes = radarAxes(player);
   const sortedAxes = [...axes].sort((a, b) => b.value - a.value);
   const milestones = tpMilestones();
@@ -876,6 +895,8 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-hero-card { display:flex; align-items:stretch; flex-wrap:wrap; }
         @media (max-width:760px){ .tp-hero-card { flex-direction:column; } .tp-hero-card .tp-rings { border-left:none; border-top:1px solid var(--line); grid-template-columns:repeat(2,1fr); } }
         .tp-hero { display:flex; align-items:center; gap:16px; padding:16px; flex:1 1 auto; min-width:0; }
+        .tp-hero-lead { display:flex; flex-direction:column; gap:10px; flex:none; }
+        .tp-hero-lead-top { display:flex; align-items:center; gap:12px; }
         .tp-hero-rating { text-align:center; flex:none; }
         .tp-hero-rating b { display:block; font:800 40px/1 "Barlow Condensed",sans-serif; color:var(--l); }
         .tp-hero-rating span { font:700 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
@@ -887,11 +908,10 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-hero-crest img { max-width:100%; max-height:100%; object-fit:contain; display:block; }
         .tp-hero-crest .api-team-logo-fallback { font:800 9px "Barlow Condensed",sans-serif; color:var(--muted); letter-spacing:.02em; }
         .tp-hero-id p { margin:3px 0 0; color:#b6bcc3; font:500 13px "Barlow",sans-serif; }
-        .tp-hero-meta { margin-top:10px; display:flex; gap:16px; flex-wrap:wrap; }
-        .tp-hero-meta div { padding-right:16px; border-right:1px solid var(--line); }
-        .tp-hero-meta div:last-child { padding-right:0; border-right:none; }
-        .tp-hero-meta div span { display:block; color:var(--muted); font:600 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; margin-bottom:3px; }
-        .tp-hero-meta div b { color:#e9edf1; font:700 13px "Barlow",sans-serif; }
+        .tp-hero-meta { display:flex; flex-direction:column; gap:4px; }
+        .tp-hero-meta div { display:flex; align-items:baseline; gap:5px; }
+        .tp-hero-meta div span { color:var(--muted); font:600 8.5px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; }
+        .tp-hero-meta div b { color:#e9edf1; font:700 11.5px "Barlow",sans-serif; }
         .tp-rings { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; padding:16px; flex:0 0 auto; border-left:1px solid var(--line); }
         .tp-ringcard { display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; min-width:70px; }
         .tp-ringcard-label { color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
@@ -1021,18 +1041,22 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         <div className="tp-main">
           <div className="tp-hero-card">
             <div className="tp-hero">
-              <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
-              <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
-              <div className="tp-hero-id">
-                <h3><span className="tp-hero-crest"><ApiTeamLogo src={heroCrest} name={player.club || player.name} /></span>{player.name}</h3>
-                <p>{player.club}</p>
-                <p>{player.position || '—'}</p>
-                <p>{player.age} yrs{birthday ? ` (${birthday})` : ''}</p>
+              <div className="tp-hero-lead">
+                <div className="tp-hero-lead-top">
+                  <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
+                  <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
+                </div>
                 <div className="tp-hero-meta">
                   <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
                   <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
                   <div><span>Nation</span><b>{player.nation}</b></div>
                 </div>
+              </div>
+              <div className="tp-hero-id">
+                <h3><span className="tp-hero-crest"><ApiTeamLogo src={heroCrest} name={player.club || player.name} /></span>{player.name}</h3>
+                <p>{player.club}</p>
+                <p>{player.position || '—'}</p>
+                <p>{displayAge} yrs{birthday ? ` (${birthday})` : ''}</p>
               </div>
             </div>
 

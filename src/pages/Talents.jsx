@@ -830,7 +830,9 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-how-list { list-style:none; margin:10px 0 0; padding:10px 0 0; border-top:1px solid var(--line); display:grid; gap:7px; }
         .tp-how-list li { color:var(--muted); font:500 11px/1.5 "Barlow",sans-serif; }
         .tp-main { display:grid; gap:14px; min-width:0; }
-        .tp-hero { display:flex; align-items:center; gap:16px; padding:16px; }
+        .tp-hero-card { display:flex; align-items:stretch; flex-wrap:wrap; }
+        @media (max-width:760px){ .tp-hero-card { flex-direction:column; } .tp-hero-card .tp-rings { border-left:none; border-top:1px solid var(--line); grid-template-columns:repeat(2,1fr); } }
+        .tp-hero { display:flex; align-items:center; gap:16px; padding:16px; flex:1 1 auto; min-width:0; }
         .tp-hero-rating { text-align:center; flex:none; }
         .tp-hero-rating b { display:block; font:800 40px/1 "Barlow Condensed",sans-serif; color:var(--l); }
         .tp-hero-rating span { font:700 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
@@ -841,7 +843,7 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         .tp-hero-meta { margin-left:auto; display:flex; gap:22px; flex-wrap:wrap; }
         .tp-hero-meta div span { display:block; color:var(--muted); font:600 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; margin-bottom:3px; }
         .tp-hero-meta div b { color:#e9edf1; font:700 13px "Barlow",sans-serif; }
-        .tp-rings { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px; }
+        .tp-rings { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; padding:16px; flex:0 0 auto; border-left:1px solid var(--line); }
         .tp-ringcard { display:flex; align-items:center; gap:12px; }
         .tp-ringcard .lab { min-width:0; }
         .tp-ringcard .lab span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
@@ -963,22 +965,24 @@ function TrajectoryPathway({ player, pool = [], onSelect }) {
         </aside>
 
         <div className="tp-main">
-          <div className="tp-hero">
-            <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
-            <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
-            <div className="tp-hero-id"><h3>{player.name}</h3><p>{player.flag} {player.club} · {player.position} · {player.age} yrs</p></div>
-            <div className="tp-hero-meta">
-              <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
-              <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
-              <div><span>Nation</span><b>{player.nation}</b></div>
+          <div className="tp-hero-card">
+            <div className="tp-hero">
+              <div className="tp-hero-rating"><b>{player.rating}</b><span>Calibre</span></div>
+              <div className="tp-hero-photo"><ApiPlayerImage playerId={playerApiId(player)} name={player.name} preferredSrc={imageFor(player)} fallbackSrc="/assets/players/neutral-player.svg" allowLookup={allowOfficialLookup(player)} alt={player.name} loading="lazy" /></div>
+              <div className="tp-hero-id"><h3>{player.name}</h3><p>{player.flag} {player.club} · {player.position} · {player.age} yrs</p></div>
+              <div className="tp-hero-meta">
+                <div><span>Minutes</span><b>{numeric(player.minutes)}</b></div>
+                <div><span>Apps</span><b>{numeric(player.appearances)}</b></div>
+                <div><span>Nation</span><b>{player.nation}</b></div>
+              </div>
             </div>
-          </div>
 
-          <div className="tp-rings">
-            <div className="tp-ringcard"><TdeRing value={readiness} size={72} /><div className="lab"><span>Readiness</span><small>{readiness >= 75 ? 'High' : readiness >= 60 ? 'Building' : 'Early'}</small></div></div>
-            <div className="tp-ringcard"><div className="tp-bignum"><b>{potential}</b></div><div className="lab"><span>Potential</span><b> </b><small>{potLabel}</small></div></div>
-            <div className="tp-ringcard"><div className="tp-bignum"><b>+{trendN}</b></div><div className="lab"><span>Trend</span><small>Projected headroom</small></div></div>
-            <div className="tp-ringcard"><TdeRing value={confidence} size={72} /><div className="lab"><span>Confidence</span><small>Model confidence</small></div></div>
+            <div className="tp-rings">
+              <div className="tp-ringcard"><TdeRing value={readiness} size={72} /><div className="lab"><span>Readiness</span><small>{readiness >= 75 ? 'High' : readiness >= 60 ? 'Building' : 'Early'}</small></div></div>
+              <div className="tp-ringcard"><div className="tp-bignum"><b>{potential}</b></div><div className="lab"><span>Potential</span><b> </b><small>{potLabel}</small></div></div>
+              <div className="tp-ringcard"><div className="tp-bignum"><b>+{trendN}</b></div><div className="lab"><span>Trend</span><small>Projected headroom</small></div></div>
+              <div className="tp-ringcard"><TdeRing value={confidence} size={72} /><div className="lab"><span>Confidence</span><small>Model confidence</small></div></div>
+            </div>
           </div>
 
           <div className="tp-dev">

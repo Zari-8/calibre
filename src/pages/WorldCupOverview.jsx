@@ -5,7 +5,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import PremierBetBanner from '../components/PremierBetBanner.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { WC_CONFIG, wcFacts, featuredMatch } from '../data/worldCupData.js';
+import { WC_CONFIG, wcFacts, featuredMatch, TEAM_FLAGS } from '../data/worldCupData.js';
 
 function useCountdown() {
   const [left, setLeft] = useState(() => Math.max(0, new Date(WC_CONFIG.kickoff) - new Date()));
@@ -93,7 +93,7 @@ export default function WorldCupOverview() {
         .wc2-fmatch--solo:hover { border-color:var(--line); }
         .wc2-fmatch-headline { margin:10px 0 0; padding-top:10px; border-top:1px solid var(--line); color:#d8dde2; font:500 11px/1.4 "Barlow",sans-serif; font-style:italic; }
         .wc2-fmatch:hover { border-color:rgba(151,204,13,.35); }
-        .wc2-team-init { display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:rgba(151,204,13,.14); border:1px solid rgba(151,204,13,.4); color:var(--l); font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.03em; margin:0 auto; }
+        .wc2-team-flag { display:block; font-size:32px; line-height:1; text-align:center; }
         .wc2-fmatch-live { position:absolute; top:10px; right:10px; background:rgba(239,68,68,.15); color:#ef4444; font:800 8.5px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:2px 6px; border-radius:5px; }
         .wc2-fmatch-teams { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .wc2-fmatch-meta { margin-top:10px; text-align:center; color:var(--muted); font:600 10px "Barlow",sans-serif; letter-spacing:.04em; text-transform:uppercase; }
@@ -161,9 +161,9 @@ export default function WorldCupOverview() {
           <span className="wc2-eyebrow-sm">Featured Match — {featuredMatch.round}</span>
           <div className="wc2-fmatch wc2-fmatch--solo">
             <div className="wc2-fmatch-teams">
-              <div className="wc2-team"><span className="wc2-team-init">{featuredMatch.home.slice(0, 3).toUpperCase()}</span><span>{featuredMatch.home}</span></div>
+              <div className="wc2-team"><span className="wc2-team-flag">{TEAM_FLAGS[featuredMatch.home] || '🏳️'}</span><span>{featuredMatch.home}</span></div>
               <div className="wc2-vs"><div className="score">{featuredMatch.homeScore}–{featuredMatch.awayScore}</div></div>
-              <div className="wc2-team"><span className="wc2-team-init">{featuredMatch.away.slice(0, 3).toUpperCase()}</span><span>{featuredMatch.away}</span></div>
+              <div className="wc2-team"><span className="wc2-team-flag">{TEAM_FLAGS[featuredMatch.away] || '🏳️'}</span><span>{featuredMatch.away}</span></div>
             </div>
             <div className="wc2-fmatch-meta">{featuredMatch.note} · {featuredMatch.venue}</div>
             <p className="wc2-fmatch-headline">{featuredMatch.analysis}</p>

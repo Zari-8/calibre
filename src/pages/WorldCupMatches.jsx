@@ -3,7 +3,7 @@ import { Clock3, ArrowRight, Trophy } from 'lucide-react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { getFixturesByDate } from '../services/apiFootball.js';
-import { knockoutBracket } from '../data/worldCupData.js';
+import { knockoutBracket, TEAM_FLAGS } from '../data/worldCupData.js';
 
 // getFixturesByDate() returns fixtures across ALL competitions for a date —
 // it doesn't filter by league. The numeric World Cup league id isn't in
@@ -160,7 +160,7 @@ export default function WorldCupMatches() {
         .wcb-card:hover { border-color:rgba(151,204,13,.35); }
         .wcb-card.champ-win { border-color:rgba(151,204,13,.5); }
         .wcb-side { display:flex; align-items:center; gap:7px; padding:3px 0; }
-        .wcb-init { flex:none; display:flex; align-items:center; justify-content:center; width:22px; height:18px; border-radius:5px; background:rgba(151,204,13,.12); color:var(--l); font:800 8.5px "Barlow Condensed",sans-serif; letter-spacing:.02em; }
+        .wcb-flag { flex:none; font-size:15px; line-height:1; width:20px; text-align:center; }
         .wcb-name { flex:1; min-width:0; font:600 11.5px "Barlow",sans-serif; color:#ccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .wcb-side.win .wcb-name { color:#fff; font-weight:800; }
         .wcb-side b { flex:none; font:800 12px "Barlow Condensed",sans-serif; color:var(--muted); }
@@ -260,10 +260,10 @@ export default function WorldCupMatches() {
                   return (
                     <div key={`${col.key}-${i}`} className={`wcb-card${winner ? ' champ-win' : ''}`}>
                       <div className={`wcb-side${winner === 'home' ? ' win' : ''}`}>
-                        <span className="wcb-init">{m.home.slice(0, 3).toUpperCase()}</span><span className="wcb-name">{m.home}</span><b>{m.homeScore}</b>
+                        <span className="wcb-flag">{TEAM_FLAGS[m.home] || '🏳️'}</span><span className="wcb-name">{m.home}</span><b>{m.homeScore}</b>
                       </div>
                       <div className={`wcb-side${winner === 'away' ? ' win' : ''}`}>
-                        <span className="wcb-init">{m.away.slice(0, 3).toUpperCase()}</span><span className="wcb-name">{m.away}</span><b>{m.awayScore}</b>
+                        <span className="wcb-flag">{TEAM_FLAGS[m.away] || '🏳️'}</span><span className="wcb-name">{m.away}</span><b>{m.awayScore}</b>
                       </div>
                       <div className="wcb-card-meta">{meta}</div>
                     </div>

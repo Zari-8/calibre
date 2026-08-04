@@ -71,6 +71,21 @@ export const knockoutBracket = {
   },
 };
 
+// ── TEAM FLAGS ───────────────────────────────────────────────────────
+// Every nation appearing in knockoutBracket above, keyed by the exact team
+// name string used there, so bracket/match cards can show a real flag
+// instead of a text-initials badge.
+export const TEAM_FLAGS = {
+  Germany: '🇩🇪', Paraguay: '🇵🇾', France: '🇫🇷', Sweden: '🇸🇪',
+  'South Africa': '🇿🇦', Canada: '🇨🇦', Netherlands: '🇳🇱', Morocco: '🇲🇦',
+  Portugal: '🇵🇹', Croatia: '🇭🇷', Spain: '🇪🇸', Austria: '🇦🇹',
+  USA: '🇺🇸', 'Bosnia & Herzegovina': '🇧🇦', Belgium: '🇧🇪', Senegal: '🇸🇳',
+  Brazil: '🇧🇷', Japan: '🇯🇵', "Côte d'Ivoire": '🇨🇮', Norway: '🇳🇴',
+  Mexico: '🇲🇽', Ecuador: '🇪🇨', England: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'DR Congo': '🇨🇩',
+  Argentina: '🇦🇷', 'Cape Verde': '🇨🇻', Australia: '🇦🇺', Egypt: '🇪🇬',
+  Switzerland: '🇨🇭', Algeria: '🇩🇿', Colombia: '🇨🇴', Ghana: '🇬🇭',
+};
+
 // ── FEATURED MATCH (curated) ────────────────────────────────────────
 // Same reasoning as the bracket above — hand-picked instead of auto-selected
 // off a fixture feed that proved unreliable. Update this when there's a new
@@ -80,7 +95,7 @@ export const featuredMatch = {
   away: 'Argentina', awayScore: 0,
   round: 'Final', note: 'After extra time',
   venue: 'East Rutherford, NJ', date: '2026-07-19',
-  analysis: "Spain won the tournament the way they'd won every knockout game before it — patient, compact, unwilling to open up. Argentina had the tournament's outstanding individual performer in Lionel Messi (8 goals, 4 assists across the run), but a disciplined Spain defense held the game scoreless through 90 minutes before Ferran Torres broke through in the 106th minute of extra time. Rodri, Spain's midfield anchor throughout the knockouts, was named the tournament's Golden Ball winner for his performance across the run, capped by the Final.",
+  analysis: "Spain's double pivot controlled central access throughout, limiting Messi to wide zones rather than the half-spaces he'd exploited in earlier rounds. Argentina held a territorial edge without converting it into clear chances against a compact mid-block. The only goal came from a transition sequence in the 106th minute of extra time, finished by Ferran Torres. Rodri's ball-progression and defensive coverage across both boxes underpinned the shutout — the performance that earned him the tournament's Golden Ball.",
 };
 
 // ── LIVE MOMENTS ─────────────────────────────────────────────────

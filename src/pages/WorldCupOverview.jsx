@@ -6,6 +6,7 @@ import PremierBetBanner from '../components/PremierBetBanner.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 import { getFixturesByDate, getFixtureStatistics, getFixtureLineups, getFixtureEvents, statValue } from '../services/apiFootball.js';
+import { findStatsApiCompetitionId, findStatsApiMatch, getStatsApiMatchPlayerStats, getStatsApiMatchShotmap, pickStat, rowTeamName } from '../services/statsApi.js';
 import { WC_CONFIG, wcFacts, featuredMatch, TEAM_FLAGS } from '../data/worldCupData.js';
 
 // Dominance bar for one stat, home value growing from the right toward the
@@ -125,6 +126,93 @@ export default function WorldCupOverview() {
   const timelineEvents = useMemo(() => (matchData.events || [])
     .filter(e => e.type === 'Goal' || e.type === 'Card')
     .sort((a, b) => (a.time?.elapsed || 0) - (b.time?.elapsed || 0)), [matchData.events]);
+
+  // xG / Big Chances / Progressive Passes — API-Football's statistics
+  // endpoint doesn't have these fields at all (confirmed against its
+  // documented statistic types), but TheStatsAPI does, and this app already
+  // uses it server-side for the Calibre rating engine (see scripts/
+  // enrichStatsAPI.mjs and statsapi-enrich-advanced-season.mjs). Same
+  // narrow-lookup approach as the API-Football fetch above: resolve the
+  // World Cup's competition id, find this one match by date + real team
+  // names, then pull its shotmap (for xG) and player-stats (for big chances
+  // and progressive passes) — never a season-wide sweep.
+  const [statsApiData, setStatsApiData] = useState({ loading: true, matchId: null, playerStats: [], shotmap: [] });
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const compId = await findStatsApiCompetitionId('World Cup');
+        const match = await findStatsApiMatch(featuredMatch.fixtureDate, featuredMatch.fixtureDate, featuredMatch.homeApiName, featuredMatch.awayApiName, compId);
+        const matchId = match?.id || match?.match_id || null;
+        if (!matchId) { if (alive) setStatsApiData({ loading: false, matchId: null, playerStats: [], shotmap: [] }); return; }
+        const [playerStats, shotmap] = await Promise.all([
+          getStatsApiMatchPlayerStats(matchId),
+          getStatsApiMatchShotmap(matchId),
+        ]);
+        if (alive) setStatsApiData({ loading: false, matchId, playerStats, shotmap });
+      } catch {
+        if (alive) setStatsApiData({ loading: false, matchId: null, playerStats: [], shotmap: [] });
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
+
+  const statsApiTeamAgg = useMemo(() => {
+    const home = featuredMatch.homeApiName.toLowerCase();
+    const away = featuredMatch.awayApiName.toLowerCase();
+    const agg = {
+      home: { xg: 0, xgSeen: false, bigChances: 0, bigChancesSeen: false, progPasses: 0, progPassesSeen: false },
+      away: { xg: 0, xgSeen: false, bigChances: 0, bigChancesSeen: false, progPasses: 0, progPassesSeen: false },
+    };
+    for (const shot of statsApiData.shotmap) {
+      const teamName = rowTeamName(shot);
+      const xg = pickStat(shot, ['expected_goals', 'xg']);
+      if (xg == null) continue;
+      const side = teamName.includes(home) ? 'home' : teamName.includes(away) ? 'away' : null;
+      if (!side) continue;
+      agg[side].xg += Number(xg);
+      agg[side].xgSeen = true;
+    }
+    for (const row of statsApiData.playerStats) {
+      const teamName = rowTeamName(row);
+      const side = teamName.includes(home) ? 'home' : teamName.includes(away) ? 'away' : null;
+      if (!side) continue;
+      const bc = pickStat(row, ['shooting.big_chances_created', 'big_chances_created']);
+      const pp = pickStat(row, ['passing.progressive_passes', 'progressive_passes', 'prog_passes']);
+      if (bc != null) { agg[side].bigChances += Number(bc); agg[side].bigChancesSeen = true; }
+      if (pp != null) { agg[side].progPasses += Number(pp); agg[side].progPassesSeen = true; }
+    }
+    return agg;
+  }, [statsApiData]);
+
+  const statsApiRows = useMemo(() => {
+    const out = [];
+    const { home, away } = statsApiTeamAgg;
+    if (home.xgSeen && away.xgSeen) out.push({ label: 'xG', home: Number(home.xg.toFixed(2)), away: Number(away.xg.toFixed(2)) });
+    if (home.bigChancesSeen && away.bigChancesSeen) out.push({ label: 'Big Chances', home: home.bigChances, away: away.bigChances });
+    if (home.progPassesSeen && away.progPassesSeen) out.push({ label: 'Progressive Passes', home: home.progPasses, away: away.progPasses });
+    return out;
+  }, [statsApiTeamAgg]);
+
+  const allDominanceRows = useMemo(() => [...statsApiRows, ...dominanceRows], [statsApiRows, dominanceRows]);
+  const dataLoading = matchData.loading || statsApiData.loading;
+
+  // Real match-specific numbers for the Man of the Match badge, if this
+  // player's row can be matched by name in the same player-stats response —
+  // falls back to just the static rating/Golden Ball tag if not found.
+  const motmMatchStats = useMemo(() => {
+    const name = featuredMatch.manOfTheMatch?.name?.toLowerCase();
+    if (!name) return null;
+    const row = statsApiData.playerStats.find(r => String(r.player_name || r.player?.name || '').toLowerCase().includes(name));
+    if (!row) return null;
+    const totalPasses = pickStat(row, ['passing.total_passes', 'total_passes']);
+    const accuratePasses = pickStat(row, ['passing.accurate_passes', 'accurate_passes']);
+    const duelsWon = pickStat(row, ['duels.won', 'duels_won']);
+    const passAccuracy = totalPasses != null && accuratePasses != null && Number(totalPasses) > 0
+      ? Math.round((Number(accuratePasses) / Number(totalPasses)) * 100) : null;
+    if (passAccuracy == null && duelsWon == null) return null;
+    return { passAccuracy, duelsWon };
+  }, [statsApiData.playerStats]);
 
   const dayIndex = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const validFacts = wcFacts.filter(f => f && f.fact);
@@ -304,7 +392,18 @@ export default function WorldCupOverview() {
           <div className="wcfeat-badges">
             <div className="wcfeat-badge">
               <Trophy size={18} />
-              <div><strong>{featuredMatch.manOfTheMatch.name} · {featuredMatch.manOfTheMatch.rating}</strong><span>Man of the Match — {featuredMatch.manOfTheMatch.tag}</span></div>
+              <div>
+                <strong>{featuredMatch.manOfTheMatch.name} · {featuredMatch.manOfTheMatch.rating}</strong>
+                <span>
+                  Man of the Match — {featuredMatch.manOfTheMatch.tag}
+                  {motmMatchStats && (
+                    <>
+                      {motmMatchStats.passAccuracy != null && ` · ${motmMatchStats.passAccuracy}% pass accuracy`}
+                      {motmMatchStats.duelsWon != null && ` · ${motmMatchStats.duelsWon} duels won`}
+                    </>
+                  )}
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -323,14 +422,18 @@ export default function WorldCupOverview() {
 
         <div className="wcfeat-data">
           <span className="wcfeat-label">Match Data</span>
-          {matchData.loading ? (
+          {dataLoading ? (
             <div className="wc2-empty">Loading live match statistics…</div>
-          ) : dominanceRows.length === 0 ? (
+          ) : allDominanceRows.length === 0 ? (
             <div className="wc2-empty">Live match statistics aren't available for this fixture right now.</div>
           ) : (
             <>
-              {dominanceRows.map(r => <DominanceBar key={r.label} {...r} />)}
-              <p className="wcfeat-data-note">Expected goals (xG) isn't available from the connected data source — the figures above are the directly reported match statistics.</p>
+              {allDominanceRows.map(r => <DominanceBar key={r.label} {...r} />)}
+              <p className="wcfeat-data-note">
+                {statsApiRows.length > 0
+                  ? 'xG, Big Chances and Progressive Passes via TheStatsAPI; the rest are directly reported match statistics.'
+                  : "xG, Big Chances and Progressive Passes weren't available for this fixture from TheStatsAPI — the figures above are the directly reported match statistics."}
+              </p>
             </>
           )}
         </div>

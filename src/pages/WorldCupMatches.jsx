@@ -31,20 +31,20 @@ const TABS = ['All', 'Live', 'Results', 'Upcoming'];
 
 // Knockout bracket: hand-curated in worldCupData.js (see knockoutBracket)
 // rather than pulled from the live fixture feed, which repeatedly mixed in
-// results from other competitions that also carry "World Cup" in their
-// name. Round of 32 and Round of 16 aren't confirmed yet, so those columns
-// show an honest "not yet available" instead of guessed matchups.
+// results from other competitions that also carry "World Cup" in their name.
 const BRACKET_COLUMNS = [
-  { key: 'r32',   label: 'Round of 32',    matches: null },
-  { key: 'r16',   label: 'Round of 16',    matches: null },
+  { key: 'r32',   label: 'Round of 32',    matches: knockoutBracket.roundOf32 },
+  { key: 'r16',   label: 'Round of 16',    matches: knockoutBracket.roundOf16 },
   { key: 'qf',    label: 'Quarter-Finals', matches: knockoutBracket.quarterFinals },
   { key: 'sf',    label: 'Semi-Finals',    matches: knockoutBracket.semiFinals },
   { key: 'final', label: 'Final',          matches: [knockoutBracket.final] },
 ];
-// Winner read directly off the curated scoreline — never guessed.
+// Winner read directly off the curated scoreline (or shootout score when
+// level) — never guessed.
 function curatedWinner(m) {
-  if (m.homeScore === m.awayScore) return null;
-  return m.homeScore > m.awayScore ? 'home' : 'away';
+  if (m.homeScore !== m.awayScore) return m.homeScore > m.awayScore ? 'home' : 'away';
+  if (m.penalties) return m.penalties.home > m.penalties.away ? 'home' : 'away';
+  return null;
 }
 
 function dateKey(d) { return d.toISOString().slice(0, 10); }
@@ -254,10 +254,9 @@ export default function WorldCupMatches() {
             <div className="wcb-col" key={col.key}>
               <div className="wcb-col-h">{col.label}</div>
               <div className="wcb-col-matches">
-                {!col.matches ? (
-                  <div className="wcb-tbd">Not yet available</div>
-                ) : col.matches.map((m, i) => {
+                {col.matches.map((m, i) => {
                   const winner = curatedWinner(m);
+                  const meta = m.penalties ? `Pens ${m.penalties.home}–${m.penalties.away}` : (m.note || 'Full time');
                   return (
                     <div key={`${col.key}-${i}`} className={`wcb-card${winner ? ' champ-win' : ''}`}>
                       <div className={`wcb-side${winner === 'home' ? ' win' : ''}`}>
@@ -266,7 +265,7 @@ export default function WorldCupMatches() {
                       <div className={`wcb-side${winner === 'away' ? ' win' : ''}`}>
                         <span className="wcb-init">{m.away.slice(0, 3).toUpperCase()}</span><span className="wcb-name">{m.away}</span><b>{m.awayScore}</b>
                       </div>
-                      <div className="wcb-card-meta">{m.note || 'Full time'}</div>
+                      <div className="wcb-card-meta">{meta}</div>
                     </div>
                   );
                 })}
@@ -285,7 +284,7 @@ export default function WorldCupMatches() {
             )}
           </div>
         </div>
-        <p className="wcb-note">Round of 32 and Round of 16 results aren't confirmed yet — this bracket only shows matches from a verified source. 3rd place: {knockoutBracket.thirdPlace.home} {knockoutBracket.thirdPlace.homeScore}–{knockoutBracket.thirdPlace.awayScore} {knockoutBracket.thirdPlace.away}.</p>
+        <p className="wcb-note">3rd place: {knockoutBracket.thirdPlace.home} {knockoutBracket.thirdPlace.homeScore}–{knockoutBracket.thirdPlace.awayScore} {knockoutBracket.thirdPlace.away}.</p>
       </div>
     </div>
   );

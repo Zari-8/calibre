@@ -20,9 +20,37 @@ export const WC_CONFIG = {
 // The live "World Cup" fixture feed kept mixing in results from other
 // competitions that also carry "World Cup" in their name (youth, women's,
 // qualifiers...), so this bracket is hand-entered from a verified source
-// instead of auto-fetched. Round of 32 and Round of 16 aren't confirmed yet
-// — add them here in the same shape once they are. Nothing below is guessed.
+// instead of auto-fetched. Nothing below is guessed — penalty shootouts
+// carry the actual shootout score in `penalties`, never a coin-flip winner.
 export const knockoutBracket = {
+  roundOf32: [
+    { home: 'Germany',       homeScore: 1, away: 'Paraguay',            awayScore: 1, penalties: { home: 3, away: 4 } },
+    { home: 'France',        homeScore: 3, away: 'Sweden',              awayScore: 0 },
+    { home: 'South Africa',  homeScore: 0, away: 'Canada',              awayScore: 1 },
+    { home: 'Netherlands',   homeScore: 1, away: 'Morocco',             awayScore: 1, penalties: { home: 2, away: 3 } },
+    { home: 'Portugal',      homeScore: 2, away: 'Croatia',             awayScore: 1 },
+    { home: 'Spain',         homeScore: 3, away: 'Austria',             awayScore: 0 },
+    { home: 'USA',           homeScore: 2, away: 'Bosnia & Herzegovina', awayScore: 0 },
+    { home: 'Belgium',       homeScore: 3, away: 'Senegal',             awayScore: 2 },
+    { home: 'Brazil',        homeScore: 2, away: 'Japan',               awayScore: 1 },
+    { home: "Côte d'Ivoire", homeScore: 1, away: 'Norway',              awayScore: 2 },
+    { home: 'Mexico',        homeScore: 2, away: 'Ecuador',             awayScore: 0 },
+    { home: 'England',       homeScore: 2, away: 'DR Congo',            awayScore: 1 },
+    { home: 'Argentina',     homeScore: 3, away: 'Cape Verde',          awayScore: 2 },
+    { home: 'Australia',     homeScore: 1, away: 'Egypt',               awayScore: 1, penalties: { home: 2, away: 4 } },
+    { home: 'Switzerland',   homeScore: 2, away: 'Algeria',             awayScore: 0 },
+    { home: 'Colombia',      homeScore: 1, away: 'Ghana',               awayScore: 0 },
+  ],
+  roundOf16: [
+    { home: 'Paraguay',    homeScore: 0, away: 'France',      awayScore: 1 },
+    { home: 'Canada',      homeScore: 0, away: 'Morocco',     awayScore: 3 },
+    { home: 'Portugal',    homeScore: 0, away: 'Spain',       awayScore: 1 },
+    { home: 'USA',         homeScore: 1, away: 'Belgium',     awayScore: 4 },
+    { home: 'Brazil',      homeScore: 1, away: 'Norway',      awayScore: 2 },
+    { home: 'Mexico',      homeScore: 2, away: 'England',     awayScore: 3 },
+    { home: 'Argentina',   homeScore: 3, away: 'Egypt',       awayScore: 2 },
+    { home: 'Switzerland', homeScore: 0, away: 'Colombia',    awayScore: 0, penalties: { home: 4, away: 3 } },
+  ],
   quarterFinals: [
     { home: 'France',    homeScore: 2, away: 'Morocco',     awayScore: 0 },
     { home: 'Spain',      homeScore: 2, away: 'Belgium',     awayScore: 1 },
@@ -52,7 +80,7 @@ export const featuredMatch = {
   away: 'Argentina', awayScore: 0,
   round: 'Final', note: 'After extra time',
   venue: 'East Rutherford, NJ', date: '2026-07-19',
-  analysis: "Spain won the tournament the way they'd won every knockout game before it — patient, compact, unwilling to open up. Argentina had the tournament's outstanding individual performer in Lionel Messi (8 goals, 4 assists, a team-high 28 successful dribbles across the run), but a defense that had conceded just twice in five matches held him to his quietest night of the finals. The only goal came in extra time, closing out a tournament Spain finished without a single defeat.",
+  analysis: "Spain won the tournament the way they'd won every knockout game before it — patient, compact, unwilling to open up. Argentina had the tournament's outstanding individual performer in Lionel Messi (8 goals, 4 assists across the run), but a disciplined Spain defense held the game scoreless through 90 minutes before Ferran Torres broke through in the 106th minute of extra time. Rodri, Spain's midfield anchor throughout the knockouts, was named the tournament's Golden Ball winner for his performance across the run, capped by the Final.",
 };
 
 // ── LIVE MOMENTS ─────────────────────────────────────────────────

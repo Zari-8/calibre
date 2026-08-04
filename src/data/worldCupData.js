@@ -16,6 +16,45 @@ export const WC_CONFIG = {
   hosts:        ['USA', 'Canada', 'Mexico'],
 };
 
+// ── KNOCKOUT BRACKET (curated) ──────────────────────────────────────
+// The live "World Cup" fixture feed kept mixing in results from other
+// competitions that also carry "World Cup" in their name (youth, women's,
+// qualifiers...), so this bracket is hand-entered from a verified source
+// instead of auto-fetched. Round of 32 and Round of 16 aren't confirmed yet
+// — add them here in the same shape once they are. Nothing below is guessed.
+export const knockoutBracket = {
+  quarterFinals: [
+    { home: 'France',    homeScore: 2, away: 'Morocco',     awayScore: 0 },
+    { home: 'Spain',      homeScore: 2, away: 'Belgium',     awayScore: 1 },
+    { home: 'Norway',     homeScore: 1, away: 'England',     awayScore: 2 },
+    { home: 'Argentina',  homeScore: 3, away: 'Switzerland', awayScore: 1 },
+  ],
+  semiFinals: [
+    { home: 'France',  homeScore: 0, away: 'Spain',     awayScore: 2 },
+    { home: 'England', homeScore: 1, away: 'Argentina', awayScore: 2 },
+  ],
+  final: {
+    home: 'Spain', homeScore: 1, away: 'Argentina', awayScore: 0,
+    note: 'After extra time', venue: 'East Rutherford', date: '2026-07-19',
+  },
+  thirdPlace: {
+    home: 'France', homeScore: 4, away: 'England', awayScore: 6,
+    note: 'Finished', venue: 'Miami Gardens', date: '2026-07-18',
+  },
+};
+
+// ── FEATURED MATCH (curated) ────────────────────────────────────────
+// Same reasoning as the bracket above — hand-picked instead of auto-selected
+// off a fixture feed that proved unreliable. Update this when there's a new
+// result worth leading with.
+export const featuredMatch = {
+  home: 'Spain', homeScore: 1,
+  away: 'Argentina', awayScore: 0,
+  round: 'Final', note: 'After extra time',
+  venue: 'East Rutherford, NJ', date: '2026-07-19',
+  analysis: "Spain won the tournament the way they'd won every knockout game before it — patient, compact, unwilling to open up. Argentina had the tournament's outstanding individual performer in Lionel Messi (8 goals, 4 assists, a team-high 28 successful dribbles across the run), but a defense that had conceded just twice in five matches held him to his quietest night of the finals. The only goal came in extra time, closing out a tournament Spain finished without a single defeat.",
+};
+
 // ── LIVE MOMENTS ─────────────────────────────────────────────────
 // Admin: add objects here to populate the live feed.
 // Live Moments are now built from the real fixture-events feed in WorldCupMatchroom.jsx.

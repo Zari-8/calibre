@@ -5,34 +5,7 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import PremierBetBanner from '../components/PremierBetBanner.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { getFixturesByDate } from '../services/apiFootball.js';
-import { WC_CONFIG, wcFacts } from '../data/worldCupData.js';
-
-// ── shared with the original WorldCup.jsx — same fixture picking logic, kept
-// local since this page only needs a compact featured-match card, not the
-// full Matchroom experience. ──
-// getFixturesByDate() returns fixtures across ALL competitions for a date —
-// it doesn't filter by league. The numeric World Cup league id isn't in
-// LEAGUE_IDS (apiFootball.js only lists club competitions), and guessing a
-// wrong number here would silently zero out every real match with no error.
-// Matching by name instead is robust regardless of the real id — swap this
-// for a confirmed numeric id + LEAGUE_IDS entry once you have it, and every
-// page using isWorldCup() below picks it up with no further changes.
-// Other real competitions also carry "World Cup" in their name — age-group
-// (U-17/U-20/U-23), women's, qualification play-offs, beach and futsal
-// editions among them. Each of those has its own separate bracket with its
-// own "Semi-Finals"/"Final" rounds, so a bare name-substring match can pull
-// a completely different tournament's matches (and its own "Final") into
-// this senior men's page. Excluded here rather than guessed away with a
-// numeric league id, since a wrong id would silently zero out every real
-// match with no error (see LEAGUE_IDS note above).
-const WC_NAME_EXCLUDE = /\b(u-?1[5-9]|u-?2[0-3]|women|female|girls|beach|futsal|clubs?|qualif|play-?off|friendl)\b/i;
-function isWorldCup(fixture) {
-  const name = fixture?.league?.name || '';
-  return /world cup/i.test(name) && !WC_NAME_EXCLUDE.test(name);
-}
-const WC_LIVE = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
-const WC_DONE = ['FT', 'AET', 'PEN'];
+import { WC_CONFIG, wcFacts, featuredMatch } from '../data/worldCupData.js';
 
 function useCountdown() {
   const [left, setLeft] = useState(() => Math.max(0, new Date(WC_CONFIG.kickoff) - new Date()));
@@ -56,68 +29,8 @@ function useCountdown() {
 const TOURNAMENT_FORMAT = { teams: 48, matches: 104, stadiums: 16 };
 const HOST_FLAGS = { USA: '🇺🇸', Canada: '🇨🇦', Mexico: '🇲🇽' };
 
-// Same headline generator the full Matchroom uses — deterministic off the two
-// team names, no API call needed, so every card in the carousel below can
-// carry the "mini matchroom" framing line the original featured-fixture card
-// had, not just a bare scoreboard.
-function wcHeadline(home, away) {
-  const seed = `${home}-${away}`.split('').reduce((t, c) => t + c.charCodeAt(0), 0);
-  const prompts = [
-    `Where does ${home} vs ${away} break open?`,
-    `Can ${home} control the game before ${away} turn it into a transition battle?`,
-    `Which side wins the territory war: ${home} or ${away}?`,
-    `Does this game belong to ${home}'s build-up or ${away}'s counterpress?`,
-    `Who controls the spaces that decide ${home} vs ${away}?`,
-  ];
-  return prompts[seed % prompts.length];
-}
-
 export default function WorldCupOverview() {
   const { days, hrs, mins, secs, isLive } = useCountdown();
-
-  // Featured Matches carousel — a real window of fixtures (yesterday through
-  // next week), live ones first, so there's genuinely more than one to scroll
-  // through — same date-window technique the Matches page uses, not a mock.
-  // Also anchored to the real kickoff date and swept across the whole
-  // tournament length so the Final is always fetched, even when "today" is
-  // outside the near-term window (before the tournament starts, or after it
-  // ends) — that anchored sweep is how the Final gets pinned to the front.
-  const [featuredList, setFeaturedList] = useState([]);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const nearDays = [-2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => new Date(Date.now() + i * 86400000).toISOString().slice(0, 10));
-        const kickoff = new Date(WC_CONFIG.kickoff);
-        const tourneyDays = [];
-        for (let i = 0; i <= 45; i++) tourneyDays.push(new Date(kickoff.getTime() + i * 86400000).toISOString().slice(0, 10));
-        const dayKeys = [...new Set([...nearDays, ...tourneyDays])];
-        const results = await Promise.all(dayKeys.map(d => getFixturesByDate(d).catch(() => [])));
-        const wc = results.flat().filter(f => isWorldCup(f));
-        const live = wc.filter(f => WC_LIVE.includes(f.fixture?.status?.short));
-        const done = wc.filter(f => WC_DONE.includes(f.fixture?.status?.short));
-        const upcoming = wc.filter(f => !WC_LIVE.includes(f.fixture?.status?.short) && !WC_DONE.includes(f.fixture?.status?.short));
-        // Exact match on the round label, not a substring test — "Final" only,
-        // never "Semi-Finals", "Quarter-Finals" or "3rd Place Final" (all of
-        // which contain the substring "final" too). This is the single last
-        // match of the tournament, nothing else.
-        const finalFx = wc.find(f => (f.league?.round || '').trim().toLowerCase() === 'final');
-        const base = [...live, ...upcoming, ...done.reverse()];
-        // Live matches always lead. The Final slots in right after them —
-        // unless it IS the live match, in which case it's already there.
-        let ordered = base;
-        if (finalFx && !live.some(f => f.fixture?.id === finalFx.fixture?.id)) {
-          const withoutFinal = base.filter(f => f.fixture?.id !== finalFx.fixture?.id);
-          ordered = [...withoutFinal.slice(0, live.length), finalFx, ...withoutFinal.slice(live.length)];
-        }
-        const deduped = ordered.filter((f, i) => ordered.findIndex(g => g.fixture?.id === f.fixture?.id) === i);
-        if (alive) setFeaturedList(deduped.slice(0, 12));
-      } catch { /* carousel just shows its empty state */ }
-      finally { if (alive) setFeaturedLoading(false); }
-    })();
-    return () => { alive = false; };
-  }, []);
 
   // Stats leaders preview — real wc_leaders table, same source the full
   // Stats page uses, just capped to a short preview here.
@@ -176,8 +89,11 @@ export default function WorldCupOverview() {
         .wc2-carousel::-webkit-scrollbar { height:6px; }
         .wc2-carousel::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:3px; }
         .wc2-fmatch { position:relative; flex:none; width:250px; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:14px; cursor:pointer; scroll-snap-align:start; transition:border-color .12s; }
+        .wc2-fmatch--solo { width:auto; cursor:default; }
+        .wc2-fmatch--solo:hover { border-color:var(--line); }
         .wc2-fmatch-headline { margin:10px 0 0; padding-top:10px; border-top:1px solid var(--line); color:#d8dde2; font:500 11px/1.4 "Barlow",sans-serif; font-style:italic; }
         .wc2-fmatch:hover { border-color:rgba(151,204,13,.35); }
+        .wc2-team-init { display:flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:8px; background:rgba(151,204,13,.14); border:1px solid rgba(151,204,13,.4); color:var(--l); font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.03em; margin:0 auto; }
         .wc2-fmatch-live { position:absolute; top:10px; right:10px; background:rgba(239,68,68,.15); color:#ef4444; font:800 8.5px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:2px 6px; border-radius:5px; }
         .wc2-fmatch-teams { display:flex; align-items:center; justify-content:space-between; gap:8px; }
         .wc2-fmatch-meta { margin-top:10px; text-align:center; color:var(--muted); font:600 10px "Barlow",sans-serif; letter-spacing:.04em; text-transform:uppercase; }
@@ -242,36 +158,16 @@ export default function WorldCupOverview() {
         </div>
 
         <div className="wc2-card">
-          <span className="wc2-eyebrow-sm">Featured Match{featuredList[0]?.league?.round ? ` — ${featuredList[0].league.round}` : ''}</span>
-          {featuredLoading ? (
-            <div className="wc2-empty">Loading fixtures…</div>
-          ) : featuredList.length === 0 ? (
-            <div className="wc2-empty">No World Cup fixtures in range — check the full schedule.</div>
-          ) : (
-            <div className="wc2-carousel">
-              {featuredList.map(f => {
-                const st = f.fixture?.status?.short;
-                const live = WC_LIVE.includes(st);
-                const done = WC_DONE.includes(st);
-                return (
-                  <div className="wc2-fmatch" key={f.fixture?.id} onClick={() => navigateTo(`/world-cup/matchroom?fixtureId=${f.fixture?.id}&date=${(f.fixture?.date || '').slice(0, 10)}`)}>
-                    {live && <span className="wc2-fmatch-live">LIVE {f.fixture?.status?.elapsed ?? ''}'</span>}
-                    <div className="wc2-fmatch-teams">
-                      <div className="wc2-team"><img src={f.teams?.home?.logo} alt={f.teams?.home?.name} /><span>{f.teams?.home?.name}</span></div>
-                      <div className="wc2-vs">
-                        {live || done ? <div className="score">{f.goals?.home ?? 0}–{f.goals?.away ?? 0}</div> : <div className="vs">VS</div>}
-                      </div>
-                      <div className="wc2-team"><img src={f.teams?.away?.logo} alt={f.teams?.away?.name} /><span>{f.teams?.away?.name}</span></div>
-                    </div>
-                    <div className="wc2-fmatch-meta">
-                      {live ? 'Live now' : done ? 'Full time' : new Date(f.fixture?.date).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                    <p className="wc2-fmatch-headline">{wcHeadline(f.teams?.home?.name || 'Home', f.teams?.away?.name || 'Away')}</p>
-                  </div>
-                );
-              })}
+          <span className="wc2-eyebrow-sm">Featured Match — {featuredMatch.round}</span>
+          <div className="wc2-fmatch wc2-fmatch--solo">
+            <div className="wc2-fmatch-teams">
+              <div className="wc2-team"><span className="wc2-team-init">{featuredMatch.home.slice(0, 3).toUpperCase()}</span><span>{featuredMatch.home}</span></div>
+              <div className="wc2-vs"><div className="score">{featuredMatch.homeScore}–{featuredMatch.awayScore}</div></div>
+              <div className="wc2-team"><span className="wc2-team-init">{featuredMatch.away.slice(0, 3).toUpperCase()}</span><span>{featuredMatch.away}</span></div>
             </div>
-          )}
+            <div className="wc2-fmatch-meta">{featuredMatch.note} · {featuredMatch.venue}</div>
+            <p className="wc2-fmatch-headline">{featuredMatch.analysis}</p>
+          </div>
         </div>
 
         <div className="wc2-card">

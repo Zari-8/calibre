@@ -3,7 +3,7 @@ import { Clock3, ArrowRight, Trophy } from 'lucide-react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { getFixturesByDate } from '../services/apiFootball.js';
-import { WC_CONFIG } from '../data/worldCupData.js';
+import { knockoutBracket } from '../data/worldCupData.js';
 
 // getFixturesByDate() returns fixtures across ALL competitions for a date —
 // it doesn't filter by league. The numeric World Cup league id isn't in
@@ -29,43 +29,22 @@ const WC_LIVE = ['1H', 'HT', '2H', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
 const WC_DONE = ['FT', 'AET', 'PEN'];
 const TABS = ['All', 'Live', 'Results', 'Upcoming'];
 
-// Knockout bracket: FIFA's published round names for the expanded 48-team
-// format. Matched by substring (not exact string) since API-Football's round
-// label formatting varies slightly by competition. Order matters — the
-// generic "final" check must run last so it doesn't swallow "Quarter-Finals"
-// or "Semi-Finals" first.
-const BRACKET_ROUNDS = [
-  { key: 'r32',   label: 'Round of 32' },
-  { key: 'r16',   label: 'Round of 16' },
-  { key: 'qf',    label: 'Quarter-Finals' },
-  { key: 'sf',    label: 'Semi-Finals' },
-  { key: 'third', label: '3rd Place' },
-  { key: 'final', label: 'Final' },
+// Knockout bracket: hand-curated in worldCupData.js (see knockoutBracket)
+// rather than pulled from the live fixture feed, which repeatedly mixed in
+// results from other competitions that also carry "World Cup" in their
+// name. Round of 32 and Round of 16 aren't confirmed yet, so those columns
+// show an honest "not yet available" instead of guessed matchups.
+const BRACKET_COLUMNS = [
+  { key: 'r32',   label: 'Round of 32',    matches: null },
+  { key: 'r16',   label: 'Round of 16',    matches: null },
+  { key: 'qf',    label: 'Quarter-Finals', matches: knockoutBracket.quarterFinals },
+  { key: 'sf',    label: 'Semi-Finals',    matches: knockoutBracket.semiFinals },
+  { key: 'final', label: 'Final',          matches: [knockoutBracket.final] },
 ];
-function roundKey(round = '') {
-  const r = round.toLowerCase();
-  if (r.includes('round of 32')) return 'r32';
-  if (r.includes('round of 16')) return 'r16';
-  if (r.includes('quarter')) return 'qf';
-  if (r.includes('semi')) return 'sf';
-  if (r.includes('3rd') || r.includes('third')) return 'third';
-  // Exact match, not substring — "Final" alone, the single last match of
-  // the tournament. Everything else that also contains "final" as a
-  // substring (Quarter-Finals, Semi-Finals, 3rd Place Final) is already
-  // caught and returned above.
-  if (r.trim() === 'final') return 'final';
-  return null;
-}
-// Never guesses a winner — only reads it off a completed fixture's actual
-// goals or, for a shootout, the real penalty score API-Football reports.
-function matchWinner(f) {
-  if (!WC_DONE.includes(f.fixture?.status?.short)) return null;
-  const gh = f.goals?.home, ga = f.goals?.away;
-  if (gh == null || ga == null) return null;
-  if (gh !== ga) return gh > ga ? f.teams?.home : f.teams?.away;
-  const ph = f.score?.penalty?.home, pa = f.score?.penalty?.away;
-  if (ph != null && pa != null && ph !== pa) return ph > pa ? f.teams?.home : f.teams?.away;
-  return null;
+// Winner read directly off the curated scoreline — never guessed.
+function curatedWinner(m) {
+  if (m.homeScore === m.awayScore) return null;
+  return m.homeScore > m.awayScore ? 'home' : 'away';
 }
 
 function dateKey(d) { return d.toISOString().slice(0, 10); }
@@ -101,43 +80,8 @@ export default function WorldCupMatches() {
     return () => { alive = false; };
   }, []);
 
-  // Knockout bracket data — a separate fetch from the day-window list above.
-  // The list above sweeps relative to "today", which misses the bracket
-  // entirely once the tournament is over (or hasn't started). The bracket is
-  // instead anchored to the real kickoff date and swept forward across the
-  // whole tournament length, so Round of 32 through the Final always show up
-  // regardless of what day it is.
-  const [bracketFixtures, setBracketFixtures] = useState([]);
-  const [bracketLoading, setBracketLoading] = useState(true);
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      setBracketLoading(true);
-      try {
-        const start = new Date(WC_CONFIG.kickoff);
-        const dayKeys = [];
-        for (let i = 0; i <= 45; i++) dayKeys.push(dateKey(new Date(start.getTime() + i * 86400000)));
-        const results = await Promise.all(dayKeys.map(d => getFixturesByDate(d).catch(() => [])));
-        const wc = results.flat().filter(f => isWorldCup(f) && roundKey(f.league?.round || '') !== null);
-        if (alive) setBracketFixtures(wc);
-      } finally { if (alive) setBracketLoading(false); }
-    })();
-    return () => { alive = false; };
-  }, []);
-
-  const bracket = useMemo(() => {
-    const byRound = new Map(BRACKET_ROUNDS.map(r => [r.key, []]));
-    for (const f of bracketFixtures) {
-      const key = roundKey(f.league?.round || '');
-      if (key && byRound.has(key)) byRound.get(key).push(f);
-    }
-    for (const list of byRound.values()) list.sort((a, b) => (a.fixture?.date || '').localeCompare(b.fixture?.date || ''));
-    return byRound;
-  }, [bracketFixtures]);
-
-  const finalFixture = bracket.get('final')?.[0] || null;
-  const champion = finalFixture ? matchWinner(finalFixture) : null;
-  const bracketHasData = bracketFixtures.length > 0;
+  const championSide = curatedWinner(knockoutBracket.final);
+  const champion = championSide === 'home' ? knockoutBracket.final.home : championSide === 'away' ? knockoutBracket.final.away : null;
 
   const [tab, setTab] = useState('All');
   const [selected, setSelected] = useState(null);
@@ -216,9 +160,9 @@ export default function WorldCupMatches() {
         .wcb-card:hover { border-color:rgba(151,204,13,.35); }
         .wcb-card.champ-win { border-color:rgba(151,204,13,.5); }
         .wcb-side { display:flex; align-items:center; gap:7px; padding:3px 0; }
-        .wcb-side img { width:18px; height:18px; object-fit:contain; flex:none; }
-        .wcb-side span { flex:1; min-width:0; font:600 11.5px "Barlow",sans-serif; color:#ccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .wcb-side.win span { color:#fff; font-weight:800; }
+        .wcb-init { flex:none; display:flex; align-items:center; justify-content:center; width:22px; height:18px; border-radius:5px; background:rgba(151,204,13,.12); color:var(--l); font:800 8.5px "Barlow Condensed",sans-serif; letter-spacing:.02em; }
+        .wcb-name { flex:1; min-width:0; font:600 11.5px "Barlow",sans-serif; color:#ccc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .wcb-side.win .wcb-name { color:#fff; font-weight:800; }
         .wcb-side b { flex:none; font:800 12px "Barlow Condensed",sans-serif; color:var(--muted); }
         .wcb-side.win b { color:var(--l); }
         .wcb-card-meta { margin-top:5px; padding-top:5px; border-top:1px solid var(--line); color:var(--muted); font:600 8.5px "Barlow",sans-serif; letter-spacing:.04em; text-transform:uppercase; text-align:center; }
@@ -228,6 +172,7 @@ export default function WorldCupMatches() {
         .wcb-champion img { width:56px; height:56px; object-fit:contain; }
         .wcb-champion strong { font:800 16px "Barlow Condensed",sans-serif; text-transform:uppercase; }
         .wcb-champion span { color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
+        .wcb-note { margin-top:14px; color:var(--muted); font:500 11.5px/1.5 "Barlow",sans-serif; }
       `}</style>
 
       <WorldCupNav active="matches" />
@@ -302,57 +247,45 @@ export default function WorldCupMatches() {
       <div className="wcb-section">
         <div className="wcb-h">
           <h2>Knockout Bracket</h2>
-          <span>Round of 32 through the Final</span>
+          <span>Quarter-Finals through the Final</span>
         </div>
-        {bracketLoading ? (
-          <div className="wcm-empty">Loading bracket…</div>
-        ) : !bracketHasData ? (
-          <div className="wcm-empty">The bracket populates once knockout-stage fixtures are scheduled.</div>
-        ) : (
-          <div className="wcb-scroll">
-            {BRACKET_ROUNDS.filter(r => r.key !== 'third').map(r => {
-              const matches = bracket.get(r.key) || [];
-              return (
-                <div className="wcb-col" key={r.key}>
-                  <div className="wcb-col-h">{r.label}</div>
-                  <div className="wcb-col-matches">
-                    {matches.length === 0 ? (
-                      <div className="wcb-tbd">TBD</div>
-                    ) : matches.map(f => {
-                      const status = f.fixture?.status?.short;
-                      const isLive = WC_LIVE.includes(status);
-                      const isDone = WC_DONE.includes(status);
-                      const winner = matchWinner(f);
-                      return (
-                        <div key={f.fixture?.id} className={`wcb-card${winner ? ' champ-win' : ''}`} onClick={() => openMatchroom(f)}>
-                          <div className={`wcb-side${winner && winner?.id === f.teams?.home?.id ? ' win' : ''}`}>
-                            <img src={f.teams?.home?.logo} alt="" /><span>{f.teams?.home?.name || 'TBD'}</span>{(isLive || isDone) && <b>{f.goals?.home ?? 0}</b>}
-                          </div>
-                          <div className={`wcb-side${winner && winner?.id === f.teams?.away?.id ? ' win' : ''}`}>
-                            <img src={f.teams?.away?.logo} alt="" /><span>{f.teams?.away?.name || 'TBD'}</span>{(isLive || isDone) && <b>{f.goals?.away ?? 0}</b>}
-                          </div>
-                          <div className="wcb-card-meta">{isLive ? `LIVE ${f.fixture?.status?.elapsed ?? ''}'` : isDone ? 'Full time' : new Date(f.fixture?.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-            <div className="wcb-champion">
-              <Trophy size={32} className="wcb-champion-cup" />
-              {champion ? (
-                <>
-                  <img src={champion.logo} alt="" />
-                  <strong>{champion.name}</strong>
-                  <span>World Champion</span>
-                </>
-              ) : (
-                <span>{finalFixture ? 'Final in progress' : 'Winner TBD'}</span>
-              )}
+        <div className="wcb-scroll">
+          {BRACKET_COLUMNS.map(col => (
+            <div className="wcb-col" key={col.key}>
+              <div className="wcb-col-h">{col.label}</div>
+              <div className="wcb-col-matches">
+                {!col.matches ? (
+                  <div className="wcb-tbd">Not yet available</div>
+                ) : col.matches.map((m, i) => {
+                  const winner = curatedWinner(m);
+                  return (
+                    <div key={`${col.key}-${i}`} className={`wcb-card${winner ? ' champ-win' : ''}`}>
+                      <div className={`wcb-side${winner === 'home' ? ' win' : ''}`}>
+                        <span className="wcb-init">{m.home.slice(0, 3).toUpperCase()}</span><span className="wcb-name">{m.home}</span><b>{m.homeScore}</b>
+                      </div>
+                      <div className={`wcb-side${winner === 'away' ? ' win' : ''}`}>
+                        <span className="wcb-init">{m.away.slice(0, 3).toUpperCase()}</span><span className="wcb-name">{m.away}</span><b>{m.awayScore}</b>
+                      </div>
+                      <div className="wcb-card-meta">{m.note || 'Full time'}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+          ))}
+          <div className="wcb-champion">
+            <Trophy size={32} className="wcb-champion-cup" />
+            {champion ? (
+              <>
+                <strong>{champion}</strong>
+                <span>World Champion</span>
+              </>
+            ) : (
+              <span>Winner TBD</span>
+            )}
           </div>
-        )}
+        </div>
+        <p className="wcb-note">Round of 32 and Round of 16 results aren't confirmed yet — this bracket only shows matches from a verified source. 3rd place: {knockoutBracket.thirdPlace.home} {knockoutBracket.thirdPlace.homeScore}–{knockoutBracket.thirdPlace.awayScore} {knockoutBracket.thirdPlace.away}.</p>
       </div>
     </div>
   );

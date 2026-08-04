@@ -5,9 +5,8 @@ import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
 import PremierBetBanner from '../components/PremierBetBanner.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { getFixturesByDate, getFixtureStatistics, getFixtureLineups, getFixtureEvents, statValue } from '../services/apiFootball.js';
-import { findStatsApiCompetitionId, findStatsApiMatch, getStatsApiMatchPlayerStats, getStatsApiMatchShotmap, pickStat, rowTeamName } from '../services/statsApi.js';
-import { WC_CONFIG, wcFacts, featuredMatch, TEAM_FLAGS } from '../data/worldCupData.js';
+import { getFixturesByDate, getFixtureLineups, getFixtureEvents } from '../services/apiFootball.js';
+import { WC_CONFIG, wcFacts, featuredMatch, TEAM_FLAGS, otherFeaturedMatches } from '../data/worldCupData.js';
 
 // Dominance bar for one stat, home value growing from the right toward the
 // label and away value growing from the left — only rendered once both
@@ -91,15 +90,15 @@ export default function WorldCupOverview() {
     return () => { alive = false; };
   }, []);
 
-  // Live match data for the Featured Match — narrowly targeted at one known
-  // fixture (a single confirmed date + the two real team names), not the
-  // broad multi-week/name-substring sweep the bracket used to rely on, so
-  // there's no risk of pulling in a different competition's match. If the
-  // fixture can't be found or the fetch fails, the panel shows an honest
-  // empty state rather than blank/fabricated numbers. Note: API-Football's
-  // statistics endpoint doesn't include xG — that field isn't available
-  // from this data source, so it's left out rather than estimated.
-  const [matchData, setMatchData] = useState({ loading: true, stats: null, lineups: [], events: [] });
+  // Live formations + goal/card timeline for the Featured Match — narrowly
+  // targeted at one known fixture (a single confirmed date + the two real
+  // team names), not the broad multi-week/name-substring sweep the bracket
+  // used to rely on. The rest of the Match Data panel below now comes from
+  // curated real numbers (see featuredMatch.stats in worldCupData.js) rather
+  // than a live fetch, since that proved unreliable for a one-off historical
+  // match — this fetch is only for the two things not covered by the
+  // curated Sofascore data: lineup formations and the goal/card timeline.
+  const [matchData, setMatchData] = useState({ loading: true, lineups: [], events: [] });
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -114,33 +113,18 @@ export default function WorldCupOverview() {
           return (h.includes(home) && a.includes(away)) || (h.includes(away) && a.includes(home));
         });
         const fixtureId = match?.fixture?.id;
-        if (!fixtureId) { if (alive) setMatchData({ loading: false, stats: null, lineups: [], events: [] }); return; }
-        const [stats, lineups, events] = await Promise.all([
-          getFixtureStatistics(fixtureId).catch(() => null),
+        if (!fixtureId) { if (alive) setMatchData({ loading: false, lineups: [], events: [] }); return; }
+        const [lineups, events] = await Promise.all([
           getFixtureLineups(fixtureId).catch(() => []),
           getFixtureEvents(fixtureId).catch(() => []),
         ]);
-        if (alive) setMatchData({ loading: false, stats, lineups: lineups || [], events: events || [] });
+        if (alive) setMatchData({ loading: false, lineups: lineups || [], events: events || [] });
       } catch {
-        if (alive) setMatchData({ loading: false, stats: null, lineups: [], events: [] });
+        if (alive) setMatchData({ loading: false, lineups: [], events: [] });
       }
     })();
     return () => { alive = false; };
   }, []);
-
-  const homeStatEntry = useMemo(() => matchData.stats?.find(s => (s.team?.name || '').toLowerCase().includes(featuredMatch.homeApiName.toLowerCase())) || null, [matchData.stats]);
-  const awayStatEntry = useMemo(() => matchData.stats?.find(s => (s.team?.name || '').toLowerCase().includes(featuredMatch.awayApiName.toLowerCase())) || null, [matchData.stats]);
-  const dominanceRows = useMemo(() => {
-    if (!homeStatEntry || !awayStatEntry) return [];
-    return [
-      { label: 'Possession', home: statValue(homeStatEntry, 'Ball Possession'), away: statValue(awayStatEntry, 'Ball Possession'), suffix: '%' },
-      { label: 'Total Shots', home: statValue(homeStatEntry, 'Total Shots'), away: statValue(awayStatEntry, 'Total Shots') },
-      { label: 'Shots on Target', home: statValue(homeStatEntry, 'Shots on Goal'), away: statValue(awayStatEntry, 'Shots on Goal') },
-      { label: 'Corners', home: statValue(homeStatEntry, 'Corner Kicks'), away: statValue(awayStatEntry, 'Corner Kicks') },
-      { label: 'Fouls', home: statValue(homeStatEntry, 'Fouls'), away: statValue(awayStatEntry, 'Fouls') },
-      { label: 'Pass Accuracy', home: statValue(homeStatEntry, 'Passes %'), away: statValue(awayStatEntry, 'Passes %'), suffix: '%' },
-    ].filter(r => r.home != null && r.away != null);
-  }, [homeStatEntry, awayStatEntry]);
 
   const homeFormation = useMemo(() => matchData.lineups.find(l => (l.team?.name || '').toLowerCase().includes(featuredMatch.homeApiName.toLowerCase()))?.formation || null, [matchData.lineups]);
   const awayFormation = useMemo(() => matchData.lineups.find(l => (l.team?.name || '').toLowerCase().includes(featuredMatch.awayApiName.toLowerCase()))?.formation || null, [matchData.lineups]);
@@ -149,97 +133,60 @@ export default function WorldCupOverview() {
     .filter(e => e.type === 'Goal' || e.type === 'Card')
     .sort((a, b) => (a.time?.elapsed || 0) - (b.time?.elapsed || 0)), [matchData.events]);
 
-  // xG / Big Chances / Progressive Passes — API-Football's statistics
-  // endpoint doesn't have these fields at all (confirmed against its
-  // documented statistic types), but TheStatsAPI does, and this app already
-  // uses it server-side for the Calibre rating engine (see scripts/
-  // enrichStatsAPI.mjs and statsapi-enrich-advanced-season.mjs). Same
-  // narrow-lookup approach as the API-Football fetch above: resolve the
-  // World Cup's competition id, find this one match by date + real team
-  // names, then pull its shotmap (for xG) and player-stats (for big chances
-  // and progressive passes) — never a season-wide sweep.
-  const [statsApiData, setStatsApiData] = useState({ loading: true, matchId: null, playerStats: [], shotmap: [] });
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const compId = await findStatsApiCompetitionId('World Cup');
-        const match = await findStatsApiMatch(featuredMatch.fixtureDate, featuredMatch.fixtureDate, featuredMatch.homeApiName, featuredMatch.awayApiName, compId);
-        const matchId = match?.id || match?.match_id || null;
-        if (!matchId) { if (alive) setStatsApiData({ loading: false, matchId: null, playerStats: [], shotmap: [] }); return; }
-        const [playerStats, shotmap] = await Promise.all([
-          getStatsApiMatchPlayerStats(matchId),
-          getStatsApiMatchShotmap(matchId),
-        ]);
-        if (alive) setStatsApiData({ loading: false, matchId, playerStats, shotmap });
-      } catch {
-        if (alive) setStatsApiData({ loading: false, matchId: null, playerStats: [], shotmap: [] });
-      }
-    })();
-    return () => { alive = false; };
+  // Match Data panel — built directly from featuredMatch.stats, curated from
+  // Sofascore's own match center for this fixture (see worldCupData.js for
+  // sourcing notes). Always available, no loading/empty state needed.
+  const allDominanceRows = useMemo(() => {
+    const s = featuredMatch.stats;
+    if (!s) return [];
+    const passAcc = (attempted, accurate) => attempted > 0 ? Math.round((accurate / attempted) * 100) : null;
+    return [
+      { label: 'Possession', home: s.possession.home, away: s.possession.away, suffix: '%' },
+      { label: 'xG', home: s.xg.home, away: s.xg.away },
+      { label: 'Big Chances', home: s.bigChances.home, away: s.bigChances.away },
+      { label: 'Total Shots', home: s.totalShots.home, away: s.totalShots.away },
+      { label: 'Shots on Target', home: s.shotsOnTarget.home, away: s.shotsOnTarget.away },
+      { label: 'Pass Accuracy', home: passAcc(s.passesAttempted.home, s.passesAccurate.home), away: passAcc(s.passesAttempted.away, s.passesAccurate.away), suffix: '%' },
+      { label: 'Corners', home: s.corners.home, away: s.corners.away },
+      { label: 'Fouls', home: s.fouls.home, away: s.fouls.away },
+      { label: 'Tackles', home: s.tackles.home, away: s.tackles.away },
+      { label: 'Yellow Cards', home: s.yellowCards.home, away: s.yellowCards.away },
+      { label: 'Distance Covered', home: s.distanceCoveredKm.home, away: s.distanceCoveredKm.away, suffix: 'km' },
+      { label: 'Sprints', home: s.sprints.home, away: s.sprints.away },
+      { label: 'GK Saves', home: s.goalkeeperSaves.home, away: s.goalkeeperSaves.away },
+    ];
   }, []);
 
-  const statsApiTeamAgg = useMemo(() => {
-    const home = featuredMatch.homeApiName.toLowerCase();
-    const away = featuredMatch.awayApiName.toLowerCase();
-    const agg = {
-      home: { xg: 0, xgSeen: false, bigChances: 0, bigChancesSeen: false, progPasses: 0, progPassesSeen: false },
-      away: { xg: 0, xgSeen: false, bigChances: 0, bigChancesSeen: false, progPasses: 0, progPassesSeen: false },
-    };
-    for (const shot of statsApiData.shotmap) {
-      const teamName = rowTeamName(shot);
-      const xg = pickStat(shot, ['expected_goals', 'xg']);
-      if (xg == null) continue;
-      const side = teamName.includes(home) ? 'home' : teamName.includes(away) ? 'away' : null;
-      if (!side) continue;
-      agg[side].xg += Number(xg);
-      agg[side].xgSeen = true;
-    }
-    for (const row of statsApiData.playerStats) {
-      const teamName = rowTeamName(row);
-      const side = teamName.includes(home) ? 'home' : teamName.includes(away) ? 'away' : null;
-      if (!side) continue;
-      const bc = pickStat(row, ['shooting.big_chances_created', 'big_chances_created']);
-      const pp = pickStat(row, ['passing.progressive_passes', 'progressive_passes', 'prog_passes']);
-      if (bc != null) { agg[side].bigChances += Number(bc); agg[side].bigChancesSeen = true; }
-      if (pp != null) { agg[side].progPasses += Number(pp); agg[side].progPassesSeen = true; }
-    }
-    return agg;
-  }, [statsApiData]);
-
-  const statsApiRows = useMemo(() => {
-    const out = [];
-    const { home, away } = statsApiTeamAgg;
-    if (home.xgSeen && away.xgSeen) out.push({ label: 'xG', home: Number(home.xg.toFixed(2)), away: Number(away.xg.toFixed(2)) });
-    if (home.bigChancesSeen && away.bigChancesSeen) out.push({ label: 'Big Chances', home: home.bigChances, away: away.bigChances });
-    if (home.progPassesSeen && away.progPassesSeen) out.push({ label: 'Progressive Passes', home: home.progPasses, away: away.progPasses });
-    return out;
-  }, [statsApiTeamAgg]);
-
-  const allDominanceRows = useMemo(() => [...statsApiRows, ...dominanceRows], [statsApiRows, dominanceRows]);
-  const dataLoading = matchData.loading || statsApiData.loading;
-
-  // Real match-specific numbers for the Man of the Match badge, if this
-  // player's row can be matched by name in the same player-stats response —
-  // falls back to just the static rating/Golden Ball tag if not found.
-  const motmMatchStats = useMemo(() => {
-    const name = featuredMatch.manOfTheMatch?.name?.toLowerCase();
-    if (!name) return null;
-    const row = statsApiData.playerStats.find(r => String(r.player_name || r.player?.name || '').toLowerCase().includes(name));
-    if (!row) return null;
-    const totalPasses = pickStat(row, ['passing.total_passes', 'total_passes']);
-    const accuratePasses = pickStat(row, ['passing.accurate_passes', 'accurate_passes']);
-    const duelsWon = pickStat(row, ['duels.won', 'duels_won']);
-    const touches = pickStat(row, ['general.touches', 'touches']);
-    const passAccuracy = totalPasses != null && accuratePasses != null && Number(totalPasses) > 0
-      ? Math.round((Number(accuratePasses) / Number(totalPasses)) * 100) : null;
-    if (passAccuracy == null && duelsWon == null && touches == null) return null;
+  // Shot Breakdown — from the same curated Sofascore numbers. Deliberately
+  // not a spatial "shot map": Sofascore's per-shot pitch coordinates can't be
+  // read reliably off a static screenshot for all 22 shots, so this stays a
+  // count/xG breakdown. The one shot with a fully legible readout (the
+  // winning goal) is shown separately as decisiveShot below.
+  const shotBreakdown = useMemo(() => {
+    const s = featuredMatch.stats;
+    if (!s) return null;
     return {
-      passAccuracy,
-      duelsWon: duelsWon != null ? Number(duelsWon) : null,
-      touches: touches != null ? Number(touches) : null,
+      home: { shots: s.totalShots.home, onTarget: s.shotsOnTarget.home, offTarget: s.shotsOffTarget.home, xg: s.xg.home },
+      away: { shots: s.totalShots.away, onTarget: s.shotsOnTarget.away, offTarget: s.shotsOffTarget.away, xg: s.xg.away },
     };
-  }, [statsApiData.playerStats]);
+  }, []);
+
+  // Calibre Insight — short bullet read built only from the curated real
+  // numbers above (xG, possession, big chances, touches in the box).
+  const calibreInsightBullets = useMemo(() => {
+    const s = featuredMatch.stats;
+    if (!s) return [];
+    const winnerIsHome = featuredMatch.homeScore > featuredMatch.awayScore;
+    const winnerName = winnerIsHome ? featuredMatch.home : featuredMatch.away;
+    const pick = (row) => winnerIsHome ? row.home : row.away;
+    const pickOpp = (row) => winnerIsHome ? row.away : row.home;
+    return [
+      `${winnerName} won on a scoreline that ran ahead of the underlying chances: ${pick(s.xg).toFixed(2)} xG for them vs ${pickOpp(s.xg).toFixed(2)} xG against.`,
+      `${pick(s.possession)}% possession and ${pick(s.totalShots)} shots to the opponent's ${pickOpp(s.totalShots)}.`,
+      `${pick(s.bigChances)} big chances created to the opponent's ${pickOpp(s.bigChances)}.`,
+      `${pick(s.touchesInOppositionBox)} touches in the opposition box, against ${pickOpp(s.touchesInOppositionBox)}.`,
+    ];
+  }, []);
 
   const dayIndex = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
   const validFacts = wcFacts.filter(f => f && f.fact);
@@ -267,7 +214,22 @@ export default function WorldCupOverview() {
         .wc2-cd-cell strong { display:block; font:800 30px "Barlow Condensed",sans-serif; color:var(--l); }
         .wc2-cd-cell span { display:block; margin-top:3px; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
         .wc2-row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
-        @media(max-width:820px){ .wc2-row2 { grid-template-columns:1fr; } }
+        .wc2-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; align-items:start; margin-bottom:16px; }
+        @media(max-width:820px){ .wc2-row2 { grid-template-columns:1fr; } .wc2-row3 { grid-template-columns:1fr; } }
+        .wcfeat-insight-list { margin:0; padding:0; list-style:none; display:grid; gap:10px; }
+        .wcfeat-insight-list li { display:flex; gap:8px; color:#d8dde2; font:500 12.5px/1.45 "Barlow",sans-serif; }
+        .wcfeat-insight-list li::before { content:"✓"; flex:none; color:var(--l); font-weight:800; }
+        .wcfeat-shots-grid { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; }
+        .wcfeat-shots-col { display:grid; grid-template-columns:1fr 1fr; gap:2px 8px; text-align:right; }
+        .wcfeat-shots-col.away { text-align:left; grid-template-columns:1fr 1fr; }
+        .wcfeat-shots-col strong { color:#fff; font:800 14px "Barlow Condensed",sans-serif; }
+        .wcfeat-shots-col span { color:var(--muted); font:600 9.5px "Barlow",sans-serif; align-self:center; text-transform:uppercase; letter-spacing:.04em; }
+        .wcfeat-shots-mid { display:flex; flex-direction:column; gap:24px; text-align:center; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.05em; text-transform:uppercase; }
+        .wcfeat-other-match { padding:10px 0; border-bottom:1px solid var(--line); }
+        .wcfeat-other-match:last-child { border-bottom:none; padding-bottom:0; }
+        .wcfeat-other-round { display:block; color:var(--l); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; margin-bottom:6px; }
+        .wcfeat-other-teams { display:flex; align-items:center; justify-content:space-between; gap:8px; color:#d8dde2; font:600 12px "Barlow",sans-serif; }
+        .wcfeat-other-teams b { color:#fff; font:800 14px "Barlow Condensed",sans-serif; flex:none; }
         .wcfeat { background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid rgba(151,204,13,.3); border-radius:14px; padding:26px; margin-bottom:16px; }
         .wcfeat-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
         .wcfeat-rating { display:flex; align-items:center; gap:6px; background:rgba(151,204,13,.12); border:1px solid rgba(151,204,13,.35); color:var(--l); font:800 13px "Barlow Condensed",sans-serif; padding:5px 12px; border-radius:20px; }
@@ -328,6 +290,24 @@ export default function WorldCupOverview() {
         .wcfeat-bar-track i { display:block; height:100%; background:var(--l); border-radius:3px; }
         .wcfeat-bar-track.away i { background:#ff8a3d; }
         .wcfeat-data-note { margin:10px 0 0; color:var(--muted); font:500 10.5px/1.5 "Barlow",sans-serif; font-style:italic; }
+        .wcfeat-momentum { margin-bottom:20px; }
+        .wcfeat-momentum-frame { border-radius:10px; overflow:hidden; border:1px solid var(--line); background:#0d1114; }
+        .wcfeat-momentum-frame iframe { display:block; }
+        .wcfeat-data-note a { color:var(--l); }
+        .wcfeat-shot { margin-bottom:20px; }
+        .wcfeat-shot-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+        .wcfeat-shot-min { color:var(--l); font:800 13px "Barlow Condensed",sans-serif; }
+        .wcfeat-shot-name { color:#fff; font:700 12.5px "Barlow",sans-serif; }
+        .wcfeat-shot-stats { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:12px 8px; }
+        .wcfeat-shot-stats div { text-align:center; }
+        .wcfeat-shot-stats strong { display:block; color:#fff; font:800 12.5px "Barlow Condensed",sans-serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .wcfeat-shot-stats span { display:block; color:var(--muted); font:600 8.5px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.04em; margin-top:3px; }
+        .wcfeat-passdist { margin-bottom:20px; }
+        .wcfeat-passdist-bar { display:flex; height:22px; border-radius:6px; overflow:hidden; }
+        .wcfeat-passdist-bar span { display:flex; align-items:center; justify-content:center; color:#0a0a0a; font:800 10px "Barlow Condensed",sans-serif; background:var(--l); opacity:.55; }
+        .wcfeat-passdist-bar span.mid { opacity:.78; }
+        .wcfeat-passdist-bar span.final { opacity:1; }
+        .wcfeat-passdist-labels { display:flex; justify-content:space-between; margin-top:6px; color:var(--muted); font:600 9px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.04em; }
         .wcfeat-timeline { margin-bottom:22px; padding-bottom:22px; border-bottom:1px solid var(--line); display:grid; gap:7px; }
         .wcfeat-tl-row { display:flex; align-items:center; gap:9px; }
         .wcfeat-tl-min { color:var(--l); font:800 11px "Barlow Condensed",sans-serif; width:32px; flex:none; }
@@ -462,13 +442,6 @@ export default function WorldCupOverview() {
               </div>
               <div className="wcfeat-motm-rating">{featuredMatch.manOfTheMatch.rating}</div>
             </div>
-            {motmMatchStats && (motmMatchStats.touches != null || motmMatchStats.passAccuracy != null || motmMatchStats.duelsWon != null) && (
-              <div className="wcfeat-motm-stats">
-                {motmMatchStats.touches != null && <div className="wcfeat-motm-stat"><strong>{motmMatchStats.touches}</strong><span>Touches</span></div>}
-                {motmMatchStats.passAccuracy != null && <div className="wcfeat-motm-stat"><strong>{motmMatchStats.passAccuracy}%</strong><span>Pass Accuracy</span></div>}
-                {motmMatchStats.duelsWon != null && <div className="wcfeat-motm-stat"><strong>{motmMatchStats.duelsWon}</strong><span>Duels Won</span></div>}
-              </div>
-            )}
           </div>
         )}
 
@@ -486,21 +459,64 @@ export default function WorldCupOverview() {
 
         <div className="wcfeat-data">
           <span className="wcfeat-label">Match Data</span>
-          {dataLoading ? (
-            <div className="wc2-empty">Loading live match statistics…</div>
-          ) : allDominanceRows.length === 0 ? (
-            <div className="wc2-empty">Live match statistics aren't available for this fixture right now.</div>
+          {allDominanceRows.length === 0 ? (
+            <div className="wc2-empty">Match statistics aren't available for this fixture.</div>
           ) : (
             <>
               {allDominanceRows.map(r => <DominanceBar key={r.label} {...r} />)}
-              <p className="wcfeat-data-note">
-                {statsApiRows.length > 0
-                  ? 'xG, Big Chances and Progressive Passes via TheStatsAPI; the rest are directly reported match statistics.'
-                  : "xG, Big Chances and Progressive Passes weren't available for this fixture from TheStatsAPI — the figures above are the directly reported match statistics."}
-              </p>
+              <p className="wcfeat-data-note">Curated from Sofascore's match center for this fixture.</p>
             </>
           )}
         </div>
+
+        {featuredMatch.sofascoreMatchId && (
+          <div className="wcfeat-momentum">
+            <span className="wcfeat-label">Match Momentum</span>
+            <div className="wcfeat-momentum-frame">
+              <iframe
+                title="Match Momentum"
+                src={`https://widgets.sofascore.com/embed/attackMomentum?id=${featuredMatch.sofascoreMatchId}&widgetTheme=dark`}
+                width="100%"
+                height="230"
+                frameBorder="0"
+                scrolling="no"
+                loading="lazy"
+              />
+            </div>
+            <p className="wcfeat-data-note">
+              Live widget via <a href={featuredMatch.sofascoreMatchUrl} target="_blank" rel="noreferrer">Sofascore</a> — this is their real per-minute data, not something computed in this app.
+            </p>
+          </div>
+        )}
+
+        {featuredMatch.decisiveShot && (
+          <div className="wcfeat-shot">
+            <span className="wcfeat-label">Decisive Shot</span>
+            <div className="wcfeat-shot-row">
+              <span className="wcfeat-shot-min">{featuredMatch.decisiveShot.minute}'</span>
+              <span className="wcfeat-shot-name">{featuredMatch.decisiveShot.scorer} — {featuredMatch.decisiveShot.outcome}</span>
+            </div>
+            <div className="wcfeat-shot-stats">
+              <div><strong>{featuredMatch.decisiveShot.xg}</strong><span>xG</span></div>
+              <div><strong>{featuredMatch.decisiveShot.xgot}</strong><span>xGOT</span></div>
+              <div><strong>{featuredMatch.decisiveShot.shotType}</strong><span>Shot Type</span></div>
+              <div><strong>{featuredMatch.decisiveShot.situation}</strong><span>Situation</span></div>
+              <div><strong>{featuredMatch.decisiveShot.goalZone}</strong><span>Goal Zone</span></div>
+            </div>
+          </div>
+        )}
+
+        {featuredMatch.spainPassDistribution && (
+          <div className="wcfeat-passdist">
+            <span className="wcfeat-label">{featuredMatch.home}'s Pass Distribution</span>
+            <div className="wcfeat-passdist-bar">
+              <span style={{ width: `${featuredMatch.spainPassDistribution.defensiveThird}%` }}>{featuredMatch.spainPassDistribution.defensiveThird}%</span>
+              <span style={{ width: `${featuredMatch.spainPassDistribution.middleThird}%` }} className="mid">{featuredMatch.spainPassDistribution.middleThird}%</span>
+              <span style={{ width: `${featuredMatch.spainPassDistribution.finalThird}%` }} className="final">{featuredMatch.spainPassDistribution.finalThird}%</span>
+            </div>
+            <div className="wcfeat-passdist-labels"><span>Defensive Third</span><span>Middle Third</span><span>Final Third</span></div>
+          </div>
+        )}
 
         {timelineEvents.length > 0 && (
           <div className="wcfeat-timeline">
@@ -518,6 +534,58 @@ export default function WorldCupOverview() {
         <div className="wcfeat-actions">
           <button type="button" onClick={() => navigateTo('/world-cup/matches')}>Knockout Bracket <ArrowRight size={13} /></button>
           <button type="button" className="ghost" onClick={() => navigateTo('/world-cup/stats')}>Tournament Stats <ArrowRight size={13} /></button>
+        </div>
+      </div>
+
+      <div className="wc2-row3">
+        <div className="wc2-card">
+          <span className="wc2-eyebrow-sm">Calibre Insight</span>
+          {calibreInsightBullets.length > 0 ? (
+            <ul className="wcfeat-insight-list">{calibreInsightBullets.map((line, i) => <li key={i}>{line}</li>)}</ul>
+          ) : (
+            <div className="wc2-empty">Not enough confirmed match data to generate an insight yet.</div>
+          )}
+        </div>
+
+        <div className="wc2-card">
+          <span className="wc2-eyebrow-sm">Shot Breakdown</span>
+          {shotBreakdown ? (
+            <>
+              <div className="wcfeat-shots-grid">
+                <div className="wcfeat-shots-col">
+                  <strong>{shotBreakdown.home.shots}</strong><span>Shots</span>
+                  <strong>{shotBreakdown.home.onTarget}</strong><span>On Target</span>
+                  <strong>{shotBreakdown.home.xg.toFixed(2)}</strong><span>xG</span>
+                </div>
+                <div className="wcfeat-shots-mid">
+                  <span>{featuredMatch.home}</span>
+                  <span>{featuredMatch.away}</span>
+                </div>
+                <div className="wcfeat-shots-col away">
+                  <strong>{shotBreakdown.away.shots}</strong><span>Shots</span>
+                  <strong>{shotBreakdown.away.onTarget}</strong><span>On Target</span>
+                  <strong>{shotBreakdown.away.xg.toFixed(2)}</strong><span>xG</span>
+                </div>
+              </div>
+              <p className="wcfeat-data-note">Curated from Sofascore. Shot coordinates for the full 22-shot map weren't reliably legible from the source, so this is a count/xG breakdown rather than a pitch map.</p>
+            </>
+          ) : (
+            <div className="wc2-empty">Shot-level data isn't available for this fixture.</div>
+          )}
+        </div>
+
+        <div className="wc2-card">
+          <span className="wc2-eyebrow-sm">Other Featured Matches</span>
+          {otherFeaturedMatches.map((m, i) => (
+            <div className="wcfeat-other-match" key={i}>
+              <span className="wcfeat-other-round">{m.round}</span>
+              <div className="wcfeat-other-teams">
+                <span>{TEAM_FLAGS[m.home] || '🏳️'} {m.home}</span>
+                <b>{m.homeScore}–{m.awayScore}</b>
+                <span>{m.away} {TEAM_FLAGS[m.away] || '🏳️'}</span>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 

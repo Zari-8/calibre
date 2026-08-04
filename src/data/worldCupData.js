@@ -86,6 +86,19 @@ export const TEAM_FLAGS = {
   Switzerland: '🇨🇭', Algeria: '🇩🇿', Colombia: '🇨🇴', Ghana: '🇬🇭',
 };
 
+// ── OTHER FEATURED MATCHES (curated) ─────────────────────────────────
+// Real knockout-stage matches besides the Final, for the Overview page's
+// "Other Featured Matches" panel — pulled straight from knockoutBracket
+// above, not a separate/guessed data source.
+// Note: knockoutBracket.semiFinals only carries scores (no venue/date was
+// captured from the source), so those two entries below intentionally omit
+// venue/date rather than guess one. thirdPlace does have both, verified.
+export const otherFeaturedMatches = [
+  { home: 'France', homeScore: 0, away: 'Spain', awayScore: 2, round: 'Semi-Final' },
+  { home: 'England', homeScore: 1, away: 'Argentina', awayScore: 2, round: 'Semi-Final' },
+  { home: 'France', homeScore: 4, away: 'England', awayScore: 6, round: 'Third Place', venue: 'Miami Gardens', date: '2026-07-18' },
+];
+
 // ── FEATURED MATCH (curated) ────────────────────────────────────────
 // Same reasoning as the bracket above — hand-picked instead of auto-selected
 // off a fixture feed that proved unreliable. Update this when there's a new
@@ -101,8 +114,19 @@ export const featuredMatch = {
   // out the verified static facts.
   fixtureDate: '2026-07-19',
   homeApiName: 'Spain', awayApiName: 'Argentina',
+  // Sofascore's own match id for this fixture — used to embed their real
+  // Attack Momentum widget directly (live iframe from sofascore.com) rather
+  // than trying to reproduce the graph from a screenshot, which isn't
+  // precise enough to read exact per-minute values from.
+  sofascoreMatchId: '12813005',
+  sofascoreMatchUrl: 'https://www.sofascore.com/football/match/argentina-spain/YTbsuWb#id:12813005',
   heroMoment: { minute: 106, icon: '⚽', scorer: 'Ferran Torres', tag: 'Extra-Time Winner' },
-  manOfTheMatch: { name: 'Rodri', team: 'Spain', rating: 8.5, tag: 'Golden Ball winner' },
+  // Note: Sofascore's own "Player of the Match" badge for this specific game
+  // went to Emiliano Martínez (9.6) for his 11 saves — Rodri's 8.4 here is
+  // real too, but the reason he's featured is the separate, tournament-wide
+  // Golden Ball award (best player across the whole World Cup), not a claim
+  // that he graded highest in this single match.
+  manOfTheMatch: { name: 'Rodri', team: 'Spain', rating: 8.4, tag: 'Golden Ball winner' },
   whyItMattered: [
     "Spain win their second World Cup title, their first since 2010.",
     'Argentina, the defending 2022 champions, fall short of retaining the trophy.',
@@ -112,6 +136,41 @@ export const featuredMatch = {
     note: "Calibre's own call, not a measured stat — elite quality from both sides, scoreless until extra time, decided by a single moment on the biggest stage.",
   },
   analysis: "Spain's double pivot controlled central access throughout, limiting Messi to wide zones rather than the half-spaces he'd exploited in earlier rounds. Argentina held a territorial edge without converting it into clear chances against a compact mid-block.",
+  // ── Match stats, curated from Sofascore's own match center for this
+  // fixture (Spain 1-0 Argentina, 2026-07-19) — same sourcing method as the
+  // knockout bracket above, used because live API fetches for a one-off
+  // historical match proved unreliable. Nothing here is estimated; every
+  // number is what Sofascore itself reports for this game.
+  stats: {
+    possession: { home: 65, away: 35 },
+    xg: { home: 2.29, away: 0.22 },
+    bigChances: { home: 4, away: 0 },
+    totalShots: { home: 20, away: 2 },
+    shotsOnTarget: { home: 12, away: 0 },
+    shotsOffTarget: { home: 5, away: 1 },
+    corners: { home: 9, away: 4 },
+    fouls: { home: 21, away: 25 },
+    passesAttempted: { home: 853, away: 464 },
+    passesAccurate: { home: 763, away: 357 },
+    tackles: { home: 17, away: 18 },
+    yellowCards: { home: 0, away: 6 },
+    distanceCoveredKm: { home: 108.2, away: 130.7 },
+    sprints: { home: 92, away: 103 },
+    goalkeeperSaves: { home: 0, away: 11 },
+    touchesInOppositionBox: { home: 32, away: 8 },
+    offsides: { home: 4, away: 1 },
+  },
+  // The one shot with a full, legible real data readout from Sofascore's
+  // shotmap (the winning goal) — not a full 22-shot spatial map, since the
+  // other shots' exact pitch coordinates can't be read reliably off a
+  // screenshot.
+  decisiveShot: {
+    scorer: 'Ferran Torres', minute: 106, xg: 0.25, xgot: 0.55,
+    situation: 'Assisted', shotType: 'Left footed', goalZone: 'High centre', outcome: 'Goal',
+  },
+  // Spain's own pass distribution by pitch third — only Spain's numbers were
+  // legible from the source, so this isn't a head-to-head comparison.
+  spainPassDistribution: { defensiveThird: 20, middleThird: 43, finalThird: 37 },
 };
 
 // ── LIVE MOMENTS ─────────────────────────────────────────────────

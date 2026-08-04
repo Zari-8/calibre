@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import { Clock3, ArrowRight, Trophy } from 'lucide-react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
@@ -45,6 +45,43 @@ function curatedWinner(m) {
   if (m.homeScore !== m.awayScore) return m.homeScore > m.awayScore ? 'home' : 'away';
   if (m.penalties) return m.penalties.home > m.penalties.away ? 'home' : 'away';
   return null;
+}
+
+// Draws the "who progressed" connector lines between two adjacent bracket
+// columns. Every round here halves the previous one via simple 2i/2i+1
+// pairing (verified against the real curated results in worldCupData.js —
+// e.g. roundOf16[0] is exactly the winners of roundOf32[0] and [1]), so a
+// closed-form vertical position works instead of needing pixel measurement:
+// with .wcb-col-matches using justify-content:space-around and every column
+// stretched to the same height (the tallest, Round of 32's), each card's
+// height is small relative to that shared height, so item i of a k-item
+// column sits at very close to (i + 0.5) / k of the column's height. The
+// SVG uses a 0–100 viewBox with preserveAspectRatio="none" so it stretches
+// to fill the real pixel height without any JS measurement, and since every
+// line here is purely horizontal/vertical, non-uniform scaling never skews
+// them.
+function BracketConnector({ fromCount }) {
+  const toCount = fromCount / 2;
+  return (
+    <div className="wcb-connector-col">
+      <div className="wcb-connector-spacer" />
+      <svg className="wcb-connector-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        {Array.from({ length: toCount }).map((_, j) => {
+          const yA = ((2 * j + 0.5) / fromCount) * 100;
+          const yB = ((2 * j + 1.5) / fromCount) * 100;
+          const yC = (yA + yB) / 2;
+          return (
+            <g key={j}>
+              <line x1="0" y1={yA} x2="50" y2={yA} />
+              <line x1="0" y1={yB} x2="50" y2={yB} />
+              <line x1="50" y1={yA} x2="50" y2={yB} />
+              <line x1="50" y1={yC} x2="100" y2={yC} />
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
 }
 
 function dateKey(d) { return d.toISOString().slice(0, 10); }
@@ -152,9 +189,15 @@ export default function WorldCupMatches() {
         .wcb-h { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
         .wcb-h h2 { margin:0; font:800 20px "Barlow Condensed",sans-serif; text-transform:uppercase; }
         .wcb-h span { color:var(--muted); font:500 12px "Barlow",sans-serif; }
-        .wcb-scroll { display:flex; gap:16px; overflow-x:auto; padding-bottom:10px; }
+        .wcb-scroll { display:flex; gap:0; overflow-x:auto; padding-bottom:10px; }
         .wcb-col { flex:none; width:210px; display:flex; flex-direction:column; }
-        .wcb-col-h { color:var(--l); font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; text-align:center; margin-bottom:10px; }
+        .wcb-col-h { height:14px; color:var(--l); font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; text-align:center; margin-bottom:10px; }
+        .wcb-connector-col { flex:none; width:26px; display:flex; flex-direction:column; }
+        .wcb-connector-spacer { height:24px; flex:none; }
+        .wcb-connector-svg { flex:1; width:100%; height:100%; display:block; }
+        .wcb-connector-svg line { stroke:var(--l); stroke-opacity:.5; stroke-width:1.4; }
+        .wcb-connector-final { flex:none; width:26px; display:flex; align-items:center; }
+        .wcb-connector-final i { display:block; width:100%; height:1.4px; background:var(--l); opacity:.5; }
         .wcb-col-matches { flex:1; display:flex; flex-direction:column; justify-content:space-around; gap:10px; }
         .wcb-card { background:var(--glass); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid var(--line); border-radius:9px; padding:10px; cursor:pointer; transition:border-color .12s; }
         .wcb-card:hover { border-color:rgba(151,204,13,.35); }
@@ -250,28 +293,32 @@ export default function WorldCupMatches() {
           <span>Quarter-Finals through the Final</span>
         </div>
         <div className="wcb-scroll">
-          {BRACKET_COLUMNS.map(col => (
-            <div className="wcb-col" key={col.key}>
-              <div className="wcb-col-h">{col.label}</div>
-              <div className="wcb-col-matches">
-                {col.matches.map((m, i) => {
-                  const winner = curatedWinner(m);
-                  const meta = m.penalties ? `Pens ${m.penalties.home}–${m.penalties.away}` : (m.note || 'Full time');
-                  return (
-                    <div key={`${col.key}-${i}`} className={`wcb-card${winner ? ' champ-win' : ''}`}>
-                      <div className={`wcb-side${winner === 'home' ? ' win' : ''}`}>
-                        <span className="wcb-flag">{TEAM_FLAGS[m.home] || '🏳️'}</span><span className="wcb-name">{m.home}</span><b>{m.homeScore}</b>
+          {BRACKET_COLUMNS.map((col, ci) => (
+            <Fragment key={col.key}>
+              <div className="wcb-col">
+                <div className="wcb-col-h">{col.label}</div>
+                <div className="wcb-col-matches">
+                  {col.matches.map((m, i) => {
+                    const winner = curatedWinner(m);
+                    const meta = m.penalties ? `Pens ${m.penalties.home}–${m.penalties.away}` : (m.note || 'Full time');
+                    return (
+                      <div key={`${col.key}-${i}`} className={`wcb-card${winner ? ' champ-win' : ''}`}>
+                        <div className={`wcb-side${winner === 'home' ? ' win' : ''}`}>
+                          <span className="wcb-flag">{TEAM_FLAGS[m.home] || '🏳️'}</span><span className="wcb-name">{m.home}</span><b>{m.homeScore}</b>
+                        </div>
+                        <div className={`wcb-side${winner === 'away' ? ' win' : ''}`}>
+                          <span className="wcb-flag">{TEAM_FLAGS[m.away] || '🏳️'}</span><span className="wcb-name">{m.away}</span><b>{m.awayScore}</b>
+                        </div>
+                        <div className="wcb-card-meta">{meta}</div>
                       </div>
-                      <div className={`wcb-side${winner === 'away' ? ' win' : ''}`}>
-                        <span className="wcb-flag">{TEAM_FLAGS[m.away] || '🏳️'}</span><span className="wcb-name">{m.away}</span><b>{m.awayScore}</b>
-                      </div>
-                      <div className="wcb-card-meta">{meta}</div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
-            </div>
+              {ci < BRACKET_COLUMNS.length - 1 && <BracketConnector fromCount={col.matches.length} />}
+            </Fragment>
           ))}
+          <div className="wcb-connector-final"><i /></div>
           <div className="wcb-champion">
             <Trophy size={32} className="wcb-champion-cup" />
             {champion ? (

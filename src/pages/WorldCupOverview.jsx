@@ -27,6 +27,28 @@ function DominanceBar({ label, home, away, suffix = '' }) {
   );
 }
 
+// Renders a formation string ("4-3-3") as a small dot diagram — a real,
+// deterministic layout of the actual lineup formation already fetched from
+// API-Football, not a fabricated tactical map. Returns null if no formation
+// was returned for this fixture (never guesses a shape).
+function FormationPitch({ formation, side = 'home' }) {
+  if (!formation) return null;
+  const lines = formation.split('-').map(n => parseInt(n, 10)).filter(n => Number.isFinite(n) && n > 0);
+  if (!lines.length) return null;
+  const rows = [1, ...lines]; // goalkeeper + each outfield line, GK first
+  return (
+    <div className="wcfeat-pitch">
+      <div className="wcfeat-pitch-field">
+        {rows.map((count, i) => (
+          <div className="wcfeat-pitch-row" key={i}>
+            {Array.from({ length: count }).map((_, j) => <span className={`wcfeat-pitch-dot ${side}`} key={j} />)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function useCountdown() {
   const [left, setLeft] = useState(() => Math.max(0, new Date(WC_CONFIG.kickoff) - new Date()));
   useEffect(() => {
@@ -208,10 +230,15 @@ export default function WorldCupOverview() {
     const totalPasses = pickStat(row, ['passing.total_passes', 'total_passes']);
     const accuratePasses = pickStat(row, ['passing.accurate_passes', 'accurate_passes']);
     const duelsWon = pickStat(row, ['duels.won', 'duels_won']);
+    const touches = pickStat(row, ['general.touches', 'touches']);
     const passAccuracy = totalPasses != null && accuratePasses != null && Number(totalPasses) > 0
       ? Math.round((Number(accuratePasses) / Number(totalPasses)) * 100) : null;
-    if (passAccuracy == null && duelsWon == null) return null;
-    return { passAccuracy, duelsWon };
+    if (passAccuracy == null && duelsWon == null && touches == null) return null;
+    return {
+      passAccuracy,
+      duelsWon: duelsWon != null ? Number(duelsWon) : null,
+      touches: touches != null ? Number(touches) : null,
+    };
   }, [statsApiData.playerStats]);
 
   const dayIndex = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
@@ -264,6 +291,26 @@ export default function WorldCupOverview() {
         .wcfeat-badge svg { color:var(--l); flex:none; }
         .wcfeat-badge strong { display:block; color:#fff; font:800 13px "Barlow",sans-serif; }
         .wcfeat-badge span { color:var(--muted); font:500 11px "Barlow",sans-serif; }
+        .wcfeat-formations { display:flex; gap:16px; margin-bottom:20px; }
+        .wcfeat-formation-col { flex:1; text-align:center; }
+        .wcfeat-formation-col .wcfeat-label { text-align:center; }
+        .wcfeat-formation-code { display:block; margin-top:6px; color:#fff; font:800 12px "Barlow Condensed",sans-serif; }
+        .wcfeat-pitch { background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:8px; height:104px; margin-top:2px; }
+        .wcfeat-pitch-field { display:flex; flex-direction:column-reverse; justify-content:space-between; height:100%; padding:10px 6px; }
+        .wcfeat-pitch-row { display:flex; justify-content:center; gap:6px; }
+        .wcfeat-pitch-dot { width:7px; height:7px; border-radius:50%; background:var(--l); flex:none; }
+        .wcfeat-pitch-dot.away { background:#ff8a3d; }
+        .wcfeat-motm { background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:20px; }
+        .wcfeat-motm-head { display:flex; align-items:center; gap:10px; }
+        .wcfeat-motm-head svg { color:var(--l); flex:none; }
+        .wcfeat-motm-head > div { flex:1; min-width:0; }
+        .wcfeat-motm-head strong { display:block; color:#fff; font:800 14px "Barlow",sans-serif; }
+        .wcfeat-motm-head span { color:var(--muted); font:500 11px "Barlow",sans-serif; }
+        .wcfeat-motm-rating { flex:none; background:rgba(151,204,13,.14); border:1px solid rgba(151,204,13,.4); color:var(--l); font:800 13px "Barlow Condensed",sans-serif; padding:4px 10px; border-radius:16px; }
+        .wcfeat-motm-stats { display:flex; gap:10px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); }
+        .wcfeat-motm-stat { flex:1; text-align:center; }
+        .wcfeat-motm-stat strong { display:block; color:var(--l); font:800 18px "Barlow Condensed",sans-serif; }
+        .wcfeat-motm-stat span { display:block; color:var(--muted); font:600 9px "Barlow",sans-serif; letter-spacing:.06em; text-transform:uppercase; margin-top:2px; }
         .wcfeat-label { display:block; color:var(--l); font:800 10px "Barlow Condensed",sans-serif; letter-spacing:.1em; text-transform:uppercase; margin-bottom:8px; }
         .wcfeat-why { margin-bottom:20px; }
         .wcfeat-why ul { margin:0; padding:0; list-style:none; display:grid; gap:6px; }
@@ -299,6 +346,7 @@ export default function WorldCupOverview() {
         .wc2-summary-cell strong { display:block; font:800 22px "Barlow Condensed",sans-serif; color:#fff; }
         .wc2-summary-cell span { display:block; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.08em; text-transform:uppercase; }
         .wc2-hosts { margin-top:16px; padding-top:14px; border-top:1px solid var(--line); color:var(--muted); font:600 11px "Barlow",sans-serif; }
+        .wc2-explore-btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; margin-top:16px; background:var(--l); border:none; color:#0a0a0a; font:800 12px "Barlow Condensed",sans-serif; letter-spacing:.06em; text-transform:uppercase; padding:10px; border-radius:8px; cursor:pointer; }
         .wc2-carousel { display:flex; gap:12px; overflow-x:auto; padding-bottom:6px; scroll-snap-type:x proximity; }
         .wc2-carousel::-webkit-scrollbar { height:6px; }
         .wc2-carousel::-webkit-scrollbar-thumb { background:rgba(255,255,255,.15); border-radius:3px; }
@@ -388,23 +436,39 @@ export default function WorldCupOverview() {
         </div>
         <div className="wcfeat-meta">{featuredMatch.note} · {featuredMatch.venue}</div>
 
+        {(homeFormation || awayFormation) && (
+          <div className="wcfeat-formations">
+            <div className="wcfeat-formation-col">
+              <span className="wcfeat-label">{featuredMatch.home}</span>
+              <FormationPitch formation={homeFormation} side="home" />
+              {homeFormation && <strong className="wcfeat-formation-code">{homeFormation}</strong>}
+            </div>
+            <div className="wcfeat-formation-col">
+              <span className="wcfeat-label">{featuredMatch.away}</span>
+              <FormationPitch formation={awayFormation} side="away" />
+              {awayFormation && <strong className="wcfeat-formation-code">{awayFormation}</strong>}
+            </div>
+          </div>
+        )}
+
         {featuredMatch.manOfTheMatch && (
-          <div className="wcfeat-badges">
-            <div className="wcfeat-badge">
+          <div className="wcfeat-motm">
+            <span className="wcfeat-label">Man of the Match</span>
+            <div className="wcfeat-motm-head">
               <Trophy size={18} />
               <div>
-                <strong>{featuredMatch.manOfTheMatch.name} · {featuredMatch.manOfTheMatch.rating}</strong>
-                <span>
-                  Man of the Match — {featuredMatch.manOfTheMatch.tag}
-                  {motmMatchStats && (
-                    <>
-                      {motmMatchStats.passAccuracy != null && ` · ${motmMatchStats.passAccuracy}% pass accuracy`}
-                      {motmMatchStats.duelsWon != null && ` · ${motmMatchStats.duelsWon} duels won`}
-                    </>
-                  )}
-                </span>
+                <strong>{featuredMatch.manOfTheMatch.name}</strong>
+                <span>{featuredMatch.manOfTheMatch.team} · {featuredMatch.manOfTheMatch.tag}</span>
               </div>
+              <div className="wcfeat-motm-rating">{featuredMatch.manOfTheMatch.rating}</div>
             </div>
+            {motmMatchStats && (motmMatchStats.touches != null || motmMatchStats.passAccuracy != null || motmMatchStats.duelsWon != null) && (
+              <div className="wcfeat-motm-stats">
+                {motmMatchStats.touches != null && <div className="wcfeat-motm-stat"><strong>{motmMatchStats.touches}</strong><span>Touches</span></div>}
+                {motmMatchStats.passAccuracy != null && <div className="wcfeat-motm-stat"><strong>{motmMatchStats.passAccuracy}%</strong><span>Pass Accuracy</span></div>}
+                {motmMatchStats.duelsWon != null && <div className="wcfeat-motm-stat"><strong>{motmMatchStats.duelsWon}</strong><span>Duels Won</span></div>}
+              </div>
+            )}
           </div>
         )}
 
@@ -467,6 +531,7 @@ export default function WorldCupOverview() {
             <div className="wc2-summary-cell"><span className="wc2-icon"><Flag size={24} strokeWidth={2.25} /></span><strong>{WC_CONFIG.hosts.length}</strong><span>Host Nations</span></div>
           </div>
           <div className="wc2-hosts">{WC_CONFIG.hosts.map((h, i) => <span key={h}>{i > 0 && ' · '}{HOST_FLAGS[h] || ''} {h}</span>)}</div>
+          <button type="button" className="wc2-explore-btn" onClick={() => navigateTo('/world-cup/teams')}>Explore Tournament <ArrowRight size={13} /></button>
         </div>
 
         <div className="wc2-card">

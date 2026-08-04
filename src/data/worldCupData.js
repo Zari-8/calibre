@@ -63,7 +63,7 @@ export const knockoutBracket = {
   ],
   final: {
     home: 'Spain', homeScore: 1, away: 'Argentina', awayScore: 0,
-    note: 'After extra time', venue: 'East Rutherford', date: '2026-07-19',
+    note: 'After extra time', venue: 'MetLife Stadium, East Rutherford', date: '2026-07-19',
   },
   thirdPlace: {
     home: 'France', homeScore: 4, away: 'England', awayScore: 6,
@@ -94,7 +94,7 @@ export const featuredMatch = {
   home: 'Spain', homeScore: 1,
   away: 'Argentina', awayScore: 0,
   round: 'Final', note: 'After extra time',
-  venue: 'East Rutherford, NJ', date: '2026-07-19',
+  venue: 'MetLife Stadium, East Rutherford, NJ', date: '2026-07-19',
   // fixtureDate/homeApiTeam/awayApiTeam identify the real fixture for the
   // live stats lookup below (possession, shots, formations) — kept separate
   // from the hand-curated fields above so a failed live fetch never blanks

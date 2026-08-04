@@ -95,7 +95,23 @@ export const featuredMatch = {
   away: 'Argentina', awayScore: 0,
   round: 'Final', note: 'After extra time',
   venue: 'East Rutherford, NJ', date: '2026-07-19',
-  analysis: "Spain's double pivot controlled central access throughout, limiting Messi to wide zones rather than the half-spaces he'd exploited in earlier rounds. Argentina held a territorial edge without converting it into clear chances against a compact mid-block. The only goal came from a transition sequence in the 106th minute of extra time, finished by Ferran Torres. Rodri's ball-progression and defensive coverage across both boxes underpinned the shutout — the performance that earned him the tournament's Golden Ball.",
+  // fixtureDate/homeApiTeam/awayApiTeam identify the real fixture for the
+  // live stats lookup below (possession, shots, formations) — kept separate
+  // from the hand-curated fields above so a failed live fetch never blanks
+  // out the verified static facts.
+  fixtureDate: '2026-07-19',
+  homeApiName: 'Spain', awayApiName: 'Argentina',
+  heroMoment: { minute: 106, icon: '⚽', scorer: 'Ferran Torres', tag: 'Extra-Time Winner' },
+  manOfTheMatch: { name: 'Rodri', team: 'Spain', rating: 8.5, tag: 'Golden Ball winner' },
+  whyItMattered: [
+    "Spain win their second World Cup title, their first since 2010.",
+    'Argentina, the defending 2022 champions, fall short of retaining the trophy.',
+  ],
+  calibreRating: {
+    score: 8.9,
+    note: "Calibre's own call, not a measured stat — elite quality from both sides, scoreless until extra time, decided by a single moment on the biggest stage.",
+  },
+  analysis: "Spain's double pivot controlled central access throughout, limiting Messi to wide zones rather than the half-spaces he'd exploited in earlier rounds. Argentina held a territorial edge without converting it into clear chances against a compact mid-block.",
 };
 
 // ── LIVE MOMENTS ─────────────────────────────────────────────────

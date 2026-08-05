@@ -34,6 +34,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.transfers (
   id             uuid primary key default gen_random_uuid(),
   created_at     timestamptz not null default now(),
+  transfer_date  date,                   -- when the deal actually happened, NOT when the row was inserted — see 2026-08-02b note below
 
   -- subject of the transfer
   player_name    text not null,
@@ -54,12 +55,31 @@ create table if not exists public.transfers (
   published      boolean not null default false
 );
 
+-- 2026-08-02b — add-on for the API-Football sync pipeline (scripts/
+-- syncTransfersFromApiFootball.mjs). Runs as a plain ALTER, not folded into
+-- the CREATE TABLE above, because that CREATE is a no-op against the live
+-- table (it already exists) — this is what actually reaches production.
+alter table public.transfers add column if not exists transfer_date date;
+-- Existing hand-entered rows have no real transfer_date yet; created_at (row
+-- insert time) is the best available stand-in so "Recent Transfers" ordering
+-- doesn't regress for them once queries switch to sorting by transfer_date.
+update public.transfers set transfer_date = created_at::date where transfer_date is null;
+
+-- Dedupe key for the sync script's upsert — re-running it (a player's
+-- transfer history hasn't changed, or overlapping lookback windows) should
+-- update the same row, not create a second one. Only meaningful when
+-- api_player_id is known, which the sync script always has.
+create unique index if not exists transfers_sync_dedupe_idx
+  on public.transfers (api_player_id, transfer_date, to_club)
+  where api_player_id is not null;
+
 -- Matches the actual filter/sort patterns in Transfers.jsx: every read
 -- query filters on (published, season), several also add status or sort by
 -- fee_millions.
 create index if not exists transfers_published_season_idx on public.transfers (published, season);
 create index if not exists transfers_status_idx            on public.transfers (status) where published = true;
 create index if not exists transfers_fee_millions_idx       on public.transfers (fee_millions desc) where published = true;
+create index if not exists transfers_transfer_date_idx      on public.transfers (transfer_date desc) where published = true;
 
 -- ── Row Level Security — NOT applied by this migration ───────────────────
 -- The Transfers page reads this table with the public anon key (no

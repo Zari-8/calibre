@@ -37,6 +37,12 @@ function FormationPitch({ formation, side = 'home' }) {
   const rows = [1, ...lines]; // goalkeeper + each outfield line, GK first
   return (
     <div className="wcfeat-pitch">
+      <svg className="wcfeat-pitch-markings" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <rect x="4" y="4" width="92" height="92" />
+        <rect x="22" y="4" width="56" height="20" />
+        <rect x="38" y="4" width="24" height="9" />
+        <circle cx="50" cy="34" r="10" />
+      </svg>
       <div className="wcfeat-pitch-field">
         {rows.map((count, i) => (
           <div className="wcfeat-pitch-row" key={i}>
@@ -257,8 +263,10 @@ export default function WorldCupOverview() {
         .wcfeat-formation-col { flex:1; text-align:center; }
         .wcfeat-formation-col .wcfeat-label { text-align:center; }
         .wcfeat-formation-code { display:block; margin-top:6px; color:#fff; font:800 12px "Barlow Condensed",sans-serif; }
-        .wcfeat-pitch { background:rgba(255,255,255,.03); border:1px solid var(--line); border-radius:8px; height:104px; margin-top:2px; }
-        .wcfeat-pitch-field { display:flex; flex-direction:column-reverse; justify-content:space-between; height:100%; padding:10px 6px; }
+        .wcfeat-pitch { position:relative; background:repeating-linear-gradient(180deg,#0e2a10,#0e2a10 13px,#0c250f 13px,#123312 26px),linear-gradient(180deg,#123815,#0d2a10); border:1px solid rgba(255,255,255,.14); border-radius:8px; height:104px; margin-top:2px; overflow:hidden; }
+        .wcfeat-pitch-markings { position:absolute; inset:0; width:100%; height:100%; }
+        .wcfeat-pitch-markings rect, .wcfeat-pitch-markings circle { fill:none; stroke:rgba(255,255,255,.32); stroke-width:.6; vector-effect:non-scaling-stroke; }
+        .wcfeat-pitch-field { position:relative; z-index:1; display:flex; flex-direction:column-reverse; justify-content:space-between; height:100%; padding:10px 6px; }
         .wcfeat-pitch-row { display:flex; justify-content:center; gap:6px; }
         .wcfeat-pitch-dot { width:7px; height:7px; border-radius:50%; background:var(--l); flex:none; }
         .wcfeat-pitch-dot.away { background:#ff8a3d; }

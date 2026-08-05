@@ -43,9 +43,64 @@ const ONLY_COMP = process.env.COMP || null;
 const DATE_FROM = process.env.DATE_FROM || process.argv[2] || '2025-08-01';
 const DATE_TO = process.env.DATE_TO || process.argv[3] || '2025-08-10';
 const DELAY_MS = Number(process.env.DELAY_MS || 500);
+// v5 — Supabase disk-IO throttle. writePlayerBatch/writeTeamBatch fire
+// sequential .update()/.upsert() calls with zero delay between them (never
+// concurrent — each one is awaited before the next starts — but back-to-back
+// with no gap at ~217k-265k write attempts across a full-season run, this
+// tripped the project's Disk IO budget alert). WRITE_DELAY_MS adds a pause
+// between each write; default 200ms is the middle of the requested
+// 150-250ms range. Only applied on LIVE runs — DRY_RUN never reaches a real
+// write, so delaying it would just slow down the dry run for no reason.
+const WRITE_DELAY_MS = Number(process.env.WRITE_DELAY_MS || 200);
 const WRITE_RAW = process.env.WRITE_RAW === '1';
 const OUT_DIR = join(ROOT, 'tmp-statsapi');
 const BASE = 'https://api.thestatsapi.com/api/football';
+
+// v7 — hard timeout on every Supabase call. Found 2026-08-02: a full-season
+// RESET_PROGRESS=1 run raced through its first ~6 weeks in moments, then
+// went completely silent for 7+ hours — process still alive (`ps` showed
+// it), but only 3:35 of accumulated CPU time and zero new log lines the
+// entire time. Supabase-js's underlying fetch has no default timeout, and
+// none of updatePlayer()'s/findPlayer()'s existing retry logic can ever
+// fire on a call that neither resolves nor rejects — a single stalled
+// connection (half-open socket, silently dropped packets, whatever) just
+// hangs that await forever, and every write behind it in the sequential
+// loop waits with it. SUPABASE_TIMEOUT_MS forces every Supabase call to
+// fail with a real, catchable error after a bounded wait, so the existing
+// TRANSIENT_WRITE / NETWORK_ERR_RE retry paths actually get a chance to run
+// instead of never triggering at all.
+const SUPABASE_TIMEOUT_MS = Number(process.env.SUPABASE_TIMEOUT_MS || 20000);
+
+function withTimeout(promiseLike, ms, label) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+  });
+  return Promise.race([promiseLike, timeout]).finally(() => clearTimeout(timer));
+}
+
+// Shared read-path helper — every Supabase SELECT in this script (findPlayer's
+// lookups, the resume-safety bulk seed loads) goes through this instead of a
+// bare `await sb.from(...)`. `builderFactory` must be a FUNCTION returning a
+// fresh query builder per call, since re-awaiting the same builder object
+// doesn't re-issue the request. Retries a few times on the same transient
+// network patterns already used for the write path (see NETWORK_ERR_RE
+// below) before giving up and letting the error surface to the caller.
+async function sbCall(builderFactory, label, retries = 3) {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await withTimeout(builderFactory(), SUPABASE_TIMEOUT_MS, label);
+    } catch (e) {
+      const msg = String(e?.message || e);
+      if (NETWORK_ERR_RE.test(msg) && attempt < retries) {
+        console.log(`  [${label} timeout/network error, retry ${attempt + 1}/${retries}] ${msg}`);
+        await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+        continue;
+      }
+      throw e;
+    }
+  }
+}
 
 // v3 — auto-resume. A full-season sweep is meant to run in chunks across
 // several nights (see main() comment below for why), so re-invoking with
@@ -146,21 +201,32 @@ function norm(s) {
 // the 429 handling a few lines down never got a chance to run — fetch()
 // itself threw before res existed. A live full-season sweep (thousands of
 // matches, hours of runtime) will hit these routinely, not rarely.
-const NETWORK_ERR_RE = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated/i;
+const NETWORK_ERR_RE = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated|timed out/i;
+
+// v7 — same hang risk as the Supabase side (see SUPABASE_TIMEOUT_MS comment):
+// a stalled TCP connection to TheStatsAPI with no response, no error, ever,
+// would hang this fetch forever with nothing in the NETWORK_ERR_RE catch
+// block below ever getting a chance to run. AbortController gives a REAL
+// cancellation (not just a Promise.race side-step) — the request is
+// actually torn down, not left dangling.
+const API_TIMEOUT_MS = Number(process.env.API_TIMEOUT_MS || 20000);
 
 async function api(path, attempt = 0) {
   await sleep(DELAY_MS);
 
   let res;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
   try {
     res = await fetch(`${BASE}${path}`, {
       headers: {
         Authorization: `Bearer ${API_KEY}`,
         Accept: 'application/json',
       },
+      signal: controller.signal,
     });
   } catch (e) {
-    const msg = e?.message || String(e);
+    const msg = e?.name === 'AbortError' ? `timed out after ${API_TIMEOUT_MS}ms` : (e?.message || String(e));
     if (NETWORK_ERR_RE.test(msg) && attempt < 5) {
       const wait = [5000, 10000, 20000, 40000, 60000][Math.min(attempt, 4)];
       console.log(`  [network error: ${msg}] retry ${attempt + 1}/5 in ${wait / 1000}s...`);
@@ -168,6 +234,8 @@ async function api(path, attempt = 0) {
       return api(path, attempt + 1);
     }
     throw e;
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const text = await res.text();
@@ -232,11 +300,28 @@ async function fetchMatchesWindow(cursor, windowEnd) {
 // during THIS call so main() can write only the players/teams actually
 // affected by the current week's matches after each checkpoint, instead of
 // re-writing every player accumulated since the start of the whole run.
-function ensurePlayer(map, playerId, base, touched) {
+//
+// priorStats (optional Map) — v6, resume-safety. A resumed process starts
+// with an EMPTY map: without this, a player touched again after the resume
+// point gets rebuilt from zero for the resumed portion only, and since
+// buildPlayerUpdate() writes an ABSOLUTE cumulative total (not a delta),
+// their next write would silently overwrite the correct pre-crash total
+// with a much smaller partial one. priorStats (built by loadPriorStats()
+// below, only populated on an actual resume) seeds a NEW map entry from
+// whatever's already sitting in Supabase for every field that's actually
+// recoverable from a prior write — see loadPriorStats() for exactly which
+// fields that covers and which it can't (minutes/goals/assists/appearances
+// are tracked here but never themselves written to Supabase, only derived
+// per-90 rates and percentages are, so they can't be reconstructed and
+// start at 0 for the resumed portion — per-90 rates for a player who spans
+// the resume boundary will undercount minutes and read slightly high until
+// their next full non-resumed run recomputes them from scratch).
+function ensurePlayer(map, playerId, base, touched, priorStats) {
   const key = `${playerId}|${base.competition_id || ''}|${base.season_id || ''}`;
   if (touched) touched.add(key);
 
   if (!map.has(key)) {
+    const seed = priorStats?.get(key);
     map.set(key, {
       statsapi_player_id: playerId,
       player_name: base.player_name || '',
@@ -245,87 +330,97 @@ function ensurePlayer(map, playerId, base, touched) {
       statsapi_competition_id: base.competition_id || '',
       statsapi_season_id: base.season_id || '',
 
+      // NOT recoverable from Supabase — never written there, only consumed
+      // internally to compute per-90 rates / accuracy denominators. Always
+      // starts at 0 even on a resume.
       appearances: 0,
       starts: 0,
       stats_minutes: 0,
-      position_counts: {},
       saves: 0,
-
       goals: 0,
       assists: 0,
-
-      total_shots: 0,
-      shots_on_target: 0,
-      shots_off_target: 0,
-      blocked_shots: 0,
-
-      expected_goals: 0,
-      np_expected_goals: 0,
-      expected_assists: 0,
-      shotmap_xg: 0,
-      open_play_xg: 0,
-      set_piece_xg: 0,
-      penalty_xg: 0,
-      headed_xg: 0,
-      outside_box_xg: 0,
       big_chances_created: 0,
-
-      total_passes: 0,
-      accurate_passes: 0,
-      key_passes: 0,
-      total_crosses: 0,
-      accurate_crosses: 0,
-      total_long_balls: 0,
-      accurate_long_balls: 0,
-
       duel_won: 0,
       duel_lost: 0,
-      aerial_won: 0,
       challenge_lost: 0,
-      won_contest: 0,
-      dispossessed: 0,
-
-      tackles: 0,
-      interceptions: 0,
-      clearances: 0,
-
-      touches: 0,
       fouls: 0,
-      was_fouled: 0,
       offsides: 0,
       yellow_cards: 0,
       red_cards: 0,
-      possession_lost: 0,
+
+      // Recoverable — seeded from the player's current Supabase row on a
+      // genuine resume (seed is undefined on a fresh/non-resumed run, so
+      // these fall back to their normal 0 default via `?? 0`).
+      position_counts: seed?.position_counts || {},
+
+      total_shots: seed?.total_shots ?? 0,
+      shots_on_target: seed?.shots_on_target ?? 0,
+      shots_off_target: seed?.shots_off_target ?? 0,
+      blocked_shots: seed?.blocked_shots ?? 0,
+
+      expected_goals: seed?.expected_goals ?? 0,
+      np_expected_goals: seed?.np_expected_goals ?? 0,
+      expected_assists: seed?.expected_assists ?? 0,
+      shotmap_xg: 0, // only a fallback source for expected_goals — seeding expected_goals directly makes this redundant
+      open_play_xg: seed?.open_play_xg ?? 0,
+      set_piece_xg: seed?.set_piece_xg ?? 0,
+      penalty_xg: seed?.penalty_xg ?? 0,
+      headed_xg: seed?.headed_xg ?? 0,
+      outside_box_xg: seed?.outside_box_xg ?? 0,
+
+      total_passes: seed?.total_passes ?? 0,
+      accurate_passes: seed?.accurate_passes ?? 0,
+      key_passes: seed?.key_passes ?? 0,
+      total_crosses: seed?.total_crosses ?? 0,
+      accurate_crosses: seed?.accurate_crosses ?? 0,
+      total_long_balls: seed?.total_long_balls ?? 0,
+      accurate_long_balls: seed?.accurate_long_balls ?? 0,
+
+      aerial_won: seed?.aerial_won ?? 0,
+      won_contest: seed?.won_contest ?? 0,
+      dispossessed: seed?.dispossessed ?? 0,
+
+      tackles: seed?.tackles ?? 0,
+      interceptions: seed?.interceptions ?? 0,
+      clearances: seed?.clearances ?? 0,
+
+      touches: seed?.touches ?? 0,
+      was_fouled: seed?.was_fouled ?? 0,
+      possession_lost: seed?.possession_lost ?? 0,
     });
   }
 
   return map.get(key);
 }
 
-function ensureTeam(map, teamId, base, touched) {
+function ensureTeam(map, teamId, base, touched, priorStats) {
   const key = `${teamId}|${base.competition_id || ''}|${base.season_id || ''}`;
   if (touched) touched.add(key);
 
   if (!map.has(key)) {
+    // Team side is fully recoverable — every field tracked here is written
+    // to team_shot_profiles as-is, no derived-only fields like the player
+    // side's minutes/per-90 problem.
+    const seed = priorStats?.get(key);
     map.set(key, {
       statsapi_team_id: teamId,
       team_name: base.team_name || '',
       statsapi_competition_id: base.competition_id || '',
       statsapi_season_id: base.season_id || '',
-      shots_for: 0,
-      shots_on_target_for: 0,
-      xg_for: 0,
-      goals_for: 0,
-      open_play_xg_for: 0,
-      set_piece_xg_for: 0,
-      penalty_xg_for: 0,
+      shots_for: seed?.shots_for ?? 0,
+      shots_on_target_for: seed?.shots_on_target_for ?? 0,
+      xg_for: seed?.xg_for ?? 0,
+      goals_for: seed?.goals_for ?? 0,
+      open_play_xg_for: seed?.open_play_xg_for ?? 0,
+      set_piece_xg_for: seed?.set_piece_xg_for ?? 0,
+      penalty_xg_for: seed?.penalty_xg_for ?? 0,
     });
   }
 
   return map.get(key);
 }
 
-function aggregatePlayerStats(playerAgg, match, json, touched) {
+function aggregatePlayerStats(playerAgg, match, json, touched, priorStats) {
   for (const row of rows(json)) {
     const playerId = row.player_id;
     if (!playerId) continue;
@@ -336,7 +431,7 @@ function aggregatePlayerStats(playerAgg, match, json, touched) {
       team_name: row.team_name,
       competition_id: match.competition_id,
       season_id: match.season_id,
-    }, touched);
+    }, touched, priorStats);
 
     const passing = row.passing || {};
     const shooting = row.shooting || {};
@@ -407,7 +502,7 @@ function shotRows(json) {
   return [];
 }
 
-function aggregateShotmap(playerAgg, teamAgg, match, json, touchedPlayers, touchedTeams) {
+function aggregateShotmap(playerAgg, teamAgg, match, json, touchedPlayers, touchedTeams, priorPlayerStats, priorTeamStats) {
   for (const shot of shotRows(json)) {
     const playerId = shot.player_id;
     const teamId = shot.team_id;
@@ -421,7 +516,7 @@ function aggregateShotmap(playerAgg, teamAgg, match, json, touchedPlayers, touch
         team_name: shot.team_name,
         competition_id: match.competition_id,
         season_id: match.season_id,
-      }, touchedPlayers);
+      }, touchedPlayers, priorPlayerStats);
 
       player.shotmap_xg += xg;
 
@@ -441,7 +536,7 @@ function aggregateShotmap(playerAgg, teamAgg, match, json, touchedPlayers, touch
         team_name: shot.team_name,
         competition_id: match.competition_id,
         season_id: match.season_id,
-      }, touchedTeams);
+      }, touchedTeams, priorTeamStats);
 
       team.shots_for += 1;
       team.xg_for += xg;
@@ -589,7 +684,7 @@ function dropMissingColumn(fields, message) {
   return { fields: copy, column: col };
 }
 
-const TRANSIENT_WRITE = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated/i;
+const TRANSIENT_WRITE = /fetch failed|ECONNRESET|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|network|socket|terminated|timed out/i;
 
 async function updatePlayer(rowId, fields) {
   if (DRY_RUN) return { ok: true, dropped: [] };
@@ -599,7 +694,18 @@ async function updatePlayer(rowId, fields) {
   let transientAttempts = 0;
 
   for (let i = 0; i < 40; i++) {
-    const { error } = await sb.from('players').update(current).eq('id', rowId);
+    let error;
+    try {
+      ({ error } = await withTimeout(
+        sb.from('players').update(current).eq('id', rowId),
+        SUPABASE_TIMEOUT_MS, 'Supabase update(players)'
+      ));
+    } catch (e) {
+      // withTimeout REJECTS (throws) on timeout, unlike Supabase's normal
+      // { error } return shape — normalize it into the same shape so the
+      // exact same retry logic below (TRANSIENT_WRITE.test) handles it.
+      error = e;
+    }
     if (!error) return { ok: true, dropped };
 
     const msg = String(error.message || '');
@@ -657,10 +763,10 @@ async function findPlayer({ statsapiPlayerId, playerName }) {
     const key = String(statsapiPlayerId);
     if (statsapiIdCache.has(key)) return statsapiIdCache.get(key);
 
-    const { data } = await sb.from('players')
-      .select('id, name, statsapi_player_id')
-      .eq('statsapi_player_id', key)
-      .limit(1);
+    const { data } = await sbCall(
+      () => sb.from('players').select('id, name, statsapi_player_id').eq('statsapi_player_id', key).limit(1),
+      'Supabase select(players by statsapi_id)'
+    );
 
     if (data?.length) {
       statsapiIdCache.set(key, data[0]);
@@ -674,10 +780,10 @@ async function findPlayer({ statsapiPlayerId, playerName }) {
 
   // Strategy 1: exact full-name match (case-insensitive) — safe, requires
   // literal equality.
-  let { data } = await sb.from('players')
-    .select('id, name, statsapi_player_id')
-    .ilike('name', playerName)
-    .limit(1);
+  let { data } = await sbCall(
+    () => sb.from('players').select('id, name, statsapi_player_id').ilike('name', playerName).limit(1),
+    'Supabase select(players exact ilike)'
+  );
 
   // Strategy 2 (fallback): the ORIGINAL version here did
   // `.ilike('name', '%${key}%').limit(1)` — a raw substring search across
@@ -715,11 +821,14 @@ async function findPlayer({ statsapiPlayerId, playerName }) {
     if (searchTerms.length) {
       let pool = [];
       for (const term of searchTerms) {
-        const { data: batch } = await sb.from('players')
-          .select('id, name, statsapi_player_id, minutes, api_player_id')
-          .ilike('name', `%${term}%`)
-          .order('minutes', { ascending: false, nullsFirst: false })
-          .limit(25);
+        const { data: batch } = await sbCall(
+          () => sb.from('players')
+            .select('id, name, statsapi_player_id, minutes, api_player_id')
+            .ilike('name', `%${term}%`)
+            .order('minutes', { ascending: false, nullsFirst: false })
+            .limit(25),
+          'Supabase select(players surname pool)'
+        );
         if (batch?.length) pool.push(...batch);
       }
       pool = [...new Map(pool.map(p => [p.id, p])).values()];
@@ -754,30 +863,49 @@ async function writePlayerBatch(playerAgg, keys, counters, droppedColumns) {
       console.log(`  writing player ${idx}/${keys.size}: ${player.player_name}`);
     }
 
-    const row = await findPlayer({
-      statsapiPlayerId: player.statsapi_player_id,
-      playerName: player.player_name,
-    });
+    // v7 — this whole per-player body is now wrapped: findPlayer()'s lookups
+    // go through sbCall, which retries transient/timeout errors a few times
+    // but THROWS once retries are exhausted (see sbCall's comment). Found
+    // 2026-08-02 live: that throw wasn't caught anywhere above this loop, so
+    // one single player whose lookup kept timing out crashed the ENTIRE
+    // multi-hour run (exit 1) instead of just failing that one player. A
+    // persistent per-player failure should cost that player, not the run.
+    try {
+      const row = await findPlayer({
+        statsapiPlayerId: player.statsapi_player_id,
+        playerName: player.player_name,
+      });
 
-    if (!row) {
-      counters.noMatch++;
-      continue;
-    }
+      if (!row) {
+        counters.noMatch++;
+        continue;
+      }
 
-    const fields = buildPlayerUpdate(player);
-    const result = await updatePlayer(row.id, fields);
+      const fields = buildPlayerUpdate(player);
+      const result = await updatePlayer(row.id, fields);
 
-    if (!result.ok) {
+      // Disk-IO throttle — pause between writes regardless of outcome (findPlayer
+      // lookups above are reads, not writes, so this only paces the .update() calls
+      // themselves). Skipped entirely in DRY_RUN since updatePlayer() short-circuits
+      // before touching Supabase there.
+      if (!DRY_RUN && WRITE_DELAY_MS > 0) await sleep(WRITE_DELAY_MS);
+
+      if (!result.ok) {
+        counters.errors++;
+        console.error(`  update error ${player.player_name}: ${result.error?.message || result.error}`);
+        continue;
+      }
+
+      for (const col of result.dropped || []) {
+        droppedColumns.set(col, (droppedColumns.get(col) || 0) + 1);
+      }
+
+      counters.enriched++;
+    } catch (e) {
       counters.errors++;
-      console.error(`  update error ${player.player_name}: ${result.error?.message || result.error}`);
+      console.error(`  lookup/write failed for ${player.player_name}, skipping this player for this checkpoint: ${e?.message || e}`);
       continue;
     }
-
-    for (const col of result.dropped || []) {
-      droppedColumns.set(col, (droppedColumns.get(col) || 0) + 1);
-    }
-
-    counters.enriched++;
   }
 }
 
@@ -807,11 +935,101 @@ async function writeTeamBatch(teamAgg, keys, counters) {
     }));
   for (let i = 0; i < teamRows.length; i += 100) {
     const chunk = teamRows.slice(i, i + 100);
-    const { error } = await sb.from('team_shot_profiles')
-      .upsert(chunk, { onConflict: 'statsapi_team_id,statsapi_competition_id,statsapi_season_id' });
+    let error;
+    try {
+      ({ error } = await sbCall(
+        () => sb.from('team_shot_profiles').upsert(chunk, { onConflict: 'statsapi_team_id,statsapi_competition_id,statsapi_season_id' }),
+        'Supabase upsert(team_shot_profiles)'
+      ));
+    } catch (e) {
+      error = e;
+    }
     if (error) { counters.teamWriteErrors++; console.error('  team_shot_profiles upsert error:', error.message); continue; }
     counters.teamRowsWritten += chunk.length;
+    // Same disk-IO throttle as writePlayerBatch — team volume is much smaller
+    // (12,183 rows total last run) so this matters less, but keeps every
+    // Supabase write path in the script paced consistently.
+    if (WRITE_DELAY_MS > 0) await sleep(WRITE_DELAY_MS);
   }
+}
+
+// v6 — resume-safety bulk seed. Only called when main() determines this is
+// an actual resume (cursor advanced past DATE_FROM from a saved checkpoint),
+// never on a fresh/RESET_PROGRESS run — seeding from Supabase on a fresh
+// run would double-count on top of a stale PREVIOUS pass's totals instead
+// of starting clean. Paginated fetch of every row this script could have
+// written to previously (statsapi_player_id not null), keyed identically to
+// ensurePlayer()'s map key so a lookup at first-touch is a simple Map.get().
+const PLAYER_SEED_PAGE = 1000;
+
+async function loadPriorStats() {
+  const seed = new Map();
+  let offset = 0;
+  console.log('Resume detected — bulk-loading existing statsapi-enriched player rows to seed cumulative totals...');
+  while (true) {
+    let data, error;
+    try {
+      ({ data, error } = await sbCall(
+        () => sb.from('players')
+          .select([
+            'statsapi_player_id', 'statsapi_competition_id', 'statsapi_season_id',
+            'statsapi_position_counts',
+            'total_shots:statsapi_total_shots', 'shots_on_target:statsapi_shots_on_target',
+            'shots_off_target:statsapi_shots_off_target', 'blocked_shots:statsapi_blocked_shots',
+            'expected_goals', 'np_expected_goals', 'expected_assists',
+            'open_play_xg', 'set_piece_xg', 'penalty_xg', 'headed_xg', 'outside_box_xg',
+            'total_passes:statsapi_total_passes', 'accurate_passes:statsapi_accurate_passes',
+            'key_passes:statsapi_key_passes',
+            'total_crosses:statsapi_total_crosses', 'accurate_crosses:statsapi_accurate_crosses',
+            'total_long_balls:statsapi_total_long_balls', 'accurate_long_balls:statsapi_accurate_long_balls',
+            'aerial_won:statsapi_aerial_duels_won', 'won_contest:statsapi_successful_dribbles',
+            'dispossessed:statsapi_dispossessed',
+            'tackles:statsapi_tackles', 'interceptions:statsapi_interceptions', 'clearances:statsapi_clearances',
+            'touches:statsapi_touches', 'was_fouled:statsapi_was_fouled',
+            'possession_lost:statsapi_possession_lost',
+          ].join(', '))
+          .not('statsapi_player_id', 'is', null)
+          .range(offset, offset + PLAYER_SEED_PAGE - 1),
+        'Supabase select(players prior-stats seed)'
+      ));
+    } catch (e) { error = e; }
+    if (error) { console.error('  loadPriorStats fetch failed (giving up on further pages, seeding with what was loaded so far):', error.message); break; }
+    if (!data?.length) break;
+    for (const row of data) {
+      const key = `${row.statsapi_player_id}|${row.statsapi_competition_id || ''}|${row.statsapi_season_id || ''}`;
+      seed.set(key, row);
+    }
+    offset += data.length;
+    if (data.length < PLAYER_SEED_PAGE) break;
+  }
+  console.log(`  loaded ${seed.size} existing player rows to seed from.`);
+  return seed;
+}
+
+async function loadPriorTeamStats() {
+  const seed = new Map();
+  let offset = 0;
+  while (true) {
+    let data, error;
+    try {
+      ({ data, error } = await sbCall(
+        () => sb.from('team_shot_profiles')
+          .select('statsapi_team_id, statsapi_competition_id, statsapi_season_id, shots_for, shots_on_target_for, xg_for, goals_for, open_play_xg_for, set_piece_xg_for, penalty_xg_for')
+          .range(offset, offset + PLAYER_SEED_PAGE - 1),
+        'Supabase select(team_shot_profiles prior-stats seed)'
+      ));
+    } catch (e) { error = e; }
+    if (error) { console.error('  loadPriorTeamStats fetch failed (giving up on further pages, seeding with what was loaded so far):', error.message); break; }
+    if (!data?.length) break;
+    for (const row of data) {
+      const key = `${row.statsapi_team_id}|${row.statsapi_competition_id || ''}|${row.statsapi_season_id || ''}`;
+      seed.set(key, row);
+    }
+    offset += data.length;
+    if (data.length < PLAYER_SEED_PAGE) break;
+  }
+  console.log(`  loaded ${seed.size} existing team_shot_profiles rows to seed from.`);
+  return seed;
 }
 
 async function main() {
@@ -865,6 +1083,17 @@ async function main() {
     console.log('RESET_PROGRESS=1 set — ignoring any saved progress, running the full requested range.');
   }
 
+  // v6 — resume-safety: this process's playerAgg/teamAgg maps start empty
+  // regardless of where cursor landed. If cursor moved past DATE_FROM (a
+  // genuine resume, not a fresh start), bulk-load what's already in Supabase
+  // so a player/team touched again later gets its NEW-entry seeded from the
+  // real cumulative total instead of silently restarting from zero and
+  // overwriting a correct pre-resume value with a partial one. See
+  // loadPriorStats()'s comment for exactly what is and isn't recoverable.
+  const isResume = cursor !== DATE_FROM;
+  const priorPlayerStats = (!DRY_RUN && isResume) ? await loadPriorStats() : null;
+  const priorTeamStats = (!DRY_RUN && isResume) ? await loadPriorTeamStats() : null;
+
   while (cursor <= DATE_TO) {
     const end = addDays(cursor, 6);
     const windowEnd = end > DATE_TO ? DATE_TO : end;
@@ -886,7 +1115,7 @@ async function main() {
       try {
         const ps = await api(`/matches/${matchId}/player-stats`);
         if (WRITE_RAW) writeFileSync(join(OUT_DIR, 'raw', `${matchId}-player-stats.json`), JSON.stringify(ps, null, 2));
-        aggregatePlayerStats(playerAgg, match, ps, touchedPlayers);
+        aggregatePlayerStats(playerAgg, match, ps, touchedPlayers, priorPlayerStats);
         counters.playerStatsOk++;
       } catch (e) {
         counters.matchErrors++;
@@ -897,7 +1126,7 @@ async function main() {
         try {
           const sm = await api(`/matches/${matchId}/shotmap`);
           if (WRITE_RAW) writeFileSync(join(OUT_DIR, 'raw', `${matchId}-shotmap.json`), JSON.stringify(sm, null, 2));
-          aggregateShotmap(playerAgg, teamAgg, match, sm, touchedPlayers, touchedTeams);
+          aggregateShotmap(playerAgg, teamAgg, match, sm, touchedPlayers, touchedTeams, priorPlayerStats, priorTeamStats);
           counters.shotmapOk++;
         } catch (e) {
           counters.matchErrors++;

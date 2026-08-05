@@ -339,30 +339,327 @@ export default function WorldCupOverview() {
             font-size:52px;
           }
         }
+
+        .wc-hero-content{
+          display:flex;
+          justify-content:space-between;
+          align-items:flex-end;
+          margin-top:20px;
+          gap:40px;
+        }
+
+        .wc-countdown{
+          display:flex;
+          gap:18px;
+        }
+
+        .wc-count-item{
+          width:82px;
+          height:82px;
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          align-items:center;
+          border-radius:16px;
+          background:rgba(255,255,255,.05);
+          border:1px solid rgba(255,255,255,.08);
+          backdrop-filter:blur(12px);
+        }
+
+        .wc-count-item strong{
+          font-size:34px;
+          font-family:"Barlow Condensed";
+          color:var(--lime);
+        }
+
+        .wc-count-item span{
+          font-size:11px;
+          text-transform:uppercase;
+          color:#999;
+          letter-spacing:.08em;
+        }
+
+        .wc-live-pill{
+          padding:18px 26px;
+          border-radius:40px;
+          background:rgba(151,204,13,.15);
+          color:var(--lime);
+          font-weight:700;
+        }
+
+        .wc-stat-box{
+          background:rgba(255,255,255,.04);
+          border:1px solid rgba(255,255,255,.08);
+          border-radius:18px;
+          padding:22px;
+          display:flex;
+          flex-direction:column;
+          gap:8px;
+        }
+
+        .wc-stat-box svg{
+          color:var(--lime);
+        }
+
+        .wc-stat-box strong{
+          font-family:"Barlow Condensed";
+          font-size:44px;
+          line-height:1;
+        }
+
+        .wc-stat-box span{
+          font-size:11px;
+          text-transform:uppercase;
+          letter-spacing:.12em;
+          color:#888;
+        }
+
+        .wc-intel-card{
+          background:rgba(255,255,255,.04);
+          border:1px solid rgba(255,255,255,.08);
+          border-radius:18px;
+          padding:22px;
+        }
+
+        .wc-intel-header{
+          font-size:12px;
+          letter-spacing:.14em;
+          font-weight:800;
+          color:var(--lime);
+          margin-bottom:20px;
+          display:flex;
+          gap:10px;
+          align-items:center;
+        }
+
+        .wc-intel-point{
+          display:flex;
+          gap:12px;
+          margin-bottom:15px;
+          color:#d8dde2;
+          font-size:13px;
+          line-height:1.5;
+        }
+
+        .wc-dot{
+          width:7px;
+          height:7px;
+          border-radius:50%;
+          background:var(--lime);
+          margin-top:7px;
+        }
+
+        .wc-intel-score{
+          background:linear-gradient(145deg,rgba(151,204,13,.16),rgba(255,255,255,.03));
+          border:1px solid rgba(151,204,13,.25);
+          border-radius:18px;
+          padding:22px;
+        }
+
+        .wc-score-ring{
+          width:110px;
+          height:110px;
+          border-radius:50%;
+          border:7px solid var(--lime);
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          align-items:center;
+        }
+
+        .wc-score-ring div{
+          font-family:"Barlow Condensed";
+          font-size:48px;
+          font-weight:900;
+          line-height:1;
+        }
+
+        .wc-score-ring span{
+          font-size:12px;
+          color:#999;
+        }
+
+        .wc-progress{
+          height:6px;
+          background:rgba(255,255,255,.08);
+          border-radius:10px;
+          margin-top:6px;
+          overflow:hidden;
+        }
+
+        .wc-progress div{
+          height:100%;
+          background:var(--lime);
+        }
+
+        .wc-data-row{
+          display:grid;
+          grid-template-columns:70px 1fr 120px 1fr 70px;
+          gap:14px;
+          align-items:center;
+          margin-bottom:14px;
+        }
+
+        .wc-data-value{
+          font-weight:800;
+          font-family:"Barlow Condensed";
+          font-size:22px;
+        }
+
+        .wc-data-label{
+          text-align:center;
+          font-size:11px;
+          text-transform:uppercase;
+          color:#888;
+        }
+
+        .wc-data-track{
+          height:7px;
+          background:rgba(255,255,255,.08);
+          border-radius:10px;
+          overflow:hidden;
+        }
+
+        .wc-data-track div{
+          height:100%;
+          background:var(--lime);
+        }
+
+        .wc-data-track.away div{
+          background:#ff8a3d;
+        }
+
+        .wc-lower-grid{
+          display:grid;
+          grid-template-columns:1.2fr 1fr 1fr;
+          gap:22px;
+          margin-top:22px;
+        }
+
+        .wc-analysis-point{
+          display:flex;
+          gap:16px;
+          margin-bottom:18px;
+          color:#d8dde2;
+          font-size:14px;
+          line-height:1.5;
+        }
+
+        .wc-number{
+          font-family:"Barlow Condensed";
+          font-size:24px;
+          font-weight:900;
+          color:var(--lime);
+        }
+
+        .wc-big-number{
+          font-family:"Barlow Condensed";
+          font-size:54px;
+          font-weight:900;
+          line-height:1;
+        }
+
+        .wc-small-label{
+          font-size:11px;
+          text-transform:uppercase;
+          letter-spacing:.12em;
+          color:#888;
+        }
+
+        .wc-shot-bar{
+          height:8px;
+          background:rgba(255,255,255,.08);
+          border-radius:20px;
+          overflow:hidden;
+        }
+
+        .wc-shot-bar div{
+          height:100%;
+          background:var(--lime);
+        }
+
+        .wc-match-item{
+          padding:15px 0;
+          border-bottom:1px solid rgba(255,255,255,.08);
+        }
+
+        @media(max-width:1000px){
+          .wc-lower-grid{
+            grid-template-columns:1fr;
+          }
+        }
       `}</style>
 
       <div className="wc-overview-shell">
 
         {/* HERO */}
+
         <section className="wc-overview-hero">
 
           <div className="wc2-eyebrow">
             <Trophy size={15}/>
-            {WC_CONFIG.edition}
+            <span>{WC_CONFIG.edition}</span>
           </div>
 
-          <h1 className="wc-overview-title">
-            World Cup<br/>
-            Overview
-          </h1>
+          <div className="wc-hero-content">
 
-          <p className="wc-overview-sub">
-            The biggest stage in football. Follow the tournament,
-            players, matches and intelligence behind every moment.
-          </p>
+            <div>
+
+              <h1 className="wc-overview-title">
+                WORLD CUP
+                <br />
+                OVERVIEW
+              </h1>
+
+              <p className="wc-overview-sub">
+                Follow every match, player and storyline from the biggest football
+                tournament ever held, powered by Calibre Intelligence.
+              </p>
+
+            </div>
+
+            <div className="wc-countdown">
+
+              {!isLive ? (
+
+                <>
+
+                  <div className="wc-count-item">
+                    <strong>{days}</strong>
+                    <span>Days</span>
+                  </div>
+
+                  <div className="wc-count-item">
+                    <strong>{hrs}</strong>
+                    <span>Hours</span>
+                  </div>
+
+                  <div className="wc-count-item">
+                    <strong>{mins}</strong>
+                    <span>Minutes</span>
+                  </div>
+
+                  <div className="wc-count-item">
+                    <strong>{secs}</strong>
+                    <span>Seconds</span>
+                  </div>
+
+                </>
+
+              ) : (
+
+                <div className="wc-live-pill">
+                  ● LIVE NOW
+                </div>
+
+              )}
+
+            </div>
+
+          </div>
 
           <div className="wc-overview-nav">
-            <WorldCupNav active="overview"/>
+            <WorldCupNav active="overview" />
           </div>
 
         </section>
@@ -373,437 +670,711 @@ export default function WorldCupOverview() {
         <section
           className="wc-card"
           style={{
-            marginTop: 22,
-            padding: 32
+            marginTop:22,
+            overflow:"hidden",
+            padding:0
           }}
         >
 
-          <div className="wc-card-title">
-            Featured Match of the Tournament
-          </div>
+          {/* Header */}
 
           <div
             style={{
-              textAlign: "center"
+              padding:"18px 28px",
+              borderBottom:"1px solid rgba(255,255,255,.08)",
+              display:"flex",
+              justifyContent:"space-between",
+              alignItems:"center"
+            }}
+          >
+
+            <div>
+
+              <div className="wc-card-title" style={{marginBottom:6}}>
+                CALIBRE FEATURE
+              </div>
+
+              <h2
+                style={{
+                  margin:0,
+                  fontFamily:"Barlow Condensed",
+                  fontSize:38,
+                  lineHeight:1
+                }}
+              >
+                Featured Match
+              </h2>
+
+            </div>
+
+            <div
+              style={{
+                textAlign:"right",
+                color:"#888",
+                fontSize:13
+              }}
+            >
+              {featuredMatch.round}
+              <br/>
+              {featuredMatch.venue}
+            </div>
+
+          </div>
+
+          {/* Match */}
+
+          <div
+            style={{
+              padding:"42px",
+              textAlign:"center"
             }}
           >
 
             <div
               style={{
-                color: "#888",
-                fontSize: 13,
-                marginBottom: 18
-              }}
-            >
-              {featuredMatch.round}
-              {" • "}
-              {featuredMatch.venue}
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                gap: 50,
-                marginBottom: 28
+                display:"grid",
+                gridTemplateColumns:"1fr auto 1fr",
+                alignItems:"center",
+                gap:40
               }}
             >
 
-              <div>
-
-                <div style={{ fontSize: 64 }}>
-                  {TEAM_FLAGS[featuredMatch.home]}
-                </div>
-
-                <h2>{featuredMatch.home}</h2>
-
-              </div>
+              {/* Home */}
 
               <div>
 
                 <div
                   style={{
-                    fontSize: 76,
-                    fontFamily: "Barlow Condensed",
-                    fontWeight: 900,
-                    color: "var(--lime)",
-                    lineHeight: 1
+                    fontSize:78,
+                    marginBottom:10
+                  }}
+                >
+                  {TEAM_FLAGS[featuredMatch.home]}
+                </div>
+
+                <div
+                  style={{
+                    fontFamily:"Barlow Condensed",
+                    fontSize:34,
+                    fontWeight:700,
+                    textTransform:"uppercase"
+                  }}
+                >
+                  {featuredMatch.home}
+                </div>
+
+              </div>
+
+              {/* Score */}
+
+              <div>
+
+                <div
+                  style={{
+                    fontFamily:"Barlow Condensed",
+                    fontWeight:900,
+                    fontSize:92,
+                    lineHeight:.9,
+                    color:"var(--lime)"
                   }}
                 >
                   {featuredMatch.homeScore}
-                  {"–"}
+                  <span
+                    style={{
+                      color:"#555",
+                      margin:"0 12px"
+                    }}
+                  >
+                    —
+                  </span>
                   {featuredMatch.awayScore}
                 </div>
 
                 <div
                   style={{
+                    marginTop:14,
                     color:"#999",
                     fontSize:13,
-                    marginTop:8
+                    textTransform:"uppercase",
+                    letterSpacing:".18em"
                   }}
                 >
-                  Final
+                  Final • After Extra Time
                 </div>
 
               </div>
 
+              {/* Away */}
+
               <div>
 
-                <div style={{ fontSize: 64 }}>
+                <div
+                  style={{
+                    fontSize:78,
+                    marginBottom:10
+                  }}
+                >
                   {TEAM_FLAGS[featuredMatch.away]}
                 </div>
 
-                <h2>{featuredMatch.away}</h2>
+                <div
+                  style={{
+                    fontFamily:"Barlow Condensed",
+                    fontSize:34,
+                    fontWeight:700,
+                    textTransform:"uppercase"
+                  }}
+                >
+                  {featuredMatch.away}
+                </div>
 
               </div>
 
             </div>
 
-          </div>
+            {/* Hero moment */}
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(4,1fr)",
-              gap: 18,
-              marginTop: 28
-            }}
-          >
+            <div
+              style={{
+                marginTop:36,
+                display:"inline-flex",
+                alignItems:"center",
+                gap:14,
+                padding:"18px 28px",
+                borderRadius:50,
+                background:"rgba(151,204,13,.10)",
+                border:"1px solid rgba(151,204,13,.25)"
+              }}
+            >
 
-            {compactRows.map(row => (
+              <Star
+                size={22}
+                color="#97cc0d"
+                fill="#97cc0d"
+              />
 
               <div
-                key={row.label}
                 style={{
-                  padding:18,
-                  borderRadius:14,
-                  background:"rgba(255,255,255,.04)",
-                  border:"1px solid rgba(255,255,255,.08)"
+                  textAlign:"left"
                 }}
               >
 
                 <div
                   style={{
-                    color:"#888",
-                    fontSize:11,
-                    textTransform:"uppercase"
+                    fontWeight:700,
+                    fontSize:18
                   }}
                 >
-                  {row.label}
+                  {featuredMatch.heroMoment.minute}'
+                  {" "}
+                  {featuredMatch.heroMoment.scorer}
                 </div>
 
                 <div
                   style={{
-                    marginTop:8,
-                    fontFamily:"Barlow Condensed",
-                    fontSize:34,
-                    fontWeight:900
+                    color:"#aaa",
+                    fontSize:13
                   }}
                 >
-                  {row.home}
-                  {row.suffix}
-                  {" – "}
-                  {row.away}
-                  {row.suffix}
+                  {featuredMatch.heroMoment.tag}
                 </div>
 
               </div>
 
-            ))}
+            </div>
 
-          </div>
-
-          <div
-            style={{
-              marginTop:28,
-              padding:20,
-              borderRadius:16,
-              background:"rgba(151,204,13,.08)",
-              border:"1px solid rgba(151,204,13,.20)"
-            }}
-          >
-
-            <strong
-              style={{
-                fontSize:18
-              }}
-            >
-              {featuredMatch.heroMoment.minute}'
-              {" "}
-              {featuredMatch.heroMoment.scorer}
-            </strong>
+            {/* Quick stats */}
 
             <div
               style={{
-                marginTop:8,
-                color:"#bbb"
+                display:"grid",
+                gridTemplateColumns:"repeat(4,1fr)",
+                gap:18,
+                marginTop:42
               }}
             >
-              {featuredMatch.heroMoment.tag}
+
+              {compactRows.map(row=>(
+
+                <div
+                  key={row.label}
+                  style={{
+                    background:"rgba(255,255,255,.04)",
+                    border:"1px solid rgba(255,255,255,.08)",
+                    borderRadius:16,
+                    padding:20
+                  }}
+                >
+
+                  <div
+                    style={{
+                      color:"#888",
+                      fontSize:11,
+                      textTransform:"uppercase",
+                      letterSpacing:".1em"
+                    }}
+                  >
+                    {row.label}
+                  </div>
+
+                  <div
+                    style={{
+                      marginTop:10,
+                      fontFamily:"Barlow Condensed",
+                      fontWeight:900,
+                      fontSize:40
+                    }}
+                  >
+                    {row.home}
+                    {row.suffix}
+                  </div>
+
+                  <div
+                    style={{
+                      margin:"10px 0",
+                      height:5,
+                      borderRadius:5,
+                      background:"rgba(255,255,255,.06)",
+                      overflow:"hidden"
+                    }}
+                  >
+                    <div
+                      style={{
+                        width:`${(row.home/((row.home+row.away)||1))*100}%`,
+                        height:"100%",
+                        background:"var(--lime)"
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{
+                      color:"#bbb",
+                      fontWeight:700
+                    }}
+                  >
+                    {row.away}
+                    {row.suffix}
+                  </div>
+
+                </div>
+
+              ))}
+
             </div>
 
           </div>
 
         </section>
 
+        {/* TOURNAMENT SNAPSHOT + STATS LEADERS */}
+
         <div
           style={{
             display:"grid",
             gridTemplateColumns:"1fr 1fr",
-            gap:20,
+            gap:22,
             marginTop:22
           }}
         >
 
-          {/* Tournament Snapshot */}
+
+        {/* TOURNAMENT SNAPSHOT */}
+
+        <div
+          className="wc-card"
+        >
+
+          <div className="wc-card-title">
+            Tournament Snapshot
+          </div>
+
 
           <div
-            className="wc-card"
             style={{
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between"
+              display:"grid",
+              gridTemplateColumns:"repeat(2,1fr)",
+              gap:20
             }}
           >
 
-            <div>
 
-              <div className="wc-card-title">
-                Tournament Snapshot
-              </div>
+            <div className="wc-stat-box">
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: 18
-                }}
-              >
+              <Users size={22}/>
 
-                <div>
-                  <div className="wc-summary-number">
-                    {TOURNAMENT_FORMAT.teams}
-                  </div>
+              <strong>
+                {TOURNAMENT_FORMAT.teams}
+              </strong>
 
-                  <div className="wc-summary-label">
-                    Teams
-                  </div>
-                </div>
-
-                <div>
-                  <div className="wc-summary-number">
-                    {TOURNAMENT_FORMAT.matches}
-                  </div>
-
-                  <div className="wc-summary-label">
-                    Matches
-                  </div>
-                </div>
-
-                <div>
-                  <div className="wc-summary-number">
-                    {TOURNAMENT_FORMAT.stadiums}
-                  </div>
-
-                  <div className="wc-summary-label">
-                    Stadiums
-                  </div>
-                </div>
-
-                <div>
-                  <div className="wc-summary-number">
-                    {WC_CONFIG.hosts.length}
-                  </div>
-
-                  <div className="wc-summary-label">
-                    Hosts
-                  </div>
-                </div>
-
-              </div>
+              <span>
+                Teams
+              </span>
 
             </div>
 
-            <button
-              className="wc2-explore-btn"
-              onClick={() => navigateTo("/world-cup/teams")}
-            >
-              Explore Tournament
-              <ArrowRight size={14}/>
-            </button>
+
+            <div className="wc-stat-box">
+
+              <Goal size={22}/>
+
+              <strong>
+                {TOURNAMENT_FORMAT.matches}
+              </strong>
+
+              <span>
+                Matches
+              </span>
+
+            </div>
+
+
+            <div className="wc-stat-box">
+
+              <MapPin size={22}/>
+
+              <strong>
+                {TOURNAMENT_FORMAT.stadiums}
+              </strong>
+
+              <span>
+                Stadiums
+              </span>
+
+            </div>
+
+
+            <div className="wc-stat-box">
+
+              <Flag size={22}/>
+
+              <strong>
+                {WC_CONFIG.hosts.length}
+              </strong>
+
+              <span>
+                Hosts
+              </span>
+
+            </div>
+
 
           </div>
 
-          {/* Stats Leaders */}
-
-          <div className="wc-card">
 
 
-            <div className="wc-card-title">
-              Stats Leaders
-            </div>
+          <div
+            style={{
+              marginTop:26,
+              paddingTop:18,
+              borderTop:"1px solid rgba(255,255,255,.08)",
+              color:"#aaa",
+              fontSize:13
+            }}
+          >
+
+            {WC_CONFIG.hosts.map((h,i)=>(
+
+              <span key={h}>
+
+                {i>0 && " • "}
+
+                {HOST_FLAGS[h]} {h}
+
+              </span>
+
+            ))}
+
+          </div>
 
 
-            {
-              wcLeaders.length===0 ?
 
-              <div style={{
-                color:"#888",
-                fontSize:13
-              }}>
-                Leaders populate once tournament matches begin.
-              </div>
-
-              :
-
-              wcLeaders.slice(0,5).map((l,i)=>(
-
-                <div
-                  key={l.api_player_id}
-                  style={{
-                    display:"flex",
-                    alignItems:"center",
-                    gap:12,
-                    padding:"12px 0",
-                    borderBottom:"1px solid rgba(255,255,255,.08)"
-                  }}
-                >
-
-                  <strong style={{
-                    color:"#777"
-                  }}>
-                    {i+1}
-                  </strong>
-
-
-                  <ApiPlayerImage
-                    playerId={l.api_player_id}
-                    name={l.name}
-                    fallbackSrc="/assets/players/neutral-player.svg"
-                    style={{
-                      width:38,
-                      height:38,
-                      borderRadius:"50%"
-                    }}
-                  />
-
-
-                  <div style={{
-                    flex:1
-                  }}>
-
-                    <strong>
-                      {l.name}
-                    </strong>
-
-                    <div style={{
-                      fontSize:11,
-                      color:"#888"
-                    }}>
-                      {l.team}
-                    </div>
-
-                  </div>
-
-
-                  <div style={{
-                    color:"var(--lime)",
-                    fontWeight:800
-                  }}>
-                    {l.goals}
-                  </div>
-
-
-                </div>
-
-              ))
-
+          <button
+            className="wc2-explore-btn"
+            style={{
+              marginTop:24
+            }}
+            onClick={() =>
+              navigateTo("/world-cup/teams")
             }
+          >
 
+            Explore Tournament
 
-            <button
-              className="wc2-link"
-              onClick={()=>navigateTo('/world-cup/stats')}
-            >
-              View full stats
-              <ArrowRight size={13}/>
-            </button>
+            <ArrowRight size={14}/>
 
+          </button>
 
-          </div>
 
         </div>
 
-        {/* FEATURED MATCH INTELLIGENCE */}
+
+
+
+
+        {/* STATS LEADERS */}
+
+        <div
+          className="wc-card"
+        >
+
+
+          <div className="wc-card-title">
+            Tournament Leaders
+          </div>
+
+
+
+          {
+
+          wcLeaders.length===0 ?
+
+
+          <div
+            style={{
+              color:"#888",
+              fontSize:13
+            }}
+          >
+
+            Leaders populate once tournament matches begin.
+
+          </div>
+
+
+          :
+
+
+          wcLeaders.slice(0,5).map((l,i)=>(
+
+
+            <div
+              key={l.api_player_id}
+              style={{
+                display:"flex",
+                alignItems:"center",
+                gap:15,
+                padding:"14px 0",
+                borderBottom:"1px solid rgba(255,255,255,.08)"
+              }}
+            >
+
+
+
+              <div
+                style={{
+                  width:30,
+                  height:30,
+                  borderRadius:"50%",
+                  display:"flex",
+                  alignItems:"center",
+                  justifyContent:"center",
+                  background:
+                  i===0
+                  ?
+                  "rgba(151,204,13,.18)"
+                  :
+                  "rgba(255,255,255,.06)",
+                  color:
+                  i===0
+                  ?
+                  "var(--lime)"
+                  :
+                  "#888",
+                  fontWeight:900
+                }}
+              >
+
+                {i+1}
+
+              </div>
+
+
+
+              <ApiPlayerImage
+
+                playerId={l.api_player_id}
+
+                name={l.name}
+
+                fallbackSrc="/assets/players/neutral-player.svg"
+
+                style={{
+                  width:46,
+                  height:46,
+                  borderRadius:"50%"
+                }}
+
+              />
+
+
+
+              <div
+                style={{
+                  flex:1
+                }}
+              >
+
+                <strong
+                  style={{
+                    fontSize:15
+                  }}
+                >
+                  {l.name}
+                </strong>
+
+
+                <div
+                  style={{
+                    color:"#888",
+                    fontSize:12
+                  }}
+                >
+                  {l.team}
+                </div>
+
+
+              </div>
+
+
+
+              <div
+                style={{
+                  textAlign:"center"
+                }}
+              >
+
+                <strong
+                  style={{
+                    color:"var(--lime)",
+                    fontSize:22,
+                    fontFamily:"Barlow Condensed"
+                  }}
+                >
+                  {l.goals}
+                </strong>
+
+
+                <div
+                  style={{
+                    fontSize:10,
+                    color:"#888",
+                    textTransform:"uppercase"
+                  }}
+                >
+                  Goals
+                </div>
+
+
+              </div>
+
+
+            </div>
+
+
+          ))
+
+          }
+
+
+
+          <button
+            className="wc2-link"
+            onClick={() =>
+              navigateTo('/world-cup/stats')
+            }
+          >
+
+            View full statistics
+
+            <ArrowRight size={13}/>
+
+          </button>
+
+
+        </div>
+
+
+
+        </div>
+
+        {/* CALIBRE MATCH INTELLIGENCE */}
 
         <section
           className="wc-card"
           style={{
-            marginTop:22
+            marginTop:22,
+            padding:28
           }}
         >
 
+
           <div className="wc-card-title">
-            Calibre Match Intelligence
+            CALIBRE MATCH INTELLIGENCE
           </div>
 
 
 
-          <div style={{
-            display:"grid",
-            gridTemplateColumns:"repeat(3,1fr)",
-            gap:18
-          }}>
+          <div
+            style={{
+              display:"grid",
+              gridTemplateColumns:"1fr 1fr 1fr",
+              gap:20
+            }}
+          >
+
 
 
             {/* WHY IT MATTERED */}
 
-            <div style={{
-              padding:18,
-              background:"rgba(255,255,255,.04)",
-              borderRadius:14,
-              border:"1px solid rgba(255,255,255,.08)"
-            }}>
+            <div
+              className="wc-intel-card"
+            >
 
-              <div className="wc-card-title">
-                Why It Mattered
+
+              <div className="wc-intel-header">
+
+                <span>
+                  ✓
+                </span>
+
+                WHY IT MATTERED
+
               </div>
 
 
-              <ul style={{
-                padding:0,
-                margin:0,
-                listStyle:"none"
-              }}>
 
-              {
-                featuredMatch.whyItMattered?.map((line,i)=>(
+              <ul
+                style={{
+                  padding:0,
+                  margin:0,
+                  listStyle:"none"
+                }}
+              >
 
-                  <li
-                    key={i}
-                    style={{
-                      display:"flex",
-                      gap:8,
-                      marginBottom:12,
-                      color:"#d8dde2",
-                      fontSize:13,
-                      lineHeight:1.5
-                    }}
-                  >
 
-                    <span style={{
-                      color:"var(--lime)"
-                    }}>
-                      ✓
-                    </span>
+                {
+                  featuredMatch.whyItMattered?.map((line,i)=>(
 
-                    {line}
 
-                  </li>
+                    <li
+                      key={i}
+                      className="wc-intel-point"
+                    >
 
-                ))
-              }
+
+                      <div className="wc-dot"/>
+
+
+                      {line}
+
+
+                    </li>
+
+
+                  ))
+                }
+
 
               </ul>
 
@@ -813,29 +1384,79 @@ export default function WorldCupOverview() {
 
 
 
+
+
             {/* TACTICAL READ */}
 
-            <div style={{
-              padding:18,
-              background:"rgba(255,255,255,.04)",
-              borderRadius:14,
-              border:"1px solid rgba(255,255,255,.08)"
-            }}>
+
+            <div
+              className="wc-intel-card"
+            >
 
 
-              <div className="wc-card-title">
-                Tactical Read
+              <div className="wc-intel-header">
+
+                <span>
+                  ◎
+                </span>
+
+                TACTICAL READ
+
               </div>
 
 
-              <p style={{
-                margin:0,
-                color:"#d8dde2",
-                lineHeight:1.6,
-                fontSize:13
-              }}>
+              <p
+                style={{
+                  margin:0,
+                  color:"#d8dde2",
+                  fontSize:14,
+                  lineHeight:1.7
+                }}
+              >
+
                 {featuredMatch.analysis}
+
               </p>
+
+
+              <div
+                style={{
+                  marginTop:22,
+                  padding:16,
+                  borderRadius:14,
+                  background:"rgba(255,255,255,.04)"
+                }}
+              >
+
+
+                <div
+                  style={{
+                    fontSize:11,
+                    color:"#888",
+                    textTransform:"uppercase",
+                    letterSpacing:".12em"
+                  }}
+                >
+
+                  Key Insight
+
+                </div>
+
+
+                <div
+                  style={{
+                    marginTop:8,
+                    fontWeight:700,
+                    fontSize:15
+                  }}
+                >
+
+                  The winner controlled the moments that mattered.
+
+                </div>
+
+
+              </div>
 
 
             </div>
@@ -843,39 +1464,156 @@ export default function WorldCupOverview() {
 
 
 
-            {/* CALIBRE RATING */}
-
-            <div style={{
-              padding:18,
-              background:
-              "linear-gradient(145deg,rgba(151,204,13,.18),rgba(255,255,255,.03))",
-              borderRadius:14,
-              border:
-              "1px solid rgba(151,204,13,.25)"
-            }}>
 
 
-              <div className="wc-card-title">
-                Calibre Rating
+
+            {/* CALIBRE SCORE */}
+
+
+
+            <div
+              className="wc-intel-score"
+            >
+
+
+              <div className="wc-intel-header">
+
+                <span>
+                  ★
+                </span>
+
+                CALIBRE SCORE
+
               </div>
 
 
-              <div style={{
-                fontSize:62,
-                fontWeight:900,
-                fontFamily:"Barlow Condensed",
-                color:"var(--lime)"
-              }}>
-                {featuredMatch.calibreRating.score}
+
+              <div
+                style={{
+                  display:"flex",
+                  alignItems:"center",
+                  justifyContent:"center",
+                  height:150
+                }}
+              >
+
+
+                <div
+                  className="wc-score-ring"
+                >
+
+                  <div>
+
+                    {featuredMatch.calibreRating.score}
+
+                  </div>
+
+
+                  <span>
+                    /100
+                  </span>
+
+
+                </div>
+
+
               </div>
 
 
-              <div style={{
-                color:"#aaa",
-                fontSize:12
-              }}>
-                Match quality score
+
+              <div
+                style={{
+                  textAlign:"center",
+                  color:"#aaa",
+                  fontSize:13
+                }}
+              >
+
+                Match quality rating
+
               </div>
+
+
+
+
+              <div
+                style={{
+                  marginTop:22
+                }}
+              >
+
+
+                <div
+                  style={{
+                    display:"flex",
+                    justifyContent:"space-between",
+                    fontSize:12,
+                    color:"#999"
+                  }}
+                >
+
+                  <span>
+                    Drama
+                  </span>
+
+                  <strong>
+                    {featuredMatch.calibreRating.drama}
+                  </strong>
+
+                </div>
+
+
+                <div
+                  className="wc-progress"
+                >
+
+                  <div
+                    style={{
+                      width:`${featuredMatch.calibreRating.drama}%`
+                    }}
+                  />
+
+                </div>
+
+
+
+                <div
+                  style={{
+                    display:"flex",
+                    justifyContent:"space-between",
+                    fontSize:12,
+                    color:"#999",
+                    marginTop:12
+                  }}
+                >
+
+                  <span>
+                    Quality
+                  </span>
+
+                  <strong>
+                    {featuredMatch.calibreRating.quality}
+                  </strong>
+
+                </div>
+
+
+                <div
+                  className="wc-progress"
+                >
+
+                  <div
+                    style={{
+                      width:`${featuredMatch.calibreRating.quality}%`
+                    }}
+                  />
+
+                </div>
+
+
+
+              </div>
+
 
 
             </div>
@@ -883,6 +1621,7 @@ export default function WorldCupOverview() {
 
 
           </div>
+
 
 
 
@@ -890,111 +1629,93 @@ export default function WorldCupOverview() {
 
           {/* MATCH DATA */}
 
-          <div style={{
-            marginTop:28
-          }}>
+
+          <div
+            style={{
+              marginTop:36
+            }}
+          >
 
 
             <div className="wc-card-title">
-              Match Data
+              MATCH DATA
             </div>
 
 
 
-            {
-              allDominanceRows.slice(0,8).map(row=>(
+            <div>
 
-                <div
-                  key={row.label}
-                  style={{
-                    display:"grid",
-                    gridTemplateColumns:
-                    "80px 1fr 100px 1fr 80px",
-                    alignItems:"center",
-                    gap:12,
-                    marginBottom:12
-                  }}
-                >
+              {
+
+                allDominanceRows.slice(0,8).map(row=>(
 
 
-                  <span style={{
-                    textAlign:"right",
-                    fontWeight:800
-                  }}>
-                    {row.home}
-                    {row.suffix}
-                  </span>
+                  <div
+                    key={row.label}
+                    className="wc-data-row"
+                  >
+
+
+                    <div className="wc-data-value">
+                      {row.home}{row.suffix}
+                    </div>
 
 
 
-                  <div style={{
-                    height:6,
-                    background:"rgba(255,255,255,.08)",
-                    borderRadius:4,
-                    overflow:"hidden",
-                    display:"flex",
-                    justifyContent:"flex-end"
-                  }}>
+                    <div className="wc-data-track home">
 
-                    <div style={{
-                      width:
-                      `${(row.home/
-                      ((row.home+row.away)||1))*100}%`,
-                      background:"var(--lime)"
-                    }}/>
+                      <div
+                        style={{
+                          width:`${(row.home/
+                          ((row.home+row.away)||1))*100}%`
+                        }}
+                      />
+
+                    </div>
+
+
+
+                    <div className="wc-data-label">
+
+                      {row.label}
+
+                    </div>
+
+
+
+                    <div className="wc-data-track away">
+
+                      <div
+                        style={{
+                          width:`${(row.away/
+                          ((row.home+row.away)||1))*100}%`
+                        }}
+                      />
+
+                    </div>
+
+
+
+                    <div className="wc-data-value">
+
+                      {row.away}{row.suffix}
+
+                    </div>
+
 
                   </div>
 
 
+                ))
+
+              }
 
 
-                  <span style={{
-                    textAlign:"center",
-                    fontSize:10,
-                    color:"#888",
-                    textTransform:"uppercase"
-                  }}>
-                    {row.label}
-                  </span>
-
-
-
-
-                  <div style={{
-                    height:6,
-                    background:"rgba(255,255,255,.08)",
-                    borderRadius:4,
-                    overflow:"hidden"
-                  }}>
-
-                    <div style={{
-                      width:
-                      `${(row.away/
-                      ((row.home+row.away)||1))*100}%`,
-                      background:"#ff8a3d"
-                    }}/>
-
-                  </div>
-
-
-
-                  <span style={{
-                    fontWeight:800
-                  }}>
-                    {row.away}
-                    {row.suffix}
-                  </span>
-
-
-                </div>
-
-
-              ))
-
-            }
+            </div>
 
 
           </div>
+
 
 
         </section>
@@ -1002,76 +1723,89 @@ export default function WorldCupOverview() {
         {/* LOWER INTELLIGENCE GRID */}
 
         <section
-          className="wc-dashboard-grid"
-          style={{
-            marginTop:22
-          }}
+          className="wc-lower-grid"
         >
-
 
 
           {/* CALIBRE INSIGHT */}
 
-          <div className="wc-card">
+          <div
+            className="wc-card wc-insight-card"
+          >
+
 
             <div className="wc-card-title">
-              Calibre Insight
+              CALIBRE INSIGHT
             </div>
 
 
+            <div
+              style={{
+                fontFamily:"Barlow Condensed",
+                fontSize:32,
+                fontWeight:900,
+                lineHeight:1.1,
+                marginBottom:22
+              }}
+            >
+
+              The story behind the scoreline.
+
+            </div>
+
+
+
             {
-              calibreInsightBullets.length > 0 ?
 
-              <ul style={{
-                padding:0,
-                margin:0,
-                listStyle:"none"
-              }}>
+              calibreInsightBullets.length > 0 &&
 
-              {
-                calibreInsightBullets.map((item,i)=>(
+              <ul
+                style={{
+                  padding:0,
+                  margin:0,
+                  listStyle:"none"
+                }}
+              >
 
-                  <li
-                    key={i}
-                    style={{
-                      display:"flex",
-                      gap:10,
-                      marginBottom:14,
-                      color:"#d8dde2",
-                      fontSize:13,
-                      lineHeight:1.5
-                    }}
-                  >
+                {
 
-                    <span style={{
-                      color:"var(--lime)"
-                    }}>
-                      ●
-                    </span>
+                  calibreInsightBullets.map((item,i)=>(
 
-                    {item}
 
-                  </li>
+                    <li
+                      key={i}
+                      className="wc-analysis-point"
+                    >
 
-                ))
-              }
+                      <div className="wc-number">
+
+                        0{i+1}
+
+                      </div>
+
+
+                      <div>
+
+                        {item}
+
+                      </div>
+
+
+                    </li>
+
+
+                  ))
+
+                }
 
               </ul>
-
-              :
-
-              <div style={{
-                color:"#888",
-                fontSize:13
-              }}>
-                Match intelligence will appear once
-                sufficient data is available.
-              </div>
 
             }
 
 
+
           </div>
+
 
 
 
@@ -1080,102 +1814,189 @@ export default function WorldCupOverview() {
 
           {/* SHOT BREAKDOWN */}
 
-          <div className="wc-card">
+
+
+          <div
+            className="wc-card"
+          >
 
 
             <div className="wc-card-title">
-              Shot Breakdown
+              SHOT BREAKDOWN
             </div>
 
 
 
             {
+
               shotBreakdown &&
 
-              <>
-
-              <div style={{
-                display:"grid",
-                gridTemplateColumns:"1fr auto 1fr",
-                gap:20,
-                alignItems:"center"
-              }}>
+              <div>
 
 
-                <div style={{
-                  textAlign:"right"
-                }}>
+                <div
+                  style={{
+                    display:"grid",
+                    gridTemplateColumns:"1fr auto 1fr",
+                    gap:25,
+                    alignItems:"center"
+                  }}
+                >
 
-                  <strong style={{
-                    fontSize:32,
-                    fontFamily:"Barlow Condensed"
-                  }}>
-                    {shotBreakdown.home.shots}
-                  </strong>
 
-                  <div style={{
-                    color:"#888",
-                    fontSize:11
-                  }}>
-                    Shots
+                  {/* HOME */}
+
+                  <div
+                    style={{
+                      textAlign:"right"
+                    }}
+                  >
+
+                    <div
+                      className="wc-big-number"
+                    >
+
+                      {shotBreakdown.home.shots}
+
+                    </div>
+
+
+                    <div className="wc-small-label">
+                      Shots
+                    </div>
+
+
+
+                    <div
+                      style={{
+                        marginTop:15
+                      }}
+                    >
+
+                      <strong>
+
+                        {xgRow?.home}
+
+                      </strong>
+
+                      <div className="wc-small-label">
+                        xG
+                      </div>
+
+
+                    </div>
+
+
                   </div>
 
 
-                  <strong>
-                    {shotBreakdown.home.xg.toFixed(2)}
-                  </strong>
 
-                  <div style={{
-                    color:"#888",
-                    fontSize:11
-                  }}>
-                    xG
+
+
+                  <div
+                    style={{
+                      fontWeight:900,
+                      color:"var(--lime)"
+                    }}
+                  >
+
+                    VS
+
                   </div>
+
+
+
+
+
+                  {/* AWAY */}
+
+
+                  <div>
+
+                    <div
+                      className="wc-big-number"
+                    >
+
+                      {shotBreakdown.away.shots}
+
+                    </div>
+
+
+                    <div className="wc-small-label">
+                      Shots
+                    </div>
+
+
+
+                    <div
+                      style={{
+                        marginTop:15
+                      }}
+                    >
+
+                      <strong>
+
+                        {xgRow?.away}
+
+                      </strong>
+
+                      <div className="wc-small-label">
+                        xG
+                      </div>
+
+
+                    </div>
+
+
+                  </div>
+
 
                 </div>
 
 
 
-
-                <div style={{
-                  color:"var(--lime)",
-                  fontWeight:900
-                }}>
-                  VS
-                </div>
+                <div
+                  style={{
+                    marginTop:30
+                  }}
+                >
 
 
+                  <div className="wc-shot-bar">
 
-                <div>
+                    <div
+                      style={{
+                        width:
+                        `${(shotBreakdown.home.onTarget /
+                        ((shotBreakdown.home.shots)||1))*100}%`
+                      }}
+                    />
 
-                  <strong style={{
-                    fontSize:32,
-                    fontFamily:"Barlow Condensed"
-                  }}>
-                    {shotBreakdown.away.shots}
-                  </strong>
-
-
-                  <div style={{
-                    color:"#888",
-                    fontSize:11
-                  }}>
-                    Shots
                   </div>
 
 
 
-                  <strong>
-                    {shotBreakdown.away.xg.toFixed(2)}
-                  </strong>
+                  <div
+                    style={{
+                      display:"flex",
+                      justifyContent:"space-between",
+                      fontSize:12,
+                      color:"#888",
+                      marginTop:8
+                    }}
+                  >
+
+                    <span>
+                      On Target {shotBreakdown.home.onTarget}
+                    </span>
 
 
-                  <div style={{
-                    color:"#888",
-                    fontSize:11
-                  }}>
-                    xG
+                    <span>
+                      On Target {shotBreakdown.away.onTarget}
+                    </span>
+
                   </div>
+
 
 
                 </div>
@@ -1183,13 +2004,11 @@ export default function WorldCupOverview() {
 
               </div>
 
-              </>
 
             }
 
 
           </div>
-
 
 
 
@@ -1199,62 +2018,94 @@ export default function WorldCupOverview() {
 
           {/* OTHER MATCHES */}
 
-          <div className="wc-card">
+
+
+          <div
+            className="wc-card"
+          >
 
 
             <div className="wc-card-title">
-              Other Featured Matches
+              OTHER FEATURED MATCHES
             </div>
 
 
 
             {
+
               otherFeaturedMatches.map((m,i)=>(
+
 
                 <div
                   key={i}
-                  style={{
-                    padding:"14px 0",
-                    borderBottom:
-                    "1px solid rgba(255,255,255,.08)"
-                  }}
+                  className="wc-match-item"
                 >
 
-                  <div style={{
-                    color:"var(--lime)",
-                    fontSize:10,
-                    textTransform:"uppercase"
-                  }}>
+
+                  <div
+                    style={{
+                      fontSize:10,
+                      color:"var(--lime)",
+                      textTransform:"uppercase",
+                      letterSpacing:".1em"
+                    }}
+                  >
+
                     {m.round}
+
                   </div>
 
 
-                  <div style={{
-                    display:"flex",
-                    justifyContent:"space-between",
-                    marginTop:8,
-                    fontSize:13
-                  }}>
+
+                  <div
+                    style={{
+                      display:"flex",
+                      justifyContent:"space-between",
+                      alignItems:"center",
+                      marginTop:10
+                    }}
+                  >
+
 
                     <span>
+
                       {TEAM_FLAGS[m.home]}
+
                       {" "}
+
                       {m.home}
+
                     </span>
 
 
-                    <strong>
+
+                    <strong
+                      style={{
+                        fontFamily:"Barlow Condensed",
+                        fontSize:22
+                      }}
+                    >
+
                       {m.homeScore}
-                      {" - "}
+
+                      -
+
                       {m.awayScore}
+
                     </strong>
 
 
+
                     <span>
+
                       {m.away}
+
                       {" "}
+
                       {TEAM_FLAGS[m.away]}
+
                     </span>
+
 
 
                   </div>
@@ -1264,10 +2115,13 @@ export default function WorldCupOverview() {
 
 
               ))
+
             }
 
 
+
           </div>
+
 
 
         </section>
@@ -1284,37 +2138,69 @@ export default function WorldCupOverview() {
           factOfDay &&
 
           <section
-            className="wc-card"
+            className="wc-card wc-fade-card"
             style={{
-              marginTop:22
+              marginTop:22,
+              position:"relative",
+              overflow:"hidden"
             }}
           >
+
+            <div
+              style={{
+                position:"absolute",
+                top:-40,
+                right:-40,
+                fontSize:140,
+                opacity:.04
+              }}
+            >
+              🏆
+            </div>
+
 
             <div className="wc-card-title">
               Did You Know
             </div>
 
 
-            <div style={{
-              borderLeft:
-              "3px solid var(--lime)",
-              paddingLeft:20
-            }}>
+            <div
+              style={{
+                display:"grid",
+                gridTemplateColumns:"80px 1fr",
+                gap:20,
+                alignItems:"center"
+              }}
+            >
 
-
-              <div style={{
-                fontSize:32,
-                marginBottom:10
-              }}>
+              <div
+                style={{
+                  width:70,
+                  height:70,
+                  borderRadius:"50%",
+                  display:"flex",
+                  alignItems:"center",
+                  justifyContent:"center",
+                  fontSize:36,
+                  background:
+                  "rgba(151,204,13,.12)",
+                  border:
+                  "1px solid rgba(151,204,13,.25)"
+                }}
+              >
                 {factOfDay.emoji}
               </div>
 
 
-              <p style={{
-                margin:0,
-                color:"#d8dde2",
-                lineHeight:1.6
-              }}>
+              <p
+                style={{
+                  margin:0,
+                  color:"#d8dde2",
+                  fontSize:17,
+                  lineHeight:1.7,
+                  maxWidth:900
+                }}
+              >
                 {factOfDay.fact}
               </p>
 
@@ -1324,11 +2210,14 @@ export default function WorldCupOverview() {
 
             <button
               className="wc2-link"
+              style={{
+                marginTop:24
+              }}
               onClick={() =>
                 navigateTo('/world-cup/history')
               }
             >
-              More Tournament History
+              Explore World Cup History
               <ArrowRight size={13}/>
             </button>
 
@@ -1339,70 +2228,349 @@ export default function WorldCupOverview() {
 
 
 
-
-
-
-
-
         {/* PREMIUM CTA */}
 
+
         <section
-          className="wc-card"
+          className="wc-founder-card"
           style={{
-            marginTop:22,
-            display:"flex",
-            alignItems:"center",
-            justifyContent:"space-between",
-            gap:20
+            marginTop:22
           }}
         >
 
+          <div
+            className="wc-founder-glow"
+          />
 
-          <div>
 
-            <div className="wc-card-title">
-              Calibre Founder Pass
+          <div
+            style={{
+              position:"relative",
+              zIndex:2,
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"space-between",
+              gap:30
+            }}
+          >
+
+
+            <div>
+
+
+              <div
+                className="wc-card-title"
+              >
+                Calibre Founder Pass
+              </div>
+
+
+              <h2
+                style={{
+                  margin:"0 0 10px",
+                  fontFamily:"Barlow Condensed",
+                  fontSize:36,
+                  fontWeight:900
+                }}
+              >
+                Unlock the complete
+                <br/>
+                World Cup Intelligence Layer
+              </h2>
+
+
+              <p
+                style={{
+                  margin:0,
+                  color:"#b0b7bf",
+                  maxWidth:600,
+                  lineHeight:1.6
+                }}
+              >
+                Get deeper player analysis, tactical breakdowns,
+                scouting insights and the complete Calibre football
+                intelligence experience.
+              </p>
+
+
             </div>
 
 
-            <h3 style={{
-              margin:0,
-              fontFamily:"Barlow Condensed",
-              fontSize:28
-            }}>
-              Unlock the complete World Cup intelligence layer
-            </h3>
 
+            <button
+              className="wc-founder-button"
+              onClick={() =>
+                navigateTo('/pricing')
+              }
+            >
 
-            <p style={{
-              color:"#999"
-            }}>
-              Player breakdowns, scouting tools and deeper
-              tournament analytics.
-            </p>
+              Get Founder Pass
+
+              <ArrowRight size={16}/>
+
+            </button>
 
 
           </div>
 
 
-
-          <button
-            className="wc2-explore-btn"
-            onClick={() =>
-              navigateTo('/pricing')
-            }
-          >
-
-            Get Founder Pass
-            <ArrowRight size={14}/>
-
-          </button>
-
-
         </section>
 
 
+
+
+
       </div>
+
+
+
+
+
+
+      <style>{`
+
+        .wc-fade-card {
+          animation:
+          wcFade .6s ease forwards;
+        }
+
+
+        .wc-founder-card {
+
+          position:relative;
+
+          padding:36px;
+
+          border-radius:24px;
+
+          overflow:hidden;
+
+          background:
+          linear-gradient(
+            135deg,
+            rgba(151,204,13,.18),
+            rgba(255,255,255,.04)
+          );
+
+          border:
+          1px solid rgba(151,204,13,.25);
+
+        }
+
+
+
+        .wc-founder-glow {
+
+          position:absolute;
+
+          width:280px;
+
+          height:280px;
+
+          right:-100px;
+
+          top:-100px;
+
+          border-radius:50%;
+
+          background:
+          rgba(151,204,13,.25);
+
+          filter:
+          blur(80px);
+
+          animation:
+          wcPulse 4s infinite alternate;
+
+        }
+
+
+
+        .wc-founder-button {
+
+          display:flex;
+
+          align-items:center;
+
+          gap:10px;
+
+          padding:
+          16px 28px;
+
+          border-radius:999px;
+
+          border:none;
+
+          background:
+          var(--lime);
+
+          color:#050708;
+
+          font-weight:900;
+
+          font-size:15px;
+
+          cursor:pointer;
+
+          transition:
+          transform .2s ease,
+          box-shadow .2s ease;
+
+        }
+
+
+
+        .wc-founder-button:hover {
+
+          transform:
+          translateY(-3px);
+
+          box-shadow:
+          0 15px 35px
+          rgba(151,204,13,.25);
+
+        }
+
+
+
+
+        .wc-card {
+
+          transition:
+          transform .25s ease,
+          border-color .25s ease;
+
+        }
+
+
+
+        .wc-card:hover {
+
+          transform:
+          translateY(-3px);
+
+          border-color:
+          rgba(151,204,13,.25);
+
+        }
+
+
+
+        @keyframes wcFade {
+
+          from {
+
+            opacity:0;
+
+            transform:
+            translateY(20px);
+
+          }
+
+
+          to {
+
+            opacity:1;
+
+            transform:
+            translateY(0);
+
+          }
+
+        }
+
+
+
+        @keyframes wcPulse {
+
+          from {
+
+            transform:
+            scale(1);
+
+          }
+
+
+          to {
+
+            transform:
+            scale(1.25);
+
+          }
+
+        }
+
+
+
+
+        @media(max-width:900px){
+
+
+          .wc-founder-card > div {
+
+            flex-direction:column;
+
+            align-items:flex-start!important;
+
+          }
+
+
+
+          .wc-founder-button {
+
+            width:100%;
+
+            justify-content:center;
+
+          }
+
+
+
+          .wc-card {
+
+            padding:18px;
+
+          }
+
+
+
+        }
+
+
+
+
+        @media(max-width:600px){
+
+
+          .wc-overview-title {
+
+            font-size:42px!important;
+
+          }
+
+
+
+          .wc-overview-shell {
+
+            padding:14px!important;
+
+          }
+
+
+
+          .wc-founder-card h2 {
+
+            font-size:28px!important;
+
+          }
+
+
+
+        }
+
+
+      `}</style>
+
 
     </div>
   );

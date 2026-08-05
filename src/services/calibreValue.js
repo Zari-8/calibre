@@ -138,7 +138,12 @@ function positionMultiplier(pos) { return POSITION_MULT[positionGroup(pos)] ?? 1
 // leagues (Brazil, Eredivisie) pinned above the tail. Genuine long tail decays
 // ~0.05 per rung, floored at 0.40. NOTE: this multiplier captures BOTH "how rich
 // is this market" and "how proven is this level" — league-JUMP risk is a separate
-// term in the fit layer so they never double-count.
+// term in the fit layer so they never double-count. Same reasoning extends to the
+// BUYER side: this is about the player's OWN current league (the seller's proof
+// level), not who's buying him. A separate, distinct factor for "this specific
+// deal costs more because a richer league is doing the buying" lives in
+// calibreFitValue.js (buyerLeagueCostMultiplier) — added later, kept in the fit
+// layer for the same double-counting reason as league-jump risk.
 const LEAGUE_MULT = {
   'premier league': 1.00,
   'bundesliga': 0.85,

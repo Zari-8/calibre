@@ -38,11 +38,48 @@ export function fitMultiplier(fitScore) {
   return clamp(1 + (f - FIT_PIVOT) * FIT_SLOPE, FIT_MULT_MIN, FIT_MULT_MAX);
 }
 
+// ── BUYER LEAGUE COST FACTOR ─────────────────────────────────────────────
+// Real transfer economics, separate from fit. calibreValue.js's LEAGUE_MULT
+// already prices "how rich/proven is the league the PLAYER is IN right now"
+// — but nothing anywhere priced "how rich is the league DOING the buying,"
+// which is a different, real effect: the same player, at the same ability,
+// costs more when a Premier League club is the one negotiating, because
+// PL clubs have more money and the market (agents, selling clubs, rival
+// bidders) prices that in — not because the player becomes more valuable.
+// This belongs in the fit layer, not calibreValue.js, because it's a
+// buyer-specific cost, exactly like fit itself (same "club changes the
+// number" principle the whole Piece 2 seam exists for).
+//
+// Grounded in published research, not invented: a cross-league study found
+// Premier League clubs carry roughly a 40% valuation premium over
+// comparable continental fees, largely attributed to the league's outsized
+// TV revenue; separately, CIES Football Observatory data has found English
+// clubs account for ~51% of total transfer spend across Europe's big five
+// leagues. Applied conservatively here — NOT the full ~40% — because this
+// is one aggregated academic estimate, not the multi-anchor, cross-checked
+// discipline the rest of this engine holds itself to before shipping a
+// number at full strength (see calibreValue.js's AGE_ANCHORS comment on the
+// Mbappé open item for why a single data point stays held back). Revisit
+// upward with a real anchor — a closed window where the same player profile
+// drew a PL bid vs a continental bid — rather than trusting one paper's
+// aggregate outright.
+const BUYER_LEAGUE_COST_MULT = {
+  'premier league': 1.15,
+};
+export function buyerLeagueCostMultiplier(leagueRaw) {
+  return BUYER_LEAGUE_COST_MULT[String(leagueRaw || '').trim().toLowerCase()] ?? 1.0;
+}
+
 // Adjust a base valuation for one specific buying club.
-//   base    = the object returned by calibreValue(player)
-//   fitScore= buildSystemFitReport(player, team).score   (0–100)
-export function fitAdjustedValue(base, fitScore) {
-  const mult = fitMultiplier(fitScore);
+//   base       = the object returned by calibreValue(player)
+//   fitScore   = buildSystemFitReport(player, team).score   (0–100)
+//   buyerLeague= the BUYING club's league (e.g. team.league from systemFitData.js)
+//                — distinct from the player's own current league, which
+//                calibreValue.js's LEAGUE_MULT already accounts for.
+export function fitAdjustedValue(base, fitScore, buyerLeague) {
+  const fMult = fitMultiplier(fitScore);
+  const costMult = buyerLeagueCostMultiplier(buyerLeague);
+  const mult = fMult * costMult;
   const value = round1(base.estimatedValue * mult);
   const fitFairRange = {
     low: round1(base.fairRange.low * mult),
@@ -54,8 +91,11 @@ export function fitAdjustedValue(base, fitScore) {
   const clubMaxSensibleBid = round1(value * (1.20 + sc * 0.40));
   return {
     fitScore: Number.isFinite(Number(fitScore)) ? Math.round(Number(fitScore)) : null,
-    fitMultiplier: round2(mult),
-    fitPremiumPct: Math.round((mult - 1) * 100), // +30% means "worth 30% more to this club"
+    fitMultiplier: round2(fMult),
+    fitPremiumPct: Math.round((fMult - 1) * 100), // +30% means "worth 30% more to this club" — fit only
+    buyerLeagueCostMultiplier: round2(costMult),
+    buyerLeagueCostPct: Math.round((costMult - 1) * 100), // +15% means "costs 15% more because this buyer is in a richer league"
+    combinedMultiplier: round2(mult), // fMult × costMult — the actual multiplier applied to base.estimatedValue below
     fitAdjustedValue: value,
     fitFairRange,
     clubMaxSensibleBid,
@@ -111,24 +151,25 @@ if (isMain) {
   const player = { name: 'Junior Kroupi', rating: 81, age: 19, position: 'ST', league: 'Ligue 1', club: 'LOSC Lille', minutes: 1800, hasContractData: false };
   const base = calibreValue(player);
 
-  // representative fit scores for three buying-club archetypes (Piece 3 feeds the
-  // REAL buildSystemFitReport().score here):
+  // representative fit scores for buying-club archetypes (Piece 3 feeds the
+  // REAL buildSystemFitReport().score here). Two Premier League entries
+  // included to show the buyer-league cost factor stacking with fit.
   const clubs = [
-    ['Bournemouth (high-press, needs a 9)', 88],
-    ['Neutral mid-table side', 72],
-    ['Deep-block, slow build-up', 54],
+    ['Bournemouth (high-press, needs a 9, PL)', 88, 'Premier League'],
+    ['Neutral mid-table side (Ligue 1)', 72, 'Ligue 1'],
+    ['Deep-block, slow build-up (PL)', 54, 'Premier League'],
   ];
 
   const pad = (s, n) => String(s).padEnd(n);
   console.log(`\nFIT-ADJUSTED VALUE — ${player.name} (base €${base.estimatedValue}m, scarcity ${base.scarcity})`);
-  console.log('─'.repeat(92));
-  console.log(pad('Buying club', 38) + pad('Fit', 6) + pad('×', 7) + pad('Fit value', 12) + pad('Club ceiling', 14) + 'verdict @ €70m');
-  console.log('─'.repeat(92));
-  for (const [name, fitScore] of clubs) {
-    const fit = fitAdjustedValue(base, fitScore);
+  console.log('─'.repeat(104));
+  console.log(pad('Buying club', 42) + pad('Fit', 6) + pad('Fit×', 7) + pad('PL×', 6) + pad('Fit value', 12) + pad('Club ceiling', 14) + 'verdict @ €70m');
+  console.log('─'.repeat(104));
+  for (const [name, fitScore, buyerLeague] of clubs) {
+    const fit = fitAdjustedValue(base, fitScore, buyerLeague);
     const verdict = fitVerdict(base, fit, 70);
     console.log(
-      pad(name, 38) + pad(`${fit.fitScore}`, 6) + pad(`${fit.fitMultiplier}`, 7) +
+      pad(name, 42) + pad(`${fit.fitScore}`, 6) + pad(`${fit.fitMultiplier}`, 7) + pad(`${fit.buyerLeagueCostMultiplier}`, 6) +
       pad(`€${fit.fitAdjustedValue}m`, 12) + pad(`€${fit.clubMaxSensibleBid}m`, 14) + verdict.label
     );
   }

@@ -249,11 +249,13 @@ export default function WorldCupOverview() {
         .wcfeat-formations--sm .wcfeat-pitch { height:64px; }
         .wcfeat-formations--sm .wcfeat-pitch-dot { width:5px; height:5px; }
         .wcfeat-formations--sm .wcfeat-formation-code { font-size:10px; margin-top:4px; }
-        .wcfeat-motm--sm { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:9px; padding:9px 11px; margin-bottom:14px; }
-        .wcfeat-motm--sm svg { color:var(--l); flex:none; }
+        .wcfeat-motm--sm { display:flex; align-items:center; gap:10px; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:9px; padding:9px 11px; margin-bottom:14px; }
+        .wcfeat-motm-photo { width:34px; height:34px; border-radius:50%; object-fit:cover; object-position:top; flex:none; background:#1a1a1a; }
         .wcfeat-motm--sm > div { flex:1; min-width:0; }
         .wcfeat-motm--sm strong { display:block; color:#fff; font:800 12px "Barlow",sans-serif; }
         .wcfeat-motm--sm span { color:var(--muted); font:600 9px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.04em; }
+        .wcfeat-momentum--sm { margin-bottom:14px; }
+        .wcfeat-momentum--sm .wcfeat-momentum-frame iframe { display:block; }
         .wcfeat-fullreport-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:6px; background:none; border:1px solid rgba(151,204,13,.35); color:var(--l); font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:9px; border-radius:8px; cursor:pointer; }
         .wcfeat-insight-list { margin:0; padding:0; list-style:none; display:grid; gap:10px; }
         .wcfeat-insight-list li { display:flex; gap:8px; color:#d8dde2; font:500 12.5px/1.45 "Barlow",sans-serif; }
@@ -491,6 +493,23 @@ export default function WorldCupOverview() {
             </div>
           )}
 
+          {featuredMatch.sofascoreMatchId && (
+            <div className="wcfeat-momentum wcfeat-momentum--sm">
+              <span className="wcfeat-minirow-label" style={{ textAlign: 'left', marginBottom: 4, display: 'block' }}>Match Momentum</span>
+              <div className="wcfeat-momentum-frame">
+                <iframe
+                  title="Match Momentum"
+                  src={`https://widgets.sofascore.com/embed/attackMomentum?id=${featuredMatch.sofascoreMatchId}&widgetTheme=dark`}
+                  width="100%"
+                  height="130"
+                  frameBorder="0"
+                  scrolling="no"
+                  loading="lazy"
+                />
+              </div>
+            </div>
+          )}
+
           {(homeFormation || awayFormation) && (
             <div className="wcfeat-formations wcfeat-formations--sm">
               <div className="wcfeat-formation-col">
@@ -506,10 +525,10 @@ export default function WorldCupOverview() {
 
           {featuredMatch.manOfTheMatch && (
             <div className="wcfeat-motm wcfeat-motm--sm">
-              <Trophy size={15} />
+              <ApiPlayerImage className="wcfeat-motm-photo" name={featuredMatch.manOfTheMatch.name} fallbackSrc="/assets/players/neutral-player.svg" alt={featuredMatch.manOfTheMatch.name} />
               <div>
                 <strong>{featuredMatch.manOfTheMatch.name}</strong>
-                <span>Man of the Match</span>
+                <span>{featuredMatch.manOfTheMatch.tag}</span>
               </div>
               <div className="wcfeat-motm-rating">{featuredMatch.manOfTheMatch.rating}</div>
             </div>
@@ -569,23 +588,9 @@ export default function WorldCupOverview() {
         </div>
 
         {featuredMatch.sofascoreMatchId && (
-          <div className="wcfeat-momentum">
-            <span className="wcfeat-label">Match Momentum</span>
-            <div className="wcfeat-momentum-frame">
-              <iframe
-                title="Match Momentum"
-                src={`https://widgets.sofascore.com/embed/attackMomentum?id=${featuredMatch.sofascoreMatchId}&widgetTheme=dark`}
-                width="100%"
-                height="230"
-                frameBorder="0"
-                scrolling="no"
-                loading="lazy"
-              />
-            </div>
-            <p className="wcfeat-data-note">
-              Live widget via <a href={featuredMatch.sofascoreMatchUrl} target="_blank" rel="noreferrer">Sofascore</a> — this is their real per-minute data, not something computed in this app.
-            </p>
-          </div>
+          <p className="wcfeat-data-note" style={{ marginBottom: 20 }}>
+            Match Momentum (Sofascore's real per-minute data) is shown in the Featured Match card above — <a href={featuredMatch.sofascoreMatchUrl} target="_blank" rel="noreferrer">open it directly on Sofascore</a>.
+          </p>
         )}
 
         {featuredMatch.decisiveShot && (

@@ -125,8 +125,29 @@ export const featuredMatch = {
   // went to Emiliano Martínez (9.6) for his 11 saves — Rodri's 8.4 here is
   // real too, but the reason he's featured is the separate, tournament-wide
   // Golden Ball award (best player across the whole World Cup), not a claim
-  // that he graded highest in this single match.
-  manOfTheMatch: { name: 'Rodri', team: 'Spain', rating: 8.4, tag: 'Golden Ball winner' },
+  // that he graded highest in this single match. Both are shown — see
+  // playerOfTheMatch below for Martínez's real line.
+  manOfTheMatch: {
+    name: 'Rodri', team: 'Spain', rating: 8.4, tag: 'Golden Ball winner',
+    // Curated from Sofascore's per-player stat popup for this match (Pass/
+    // Def/Run tabs) — same sourcing method as everything else in this file.
+    stats: {
+      passAccuracy: 95, passesAccurate: 101, passesAttempted: 106,
+      keyPasses: 2, xa: 0.11,
+      tacklesWon: 4, tackles: 3, recoveries: 6, groundDuelsWon: 10, groundDuelsAttempted: 8,
+      distanceKm: 11.7, topSpeedKmh: 29.3, sprints: 7,
+    },
+  },
+  // Sofascore's real "Player of the Match" for this fixture (distinct from
+  // Rodri's tournament-wide Golden Ball above) — Emiliano Martínez's line
+  // from the goalkeeper stats tab of the same match center.
+  playerOfTheMatch: {
+    name: 'Emiliano Martínez', team: 'Argentina', rating: 9.6,
+    saves: 11, goalsPrevented: 2.03, savesInsideBox: 5, highClaims: 1, punches: 0,
+  },
+  referee: 'Slavko Vinčić (Slovenia)',
+  managers: { home: 'Luis de la Fuente', away: 'Lionel Scaloni' },
+  teamRatings: { home: 7.08, away: 6.71 },
   whyItMattered: [
     "Spain win their second World Cup title, their first since 2010.",
     'Argentina, the defending 2022 champions, fall short of retaining the trophy.',

@@ -11,7 +11,6 @@ import WorldCupOverview from './pages/WorldCupOverview.jsx';
 import WorldCupMatches from './pages/WorldCupMatches.jsx';
 import WorldCupMatchroom from './pages/WorldCupMatchroom.jsx';
 import WorldCupTeams from './pages/WorldCupTeams.jsx';
-import WorldCupGroups from './pages/WorldCupGroups.jsx';
 import WorldCupStats from './pages/WorldCupStats.jsx';
 import WorldCupHistory from './pages/WorldCupHistory.jsx';
 import Transfers from './pages/Transfers.jsx';
@@ -30,7 +29,10 @@ const routes = {
   '/world-cup/matches':   WorldCupMatches,
   '/world-cup/matchroom': WorldCupMatchroom,
   '/world-cup/teams':             WorldCupTeams,
-  '/world-cup/groups':            WorldCupGroups,
+  // Groups was merged into Teams (group standings now live there) — this
+  // route is kept only so old links/bookmarks to /world-cup/groups still
+  // land on a real page instead of 404ing.
+  '/world-cup/groups':            WorldCupTeams,
   '/world-cup/stats':             WorldCupStats,
   '/world-cup/history':           WorldCupHistory,
   '/transfers':    Transfers,

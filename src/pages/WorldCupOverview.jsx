@@ -254,6 +254,13 @@ export default function WorldCupOverview() {
         .wcfeat-motm--sm > div { flex:1; min-width:0; }
         .wcfeat-motm--sm strong { display:block; color:#fff; font:800 12px "Barlow",sans-serif; }
         .wcfeat-motm--sm span { color:var(--muted); font:600 9px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.04em; }
+        .wcfeat-motm-chips { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin:0 0 14px; }
+        .wcfeat-motm-chips div { text-align:center; }
+        .wcfeat-motm-chips strong { display:block; color:var(--l); font:800 13px "Barlow Condensed",sans-serif; }
+        .wcfeat-motm-chips span { display:block; color:var(--muted); font:600 8px "Barlow",sans-serif; letter-spacing:.04em; text-transform:uppercase; margin-top:1px; }
+        .wcfeat-perf-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px; }
+        .wcfeat-perf-card { background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:10px; padding:14px; }
+        @media (max-width: 720px) { .wcfeat-perf-grid { grid-template-columns:1fr; } }
         .wcfeat-momentum--sm { margin-bottom:14px; }
         .wcfeat-momentum--sm .wcfeat-momentum-frame iframe { display:block; }
         .wcfeat-fullreport-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:6px; background:none; border:1px solid rgba(151,204,13,.35); color:var(--l); font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:9px; border-radius:8px; cursor:pointer; }
@@ -534,6 +541,15 @@ export default function WorldCupOverview() {
             </div>
           )}
 
+          {featuredMatch.manOfTheMatch?.stats && (
+            <div className="wcfeat-motm-chips">
+              <div><strong>{featuredMatch.manOfTheMatch.stats.passAccuracy}%</strong><span>Pass Acc</span></div>
+              <div><strong>{featuredMatch.manOfTheMatch.stats.keyPasses}</strong><span>Key Passes</span></div>
+              <div><strong>{featuredMatch.manOfTheMatch.stats.tacklesWon}</strong><span>Tackles Won</span></div>
+              <div><strong>{featuredMatch.manOfTheMatch.stats.recoveries}</strong><span>Recoveries</span></div>
+            </div>
+          )}
+
           <button type="button" className="wcfeat-fullreport-btn" onClick={() => document.getElementById('full-match-report')?.scrollIntoView({ behavior: 'smooth' })}>Full Match Report <ArrowRight size={12} /></button>
         </div>
 
@@ -574,6 +590,61 @@ export default function WorldCupOverview() {
           <span className="wcfeat-label">Tactical Read</span>
           <p>{featuredMatch.analysis}</p>
         </div>
+
+        {(featuredMatch.manOfTheMatch || featuredMatch.playerOfTheMatch) && (
+          <div className="wcfeat-performances">
+            <span className="wcfeat-label">Player Performances</span>
+            <div className="wcfeat-perf-grid">
+              {featuredMatch.manOfTheMatch && (
+                <div className="wcfeat-perf-card">
+                  <div className="wcfeat-motm-head">
+                    <ApiPlayerImage className="wcfeat-motm-photo" name={featuredMatch.manOfTheMatch.name} fallbackSrc="/assets/players/neutral-player.svg" alt={featuredMatch.manOfTheMatch.name} />
+                    <div>
+                      <strong>{featuredMatch.manOfTheMatch.name}</strong>
+                      <span>{featuredMatch.manOfTheMatch.team} · {featuredMatch.manOfTheMatch.tag}</span>
+                    </div>
+                    <div className="wcfeat-motm-rating">{featuredMatch.manOfTheMatch.rating}</div>
+                  </div>
+                  {featuredMatch.manOfTheMatch.stats && (
+                    <div className="wcfeat-motm-stats">
+                      <div><strong>{featuredMatch.manOfTheMatch.stats.passAccuracy}%</strong><span>Pass Acc ({featuredMatch.manOfTheMatch.stats.passesAccurate}/{featuredMatch.manOfTheMatch.stats.passesAttempted})</span></div>
+                      <div><strong>{featuredMatch.manOfTheMatch.stats.keyPasses}</strong><span>Key Passes</span></div>
+                      <div><strong>{featuredMatch.manOfTheMatch.stats.tacklesWon}</strong><span>Tackles Won</span></div>
+                      <div><strong>{featuredMatch.manOfTheMatch.stats.recoveries}</strong><span>Recoveries</span></div>
+                      <div><strong>{featuredMatch.manOfTheMatch.stats.distanceKm}km</strong><span>Distance</span></div>
+                      <div><strong>{featuredMatch.manOfTheMatch.stats.sprints}</strong><span>Sprints</span></div>
+                    </div>
+                  )}
+                </div>
+              )}
+              {featuredMatch.playerOfTheMatch && (
+                <div className="wcfeat-perf-card">
+                  <div className="wcfeat-motm-head">
+                    <ApiPlayerImage className="wcfeat-motm-photo" name={featuredMatch.playerOfTheMatch.name} fallbackSrc="/assets/players/neutral-player.svg" alt={featuredMatch.playerOfTheMatch.name} />
+                    <div>
+                      <strong>{featuredMatch.playerOfTheMatch.name}</strong>
+                      <span>{featuredMatch.playerOfTheMatch.team} · Sofascore Player of the Match</span>
+                    </div>
+                    <div className="wcfeat-motm-rating">{featuredMatch.playerOfTheMatch.rating}</div>
+                  </div>
+                  <div className="wcfeat-motm-stats">
+                    <div><strong>{featuredMatch.playerOfTheMatch.saves}</strong><span>Saves</span></div>
+                    <div><strong>{featuredMatch.playerOfTheMatch.savesInsideBox}</strong><span>Inside Box</span></div>
+                    <div><strong>{featuredMatch.playerOfTheMatch.goalsPrevented}</strong><span>Goals Prevented</span></div>
+                    <div><strong>{featuredMatch.playerOfTheMatch.highClaims}</strong><span>High Claims</span></div>
+                  </div>
+                </div>
+              )}
+            </div>
+            {(featuredMatch.referee || featuredMatch.managers || featuredMatch.teamRatings) && (
+              <p className="wcfeat-data-note">
+                {featuredMatch.referee && <>Referee: {featuredMatch.referee}. </>}
+                {featuredMatch.managers && <>{featuredMatch.home}: {featuredMatch.managers.home} · {featuredMatch.away}: {featuredMatch.managers.away}. </>}
+                {featuredMatch.teamRatings && <>Avg. match rating — {featuredMatch.home} {featuredMatch.teamRatings.home} · {featuredMatch.away} {featuredMatch.teamRatings.away}.</>}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="wcfeat-data">
           <span className="wcfeat-label">Match Data</span>

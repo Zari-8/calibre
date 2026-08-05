@@ -162,6 +162,11 @@ export default function WorldCupOverview() {
       { label: 'GK Saves', home: s.goalkeeperSaves.home, away: s.goalkeeperSaves.away },
     ];
   }, []);
+  // The compact top-row card only has room for the headline numbers — same
+  // real source, just a shorter cut. The rest still render in full below in
+  // Full Match Report, nothing is dropped.
+  const compactRows = useMemo(() => allDominanceRows.filter(r => ['Possession', 'Total Shots', 'Big Chances', 'Pass Accuracy'].includes(r.label)), [allDominanceRows]);
+  const xgRow = useMemo(() => allDominanceRows.find(r => r.label === 'xG') || null, [allDominanceRows]);
 
   // Shot Breakdown — from the same curated Sofascore numbers. Deliberately
   // not a spatial "shot map": Sofascore's per-shot pitch coordinates can't be
@@ -219,9 +224,37 @@ export default function WorldCupOverview() {
         .wc2-cd-cell { background:rgba(255,255,255,.04); padding:12px 14px; text-align:center; }
         .wc2-cd-cell strong { display:block; font:800 30px "Barlow Condensed",sans-serif; color:var(--l); }
         .wc2-cd-cell span { display:block; margin-top:3px; color:var(--muted); font:700 9px "Barlow",sans-serif; letter-spacing:.1em; text-transform:uppercase; }
-        .wc2-row2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start; }
         .wc2-row3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; align-items:start; margin-bottom:16px; }
-        @media(max-width:820px){ .wc2-row2 { grid-template-columns:1fr; } .wc2-row3 { grid-template-columns:1fr; } }
+        .wc2-toprow { display:grid; grid-template-columns:1fr 1.3fr 1fr; gap:16px; align-items:start; margin-bottom:16px; }
+        @media(max-width:980px){ .wc2-toprow { grid-template-columns:1fr; } }
+        @media(max-width:820px){ .wc2-row3 { grid-template-columns:1fr; } }
+        .wcfeat--compact { padding:18px; margin-bottom:0; }
+        .wcfeat-meta--top { text-align:left; margin-bottom:12px; text-transform:none; }
+        .wcfeat-hero-moment--sm { padding:7px 10px; margin-bottom:12px; gap:7px; }
+        .wcfeat-hero-moment--sm .wcfeat-hm-text { font-size:11px; }
+        .wcfeat-score--sm { gap:14px; margin-bottom:4px; }
+        .wcfeat-score--sm .wcfeat-flag { font-size:30px; }
+        .wcfeat-score--sm .wcfeat-team strong { font-size:12px; }
+        .wcfeat-scoreline--sm b { font-size:32px; }
+        .wcfeat-scoreline--sm span { font-size:20px; }
+        .wcfeat-xg-row { display:grid; grid-template-columns:26px 1fr 34px 1fr 26px; align-items:center; gap:6px; margin:14px 0 10px; }
+        .wcfeat-xg-row > span:first-child, .wcfeat-xg-row > span:last-child { color:#fff; font:800 12px "Barlow Condensed",sans-serif; text-align:center; }
+        .wcfeat-xg-label { text-align:center; color:var(--l); font:800 9px "Barlow",sans-serif; letter-spacing:.04em; text-transform:uppercase; }
+        .wcfeat-minigrid { display:grid; gap:6px; margin-bottom:14px; }
+        .wcfeat-minirow { display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center; }
+        .wcfeat-minirow > span:first-child { text-align:right; color:#fff; font:800 12px "Barlow Condensed",sans-serif; }
+        .wcfeat-minirow > span:last-child { text-align:left; color:#fff; font:800 12px "Barlow Condensed",sans-serif; }
+        .wcfeat-minirow-label { text-align:center; color:var(--muted); font:700 8px "Barlow",sans-serif; letter-spacing:.03em; text-transform:uppercase; min-width:76px; }
+        .wcfeat-formations--sm { gap:10px; margin-bottom:14px; }
+        .wcfeat-formations--sm .wcfeat-pitch { height:64px; }
+        .wcfeat-formations--sm .wcfeat-pitch-dot { width:5px; height:5px; }
+        .wcfeat-formations--sm .wcfeat-formation-code { font-size:10px; margin-top:4px; }
+        .wcfeat-motm--sm { display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.04); border:1px solid var(--line); border-radius:9px; padding:9px 11px; margin-bottom:14px; }
+        .wcfeat-motm--sm svg { color:var(--l); flex:none; }
+        .wcfeat-motm--sm > div { flex:1; min-width:0; }
+        .wcfeat-motm--sm strong { display:block; color:#fff; font:800 12px "Barlow",sans-serif; }
+        .wcfeat-motm--sm span { color:var(--muted); font:600 9px "Barlow",sans-serif; text-transform:uppercase; letter-spacing:.04em; }
+        .wcfeat-fullreport-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:6px; background:none; border:1px solid rgba(151,204,13,.35); color:var(--l); font:800 10.5px "Barlow Condensed",sans-serif; letter-spacing:.05em; text-transform:uppercase; padding:9px; border-radius:8px; cursor:pointer; }
         .wcfeat-insight-list { margin:0; padding:0; list-style:none; display:grid; gap:10px; }
         .wcfeat-insight-list li { display:flex; gap:8px; color:#d8dde2; font:500 12.5px/1.45 "Barlow",sans-serif; }
         .wcfeat-insight-list li::before { content:"✓"; flex:none; color:var(--l); font-weight:800; }
@@ -395,63 +428,121 @@ export default function WorldCupOverview() {
         <WorldCupNav active="overview" />
       </div>
 
-      <div className="wcfeat">
-        <div className="wcfeat-top">
-          <span className="wc2-eyebrow-sm">Featured Match — {featuredMatch.round}</span>
-          <div className="wcfeat-rating"><Star size={13} fill="currentColor" /> {featuredMatch.calibreRating.score} <small>Calibre Rating</small></div>
+      <div className="wc2-toprow">
+        <div className="wc2-card wc2-toprow-summary">
+          <h3 className="wc2-h3">Tournament Summary</h3>
+          <div className="wc2-summary-grid">
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Users size={22} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.teams}</strong><span>Teams</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Goal size={22} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.matches}</strong><span>Matches</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><MapPin size={22} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.stadiums}</strong><span>Host Cities</span></div>
+            <div className="wc2-summary-cell"><span className="wc2-icon"><Flag size={22} strokeWidth={2.25} /></span><strong>{WC_CONFIG.hosts.length}</strong><span>Host Nations</span></div>
+          </div>
+          <div className="wc2-hosts">{WC_CONFIG.hosts.map((h, i) => <span key={h}>{i > 0 && ' · '}{HOST_FLAGS[h] || ''} {h}</span>)}</div>
+          <button type="button" className="wc2-explore-btn" onClick={() => navigateTo('/world-cup/teams')}>Explore Tournament <ArrowRight size={13} /></button>
         </div>
 
-        {featuredMatch.heroMoment && (
-          <div className="wcfeat-hero-moment">
-            <span className="wcfeat-hm-icon">{featuredMatch.heroMoment.icon}</span>
-            <span className="wcfeat-hm-min">{featuredMatch.heroMoment.minute}'</span>
-            <span className="wcfeat-hm-text"><strong>{featuredMatch.heroMoment.scorer}</strong> — {featuredMatch.heroMoment.tag}</span>
+        <div className="wcfeat wcfeat--compact">
+          <div className="wcfeat-top">
+            <span className="wc2-eyebrow-sm">Featured Match — {featuredMatch.round}</span>
+            <MapPin size={11} style={{ color: 'var(--muted)' }} />
           </div>
-        )}
+          <div className="wcfeat-meta wcfeat-meta--top">{featuredMatch.venue}</div>
 
-        <div className="wcfeat-score">
-          <div className="wcfeat-team">
-            <span className="wcfeat-flag">{TEAM_FLAGS[featuredMatch.home] || '🏳️'}</span>
-            <strong>{featuredMatch.home}</strong>
-            {homeFormation && <small>{homeFormation}</small>}
-          </div>
-          <div className="wcfeat-scoreline"><b>{featuredMatch.homeScore}</b><span>–</span><b>{featuredMatch.awayScore}</b></div>
-          <div className="wcfeat-team">
-            <span className="wcfeat-flag">{TEAM_FLAGS[featuredMatch.away] || '🏳️'}</span>
-            <strong>{featuredMatch.away}</strong>
-            {awayFormation && <small>{awayFormation}</small>}
-          </div>
-        </div>
-        <div className="wcfeat-meta">{featuredMatch.note} · {featuredMatch.venue}</div>
-
-        {(homeFormation || awayFormation) && (
-          <div className="wcfeat-formations">
-            <div className="wcfeat-formation-col">
-              <span className="wcfeat-label">{featuredMatch.home}</span>
-              <FormationPitch formation={homeFormation} side="home" />
-              {homeFormation && <strong className="wcfeat-formation-code">{homeFormation}</strong>}
+          {featuredMatch.heroMoment && (
+            <div className="wcfeat-hero-moment wcfeat-hero-moment--sm">
+              <span className="wcfeat-hm-icon">{featuredMatch.heroMoment.icon}</span>
+              <span className="wcfeat-hm-min">{featuredMatch.heroMoment.minute}'</span>
+              <span className="wcfeat-hm-text"><strong>{featuredMatch.heroMoment.scorer}</strong> — {featuredMatch.heroMoment.tag}</span>
             </div>
-            <div className="wcfeat-formation-col">
-              <span className="wcfeat-label">{featuredMatch.away}</span>
-              <FormationPitch formation={awayFormation} side="away" />
-              {awayFormation && <strong className="wcfeat-formation-code">{awayFormation}</strong>}
+          )}
+
+          <div className="wcfeat-score wcfeat-score--sm">
+            <div className="wcfeat-team">
+              <span className="wcfeat-flag">{TEAM_FLAGS[featuredMatch.home] || '🏳️'}</span>
+              <strong>{featuredMatch.home}</strong>
+            </div>
+            <div className="wcfeat-scoreline wcfeat-scoreline--sm"><b>{featuredMatch.homeScore}</b><span>–</span><b>{featuredMatch.awayScore}</b></div>
+            <div className="wcfeat-team">
+              <span className="wcfeat-flag">{TEAM_FLAGS[featuredMatch.away] || '🏳️'}</span>
+              <strong>{featuredMatch.away}</strong>
             </div>
           </div>
-        )}
+          <div className="wcfeat-meta">{featuredMatch.note}</div>
 
-        {featuredMatch.manOfTheMatch && (
-          <div className="wcfeat-motm">
-            <span className="wcfeat-label">Man of the Match</span>
-            <div className="wcfeat-motm-head">
-              <Trophy size={18} />
+          {xgRow && (
+            <div className="wcfeat-xg-row">
+              <span>{xgRow.home}</span>
+              <div className="wcfeat-bar-track"><i style={{ width: `${(xgRow.home / ((xgRow.home + xgRow.away) || 1)) * 100}%` }} /></div>
+              <span className="wcfeat-xg-label">xG</span>
+              <div className="wcfeat-bar-track away"><i style={{ width: `${(xgRow.away / ((xgRow.home + xgRow.away) || 1)) * 100}%` }} /></div>
+              <span>{xgRow.away}</span>
+            </div>
+          )}
+
+          {compactRows.length > 0 && (
+            <div className="wcfeat-minigrid">
+              {compactRows.map(r => (
+                <div className="wcfeat-minirow" key={r.label}>
+                  <span>{r.home}{r.suffix || ''}</span>
+                  <span className="wcfeat-minirow-label">{r.label}</span>
+                  <span>{r.away}{r.suffix || ''}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {(homeFormation || awayFormation) && (
+            <div className="wcfeat-formations wcfeat-formations--sm">
+              <div className="wcfeat-formation-col">
+                <FormationPitch formation={homeFormation} side="home" />
+                {homeFormation && <strong className="wcfeat-formation-code">{homeFormation}</strong>}
+              </div>
+              <div className="wcfeat-formation-col">
+                <FormationPitch formation={awayFormation} side="away" />
+                {awayFormation && <strong className="wcfeat-formation-code">{awayFormation}</strong>}
+              </div>
+            </div>
+          )}
+
+          {featuredMatch.manOfTheMatch && (
+            <div className="wcfeat-motm wcfeat-motm--sm">
+              <Trophy size={15} />
               <div>
                 <strong>{featuredMatch.manOfTheMatch.name}</strong>
-                <span>{featuredMatch.manOfTheMatch.team} · {featuredMatch.manOfTheMatch.tag}</span>
+                <span>Man of the Match</span>
               </div>
               <div className="wcfeat-motm-rating">{featuredMatch.manOfTheMatch.rating}</div>
             </div>
-          </div>
-        )}
+          )}
+
+          <button type="button" className="wcfeat-fullreport-btn" onClick={() => document.getElementById('full-match-report')?.scrollIntoView({ behavior: 'smooth' })}>Full Match Report <ArrowRight size={12} /></button>
+        </div>
+
+        <div className="wc2-card">
+          <span className="wc2-eyebrow-sm">Stats Leaders</span>
+          {wcLeaders.length === 0 ? (
+            <div className="wc2-empty">Leaders populate once tournament matches kick off.</div>
+          ) : (
+            <>
+              {wcLeaders.map((l, i) => (
+                <div className="wc2-leader-row" key={l.api_player_id}>
+                  <span className="rank">{i + 1}</span>
+                  <ApiPlayerImage playerId={l.api_player_id} name={l.name} fallbackSrc="/assets/players/neutral-player.svg" alt={l.name} />
+                  <div className="n"><strong>{l.name}</strong><span>{l.team}</span></div>
+                  <div className="g"><b>{l.goals ?? 0}</b><span>Goals</span></div>
+                </div>
+              ))}
+              <button className="wc2-link" onClick={() => navigateTo('/world-cup/stats')}>View full stats <ArrowRight size={13} /></button>
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className="wcfeat" id="full-match-report">
+        <div className="wcfeat-top">
+          <span className="wc2-eyebrow-sm">Full Match Report — {featuredMatch.home} {featuredMatch.homeScore}–{featuredMatch.awayScore} {featuredMatch.away}</span>
+          <div className="wcfeat-rating"><Star size={13} fill="currentColor" /> {featuredMatch.calibreRating.score} <small>Calibre Rating</small></div>
+        </div>
 
         {featuredMatch.whyItMattered?.length > 0 && (
           <div className="wcfeat-why">
@@ -594,39 +685,6 @@ export default function WorldCupOverview() {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-
-      <div className="wc2-row2">
-        <div className="wc2-card">
-          <h3 className="wc2-h3">Tournament Summary</h3>
-          <div className="wc2-summary-grid">
-            <div className="wc2-summary-cell"><span className="wc2-icon"><Users size={24} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.teams}</strong><span>Teams</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon"><Goal size={24} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.matches}</strong><span>Matches</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon"><MapPin size={24} strokeWidth={2.25} /></span><strong>{TOURNAMENT_FORMAT.stadiums}</strong><span>Host Cities</span></div>
-            <div className="wc2-summary-cell"><span className="wc2-icon"><Flag size={24} strokeWidth={2.25} /></span><strong>{WC_CONFIG.hosts.length}</strong><span>Host Nations</span></div>
-          </div>
-          <div className="wc2-hosts">{WC_CONFIG.hosts.map((h, i) => <span key={h}>{i > 0 && ' · '}{HOST_FLAGS[h] || ''} {h}</span>)}</div>
-          <button type="button" className="wc2-explore-btn" onClick={() => navigateTo('/world-cup/teams')}>Explore Tournament <ArrowRight size={13} /></button>
-        </div>
-
-        <div className="wc2-card">
-          <span className="wc2-eyebrow-sm">Stats Leaders</span>
-          {wcLeaders.length === 0 ? (
-            <div className="wc2-empty">Leaders populate once tournament matches kick off.</div>
-          ) : (
-            <>
-              {wcLeaders.map((l, i) => (
-                <div className="wc2-leader-row" key={l.api_player_id}>
-                  <span className="rank">{i + 1}</span>
-                  <ApiPlayerImage playerId={l.api_player_id} name={l.name} fallbackSrc="/assets/players/neutral-player.svg" alt={l.name} />
-                  <div className="n"><strong>{l.name}</strong><span>{l.team}</span></div>
-                  <div className="g"><b>{l.goals ?? 0}</b><span>Goals</span></div>
-                </div>
-              ))}
-              <button className="wc2-link" onClick={() => navigateTo('/world-cup/stats')}>View full stats <ArrowRight size={13} /></button>
-            </>
-          )}
         </div>
       </div>
 

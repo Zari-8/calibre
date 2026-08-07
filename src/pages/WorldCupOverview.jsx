@@ -6,7 +6,7 @@ import PremierBetBanner from '../components/PremierBetBanner.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
 import { getFixturesByDate, getFixtureLineups, getFixtureEvents } from '../services/apiFootball.js';
-import { WC_CONFIG, wcFacts, featuredMatch, TEAM_FLAGS, otherFeaturedMatches } from '../data/worldCupData.js';
+import { WC_CONFIG, wcFacts, featuredMatch, TEAM_FLAGS } from '../data/worldCupData.js';
 
 // Dominance bar for one stat, home value growing from the right toward the
 // label and away value growing from the left — only rendered once both
@@ -256,104 +256,10 @@ export default function WorldCupOverview() {
         .calibre-wc-overview * { box-sizing:border-box; }
 
         .wc-overview-shell {
-          max-width:1400px;
-          margin:auto;
-          padding:0 24px 24px;
-        }
-
-        /* ============ TICKER ============ */
-
-        .wc-ticker {
-          display:flex;
-          align-items:center;
-          justify-content:space-between;
-          gap:20px;
-          padding:12px 24px;
-          background:rgba(10,13,15,.85);
-          border-bottom:1px solid var(--border);
-          backdrop-filter:blur(10px);
-        }
-
-        .wc-ticker-inner {
-          display:flex;
-          align-items:center;
-          gap:22px;
-          overflow-x:auto;
-          scrollbar-width:none;
-        }
-
-        .wc-ticker-inner::-webkit-scrollbar { display:none; }
-
-        .wc-ticker-live {
-          display:flex;
-          align-items:center;
-          gap:8px;
-          flex:none;
-          padding:6px 12px;
-          border-radius:20px;
-          background:rgba(151,204,13,.14);
-          color:var(--lime);
-          font-size:11px;
-          font-weight:800;
-          letter-spacing:.08em;
-          text-transform:uppercase;
-        }
-
-        .wc-ticker-dot {
-          width:7px;
-          height:7px;
-          border-radius:50%;
-          background:var(--lime);
-          animation:wcPulseDot 1.6s infinite;
-        }
-
-        .wc-ticker-item {
-          display:flex;
-          align-items:center;
-          gap:10px;
-          flex:none;
-          font-size:13px;
-          color:#d8dde2;
-          white-space:nowrap;
-        }
-
-        .wc-ticker-round {
-          color:var(--muted);
-          text-transform:uppercase;
-          font-size:10px;
-          letter-spacing:.08em;
-        }
-
-        .wc-ticker-item::before {
-          content:"";
-          width:4px;
-          height:4px;
-          border-radius:50%;
-          background:rgba(255,255,255,.25);
-          margin-right:10px;
-        }
-
-        .wc-ticker-item:first-child::before { display:none; }
-
-        .wc-ticker-link {
-          flex:none;
-          display:flex;
-          align-items:center;
-          gap:6px;
-          background:none;
-          border:none;
-          color:#fff;
-          font-size:12px;
-          font-weight:700;
-          letter-spacing:.04em;
-          text-transform:uppercase;
-          cursor:pointer;
-          white-space:nowrap;
-        }
-
-        @keyframes wcPulseDot {
-          0%, 100% { opacity:1; }
-          50% { opacity:.3; }
+          width:100%;
+          max-width:none;
+          margin:0;
+          padding:0 32px 24px;
         }
 
         /* ============ HERO ROW ============ */
@@ -364,6 +270,8 @@ export default function WorldCupOverview() {
           gap:22px;
           margin-top:22px;
         }
+
+        .wc-hero-row > * { min-width:0; }
 
         @media(max-width:1100px){
           .wc-hero-row { grid-template-columns:1fr; }
@@ -461,11 +369,15 @@ export default function WorldCupOverview() {
         .wc-hero2-card {
           flex:none;
           width:340px;
-          background:rgba(10,13,16,.82);
-          border:1px solid var(--border);
+          background:rgba(255,255,255,.07);
+          border:1px solid rgba(255,255,255,.16);
           border-radius:18px;
           padding:22px;
-          backdrop-filter:blur(16px);
+          -webkit-backdrop-filter:blur(20px) saturate(160%);
+          backdrop-filter:blur(20px) saturate(160%);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.14),
+            0 20px 40px rgba(0,0,0,.35);
         }
 
         .wc-hero2-badge {
@@ -555,17 +467,25 @@ export default function WorldCupOverview() {
         /* ============ CARD BASE ============ */
 
         .wc-card {
-          background:linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.025));
-          backdrop-filter:blur(18px);
-          border:1px solid var(--border);
+          position:relative;
+          background:linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+          -webkit-backdrop-filter:blur(20px) saturate(160%);
+          backdrop-filter:blur(20px) saturate(160%);
+          border:1px solid rgba(255,255,255,.14);
           border-radius:20px;
           padding:24px;
-          transition:transform .25s ease, border-color .25s ease;
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.12),
+            0 20px 40px rgba(0,0,0,.3);
+          transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
         }
 
         .wc-card:hover {
           transform:translateY(-3px);
           border-color:rgba(151,204,13,.25);
+          box-shadow:
+            inset 0 1px 0 rgba(255,255,255,.12),
+            0 24px 48px rgba(0,0,0,.4);
         }
 
         .wc-card-title {
@@ -671,6 +591,8 @@ export default function WorldCupOverview() {
           align-items:start;
         }
 
+        .wc-mid-row > * { min-width:0; }
+
         @media(max-width:1100px){
           .wc-mid-row { grid-template-columns:1fr; }
         }
@@ -743,8 +665,41 @@ export default function WorldCupOverview() {
           gap:20px;
         }
 
+        .wc-ov-grid > * { min-width:0; }
+
         @media(max-width:900px){
           .wc-ov-grid { grid-template-columns:1fr; }
+        }
+
+        .wc-ov-stat {
+          padding:10px 0;
+          border-bottom:1px solid var(--border);
+        }
+
+        .wc-ov-stat:last-child { border-bottom:none; }
+
+        .wc-ov-stat-label {
+          font-size:10.5px;
+          color:var(--muted);
+          text-transform:uppercase;
+          letter-spacing:.06em;
+          margin-bottom:6px;
+        }
+
+        .wc-ov-stat-values {
+          display:flex;
+          align-items:baseline;
+          gap:8px;
+          font-family:"Barlow Condensed";
+          font-size:19px;
+          font-weight:800;
+        }
+
+        .wc-ov-stat-values .sep {
+          color:var(--muted);
+          font-size:12px;
+          font-weight:600;
+          font-family:"Barlow",sans-serif;
         }
 
         .wc-ov-teams {
@@ -781,7 +736,6 @@ export default function WorldCupOverview() {
         .wc-ov-stats {
           display:flex;
           flex-direction:column;
-          gap:16px;
           justify-content:center;
         }
 
@@ -1309,30 +1263,6 @@ export default function WorldCupOverview() {
         }
       `}</style>
 
-      {/* LIVE TICKER — built from the same real otherFeaturedMatches used
-          lower on the page, plus the real countdown state, rather than
-          inventing a separate set of fixtures/times we don't have. */}
-
-      <div className="wc-ticker">
-        <div className="wc-ticker-inner">
-          <div className="wc-ticker-live">
-            <span className="wc-ticker-dot" />
-            {isLive ? 'Live Now' : `${days}d to kickoff`}
-          </div>
-
-          {otherFeaturedMatches.map((m, i) => (
-            <div className="wc-ticker-item" key={i}>
-              <span className="wc-ticker-round">{m.round}</span>
-              {TEAM_FLAGS[m.home] || '🏳️'} {m.home} {m.homeScore}–{m.awayScore} {m.away} {TEAM_FLAGS[m.away] || '🏳️'}
-            </div>
-          ))}
-        </div>
-
-        <button className="wc-ticker-link" onClick={() => navigateTo('/world-cup/matches')}>
-          View All Matches <ChevronRight size={14}/>
-        </button>
-      </div>
-
       <div className="wc-overview-shell">
 
         {/* HERO ROW */}
@@ -1535,7 +1465,16 @@ export default function WorldCupOverview() {
                 </div>
 
                 <div className="wc-ov-stats">
-                  {compactRows.map(row => <DominanceBar key={row.label} {...row} />)}
+                  {compactRows.map(row => (
+                    <div className="wc-ov-stat" key={row.label}>
+                      <div className="wc-ov-stat-label">{row.label}</div>
+                      <div className="wc-ov-stat-values">
+                        <span>{row.home}{row.suffix}</span>
+                        <span className="sep">–</span>
+                        <span>{row.away}{row.suffix}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="wc-key-insight">
@@ -1554,9 +1493,15 @@ export default function WorldCupOverview() {
 
             {activeTab === 'xg' && (
               <div>
-                {allDominanceRows.filter(r => ['xG', 'Big Chances', 'Shots on Target', 'Total Shots'].includes(r.label)).map(row => (
-                  <DominanceBar key={row.label} {...row} />
-                ))}
+                {allDominanceRows.filter(r => ['xG', 'Big Chances', 'Shots on Target', 'Total Shots'].includes(r.label)).length > 0 ? (
+                  allDominanceRows.filter(r => ['xG', 'Big Chances', 'Shots on Target', 'Total Shots'].includes(r.label)).map(row => (
+                    <DominanceBar key={row.label} {...row} />
+                  ))
+                ) : (
+                  <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+                    xG data isn't available for this fixture.
+                  </div>
+                )}
               </div>
             )}
 
@@ -1631,28 +1576,34 @@ export default function WorldCupOverview() {
               </div>
             )}
 
-            {activeTab === 'shots' && shotBreakdown && (
-              <div>
-                <div className="wc-shots-grid">
-                  <div className="wc-shots-side">
-                    <div className="wc-shots-big">{shotBreakdown.home.shots}</div>
-                    <div className="wc-shots-label">Shots · {shotBreakdown.home.onTarget} on target</div>
+            {activeTab === 'shots' && (
+              shotBreakdown ? (
+                <div>
+                  <div className="wc-shots-grid">
+                    <div className="wc-shots-side">
+                      <div className="wc-shots-big">{shotBreakdown.home.shots}</div>
+                      <div className="wc-shots-label">Shots · {shotBreakdown.home.onTarget} on target</div>
+                    </div>
+                    <div className="wc-shots-vs">VS</div>
+                    <div className="wc-shots-side away">
+                      <div className="wc-shots-big">{shotBreakdown.away.shots}</div>
+                      <div className="wc-shots-label">Shots · {shotBreakdown.away.onTarget} on target</div>
+                    </div>
                   </div>
-                  <div className="wc-shots-vs">VS</div>
-                  <div className="wc-shots-side away">
-                    <div className="wc-shots-big">{shotBreakdown.away.shots}</div>
-                    <div className="wc-shots-label">Shots · {shotBreakdown.away.onTarget} on target</div>
+
+                  <div className="wc-shots-bar">
+                    <div style={{ width: `${(shotBreakdown.home.onTarget / ((shotBreakdown.home.shots) || 1)) * 100}%` }} />
+                  </div>
+
+                  <div style={{ marginTop: 26 }}>
+                    {allDominanceRows.map(row => <DominanceBar key={row.label} {...row} />)}
                   </div>
                 </div>
-
-                <div className="wc-shots-bar">
-                  <div style={{ width: `${(shotBreakdown.home.onTarget / ((shotBreakdown.home.shots) || 1)) * 100}%` }} />
+              ) : (
+                <div style={{ color: 'var(--muted)', fontSize: 13 }}>
+                  Shot data isn't available for this fixture.
                 </div>
-
-                <div style={{ marginTop: 26 }}>
-                  {allDominanceRows.map(row => <DominanceBar key={row.label} {...row} />)}
-                </div>
-              </div>
+              )
             )}
 
           </div>

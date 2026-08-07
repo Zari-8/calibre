@@ -270,6 +270,7 @@ export default function WorldCupOverview() {
           grid-template-columns:1.85fr 1fr;
           gap:22px;
           margin-top:22px;
+          align-items:start;
         }
 
         .wc-hero-row > * { min-width:0; }
@@ -421,7 +422,7 @@ export default function WorldCupOverview() {
           flex:none;
           font-family:"Barlow Condensed";
           font-size:88px;
-          font-weight:900;
+          font-weight:450;
           color:var(--lime);
           padding:0 6px;
         }
@@ -469,14 +470,14 @@ export default function WorldCupOverview() {
 
         .wc-card {
           position:relative;
-          background:linear-gradient(145deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
-          -webkit-backdrop-filter:blur(20px) saturate(160%);
-          backdrop-filter:blur(20px) saturate(160%);
-          border:1px solid rgba(255,255,255,.14);
+          background:linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+          -webkit-backdrop-filter:blur(24px) saturate(180%);
+          backdrop-filter:blur(24px) saturate(180%);
+          border:1px solid rgba(255,255,255,.18);
           border-radius:20px;
           padding:14px;
           box-shadow:
-            inset 0 1px 0 rgba(255,255,255,.12),
+            inset 0 1px 0 rgba(255,255,255,.16),
             0 20px 40px rgba(0,0,0,.3);
           transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
         }
@@ -522,7 +523,7 @@ export default function WorldCupOverview() {
           display:block;
           font-family:"Barlow Condensed";
           font-size:32px;
-          font-weight:900;
+          font-weight:450;
           line-height:1;
         }
 
@@ -572,7 +573,7 @@ export default function WorldCupOverview() {
           background:rgba(255,255,255,.04);
           border:1px solid var(--border);
           border-radius:20px;
-          padding:6px 12px;
+          padding:6px 16px;
           font-size:12px;
           font-weight:700;
           color:#d8dde2;
@@ -1023,6 +1024,9 @@ export default function WorldCupOverview() {
           overflow:hidden;
           display:flex;
           flex-direction:column;
+          background:#0b0d10;
+          -webkit-backdrop-filter:none;
+          backdrop-filter:none;
         }
 
         .wc-story-image {
@@ -1174,8 +1178,10 @@ export default function WorldCupOverview() {
           flex:none;
           width:230px;
           scroll-snap-align:start;
-          background:rgba(255,255,255,.04);
-          border:1px solid var(--border);
+          background:linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+          -webkit-backdrop-filter:blur(24px) saturate(180%);
+          backdrop-filter:blur(24px) saturate(180%);
+          border:1px solid rgba(255,255,255,.18);
           border-radius:16px;
           padding:11px;
         }
@@ -1217,6 +1223,8 @@ export default function WorldCupOverview() {
           border-radius:24px;
           overflow:hidden;
           background:linear-gradient(135deg, rgba(151,204,13,.18), rgba(255,255,255,.04));
+          -webkit-backdrop-filter:blur(24px) saturate(180%);
+          backdrop-filter:blur(24px) saturate(180%);
           border:1px solid rgba(151,204,13,.25);
         }
 

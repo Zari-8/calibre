@@ -490,7 +490,7 @@ export default function WorldCupOverview() {
         }
 
         .wc-card-title {
-          font-size:12px;
+          font-size:13px;
           color:var(--lime);
           letter-spacing:.15em;
           text-transform:uppercase;
@@ -521,7 +521,7 @@ export default function WorldCupOverview() {
         .wc-snap-cell strong {
           display:block;
           font-family:"Barlow Condensed";
-          font-size:28px;
+          font-size:32px;
           font-weight:900;
           line-height:1;
         }
@@ -529,7 +529,7 @@ export default function WorldCupOverview() {
         .wc-snap-cell span {
           display:block;
           margin-top:6px;
-          font-size:9.5px;
+          font-size:10.5px;
           text-transform:uppercase;
           letter-spacing:.08em;
           color:var(--muted);
@@ -586,7 +586,7 @@ export default function WorldCupOverview() {
 
         .wc-mid-row {
           display:grid;
-          grid-template-columns:1.35fr 1fr 0.85fr;
+          grid-template-columns:2.6fr 1.6fr 1fr;
           gap:22px;
           margin-top:22px;
           align-items:start;

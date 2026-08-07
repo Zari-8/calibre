@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Trophy, ArrowRight, Star, Play, ChevronRight, ChevronLeft } from 'lucide-react';
 import WorldCupNav from '../components/WorldCupNav.jsx';
 import ApiPlayerImage from '../components/ApiPlayerImage.jsx';
+import ApiTeamLogo from '../components/ApiTeamLogo.jsx';
 import PremierBetBanner from '../components/PremierBetBanner.jsx';
 import { navigateTo } from '../components/NavLink.jsx';
 import { supabase, supabaseConfigured } from '../services/supabaseClient.js';
-import { getFixturesByDate, getFixtureLineups, getFixtureEvents } from '../services/apiFootball.js';
+import { getFixturesByDate, getFixtureLineups, getFixtureEvents, teamLogoUrl } from '../services/apiFootball.js';
 import { WC_CONFIG, wcFacts, featuredMatch, TEAM_FLAGS } from '../data/worldCupData.js';
 
 // Dominance bar for one stat, home value growing from the right toward the
@@ -78,6 +79,13 @@ function useCountdown() {
 // config-derived (WC_CONFIG.hosts), since that's actual project data.
 const TOURNAMENT_FORMAT = { teams: 48, matches: 104, stadiums: 16 };
 const HOST_FLAGS = { USA: '🇺🇸', Canada: '🇨🇦', Mexico: '🇲🇽' };
+
+// Real API-Football team IDs for the host nations' men's senior sides,
+// verified against /api/football?endpoint=teams&country=<name> (national:true,
+// filtered to the senior men's entry — API-Football also returns women's and
+// youth national sides under the same country, which is easy to grab by
+// mistake). Used to pull real crests via teamLogoUrl() instead of flag emoji.
+const HOST_TEAM_IDS = { USA: 2384, Canada: 5529, Mexico: 16 };
 
 // Match Intelligence tabs — each maps to real, already-computed data below.
 // No tab renders anything that isn't backed by featuredMatch.stats, the
@@ -266,11 +274,15 @@ export default function WorldCupOverview() {
         /* ============ HERO ROW ============ */
 
         .wc-hero-row {
+          position:relative;
           display:grid;
           grid-template-columns:1.85fr 1fr;
           gap:22px;
           margin-top:22px;
           align-items:start;
+          border-radius:24px;
+          overflow:hidden;
+          background:url("/assets/WC-overview-bg.png") center/cover no-repeat;
         }
 
         .wc-hero-row > * { min-width:0; }
@@ -281,17 +293,12 @@ export default function WorldCupOverview() {
 
         .wc-hero2 {
           position:relative;
-          border-radius:24px;
-          overflow:hidden;
           min-height:460px;
           padding:40px;
           display:flex;
           flex-direction:column;
           justify-content:flex-end;
-          background:
-            linear-gradient(180deg, rgba(5,7,8,.25) 0%, rgba(5,7,8,.92) 100%),
-            url("/assets/WC-overview-bg.png") center/cover no-repeat;
-          border:1px solid var(--border);
+          background:linear-gradient(180deg, rgba(5,7,8,.25) 0%, rgba(5,7,8,.92) 100%);
         }
 
         .wc-hero2-eyebrow {
@@ -422,7 +429,7 @@ export default function WorldCupOverview() {
           flex:none;
           font-family:"Barlow Condensed";
           font-size:88px;
-          font-weight:450;
+          font-weight:900;
           color:var(--lime);
           padding:0 6px;
         }
@@ -492,7 +499,7 @@ export default function WorldCupOverview() {
 
         .wc-card-title {
           font-size:13px;
-          color:var(--lime);
+          color:#c8ced5;
           letter-spacing:.15em;
           text-transform:uppercase;
           font-weight:800;
@@ -523,7 +530,7 @@ export default function WorldCupOverview() {
           display:block;
           font-family:"Barlow Condensed";
           font-size:32px;
-          font-weight:450;
+          font-weight:900;
           line-height:1;
         }
 
@@ -578,6 +585,18 @@ export default function WorldCupOverview() {
           font-weight:700;
           color:#d8dde2;
         }
+
+        .wc-snapshot-host-crest {
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          width:16px;
+          height:16px;
+          flex:none;
+        }
+
+        .wc-snapshot-host-crest img { width:100%; height:100%; object-fit:contain; display:block; }
+        .wc-snapshot-host-crest .api-team-logo-fallback { font-size:9px; font-weight:800; letter-spacing:.02em; }
 
         .wc-snapshot-card .wc2-explore-btn {
           margin-top:18px;
@@ -1424,7 +1443,14 @@ export default function WorldCupOverview() {
             <div className="wc-snapshot-hosts">
               {WC_CONFIG.hosts.map(h => (
                 <div className="wc-snapshot-host-chip" key={h}>
-                  {HOST_FLAGS[h] || ''} {h}
+                  <span className="wc-snapshot-host-crest">
+                    <ApiTeamLogo
+                      src={HOST_TEAM_IDS[h] ? teamLogoUrl(HOST_TEAM_IDS[h]) : ''}
+                      name={h}
+                      fallback={HOST_FLAGS[h] || ''}
+                    />
+                  </span>
+                  {h}
                 </div>
               ))}
             </div>

@@ -256,10 +256,9 @@ export default function WorldCupOverview() {
         .calibre-wc-overview * { box-sizing:border-box; }
 
         .wc-overview-shell {
-          width:100%;
-          max-width:none;
-          margin:0;
-          padding:0 32px 24px;
+          max-width:1600px;
+          margin:0 auto;
+          padding:0 20px 64px;
         }
 
         /* ============ HERO ROW ============ */

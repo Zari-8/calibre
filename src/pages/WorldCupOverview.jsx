@@ -661,8 +661,9 @@ export default function WorldCupOverview() {
 
         .wc-ov-grid {
           display:grid;
-          grid-template-columns:1fr 1fr 1fr;
-          gap:20px;
+          grid-template-columns:1fr 260px;
+          gap:24px;
+          align-items:start;
         }
 
         .wc-ov-grid > * { min-width:0; }
@@ -671,35 +672,47 @@ export default function WorldCupOverview() {
           .wc-ov-grid { grid-template-columns:1fr; }
         }
 
-        .wc-ov-stat {
-          padding:10px 0;
+        .wc-ov-main {
+          display:flex;
+          flex-direction:column;
+          gap:18px;
+        }
+
+        .wc-ov-stats {
+          background:rgba(255,255,255,.04);
+          border:1px solid var(--border);
+          border-radius:12px;
+          padding:4px 16px;
+        }
+
+        .wc-ov-statline {
+          display:flex;
+          align-items:center;
+          gap:14px;
+          padding:12px 0;
           border-bottom:1px solid var(--border);
         }
 
-        .wc-ov-stat:last-child { border-bottom:none; }
+        .wc-ov-statline:last-child { border-bottom:none; }
 
-        .wc-ov-stat-label {
+        .wc-ov-statline-val {
+          font-family:"Barlow Condensed";
+          font-size:22px;
+          font-weight:800;
+          width:56px;
+          flex-shrink:0;
+        }
+
+        .wc-ov-statline-val.home { text-align:right; }
+        .wc-ov-statline-val.away { text-align:left; }
+
+        .wc-ov-statline-label {
+          flex:1;
+          text-align:center;
           font-size:10.5px;
           color:var(--muted);
           text-transform:uppercase;
           letter-spacing:.06em;
-          margin-bottom:6px;
-        }
-
-        .wc-ov-stat-values {
-          display:flex;
-          align-items:baseline;
-          gap:8px;
-          font-family:"Barlow Condensed";
-          font-size:19px;
-          font-weight:800;
-        }
-
-        .wc-ov-stat-values .sep {
-          color:var(--muted);
-          font-size:12px;
-          font-weight:600;
-          font-family:"Barlow",sans-serif;
         }
 
         .wc-ov-teams {
@@ -1451,30 +1464,31 @@ export default function WorldCupOverview() {
             {activeTab === 'overview' && (
               <div className="wc-ov-grid">
 
-                <div className="wc-ov-teams">
-                  <div className="wc-ov-team-row">
-                    <span className="wc-ov-flag">{TEAM_FLAGS[featuredMatch.home] || '🏳️'}</span>
-                    <strong>{featuredMatch.home}</strong>
-                    <b>{xgRow?.home ?? '–'}</b>
-                  </div>
-                  <div className="wc-ov-team-row">
-                    <span className="wc-ov-flag">{TEAM_FLAGS[featuredMatch.away] || '🏳️'}</span>
-                    <strong>{featuredMatch.away}</strong>
-                    <b>{xgRow?.away ?? '–'}</b>
-                  </div>
-                </div>
+                <div className="wc-ov-main">
 
-                <div className="wc-ov-stats">
-                  {compactRows.map(row => (
-                    <div className="wc-ov-stat" key={row.label}>
-                      <div className="wc-ov-stat-label">{row.label}</div>
-                      <div className="wc-ov-stat-values">
-                        <span>{row.home}{row.suffix}</span>
-                        <span className="sep">–</span>
-                        <span>{row.away}{row.suffix}</span>
-                      </div>
+                  <div className="wc-ov-teams">
+                    <div className="wc-ov-team-row">
+                      <span className="wc-ov-flag">{TEAM_FLAGS[featuredMatch.home] || '🏳️'}</span>
+                      <strong>{featuredMatch.home}</strong>
+                      <b>{xgRow?.home ?? '–'}</b>
                     </div>
-                  ))}
+                    <div className="wc-ov-team-row">
+                      <span className="wc-ov-flag">{TEAM_FLAGS[featuredMatch.away] || '🏳️'}</span>
+                      <strong>{featuredMatch.away}</strong>
+                      <b>{xgRow?.away ?? '–'}</b>
+                    </div>
+                  </div>
+
+                  <div className="wc-ov-stats">
+                    {compactRows.map(row => (
+                      <div className="wc-ov-statline" key={row.label}>
+                        <span className="wc-ov-statline-val home">{row.home}{row.suffix}</span>
+                        <span className="wc-ov-statline-label">{row.label}</span>
+                        <span className="wc-ov-statline-val away">{row.away}{row.suffix}</span>
+                      </div>
+                    ))}
+                  </div>
+
                 </div>
 
                 <div className="wc-key-insight">

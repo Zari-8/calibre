@@ -429,7 +429,7 @@ export default function WorldCupOverview() {
           flex:none;
           font-family:"Barlow Condensed";
           font-size:88px;
-          font-weight:900;
+          font-weight:450;
           color:var(--lime);
           padding:0 6px;
         }
@@ -530,7 +530,7 @@ export default function WorldCupOverview() {
           display:block;
           font-family:"Barlow Condensed";
           font-size:32px;
-          font-weight:900;
+          font-weight:450;
           line-height:1;
         }
 

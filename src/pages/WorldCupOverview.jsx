@@ -1151,20 +1151,97 @@ export default function WorldCupOverview() {
           color:var(--muted);
         }
 
-        /* ============ HIGHLIGHTS ============ */
+        /* ============ HIGHLIGHTS (single bar, matches mockup) ============ */
 
-        .wc-highlights-section {
+        .wc-highlights-bar {
           margin-top:22px;
-        }
-
-        .wc-highlights-top {
           display:flex;
           align-items:center;
-          justify-content:space-between;
-          margin-bottom:10px;
+          gap:20px;
+          background:linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
+          -webkit-backdrop-filter:blur(24px) saturate(180%);
+          backdrop-filter:blur(24px) saturate(180%);
+          border:1px solid rgba(255,255,255,.18);
+          border-radius:40px;
+          padding:14px 24px;
+        }
+
+        .wc-highlights-label {
+          flex:none;
+          font-size:13px;
+          color:#c8ced5;
+          letter-spacing:.15em;
+          text-transform:uppercase;
+          font-weight:800;
+        }
+
+        .wc-highlights-track {
+          flex:1;
+          min-width:0;
+          display:flex;
+          align-items:center;
+          gap:10px;
+          overflow-x:auto;
+          scroll-snap-type:x proximity;
+          scrollbar-width:none;
+        }
+
+        .wc-highlights-track::-webkit-scrollbar { display:none; }
+
+        .wc-highlight-connector {
+          flex:none;
+          width:20px;
+          height:1px;
+          background:var(--border);
+        }
+
+        .wc-highlight-node {
+          flex:none;
+          scroll-snap-align:start;
+          display:flex;
+          align-items:center;
+          gap:8px;
+          white-space:nowrap;
+        }
+
+        .wc-highlight-node-icon {
+          flex:none;
+          width:36px;
+          height:36px;
+          border-radius:50%;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:15px;
+          background:rgba(255,255,255,.06);
+          border:1px solid var(--border);
+        }
+
+        .wc-highlight-node.active .wc-highlight-node-icon {
+          background:rgba(151,204,13,.14);
+          border-color:rgba(151,204,13,.4);
+        }
+
+        .wc-highlight-node-text {
+          display:flex;
+          flex-direction:column;
+          gap:2px;
+        }
+
+        .wc-highlight-node-text strong {
+          font-family:"Barlow Condensed";
+          font-size:13px;
+          font-weight:800;
+          line-height:1.1;
+        }
+
+        .wc-highlight-node-text span {
+          font-size:10.5px;
+          color:var(--muted);
         }
 
         .wc-highlights-nav {
+          flex:none;
           display:flex;
           gap:8px;
         }
@@ -1180,56 +1257,6 @@ export default function WorldCupOverview() {
           align-items:center;
           justify-content:center;
           cursor:pointer;
-        }
-
-        .wc-highlights-row {
-          display:flex;
-          gap:14px;
-          overflow-x:auto;
-          padding-bottom:6px;
-          scroll-snap-type:x proximity;
-          scrollbar-width:none;
-        }
-
-        .wc-highlights-row::-webkit-scrollbar { display:none; }
-
-        .wc-highlight-card {
-          flex:none;
-          width:230px;
-          scroll-snap-align:start;
-          background:linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.05));
-          -webkit-backdrop-filter:blur(24px) saturate(180%);
-          backdrop-filter:blur(24px) saturate(180%);
-          border:1px solid rgba(255,255,255,.18);
-          border-radius:16px;
-          padding:11px;
-        }
-
-        .wc-highlight-card.active {
-          background:rgba(151,204,13,.1);
-          border-color:rgba(151,204,13,.35);
-        }
-
-        .wc-highlight-label {
-          font-size:10px;
-          color:var(--lime);
-          text-transform:uppercase;
-          letter-spacing:.08em;
-          font-weight:800;
-          margin-bottom:6px;
-        }
-
-        .wc-highlight-value {
-          font-family:"Barlow Condensed";
-          font-size:22px;
-          font-weight:900;
-          line-height:1.1;
-          margin-bottom:4px;
-        }
-
-        .wc-highlight-sub {
-          color:var(--muted);
-          font-size:12px;
         }
 
         /* ============ DID YOU KNOW / FOUNDER (unchanged) ============ */
@@ -1657,22 +1684,21 @@ export default function WorldCupOverview() {
 
           </div>
 
-          {/* STORY OF THE TOURNAMENT — placeholder editorial slot, no real
-              article data exists in worldCupData.js yet. Copy is kept
-              deliberately generic rather than inventing a specific claim
-              about any real team's tournament — swap in real editorial
-              content (and a real image) when it's ready. */}
+          {/* STORY OF THE TOURNAMENT — no real editorial desk exists yet, so
+              this headline/body is built from the same demo featuredMatch
+              data already used across the rest of this page (hero card,
+              highlights, etc.) rather than a separate generic placeholder —
+              swap in a real editorial pipeline when one exists. */}
 
           <div className="wc-card wc-story-card">
             <div className="wc-story-image">
               <span className="wc-story-tag">Story of the Tournament</span>
             </div>
             <div className="wc-story-body">
-              <h3 className="wc-story-title">The Storylines Shaping This Tournament</h3>
+              <h3 className="wc-story-title">The Rise of a New Dynasty?</h3>
               <p>
-                This spot is reserved for the tournament's biggest editorial narrative —
-                form, tactics and the moments defining the competition. Placeholder
-                copy until real editorial content is wired in.
+                {featuredMatch.home}'s control, composure and identity have made them
+                the team to beat in {WC_CONFIG.year || '2026'}.
               </p>
               <button className="wc-deep-dive" onClick={() => navigateTo('/world-cup/history')}>
                 Read The Full Story <ArrowRight size={12}/>
@@ -1740,56 +1766,69 @@ export default function WorldCupOverview() {
             worldCupData.js yet, so they're left as honest placeholders
             rather than invented stats attributed to real players. */}
 
-        <section className="wc-highlights-section">
+        <section className="wc-highlights-bar">
 
-          <div className="wc-highlights-top">
-            <div className="wc-card-title" style={{ margin: 0 }}>Tournament Highlights</div>
-            <div className="wc-highlights-nav">
-              <button className="wc-highlights-arrow" onClick={() => scrollHighlights(-1)}>
-                <ChevronLeft size={16}/>
-              </button>
-              <button className="wc-highlights-arrow" onClick={() => scrollHighlights(1)}>
-                <ChevronRight size={16}/>
-              </button>
+          <div className="wc-highlights-label">Tournament Highlights</div>
+
+          <div className="wc-highlights-track" ref={highlightsRef}>
+
+            <div className="wc-highlight-node">
+              <div className="wc-highlight-node-icon">⚡</div>
+              <div className="wc-highlight-node-text">
+                <strong>—</strong>
+                <span>Fastest Goal · Coming soon</span>
+              </div>
             </div>
+
+            <div className="wc-highlight-connector" />
+
+            <div className="wc-highlight-node">
+              <div className="wc-highlight-node-icon">😱</div>
+              <div className="wc-highlight-node-text">
+                <strong>—</strong>
+                <span>Biggest Upset · Coming soon</span>
+              </div>
+            </div>
+
+            <div className="wc-highlight-connector" />
+
+            <div className="wc-highlight-node active">
+              <div className="wc-highlight-node-icon">🔥</div>
+              <div className="wc-highlight-node-text">
+                <strong>{featuredMatch.home} {featuredMatch.homeScore}-{featuredMatch.awayScore} {featuredMatch.away}</strong>
+                <span>Most Dramatic · {featuredMatch.heroMoment ? `${featuredMatch.heroMoment.minute}' ${featuredMatch.heroMoment.scorer}` : featuredMatch.round}</span>
+              </div>
+            </div>
+
+            <div className="wc-highlight-connector" />
+
+            <div className="wc-highlight-node">
+              <div className="wc-highlight-node-icon">📊</div>
+              <div className="wc-highlight-node-text">
+                <strong>—</strong>
+                <span>Highest xG · Coming soon</span>
+              </div>
+            </div>
+
+            <div className="wc-highlight-connector" />
+
+            <div className="wc-highlight-node">
+              <div className="wc-highlight-node-icon">🏟️</div>
+              <div className="wc-highlight-node-text">
+                <strong>—</strong>
+                <span>Largest Crowd · Coming soon</span>
+              </div>
+            </div>
+
           </div>
 
-          <div className="wc-highlights-row" ref={highlightsRef}>
-
-            <div className="wc-highlight-card">
-              <div className="wc-highlight-label">Fastest Goal</div>
-              <div className="wc-highlight-value">—</div>
-              <div className="wc-highlight-sub">Coming soon</div>
-            </div>
-
-            <div className="wc-highlight-card">
-              <div className="wc-highlight-label">Biggest Upset</div>
-              <div className="wc-highlight-value">—</div>
-              <div className="wc-highlight-sub">Coming soon</div>
-            </div>
-
-            <div className="wc-highlight-card active">
-              <div className="wc-highlight-label">Most Dramatic</div>
-              <div className="wc-highlight-value">
-                {featuredMatch.home} {featuredMatch.homeScore}-{featuredMatch.awayScore} {featuredMatch.away}
-              </div>
-              <div className="wc-highlight-sub">
-                {featuredMatch.heroMoment ? `${featuredMatch.heroMoment.minute}' ${featuredMatch.heroMoment.scorer}` : featuredMatch.round}
-              </div>
-            </div>
-
-            <div className="wc-highlight-card">
-              <div className="wc-highlight-label">Highest xG</div>
-              <div className="wc-highlight-value">—</div>
-              <div className="wc-highlight-sub">Coming soon</div>
-            </div>
-
-            <div className="wc-highlight-card">
-              <div className="wc-highlight-label">Largest Crowd</div>
-              <div className="wc-highlight-value">—</div>
-              <div className="wc-highlight-sub">Coming soon</div>
-            </div>
-
+          <div className="wc-highlights-nav">
+            <button className="wc-highlights-arrow" onClick={() => scrollHighlights(-1)}>
+              <ChevronLeft size={16}/>
+            </button>
+            <button className="wc-highlights-arrow" onClick={() => scrollHighlights(1)}>
+              <ChevronRight size={16}/>
+            </button>
           </div>
 
         </section>
